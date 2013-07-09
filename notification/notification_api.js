@@ -70,4 +70,17 @@ var tizen = tizen || {};
       result[i] = copyStatusNotification(postedNotifications[i]);
     return result;
   }
+
+  tizen.notification.get = function(notificationId) {
+    var result;
+    var i;
+    for (i = 0; i < postedNotifications.length; i++) {
+      if (postedNotifications[i].id == notificationId) {
+        result = copyStatusNotification(postedNotifications[i]);
+        break;
+      }
+    }
+    return result;
+  }
+
 })();
