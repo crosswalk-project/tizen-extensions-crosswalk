@@ -11,6 +11,7 @@
 <button id="button4">Click 4</button>
 <button id="button5">Click 5</button>
 <button id="button6">Click 6</button>
+<button id="button7">Click 7</button>
 </body>
 
 <script>
@@ -63,6 +64,11 @@ handle("notify", "Post!", function() {
 
 handle("button6", "Remove All", function() {
         tizen.notification.removeAll();
+    });
+
+handle("button7", "Update n", function() {
+        n.title += "-" + n.id;
+        tizen.notification.update(n);
     });
 
 </script>

@@ -92,4 +92,26 @@ var tizen = tizen || {};
       tizen.notification.remove(postedNotifications[i].id);
   }
 
+  tizen.notification.update = function(notification) {
+    if (!(notification instanceof tizen.StatusNotification)) {
+      console.log("tizen.notification.update(): argument of invalid type " + typeof(notification));
+      return;
+    }
+
+    var notificationIndex = postedNotifications.indexOf(notification);
+    if (notificationIndex == -1) {
+      console.log("tizen.notification.update(): notification " + notification.id + " not yet posted.");
+      // FIXME(jeez): needed or should we post it then?
+      return;
+    }
+
+    postedNotifications[notificationIndex] = notification;
+
+    postMessage({
+      "cmd": "NotificationPost",
+      "id": notification.id,
+      "title": notification.title,
+      "content": notification.content,
+    });
+  }
 })();
