@@ -46,6 +46,9 @@ var tizen = tizen || {};
     if (!(notification instanceof tizen.StatusNotification)) {
       console.log("tizen.notification.post(): argument of invalid type " + typeof(notification));
       return;
+    } else if (postedNotifications.indexOf(notification) != -1) {
+      console.log("tizen.notification.post(): notification " + notification.id + " already posted.");
+      return;
     }
     postMessage({
       "cmd": "NotificationPost",
