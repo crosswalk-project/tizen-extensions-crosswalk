@@ -83,4 +83,10 @@ var tizen = tizen || {};
     return result;
   }
 
+  tizen.notification.removeAll = function() {
+    var i;
+    for (i = 0; i < postedNotifications.length; i++)
+      tizen.notification.remove(postedNotifications[i].id);
+  }
+
 })();

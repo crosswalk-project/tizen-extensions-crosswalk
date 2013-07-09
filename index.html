@@ -10,6 +10,7 @@
 <button id="button3">Click 3</button>
 <button id="button4">Click 4</button>
 <button id="button5">Click 5</button>
+<button id="button6">Click 6</button>
 </body>
 
 <script>
@@ -58,6 +59,10 @@ handle("notify", "Post!", function() {
         var noti = new tizen.StatusNotification("SIMPLE", "Tizen WRT",
                                                 { content: text.value });
         tizen.notification.post(noti);
+    });
+
+handle("button6", "Remove All", function() {
+        tizen.notification.removeAll();
     });
 
 </script>
