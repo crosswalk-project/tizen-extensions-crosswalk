@@ -17,10 +17,10 @@ var tizen = tizen || {};
     var m = JSON.parse(msg);
     if (m.cmd == "NotificationRemoved") {
       for (var i = 0; i < postedNotifications.length; i++) {
-	if (postedNotifications[i].id === m.id) {
-	  postedNotifications.splice(i, 1);
-	  break;
-	}
+        if (postedNotifications[i].id === m.id) {
+          postedNotifications.splice(i, 1);
+          break;
+        }
       }
     }
   });
