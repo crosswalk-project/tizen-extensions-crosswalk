@@ -8,4 +8,9 @@ if [ ! -e $XWALK_SOURCE_DIR/xwalk.gyp ]; then
    exit 1
 fi
 
+if [ ! `which gyp` ]; then
+   echo -e "\nPlease make sure gyp is in your PATH. It is usually found at CHROMIUM_SRC/tools/gyp."
+   exit 1
+fi
+
 gyp -D type=desktop -D xwalk_path=$XWALK_SOURCE_DIR --depth=. tizen-wrt.gyp

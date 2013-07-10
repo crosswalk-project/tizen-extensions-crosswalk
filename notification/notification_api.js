@@ -17,10 +17,10 @@ var tizen = tizen || {};
     var m = JSON.parse(msg);
     if (m.cmd == "NotificationRemoved") {
       for (var i = 0; i < postedNotifications.length; i++) {
-	if (postedNotifications[i].id === m.id) {
-	  postedNotifications.splice(i, 1);
-	  break;
-	}
+        if (postedNotifications[i].id === m.id) {
+          postedNotifications.splice(i, 1);
+          break;
+        }
       }
     }
   });
@@ -46,6 +46,9 @@ var tizen = tizen || {};
     if (!(notification instanceof tizen.StatusNotification)) {
       console.log("tizen.notification.post(): argument of invalid type " + typeof(notification));
       return;
+    } else if (postedNotifications.indexOf(notification) != -1) {
+      console.log("tizen.notification.post(): notification " + notification.id + " already posted.");
+      return;
     }
     postMessage({
       "cmd": "NotificationPost",
@@ -69,5 +72,46 @@ var tizen = tizen || {};
     for (i = 0; i < postedNotifications.length; i++)
       result[i] = copyStatusNotification(postedNotifications[i]);
     return result;
+  }
+
+  tizen.notification.get = function(notificationId) {
+    var result;
+    var i;
+    for (i = 0; i < postedNotifications.length; i++) {
+      if (postedNotifications[i].id == notificationId) {
+        result = copyStatusNotification(postedNotifications[i]);
+        break;
+      }
+    }
+    return result;
+  }
+
+  tizen.notification.removeAll = function() {
+    var i;
+    for (i = 0; i < postedNotifications.length; i++)
+      tizen.notification.remove(postedNotifications[i].id);
+  }
+
+  tizen.notification.update = function(notification) {
+    if (!(notification instanceof tizen.StatusNotification)) {
+      console.log("tizen.notification.update(): argument of invalid type " + typeof(notification));
+      return;
+    }
+
+    var notificationIndex = postedNotifications.indexOf(notification);
+    if (notificationIndex == -1) {
+      console.log("tizen.notification.update(): notification " + notification.id + " not yet posted.");
+      // FIXME(jeez): needed or should we post it then?
+      return;
+    }
+
+    postedNotifications[notificationIndex] = notification;
+
+    postMessage({
+      "cmd": "NotificationPost",
+      "id": notification.id,
+      "title": notification.title,
+      "content": notification.content,
+    });
   }
 })();

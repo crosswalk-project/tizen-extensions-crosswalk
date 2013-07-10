@@ -24,10 +24,7 @@ void NotificationContext::HandleRemove(const picojson::value& msg) {
   NotificationsMap::iterator it = notifications_.find(id);
   if (it == notifications_.end())
     return;
-  NotifyNotification* notification = it->second;
-  notify_notification_close(notification, NULL);
-  g_object_unref(it->second);
-  notifications_.erase(it);
+  notify_notification_close(it->second, NULL);
 }
 
 std::string NotificationContext::IdFromNotification(
@@ -48,7 +45,7 @@ void NotificationContext::OnNotificationClosedThunk(
 
 void NotificationContext::OnNotificationClosed(
     NotifyNotification* notification) {
-  std::string id = IdFromNotification(notification);
+  const std::string id = IdFromNotification(notification);
   if (id.empty())
     return;
   picojson::value::object o;
@@ -56,4 +53,7 @@ void NotificationContext::OnNotificationClosed(
   o["id"] = picojson::value(id);
   picojson::value v(o);
   api_->PostMessage(v.serialize().c_str());
+
+  g_object_unref(notification);
+  notifications_.erase(id);
 }

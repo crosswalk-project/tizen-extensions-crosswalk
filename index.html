@@ -1,54 +1,6 @@
-<h1>Hello Tizen-WRT</h1>
+<h1>Tizen-WRT Examples!</h1>
 
 <body>
-<input type="text" size=50 id="text"><button id="notify">Notify!</button>
-<br>
-<textarea cols=50 rows=20 id="output"></textarea>
-<br>
-<button id="button1">Click 1</button>
-<button id="button2">Click 2</button>
-<button id="button3">Click 3</button>
-<button id="button4">Click 4</button>
+<a href="notification.html"><h5>- Notification Test</h5></a>
 </body>
 
-<script>
-
-var output = document.getElementById("output");
-
-
-function handle(button, text, callback) {
-    var b = document.getElementById(button);
-    b.innerText = text;
-    b.addEventListener("click", callback);
-}
-
-var n = new tizen.StatusNotification("SIMPLE", "Hello my friend", { content: "Stay awhile and listen..." });
-handle("button1", "Post n", function() {
-        tizen.notification.post(n);
-    });
-
-handle("button2", "Remove n", function() {
-        tizen.notification.remove(n.id);
-    });
-
-handle("button3", "Post a string", function() {
-        tizen.notification.post("caio");
-    });
-
-handle("button4", "Get active notifications", function() {
-        var notifications = tizen.notification.getAll();
-        var i;
-        output.value += '\nNOTIFICATIONS\n';
-        for (i = 0; i < notifications.length; i++) {
-            output.value += notifications[i].title + ' (' + notifications[i].id + ')\n';
-        }
-    });
-
-handle("notify", "Post!", function() {
-        var t = document.getElementById("text");
-        var noti = new tizen.StatusNotification("SIMPLE", "Tizen WRT",
-                                                { content: text.value });
-        tizen.notification.post(noti);
-    });
-
-</script>
