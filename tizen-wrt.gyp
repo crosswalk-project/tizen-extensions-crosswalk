@@ -25,5 +25,6 @@
 
   'includes': {
     'notification/notification.gypi',
+    'time/time.gypi',
   },
 }
