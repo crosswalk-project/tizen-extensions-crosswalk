@@ -1,0 +1,76 @@
+<html>
+<h1>Hello, Tizen time API!</h1>
+
+<body>
+
+<textarea cols=80 rows=24 id="output"></textarea>
+
+<script>
+function print() {
+    var output = document.getElementById("output");
+    var str = '';
+    for (var i = 0; i < arguments.length; i++) {
+        var argument = arguments[i];
+        if (typeof(argument) === 'object') {
+            if (argument.hasOwnProperty('toString'))
+                str += argument.toString();
+            else
+                str += JSON.stringify(argument);
+        } else {
+            str += argument;
+        }
+        str += ' ';
+    }
+    output.value = output.value + '\n' + str;
+}
+
+print('tizen.time.getCurrentDateTime', tizen.time.getCurrentDateTime().toString());
+print('tizen.time.getLocalTimezone', tizen.time.getLocalTimezone());
+print('tizen.time.getAvailableTimezones', tizen.time.getAvailableTimezones());
+print('tizen.time.getDateFormat', tizen.time.getDateFormat());
+print('tizen.time.getTimeFormat', tizen.time.getTimeFormat());
+
+var currentYear = tizen.time.getCurrentDateTime().getFullYear();
+for (var year = currentYear; year <= currentYear + 10; year++)
+    print('tizen.time.isLeapYear(', year, ') -> ', tizen.time.isLeapYear(year));
+
+var now = tizen.time.getCurrentDateTime();
+print('Now =', now);
+
+var one_day = new tizen.TimeDuration(24, 'HOURS');
+print('One day =', one_day);
+
+var tomorrow = now.addDuration(one_day);
+print('Tomorrow =', tomorrow);
+
+var two_days = new tizen.TimeDuration(2, 'DAYS');
+print('Two days = ', two_days);
+
+var minus_one_day = new tizen.TimeDuration(-24, 'HOURS');
+var yesterday = now.addDuration(minus_one_day);
+print('Yesterday =', yesterday);
+
+var day_after_tomorrow = now.addDuration(two_days);
+print('Day after tomorrow =', day_after_tomorrow);
+
+var tomorrow_plus_one_day = tomorrow.addDuration(one_day);
+print('Tomorrow plus one day =', tomorrow_plus_one_day);
+
+print('Is this equal to Day After Tomorrow?',
+        day_after_tomorrow.equalsTo(tomorrow_plus_one_day));
+print('Is this earlier than Day After Tomorrow?',
+        day_after_tomorrow.earlierThan(tomorrow_plus_one_day));
+print('Is this later than Day After Tomorrow?',
+        day_after_tomorrow.laterThan(tomorrow_plus_one_day));
+
+print('Is tomorrow after today?', tomorrow.laterThan(now));
+print('Is tomorrow before today?', tomorrow.earlierThan(now));
+print('Is tomorrow today?', tomorrow.equalsTo(now));
+
+print('Is today yesterday?', yesterday.equalsTo(now));
+print('Is today earlier than yesterday?', now.earlierThan(yesterday));
+print('Is today later than yesterday?', now.laterThan(yesterday));
+
+</script>
+</body>
+</html>
