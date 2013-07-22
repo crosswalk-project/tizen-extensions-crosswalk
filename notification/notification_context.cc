@@ -20,7 +20,7 @@ NotificationContext::~NotificationContext() {
   delete api_;
 }
 
-const char NotificationContext::name[] = "tizen.notifications";
+const char NotificationContext::name[] = "tizen.notification";
 
 // This will be generated from notification_api.js.
 extern const char kSource_notification_api[];
