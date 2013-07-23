@@ -38,12 +38,12 @@
       '-fvisibility=hidden',
     ],
   },
-
   'includes': {
+    'bluetooth/bluetooth.gypi',
     'notification/notification.gypi',
     'power/power.gypi',
+    'system_info/system_info.gypi',
     'tizen/tizen.gypi',
     'time/time.gypi',
-    'bluetooth/bluetooth.gypi'
   },
 }

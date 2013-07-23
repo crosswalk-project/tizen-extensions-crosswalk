@@ -1,0 +1,319 @@
+// Copyright (c) 2013 Intel Corporation. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#include "system_info/system_info_context.h"
+
+#include "common/picojson.h"
+
+CXWalkExtension* xwalk_extension_init(int32_t api_version) {
+  return ExtensionAdapter<SystemInfoContext>::Initialize();
+}
+
+SystemInfoContext::SystemInfoContext(ContextAPI* api)
+    : api_(api) {}
+
+SystemInfoContext::~SystemInfoContext() {
+  delete api_;
+}
+
+const char SystemInfoContext::name[] = "tizen.systeminfo";
+
+// This will be generated from system_info_api.js.
+extern const char kSource_system_info_api[];
+
+const char* SystemInfoContext::GetJavaScript() {
+  return kSource_system_info_api;
+}
+
+void SystemInfoContext::GetBattery(picojson::value& error,
+                                   picojson::value& data) {
+  picojson::object& error_map = error.get<picojson::object>();
+  picojson::object& data_map = data.get<picojson::object>();
+
+  // FIXME(halton): Add actual implementation
+  data_map["level"] = picojson::value(0.5);
+  data_map["isCharging"] = picojson::value(false);
+  error_map["message"] = picojson::value("");
+
+  // uncomment out below line to try error
+  // error_map["message"] = picojson::value("Get battery failed.");
+}
+
+void SystemInfoContext::GetCPU(picojson::value& error,
+                               picojson::value& data) {
+  picojson::object& error_map = error.get<picojson::object>();
+  picojson::object& data_map = data.get<picojson::object>();
+
+  // FIXME(halton): Add actual implementation
+  data_map["load"] = picojson::value(0.3);
+  error_map["message"] = picojson::value("");
+
+  // uncomment out below line to try error
+  // error_map["message"] = picojson::value("Get CPU failed.");
+}
+
+void SystemInfoContext::GetStorage(picojson::value& error,
+                                   picojson::value& data) {
+  picojson::object& error_map = error.get<picojson::object>();
+  picojson::object& data_map = data.get<picojson::object>();
+
+  // FIXME(halton): Add actual implementation
+  picojson::value units = picojson::value(picojson::array(2));
+  picojson::array& units_arr = units.get<picojson::array>();
+
+  picojson::value unit1 = picojson::value(picojson::object());
+  picojson::object& unit1_map = unit1.get<picojson::object>();
+  unit1_map["type"] = picojson::value("INTERNAL");
+  // 20g
+  unit1_map["capacity"] = picojson::value((double)20971520);
+  // 5g
+  unit1_map["availableCapacity"] = picojson::value((double)5242880);
+  unit1_map["isRemovable"] = picojson::value(true);
+  // deperacated, same as isRemovable
+  unit1_map["isRemoveable"] = picojson::value(true);
+  units_arr[0] = unit1;
+
+  picojson::value unit2 = picojson::value(picojson::object());
+  picojson::object& unit2_map = unit2.get<picojson::object>();
+  unit2_map["type"] = picojson::value("USB_HOST");
+  // 10g
+  unit2_map["capacity"] = picojson::value((double)10485760);
+  // 2g
+  unit2_map["availableCapacity"] = picojson::value((double)2097152);
+  unit2_map["isRemovable"] = picojson::value(true);
+  // deperacated, same as isRemovable
+  unit2_map["isRemoveable"] = picojson::value(true);
+  units_arr[1] = unit2;
+
+  data_map["units"] = units;
+  error_map["message"] = picojson::value("");
+
+  // uncomment out below line to try error
+  // error_map["message"] = picojson::value("Get Storage failed.");
+}
+
+void SystemInfoContext::GetDisplay(picojson::value& error,
+                                   picojson::value& data) {
+  picojson::object& error_map = error.get<picojson::object>();
+  picojson::object& data_map = data.get<picojson::object>();
+
+  // FIXME(halton): Add actual implementation
+  data_map["resolutionWidth"] = picojson::value((double)1280);
+  data_map["resolutionHeight"] = picojson::value((double)1024);
+  data_map["dotsPerInchWidth"] = picojson::value((double)567);
+  data_map["dotsPerInchHeight"] = picojson::value((double)789);
+  data_map["physicalWidth"] = picojson::value((double)456);
+  data_map["physicalHeight"] = picojson::value((double)345);
+  data_map["brightness"] = picojson::value(0.5);
+  error_map["message"] = picojson::value("");
+
+  // uncomment out below line to try error
+  // error_map["message"] = picojson::value("Get Display failed.");
+}
+
+void SystemInfoContext::GetDeviceOrientation(picojson::value& error,
+                                             picojson::value& data) {
+  picojson::object& error_map = error.get<picojson::object>();
+  picojson::object& data_map = data.get<picojson::object>();
+
+  // FIXME(halton): Add actual implementation
+  data_map["status"] = picojson::value("PORTRAIT_PRIMARY");
+  data_map["isAutoRotation"] = picojson::value(false);
+  error_map["message"] = picojson::value("");
+
+  // uncomment out below line to try error
+  // error_map["message"] = picojson::value("Get Display failed.");
+}
+
+void SystemInfoContext::GetBuild(picojson::value& error,
+                                 picojson::value& data) {
+  picojson::object& error_map = error.get<picojson::object>();
+  picojson::object& data_map = data.get<picojson::object>();
+
+  // FIXME(halton): Add actual implementation
+  data_map["model"] = picojson::value("Tizen PC");
+  data_map["manufacturer"] = picojson::value("Intel Corp.");
+  data_map["buildVersion"] = picojson::value("3.0");
+  error_map["message"] = picojson::value("");
+
+  // uncomment out below line to try error
+  // error_map["message"] = picojson::value("Get Display failed.");
+}
+
+void SystemInfoContext::GetLocale(picojson::value& error,
+                                  picojson::value& data) {
+  picojson::object& error_map = error.get<picojson::object>();
+  picojson::object& data_map = data.get<picojson::object>();
+
+  // FIXME(halton): Add actual implementation
+  data_map["language"] = picojson::value("zh_CN");
+  data_map["country"] = picojson::value("PRC");
+  error_map["message"] = picojson::value("");
+
+  // uncomment out below line to try error
+  // error_map["message"] = picojson::value("Get Display failed.");
+}
+
+void SystemInfoContext::GetNetwork(picojson::value& error,
+                                   picojson::value& data) {
+  picojson::object& error_map = error.get<picojson::object>();
+  picojson::object& data_map = data.get<picojson::object>();
+
+  // FIXME(halton): Add actual implementation
+  data_map["networkType"] = picojson::value("ETHERNET");
+  error_map["message"] = picojson::value("");
+
+  // uncomment out below line to try error
+  // error_map["message"] = picojson::value("Get Display failed.");
+}
+
+void SystemInfoContext::GetWifiNetwork(picojson::value& error,
+                                       picojson::value& data) {
+  picojson::object& error_map = error.get<picojson::object>();
+  picojson::object& data_map = data.get<picojson::object>();
+
+  // FIXME(halton): Add actual implementation
+  data_map["status"] = picojson::value("ON");
+  data_map["ssid"] = picojson::value("test");
+  data_map["ipAddress"] = picojson::value("192.168.11.5");
+  data_map["ipv6Address"] = picojson::value("fe80::250:56ff:fec0:8");
+  data_map["signalStrength"] = picojson::value(0.3);
+  error_map["message"] = picojson::value("");
+
+  // uncomment out below line to try error
+  // error_map["message"] = picojson::value("Get Display failed.");
+}
+
+void SystemInfoContext::GetCellularNetwork(picojson::value& error,
+                                           picojson::value& data) {
+  picojson::object& error_map = error.get<picojson::object>();
+  picojson::object& data_map = data.get<picojson::object>();
+
+  // FIXME(halton): Add actual implementation
+  data_map["status"] = picojson::value("ON");
+  data_map["apn"] = picojson::value("China Mobile");
+  data_map["ipAddress"] = picojson::value("192.168.11.5");
+  data_map["ipv6Address"] = picojson::value("fe80::250:56ff:fec0:8");
+  data_map["mcc"] = picojson::value((double)50);
+  data_map["mnc"] = picojson::value((double)51);
+  data_map["cellId"] = picojson::value((double)52);
+  data_map["lac"] = picojson::value((double)53);
+  data_map["isRoaming"] = picojson::value(true);
+  data_map["isFlightMode"] = picojson::value(false);
+  data_map["imei"] = picojson::value("fake imei - 32324877989");
+  error_map["message"] = picojson::value("");
+
+  // uncomment out below line to try error
+  // error_map["message"] = picojson::value("Get Display failed.");
+}
+
+void SystemInfoContext::GetSIM(picojson::value& error,
+                               picojson::value& data) {
+  picojson::object& error_map = error.get<picojson::object>();
+  picojson::object& data_map = data.get<picojson::object>();
+
+  // FIXME(halton): Add actual implementation
+  data_map["state"] = picojson::value("READY");
+  data_map["operatorName"] = picojson::value("China Mobile");
+  data_map["msisdn"] = picojson::value("12321312");
+  data_map["iccid"] = picojson::value("234234234");
+  data_map["mcc"] = picojson::value((double)50);
+  data_map["mnc"] = picojson::value((double)51);
+  data_map["msin"] = picojson::value("China Mobile - msin");
+  data_map["spn"] = picojson::value("China Mobile - spn");
+  error_map["message"] = picojson::value("");
+
+  // uncomment out below line to try error
+  // error_map["message"] = picojson::value("Get Display failed.");
+}
+
+void SystemInfoContext::GetPeripheral(picojson::value& error,
+                                      picojson::value& data) {
+  picojson::object& error_map = error.get<picojson::object>();
+  picojson::object& data_map = data.get<picojson::object>();
+
+  // FIXME(halton): Add actual implementation
+  data_map["isVideoOutputOn"] = picojson::value(true);
+  error_map["message"] = picojson::value("");
+
+  // uncomment out below line to try error
+  // error_map["message"] = picojson::value("Get Display failed.");
+}
+
+void SystemInfoContext::HandleGetPropertyValue(const picojson::value& input,
+                                               picojson::value& output) {
+  picojson::value error;
+  picojson::value data;
+  std::string prop;
+
+  error = picojson::value(picojson::object());
+  data = picojson::value(picojson::object());
+
+  picojson::object& error_map = error.get<picojson::object>();
+  error_map["message"] = picojson::value("");
+
+  prop = input.get("prop").to_str();
+  if (prop == "BATTERY") {
+    GetBattery(error, data);
+  } else if (prop == "CPU") {
+    GetCPU(error, data);
+  } else if (prop == "STORAGE") {
+    GetStorage(error, data);
+  } else if (prop == "DISPLAY") {
+    GetDisplay(error, data);
+  } else if (prop == "DEVICE_ORIENTATION ") {
+    GetDeviceOrientation(error, data);
+  } else if (prop == "BUILD") {
+    GetBuild(error, data);
+  } else if (prop == "LOCALE") {
+    GetLocale(error, data);
+  } else if (prop == "NETWORK") {
+    GetNetwork(error, data);
+  } else if (prop == "WIFI_NETWORK") {
+    GetWifiNetwork(error, data);
+  } else if (prop == "CELLULAR_NETWORK") {
+    GetCellularNetwork(error, data);
+  } else if (prop == "SIM") {
+    GetSIM(error, data);
+  } else if (prop == "PERIPHERAL") {
+    GetPeripheral(error, data);
+  } else {
+    error_map["message"] = picojson::value("Not supportted property " + prop);
+  }
+
+  picojson::object& output_map = output.get<picojson::object>();
+  if (!error.get("message").to_str().empty()) {
+    output_map["error"] = error;
+  } else {
+    output_map["data"] = data;
+  }
+}
+
+void SystemInfoContext::HandleMessage(const char* message) {
+  picojson::value input;
+  picojson::value output;
+
+  std::string err;
+  picojson::parse(input, message, message + strlen(message), &err);
+  if (!err.empty()) {
+    std::cout << "Ignoring message.\n";
+    return;
+  }
+
+  picojson::object& input_map = input.get<picojson::object>();
+  output = picojson::value(picojson::object());
+  picojson::object& output_map = output.get<picojson::object>();
+  std::string reply_id = input.get("_reply_id").to_str();
+  output_map["_reply_id"] = picojson::value(reply_id);
+
+  std::string cmd = input.get("cmd").to_str();
+  if (cmd == "getPropertyValue")
+    HandleGetPropertyValue(input, output);
+
+  std::string result = output.serialize();
+  api_->PostMessage(result.c_str());
+}
+
+void SystemInfoContext::HandleSyncMessage(const char*) {
+}
