@@ -13,4 +13,4 @@ if [ ! `which gyp` ]; then
    exit 1
 fi
 
-gyp -D type=desktop -D xwalk_path=$XWALK_SOURCE_DIR --depth=. tizen-wrt.gyp
+gyp -D build=Debug -D type=desktop -D xwalk_path=$XWALK_SOURCE_DIR --depth=. tizen-wrt.gyp
