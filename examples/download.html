@@ -1,0 +1,163 @@
+<h1>Hello Tizen Download API</h1>
+
+<body>
+  <style type="text/css">
+    span { border: none; }
+    div { max-width: 500px; }
+  </style>
+  <span contenteditable="true" id="download1"></span><br>
+  <span contenteditable="true" id="download2"></span><br>
+  <textarea cols=80 rows=20 id="output"></textarea><br>
+  <button id="bnstart1">Click 1</button>
+  <button id="bnstart2">Click 2</button><br>
+  <button id="button1">Click 1</button>
+  <button id="button2">Click 2</button><br>
+  <button id="b1cancel">Click 1</button>
+  <button id="b2cancel">Click 2</button><br>
+  <button id="bnstate1">Click 1</button>
+  <button id="bnstate2">Click 2</button>
+</body>
+
+<script>
+
+var output = document.getElementById("output");
+
+function handle(button, text, callback) {
+  var b = document.getElementById(button);
+  b.innerText = text;
+  b.addEventListener("click", callback);
+}
+
+var listener = {
+  onprogress: function(id, receivedSize, totalSize) {
+    if (urls[id] == url1)
+      document.getElementById("download1").innerHTML = "Download1 received " + receivedSize + "/" + totalSize + " bytes"
+    else if (urls[id] == url2)
+      document.getElementById("download2").innerHTML = "Download2 received " + receivedSize + "/" + totalSize + " bytes"
+    else
+      output.value += "> listener::onprogress - unexpected call: id " + id + ", size " + receivedSize + "/" + totalSize + "\n";
+  },
+  oncompleted: function(id, fullPath) {
+    output.value += "> Download complete, id:" + id + ", saved to path: " + fullPath + "\n";
+  },
+  onpaused: function(id) {
+    output.value += "> Download is paused by user\n";
+  },
+  oncanceled: function(id) {
+    output.value += "> Download is canceled by user\n";
+  },
+  onfailed: function(id, error) {
+    output.value += "> Download of id[" + id + "] failed with error:" +
+                    " code[" + error.code + "]" +
+                    " name[" + error.name + "]" +
+                    " message[" + error.message + "]\n";
+  }
+};
+
+// Test big file downloading
+var url1 = "http://ipv4.download.thinkbroadband.com/200MB.zip";
+// Test https downloading
+var url2 = "https://developer.tizen.org/sites/all/themes/tizen_theme/logo.png";
+var urls = { "1" : url1, "2" : url2 }
+
+var r1, id1, r2, id2;
+var paused1=false;
+var paused2=false;
+
+handle("bnstart1", "Start Download1", function() {
+  r1 = new tizen.DownloadRequest(url1); // Test saving to default folder
+  id1 = tizen.download.start(r1, listener);
+  urls[id1] = url1;
+  output.value += "> asked to start download " + url1 + " to default location.\n";
+});
+
+handle("button1", "Pause Download1", function() {
+  if (typeof id1 == "undefined") {
+    output.value += "> Download1 is not started yet.\n";
+    return;
+  }
+
+  if (paused1) {
+    output.value += "> asked to resume download of " + url1 + "\n";
+    tizen.download.resume(id1);
+    paused1 = false;
+    var b = document.getElementById("button1");
+    b.innerText = "Pause Download1";
+  } else {
+    output.value += "> asked to pause download of " + url1 + "\n";
+    tizen.download.pause(id1);
+    paused1 = true;
+    var b = document.getElementById("button1");
+    b.innerText = "Resume Download1";
+  }
+});
+
+handle("bnstart2", "Start Download2", function() {
+  r2 = new tizen.DownloadRequest(url2, "Images"); // Test saving to specific folder
+  id2 = tizen.download.start(r2, listener);
+  urls[id2] = url2;
+  output.value += "> asked to start download "+url2+" to Images folder\n";
+});
+
+handle("button2", "Pause Download2", function() {
+  if (typeof id2 == "undefined") {
+    output.value += "> Download1 is not started yet.\n";
+    return;
+  }
+
+  if (paused2) {
+    output.value += "> asked to resume download of " + url2 + "\n";
+    tizen.download.resume(id2);
+    paused2 = false;
+    var b = document.getElementById("button2");
+    b.innerText = "Pause Download2";
+  } else {
+    output.value += "> asked to pause download of " + url2 + "\n";
+    tizen.download.pause(id2);
+    paused2 = true;
+    var b = document.getElementById("button2");
+    b.innerText = "Resume Download2";
+  }
+});
+
+handle("b1cancel", "Cancel Download1", function() {
+  if (typeof id1 == "undefined") {
+    output.value += "> Download1 is not started yet.\n";
+    return;
+  }
+
+  output.value += "> asked to cancel download of " + url1 + "\n";
+  tizen.download.cancel(id1);
+});
+
+handle("b2cancel", "Cancel Download2", function() {
+  if (typeof id2 == "undefined") {
+    output.value += "> Download2 is not started yet.\n";
+    return;
+  }
+
+  output.value += "> asked to cancel download of " + url2 + "\n";
+  tizen.download.cancel(id2);
+});
+
+handle("bnstate1", "GetState of Download1", function() {
+  if (typeof id1 == "undefined") {
+    output.value += "> Download1 is not started yet.\n";
+    return;
+  }
+
+  output.value += "> asked to get state of download1, id:" + id1 + "\n";
+  output.value += "> return: " + tizen.download.getState(id1) + "\n";
+});
+
+handle("bnstate2", "GetState of Download2", function() {
+  if (typeof id2 == "undefined") {
+    output.value += "> Download2 is not started yet.\n";
+    return;
+  }
+
+  output.value += "> asked to get state of download2, id:" + id2 + "\n";
+  output.value += "> return: " + tizen.download.getState(id2) + "\n";
+});
+
+</script>

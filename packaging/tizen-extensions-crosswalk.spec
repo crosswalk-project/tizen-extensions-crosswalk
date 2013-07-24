@@ -10,12 +10,14 @@ Source1:    %{name}
 Source1001: %{name}.manifest
 
 BuildRequires: python
+BuildRequires: pkgconfig(capi-appfw-application)
 BuildRequires: pkgconfig(capi-network-bluetooth)
 BuildRequires: pkgconfig(capi-network-connection)
 BuildRequires: pkgconfig(capi-system-device)
 BuildRequires: pkgconfig(capi-system-info)
 BuildRequires: pkgconfig(capi-system-power)
 BuildRequires: pkgconfig(capi-system-system-settings)
+BuildRequires: pkgconfig(capi-web-url-download)
 BuildRequires: pkgconfig(dbus-glib-1)
 BuildRequires: pkgconfig(glib-2.0)
 BuildRequires: pkgconfig(libudev)
