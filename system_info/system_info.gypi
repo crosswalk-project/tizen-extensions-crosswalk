@@ -9,6 +9,8 @@
         'system_info_context.h',
         'system_info_context_desktop.cc',
         'system_info_context_mobile.cc',
+        'system_info_utils.cc',
+        'system_info_utils.h',
       ],
     },
   ],
