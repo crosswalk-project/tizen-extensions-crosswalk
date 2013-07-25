@@ -2,36 +2,35 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-exports.time = (function() {
-  var getCurrentDateTime = function() {
+exports.getCurrentDateTime = function() {
     return new tizen.TZDate();
-  };
+};
 
-  var getLocalTimezone = function() {
+ exports.getLocalTimezone = function() {
     var minutesToUTC = (new Date()).getTimezoneOffset();
     var hoursToUTC = - (minutesToUTC / 60);
     if (hoursToUTC < 0)
       return 'GMT' + hoursToUTC;
     return 'GMT+' + hoursToUTC;
-  };
+};
 
-  var getAvailableTimezones = function() {
+exports.getAvailableTimezones = function() {
     return [
-      getLocalTimezone()
+      tizen.time.getLocalTimezone()
     ];
-  };
+};
 
-  var getDateFormat = function(shortformat) {
+exports.getDateFormat = function(shortformat) {
     if (shortformat)
       return 'd/m/y';
     return 'D, M d y';
-  };
+};
 
-  var getTimeFormat = function() {
+exports.getTimeFormat = function() {
     return 'h:m:s';
-  };
+};
 
-  var isLeapYear = function(year) {
+exports.isLeapYear = function(year) {
     if (!(year % 400))
       return true;
     if (!(year % 100))
@@ -39,17 +38,7 @@ exports.time = (function() {
     if (!(year % 4))
       return true;
     return false;
-  };
-
-  return {
-    getCurrentDateTime: getCurrentDateTime,
-    getLocalTimezone: getLocalTimezone,
-    getAvailableTimezones: getAvailableTimezones,
-    getDateFormat: getDateFormat,
-    getTimeFormat: getTimeFormat,
-    isLeapYear: isLeapYear
-  };
-})();
+};
 
 tizen.TimeDuration = (function() {
   var TimeDurationUnit = [
