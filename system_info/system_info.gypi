@@ -7,6 +7,8 @@
         'system_info_api.js',
         'system_info_context.cc',
         'system_info_context.h',
+        'system_info_context_desktop.cc',
+        'system_info_context_mobile.cc',
       ],
     },
   ],
