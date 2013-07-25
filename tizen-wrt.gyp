@@ -28,7 +28,6 @@
     ],
     'include_dirs': [
       '.',
-      '<(xwalk_path)/extensions/public',
     ],
     'sources': [
       '../common/extension_adapter.h',
