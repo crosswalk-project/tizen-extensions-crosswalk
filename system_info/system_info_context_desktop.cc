@@ -12,6 +12,19 @@ void SystemInfoContext::GetDeviceOrientation(picojson::value& error,
   error_map["message"] = picojson::value("Device Orientation is not support on desktop.");
 }
 
+void SystemInfoContext::GetNetwork(picojson::value& error,
+                                   picojson::value& data) {
+  picojson::object& error_map = error.get<picojson::object>();
+  picojson::object& data_map = data.get<picojson::object>();
+
+  // FIXME(halton): Add actual implementation
+  data_map["networkType"] = picojson::value("ETHERNET");
+  error_map["message"] = picojson::value("");
+
+  // uncomment out below line to try error
+  // error_map["message"] = picojson::value("Get Display failed.");
+}
+
 void SystemInfoContext::GetCellularNetwork(picojson::value& error,
                                            picojson::value& data) {
   picojson::object& error_map = error.get<picojson::object>();
