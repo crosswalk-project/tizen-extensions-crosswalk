@@ -29,6 +29,7 @@ function handle(button, callback) {
 
 function onErrorCallback(error) {
   output.value += '\n An error occurred: ' + error.message + '\n';
+  output.scrollTop = output.scrollHeight;
 }
 
 handle("battery_btn", function() {
@@ -38,6 +39,7 @@ handle("battery_btn", function() {
       output.value += '\n Get property BATTERY returned.';
       output.value += '\n\t level : ' + battery.level;
       output.value += '\n\t isCharging : %' + battery.isCharging;
+      output.scrollTop = output.scrollHeight;
     },
     onErrorCallback);
 });
@@ -48,6 +50,7 @@ handle("cpu_btn", function() {
     function(cpu) {
       output.value += '\n Get property CPU returned.';
       output.value += '\n\t load : ' + parseFloat(cpu.load) * 100 + '%';
+      output.scrollTop = output.scrollHeight;
     },
     onErrorCallback);
 });
@@ -65,6 +68,7 @@ handle("storage_btn", function() {
         output.value += '\n\t\t availableCapacity: ' + storage.units[i].availableCapacity + ' bytes';
         output.value += '\n\t\t isRemovable: ' + storage.units[i].isRemovable;
         output.value += '\n\t\t isRemoveable: ' + storage.units[i].isRemoveable + '\n';
+        output.scrollTop = output.scrollHeight;
       }
     },
     onErrorCallback);
@@ -82,6 +86,7 @@ handle("display_btn", function() {
       output.value += '\n\t physicalWidth: ' + display.physicalWidth;
       output.value += '\n\t physicalHeight: ' + display.physicalHeight;
       output.value += '\n\t brightness: ' + display.brightness;
+      output.scrollTop = output.scrollHeight;
     },
     onErrorCallback);
 });
@@ -105,6 +110,7 @@ handle("build_btn", function() {
       output.value += '\n\t model: ' + build.model;
       output.value += '\n\t manufacturer: ' + build.manufacturer;
       output.value += '\n\t buildVersion: ' + build.buildVersion;
+      output.scrollTop = output.scrollHeight;
     },
     onErrorCallback);
 });
@@ -116,6 +122,7 @@ handle("locale_btn", function() {
       output.value += '\n Get property LOCALE returned.';
       output.value += '\n\t language: ' + locale.language;
       output.value += '\n\t country: ' + locale.country;
+      output.scrollTop = output.scrollHeight;
     },
     onErrorCallback);
 });
@@ -126,6 +133,7 @@ handle("network_btn", function() {
     function(network) {
       output.value += '\n Get property NETWORK returned.';
       output.value += '\n\t networkType: ' + network.networkType;
+      output.scrollTop = output.scrollHeight;
     },
     onErrorCallback);
 });
@@ -140,6 +148,7 @@ handle("wifi_network_btn", function() {
       output.value += '\n\t ipAddress: ' + wifi.ipAddress;
       output.value += '\n\t ipv6Address: ' + wifi.ipv6Address;
       output.value += '\n\t signalStrength: ' + wifi.signalStrength;
+      output.scrollTop = output.scrollHeight;
     },
     onErrorCallback);
 });
@@ -160,6 +169,7 @@ handle("cellular_network_btn", function() {
       output.value += '\n\t isRoaming: ' + cellular.isRoaming;
       output.value += '\n\t isFlightMode: ' + cellular.isFlightMode;
       output.value += '\n\t imei: ' + cellular.imei;
+      output.scrollTop = output.scrollHeight;
     },
     onErrorCallback);
 });
@@ -177,6 +187,7 @@ handle("sim_btn", function() {
       output.value += '\n\t mnc: ' + sim.mnc;
       output.value += '\n\t msin: ' + sim.msin;
       output.value += '\n\t spn: ' + sim.spn;
+      output.scrollTop = output.scrollHeight;
     },
     onErrorCallback);
 });
@@ -187,6 +198,7 @@ handle("peripheral_btn", function() {
     function(peripheral) {
       output.value += '\n Get property PERIPHERAL returned.';
       output.value += '\n\t isVideoOutputOn: ' + peripheral.isVideoOutputOn;
+      output.scrollTop = output.scrollHeight;
     },
     onErrorCallback);
 });

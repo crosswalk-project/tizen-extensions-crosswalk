@@ -4,6 +4,8 @@
 
 #include "system_info/system_info_context.h"
 
+#include <stdlib.h>
+
 #include "common/picojson.h"
 
 CXWalkExtension* xwalk_extension_init(int32_t api_version) {
@@ -45,12 +47,14 @@ void SystemInfoContext::GetCPU(picojson::value& error,
   picojson::object& error_map = error.get<picojson::object>();
   picojson::object& data_map = data.get<picojson::object>();
 
-  // FIXME(halton): Add actual implementation
-  data_map["load"] = picojson::value(0.3);
-  error_map["message"] = picojson::value("");
+  double load[1];
+  if (getloadavg(load, 1) == -1) {  
+    error_map["message"] = picojson::value("Get CPU load failed.");
+    return;
+  }
 
-  // uncomment out below line to try error
-  // error_map["message"] = picojson::value("Get CPU failed.");
+  data_map["load"] = picojson::value(load[0]);
+  error_map["message"] = picojson::value("");
 }
 
 void SystemInfoContext::GetStorage(picojson::value& error,
