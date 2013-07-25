@@ -8,4 +8,4 @@ if [ ! -e $XWALK_SOURCE_DIR/xwalk.gyp ]; then
    exit 1
 fi
 
-exec $XWALK_SOURCE_DIR/../out/Release/xwalk --external-extensions-path=$PWD/out/Default $PWD/index.html
+exec $XWALK_SOURCE_DIR/../out/Release/xwalk "$@" --external-extensions-path=$PWD/out/Default $PWD/index.html
