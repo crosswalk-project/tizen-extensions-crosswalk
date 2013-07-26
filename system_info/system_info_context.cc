@@ -7,6 +7,7 @@
 #include <stdlib.h>
 
 #include "common/picojson.h"
+#include "system_info/system_info_display.h"
 
 CXWalkExtension* xwalk_extension_init(int32_t api_version) {
   return ExtensionAdapter<SystemInfoContext>::Initialize();
@@ -101,19 +102,51 @@ void SystemInfoContext::GetDisplay(picojson::value& error,
                                    picojson::value& data) {
   picojson::object& error_map = error.get<picojson::object>();
   picojson::object& data_map = data.get<picojson::object>();
+  double ret;
 
-  // FIXME(halton): Add actual implementation
-  data_map["resolutionWidth"] = picojson::value((double)1280);
-  data_map["resolutionHeight"] = picojson::value((double)1024);
-  data_map["dotsPerInchWidth"] = picojson::value((double)567);
-  data_map["dotsPerInchHeight"] = picojson::value((double)789);
-  data_map["physicalWidth"] = picojson::value((double)456);
-  data_map["physicalHeight"] = picojson::value((double)345);
-  data_map["brightness"] = picojson::value(0.5);
+  SysInfoDisplay& disp = SysInfoDisplay::GetSysInfoDisplay();
+
   error_map["message"] = picojson::value("");
 
-  // uncomment out below line to try error
-  // error_map["message"] = picojson::value("Get Display failed.");
+  ret = static_cast<double>(disp.GetResolutionWidth(error));
+  if (DidFail(error))
+    return;
+  data_map["resolutionWidth"] = picojson::value(ret);
+
+  ret = static_cast<double>(disp.GetResolutionHeight(error));
+  if (DidFail(error))
+    return;
+  data_map["resolutionHeight"] = picojson::value(ret);
+
+  ret = static_cast<double>(disp.GetDotsPerInchWidth(error));
+  if (DidFail(error))
+    return;
+  data_map["dotsPerInchWidth"] = picojson::value(ret);
+
+  ret = static_cast<double>(disp.GetDotsPerInchWidth(error));
+  if (DidFail(error))
+    return;
+  data_map["dotsPerInchWidth"] = picojson::value(ret);
+
+  ret = static_cast<double>(disp.GetDotsPerInchHeight(error));
+  if (DidFail(error))
+    return;
+  data_map["dotsPerInchHeight"] = picojson::value(ret);
+
+  ret = static_cast<double>(disp.GetPhysicalWidth(error));
+  if (DidFail(error))
+    return;
+  data_map["physicalWidth"] = picojson::value(ret);
+
+  ret = static_cast<double>(disp.GetPhysicalHeight(error));
+  if (DidFail(error))
+    return;
+  data_map["physicalHeight"] = picojson::value(ret);
+
+  ret = static_cast<double>(disp.GetBrightness(error));
+  if (DidFail(error))
+    return;
+  data_map["brightness"] = picojson::value(ret);
 }
 
 void SystemInfoContext::GetBuild(picojson::value& error,

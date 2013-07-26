@@ -32,6 +32,7 @@
     'sources': [
       '../common/extension_adapter.h',
       '../common/picojson.h',
+      '../common/utils.h',
     ],
     'cflags': [
       '-fPIC',

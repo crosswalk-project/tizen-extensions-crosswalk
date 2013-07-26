@@ -6,6 +6,7 @@
 #define SYSTEM_INFO_SYSTEM_INFO_CONTEXT_H_
 
 #include "common/extension_adapter.h"
+#include "common/picojson.h"
 
 namespace picojson {
 class value;
@@ -49,6 +50,11 @@ class SystemInfoContext {
               picojson::value& data);
   void GetPeripheral(picojson::value& error,
                      picojson::value& data);
+
+  inline bool DidFail(picojson::value& error) {
+    picojson::object& error_map = error.get<picojson::object>();
+    return !error_map["message"].to_str().empty();
+  }
 
   ContextAPI* api_;
 };
