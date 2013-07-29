@@ -1,0 +1,74 @@
+<html>
+<h1>Hello, Tizen Power API!</h1>
+<script>
+    function print(value)
+    {
+        var text = document.getElementById(output)
+        output.value = output.value + '\n' + value;
+    }
+    function handleScreenOn()
+    {
+        try {
+            tizen.power.turnScreenOn();
+        }
+        catch (err) {
+            print(err.name);
+        }
+    }
+    function handleScreenOff()
+    {
+        try {
+            tizen.power.turnScreenOff();
+        }
+        catch (err) {
+            print(err.name);
+        }
+    }
+    function handleRestoreScreen()
+    {
+        try {
+            tizen.power.restoreScreenBrightness();
+        }
+        catch (err) {
+            print(err.name);
+        }
+    }
+    function handleIsScreenOn()
+    {
+        try {
+            print(tizen.power.isScreenOn());
+        }
+        catch (err) {
+            print(err.name);
+        }
+    }
+    function handleGetScreen()
+    {
+        try {
+            print(tizen.power.getScreenBrightness());
+        }
+        catch (err) {
+            print(err.name);
+        }
+    }
+    function handleSetScreen()
+    {
+        try {
+            tizen.power.setScreenBrightness(Math.random());
+        }
+        catch (err) {
+            print(err.name);
+        }
+    }
+</script>
+<body>
+<textarea cols=20 rows=10 id="output"></textarea>
+	<br>
+    <button id="screenOn" onClick="handleScreenOn()">Turn Screen On</button>
+    <button id="screenOff" onClick="handleScreenOff()">Turn Screen Off</button>
+    <button id="restoreScreen" onClick="handleRestoreScreen()">Restore Screen Brightness</button>
+    <button id="isScreenOn" onClick="handleIsScreenOn()">Is Screen On?</button>
+    <button id="setScreen" onClick="handleSetScreen()">Set Screen Brightness</button>
+    <button id="getScreen" onClick="handleGetScreen()">Get Screen Brightness</button>
+</body>
+</html>
