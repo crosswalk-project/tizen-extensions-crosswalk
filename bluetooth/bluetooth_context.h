@@ -35,19 +35,21 @@ class BluetoothContext {
   static const char name[];
   static const char* GetJavaScript();
   void HandleMessage(const char* message);
-  void HandleSyncMessage(const char* message) {}
+  void HandleSyncMessage(const char* message);
 
  private:
   void PlatformInitialize();
 
   void HandleDiscoverDevices(const picojson::value& msg);
   void HandleStopDiscovery(const picojson::value& msg);
-  void HandleGetDefaultAdapter(const picojson::value& msg);
+  picojson::value HandleGetDefaultAdapter(const picojson::value& msg);
 
   ContextAPI* api_;
 
 #if defined(GENERIC_DESKTOP)
   void PostMessage(picojson::value v);
+  void SetSyncReply(picojson::value v);
+  void FlushPendingMessages();
 
   G_CALLBACK_1(OnObjectManagerCreated, GObject*, GAsyncResult*);
   G_CALLBACK_1(OnAdapterProxyCreated, GObject*, GAsyncResult*);

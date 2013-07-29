@@ -255,9 +255,9 @@ void BluetoothContext::HandleStopDiscovery(const picojson::value& msg) {
 }
 
 
-void BluetoothContext::HandleGetDefaultAdapter(const picojson::value& msg) {
+picojson::value BluetoothContext::HandleGetDefaultAdapter(const picojson::value& msg) {
   if (adapter_info_.empty())
-    return;
+    return picojson::value();
 
   picojson::value::object o;
   o["cmd"] = picojson::value("");
@@ -272,18 +272,13 @@ void BluetoothContext::HandleGetDefaultAdapter(const picojson::value& msg) {
   bool visible = (adapter_info_["Visible"] == "true") ? true : false;
   o["visible"] = picojson::value(visible);
 
-  // This is the JS API entry point, so we should clean our message queue now.
+  // This is the JS API entry point, so we should clean our message queue
+  // on the next PostMessage call.
   if (!is_js_context_initialized_)
     is_js_context_initialized_ = true;
 
-  // First setup the default adapter.
   picojson::value v(o);
-  PostMessage(v);
-
-  // Then flush the pending messages.
-  MessageQueue::iterator it;
-  for (it = queue_.begin(); it != queue_.end(); ++it)
-    PostMessage(*it);
+  return v;
 }
 
 GDBusProxy* BluetoothContext::CreateDeviceProxy(GAsyncResult* res) {
@@ -291,10 +286,8 @@ GDBusProxy* BluetoothContext::CreateDeviceProxy(GAsyncResult* res) {
   GDBusProxy* deviceProxy = g_dbus_proxy_new_for_bus_finish(res, &error);
   if (deviceProxy) {
     known_devices_[g_dbus_proxy_get_object_path(deviceProxy)] = deviceProxy;
-    g_signal_connect(deviceProxy,
-        "g-properties-changed",
-        G_CALLBACK(BluetoothContext::OnPropertiesChanged),
-        this);
+    g_signal_connect(deviceProxy, "g-properties-changed",
+        G_CALLBACK(BluetoothContext::OnPropertiesChanged), this);
   } else {
     g_printerr("## DeviceProxy creation error: %s\n", error->message);
     g_error_free(error);
@@ -376,8 +369,16 @@ void BluetoothContext::KnownDeviceFound(GObject*, GAsyncResult* res) {
   }
 }
 
-void BluetoothContext::PostMessage(picojson::value v)
-{
+void BluetoothContext::FlushPendingMessages() {
+  // Flush previous pending messages.
+  if (!queue_.empty()) {
+    MessageQueue::iterator it;
+    for (it = queue_.begin(); it != queue_.end(); ++it)
+      api_->PostMessage((*it).serialize().c_str());
+  }
+}
+
+void BluetoothContext::PostMessage(picojson::value v) {
   // If the JavaScript 'context' hasn't been initialized yet (i.e. the C++
   // backend was loaded and it is already executing but
   // tizen.bluetooth.getDefaultAdapter() hasn't been called so far), we need to
@@ -390,5 +391,14 @@ void BluetoothContext::PostMessage(picojson::value v)
     return;
   }
 
+  FlushPendingMessages();
   api_->PostMessage(v.serialize().c_str());
+}
+
+void BluetoothContext::SetSyncReply(picojson::value v) {
+  std::string cmd = v.get("cmd").to_str();
+  if (cmd == "GetDefaultAdapter")
+    api_->SetSyncReply(HandleGetDefaultAdapter(v).serialize().c_str());
+
+  FlushPendingMessages();
 }

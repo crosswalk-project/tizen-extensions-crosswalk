@@ -155,14 +155,15 @@ exports.getDefaultAdapter = function() {
   var msg = {
     'cmd': 'GetDefaultAdapter'
   };
-  postMessage(msg, function(r) { // FIXME(jeez): has to be sync.
-    defaultAdapter.name = r.name;
-    defaultAdapter.address = r.address;
-    defaultAdapter.powered = r.powered;
-    defaultAdapter.visible = r.visible;
+  var r = JSON.parse(extension.internal.sendSyncMessage(JSON.stringify(msg)));
+  defaultAdapter.name = r.name;
+  defaultAdapter.address = r.address;
+  defaultAdapter.powered = r.powered;
+  defaultAdapter.visible = r.visible;
 
+  if (r.hasOwnProperty("address") && r.address != "")
     adapter.isReady = true;
-  });
+
   return defaultAdapter;
 };
 

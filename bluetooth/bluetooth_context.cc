@@ -35,8 +35,19 @@ void BluetoothContext::HandleMessage(const char* message) {
   std::string cmd = v.get("cmd").to_str();
   if (cmd == "DiscoverDevices")
     HandleDiscoverDevices(v);
-  else if (cmd == "GetDefaultAdapter")
-    HandleGetDefaultAdapter(v);
   else if (cmd == "StopDiscovery")
     HandleStopDiscovery(v);
+}
+
+void BluetoothContext::HandleSyncMessage(const char* message) {
+  picojson::value v;
+
+  std::string err;
+  picojson::parse(v, message, message + strlen(message), &err);
+  if (!err.empty()) {
+    std::cout << "Ignoring Sync message.\n";
+    return;
+  }
+
+  SetSyncReply(v);
 }
