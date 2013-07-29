@@ -1,0 +1,50 @@
+<html>
+<h1>Hello, Tizen API!</h1>
+
+<body>
+<pre id="console"></pre>
+<script src="js/js-test-pre.js"></script>
+<script>
+shouldBe("tizen.WebAPIException.UNKNOWN_ERR", "0");
+shouldBe("tizen.WebAPIException.INDEX_SIZE_ERR", "1");
+shouldBe("tizen.WebAPIException.DOMSTRING_SIZE_ERR", "2");
+shouldBe("tizen.WebAPIException.HIERARCHY_REQUEST_ERR", "3");
+shouldBe("tizen.WebAPIException.WRONG_DOCUMENT_ERR", "4");
+shouldBe("tizen.WebAPIException.INVALID_CHARACTER_ERR", "5");
+shouldBe("tizen.WebAPIException.NO_DATA_ALLOWED_ERR", "6");
+shouldBe("tizen.WebAPIException.NO_MODIFICATION_ALLOWED_ERR", "7");
+shouldBe("tizen.WebAPIException.NOT_FOUND_ERR", "8");
+shouldBe("tizen.WebAPIException.NOT_SUPPORTED_ERR", "9");
+shouldBe("tizen.WebAPIException.INUSE_ATTRIBUTE_ERR", "10");
+shouldBe("tizen.WebAPIException.INVALID_STATE_ERR", "11");
+shouldBe("tizen.WebAPIException.SYNTAX_ERR", "12");
+shouldBe("tizen.WebAPIException.INVALID_MODIFICATION_ERR", "13");
+shouldBe("tizen.WebAPIException.NAMESPACE_ERR", "14");
+shouldBe("tizen.WebAPIException.INVALID_ACCESS_ERR", "15");
+shouldBe("tizen.WebAPIException.VALIDATION_ERR", "16");
+shouldBe("tizen.WebAPIException.TYPE_MISMATCH_ERR", "17");
+shouldBe("tizen.WebAPIException.SECURITY_ERR", "18");
+shouldBe("tizen.WebAPIException.NETWORK_ERR", "19");
+shouldBe("tizen.WebAPIException.ABORT_ERR", "20");
+shouldBe("tizen.WebAPIException.URL_MISMATCH_ERR", "21");
+shouldBe("tizen.WebAPIException.QUOTA_EXCEEDED_ERR", "22");
+shouldBe("tizen.WebAPIException.TIMEOUT_ERR", "23");
+shouldBe("tizen.WebAPIException.INVALID_NODE_TYPE_ERR", "24");
+shouldBe("tizen.WebAPIException.DATA_CLONE_ERR", "25");
+
+shouldThrow("throwWebAPIException()", "new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR)");
+shouldThrow("throwWebAPIError()", "new tizen.WebAPIError(tizen.WebAPIException.TYPE_MISMATCH_ERR)")
+shouldNotThrow("notThrowFunction()");
+
+function throwWebAPIException() {
+  throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+}
+function throwWebAPIError() {
+  throw new tizen.WebAPIError(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+}
+function notThrowFunction() {
+}
+</script>
+<script src="js/js-test-post.js"></script>
+</body>
+</html>
