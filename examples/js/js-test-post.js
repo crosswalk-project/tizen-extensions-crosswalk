@@ -1,0 +1,2 @@
+wasPostTestScriptParsed = true;
+finishJSTest();
