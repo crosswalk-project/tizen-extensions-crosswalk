@@ -1,7 +1,4 @@
 // svg/dynamic-updates tests set enablePixelTesting=true, as we want to dump text + pixel results
-if (self.testRunner)
-    testRunner.dumpAsText(self.enablePixelTesting);
-
 var description, debug, successfullyParsed, errorMessage;
 
 (function() {
@@ -69,8 +66,7 @@ var description, debug, successfullyParsed, errorMessage;
         (document.head || document.documentElement).appendChild(styleElement);
     }
 
-    if (!isWorker())
-        insertStyleSheet();
+    insertStyleSheet();
 
     if (!self.isOnErrorTest) {
         self.onerror = function(message)
@@ -80,14 +76,6 @@ var description, debug, successfullyParsed, errorMessage;
     }
 
 })();
-
-function isWorker()
-{
-    // It's conceivable that someone would stub out 'document' in a worker so
-    // also check for childNodes, an arbitrary DOM-related object that is
-    // meaningless in a WorkerContext.
-    return (typeof document === 'undefined' || typeof document.childNodes === 'undefined') && !!self.importScripts;
-}
 
 function descriptionQuiet(msg) { description(msg, true); }
 
@@ -550,29 +538,6 @@ function shouldHaveHadError(message)
     errorMessage = undefined;
 }
 
-function gc() {
-    if (typeof GCController !== "undefined")
-        GCController.collect();
-    else {
-        var gcRec = function (n) {
-            if (n < 1)
-                return {};
-            var temp = {i: "ab" + i + (i / 100000)};
-            temp += "foo";
-            gcRec(n-1);
-        };
-        for (var i = 0; i < 1000; i++)
-            gcRec(10)
-    }
-}
-
-function minorGC() {
-    if (typeof GCController !== "undefined")
-        GCController.minorCollect();
-    else
-        testFailed("Minor GC is available only when you enable the --expose-gc option in V8.");
-}
-
 function isSuccessfullyParsed()
 {
     // FIXME: Remove this and only report unexpected syntax errors.
@@ -582,95 +547,10 @@ function isSuccessfullyParsed()
     debug('<br /><span class="pass">TEST COMPLETE</span>');
 }
 
-// It's possible for an async test to call finishJSTest() before js-test-post.js
-// has been parsed.
 function finishJSTest()
 {
     wasFinishJSTestCalled = true;
     if (!self.wasPostTestScriptParsed)
         return;
     isSuccessfullyParsed();
-    if (self.jsTestIsAsync && self.testRunner)
-        testRunner.notifyDone();
-}
-
-function startWorker(testScriptURL, shared)
-{
-    self.jsTestIsAsync = true;
-    debug('Starting worker: ' + testScriptURL);
-    var worker = shared ? new SharedWorker(testScriptURL, "Shared Worker") : new Worker(testScriptURL);
-    worker.onmessage = function(event)
-    {
-        var workerPrefix = "[Worker] ";
-        if (event.data.length < 5 || event.data.charAt(4) != ':') {
-          debug(workerPrefix + event.data);
-          return;
-        }
-        var code = event.data.substring(0, 4);
-        var payload = workerPrefix + event.data.substring(5);
-        if (code == "PASS")
-            testPassed(payload);
-        else if (code == "FAIL")
-            testFailed(payload);
-        else if (code == "DESC")
-            description(payload);
-        else if (code == "DONE")
-            finishJSTest();
-        else
-            debug(workerPrefix + event.data);
-    };
-
-    worker.onerror = function(event)
-    {
-        debug('Got error from worker: ' + event.message);
-        finishJSTest();
-    }
-
-    if (shared) {
-        worker.port.onmessage = function(event) { worker.onmessage(event); };
-        worker.port.start();
-    }
-    return worker;
-}
-
-if (isWorker()) {
-    var workerPort = self;
-    if (self.name == "Shared Worker") {
-        self.onconnect = function(e) {
-            workerPort = e.ports[0];
-            workerPort.onmessage = function(event)
-            {
-                var colon = event.data.indexOf(":");
-                if (colon == -1) {
-                    testFailed("Unrecognized message to shared worker: " + event.data);
-                    return;
-                }
-                var code = event.data.substring(0, colon);
-                var payload = event.data.substring(colon + 1);
-                try {
-                    if (code == "IMPORT")
-                        importScripts(payload);
-                    else
-                        testFailed("Unrecognized message to shared worker: " + event.data);
-                } catch (ex) {
-                    testFailed("Caught exception in shared worker onmessage: " + ex);
-                }
-            };
-        };
-    }
-    description = function(msg, quiet) {
-        workerPort.postMessage('DESC:' + msg);
-    }
-    testFailed = function(msg) {
-        workerPort.postMessage('FAIL:' + msg);
-    }
-    testPassed = function(msg) {
-        workerPort.postMessage('PASS:' + msg);
-    }
-    finishJSTest = function() {
-        workerPort.postMessage('DONE:');
-    }
-    debug = function(msg) {
-        workerPort.postMessage(msg);
-    }
 }
