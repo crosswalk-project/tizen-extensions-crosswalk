@@ -26,6 +26,7 @@ class NotificationContext {
   static const char name[];
   static const char* GetJavaScript();
   void HandleMessage(const char* message);
+  void HandleSyncMessage(const char* message) {}
 
  private:
   void HandlePost(const picojson::value& msg);
