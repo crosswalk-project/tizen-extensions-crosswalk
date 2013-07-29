@@ -540,6 +540,12 @@ function shouldThrow(_a, _e)
       _ev =  eval(_e);
 
   if (exception) {
+    // Handle WebAPIException. We consider a exception as WebAPIException if code, type and name properties exist.
+    if (typeof exception.code == "number" && typeof exception.message == "string" && typeof exception.name == "string") {
+      exception = exception.name;
+      _ev = _ev.name;
+    }
+
     if (typeof _e == "undefined" || exception == _ev)
       testPassed(_a + " threw exception " + exception + ".");
     else

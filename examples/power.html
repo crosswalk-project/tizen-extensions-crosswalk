@@ -1,74 +1,109 @@
 <html>
 <h1>Hello, Tizen Power API!</h1>
-<script>
-    function print(value)
-    {
-        var text = document.getElementById(output)
-        output.value = output.value + '\n' + value;
-    }
-    function handleScreenOn()
-    {
-        try {
-            tizen.power.turnScreenOn();
-        }
-        catch (err) {
-            print(err.name);
-        }
-    }
-    function handleScreenOff()
-    {
-        try {
-            tizen.power.turnScreenOff();
-        }
-        catch (err) {
-            print(err.name);
-        }
-    }
-    function handleRestoreScreen()
-    {
-        try {
-            tizen.power.restoreScreenBrightness();
-        }
-        catch (err) {
-            print(err.name);
-        }
-    }
-    function handleIsScreenOn()
-    {
-        try {
-            print(tizen.power.isScreenOn());
-        }
-        catch (err) {
-            print(err.name);
-        }
-    }
-    function handleGetScreen()
-    {
-        try {
-            print(tizen.power.getScreenBrightness());
-        }
-        catch (err) {
-            print(err.name);
-        }
-    }
-    function handleSetScreen()
-    {
-        try {
-            tizen.power.setScreenBrightness(Math.random());
-        }
-        catch (err) {
-            print(err.name);
-        }
-    }
-</script>
 <body>
-<textarea cols=20 rows=10 id="output"></textarea>
-	<br>
-    <button id="screenOn" onClick="handleScreenOn()">Turn Screen On</button>
-    <button id="screenOff" onClick="handleScreenOff()">Turn Screen Off</button>
-    <button id="restoreScreen" onClick="handleRestoreScreen()">Restore Screen Brightness</button>
-    <button id="isScreenOn" onClick="handleIsScreenOn()">Is Screen On?</button>
-    <button id="setScreen" onClick="handleSetScreen()">Set Screen Brightness</button>
-    <button id="getScreen" onClick="handleGetScreen()">Get Screen Brightness</button>
+<button id="screenOn" onClick="handleScreenOn()">Turn Screen On</button>
+<button id="screenOff" onClick="handleScreenOff()">Turn Screen Off</button>
+<button id="restoreScreen" onClick="handleRestoreScreen()">Restore Screen Brightness</button>
+<button id="isScreenOn" onClick="handleIsScreenOn()">Is Screen On?</button>
+<button id="setScreen" onClick="handleSetScreen()">Set Screen Brightness</button>
+<button id="getScreen" onClick="handleGetScreen()">Get Screen Brightness</button>
+<pre id="console"></pre>
+<script src="js/js-test-pre.js"></script>
+<script>
+function handleScreenOn()
+{
+  try {
+    tizen.power.turnScreenOn();
+  }
+  catch (err) {
+    debug(err.name);
+  }
+}
+function handleScreenOff()
+{
+  try {
+    tizen.power.turnScreenOff();
+  }
+  catch (err) {
+    debug(err.name);
+  }
+}
+function handleRestoreScreen()
+{
+  try {
+    tizen.power.restoreScreenBrightness();
+  }
+  catch (err) {
+    debug(err.name);
+  }
+}
+function handleIsScreenOn()
+{
+  try {
+    debug(tizen.power.isScreenOn());
+  }
+  catch (err) {
+    debug(err.name);
+  }
+}
+function handleGetScreen()
+{
+  try {
+    debug(tizen.power.getScreenBrightness());
+  }
+  catch (err) {
+    debug(err.name);
+  }
+}
+function handleSetScreen()
+{
+  try {
+    tizen.power.setScreenBrightness(Math.random());
+  }
+  catch (err) {
+    debug(err.name);
+  }
+}
+
+shouldNotThrow("tizen.power.request('CPU', 'CPU_AWAKE')");
+shouldThrow("tizen.power.request(1, 'CPU_AWAKE')", "new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR)");
+shouldThrow("tizen.power.request('CPU', 1)", "new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR)");
+shouldThrow("tizen.power.request('NOT_CPU', 'CPU_AWAKE')", "new tizen.WebAPIException(tizen.WebAPIException.INVALID_VALUES_ERR)");
+shouldThrow("tizen.power.request('CPU', 'NOT_CPU_AWAKE')", "new tizen.WebAPIException(tizen.WebAPIException.INVALID_VALUES_ERR)");
+shouldThrow("tizen.power.request('SCREEN', 'SCREEN_OFF')", "new tizen.WebAPIException(tizen.WebAPIException.INVALID_VALUES_ERR)");
+shouldNotThrow("tizen.power.request('SCREEN', 'SCREEN_DIM')");
+shouldNotThrow("tizen.power.request('SCREEN', 'SCREEN_NORMAL')");
+shouldNotThrow("tizen.power.request('SCREEN', 'SCREEN_BRIGHT')");
+
+var isCallbackFired = false;
+var onScreenStateChanged = function(previousState, changedState) {
+  isCallbackFired = true;
+  shouldBe("previousState", "SCREEN_BRIGHT");
+  shouldBe("changedState", "SCREEN_NORMAL");
+}
+tizen.power.setScreenStateChangeListener(onScreenStateChanged);
+tizen.power.request('SCREEN', 'SCREEN_NORMAL');
+
+var screenBrightness = tizen.power.getScreenBrightness();
+shouldThrow("tizen.power.setScreenBrightness('1')", "new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR)")
+shouldThrow("tizen.power.setScreenBrightness(2)", "new tizen.WebAPIException(tizen.WebAPIException.INVALID_VALUES_ERR)")
+tizen.power.setScreenBrightness(0.5);
+// FIXME: This results in 1 because getScreenBrightness() is async.
+shouldBe("tizen.power.getScreenBrightness()", "0.5");
+
+tizen.power.restoreScreenBrightness();
+shouldBeTrue("tizen.power.getScreenBrightness() == screenBrightness");
+
+setTimeout(finish, 100);
+
+function finish() {
+  // FIXME: onScreenStateChanged() did not called.
+  shouldBe("isCallbackFired", "true");
+  shouldThrow("tizen.power.release(1)", "new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR)")
+  shouldThrow("tizen.power.release('MOUSE')", "new tizen.WebAPIException(tizen.WebAPIException.INVALID_VALUES_ERR)");
+  shouldNotThrow("tizen.power.release('CPU')");
+  shouldNotThrow("tizen.power.release('SCREEN')");
+}
+</script>
 </body>
 </html>
