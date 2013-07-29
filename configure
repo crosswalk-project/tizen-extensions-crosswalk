@@ -8,9 +8,4 @@ if [ ! `which gyp` ]; then
    exit 1
 fi
 
-if [ ! `which xwalk` ]; then
-   echo -e "\nPlease make sure xwalk is in your PATH. It is usually found at XWALK_SOURCE_DIR/../out/Release/"
-    exit 1
-fi
-
 gyp -D build=Debug -D type=desktop --depth=. tizen-wrt.gyp
