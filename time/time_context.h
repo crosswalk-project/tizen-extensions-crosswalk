@@ -15,6 +15,7 @@ class TimeContext {
   static const char name[];
   static const char* GetJavaScript();
   void HandleMessage(const char*) {}
+  void HandleSyncMessage(const char*) {}
 };
 
 #endif  // TIME_TIME_CONTEXT_H_

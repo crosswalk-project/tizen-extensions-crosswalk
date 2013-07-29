@@ -1,0 +1,74 @@
+<h2>Bluetooth Tizen-WRT</h2>
+
+<body>
+<input type="text" size=50 id="text"><button id="bluetooth">Connect to</button>
+<br>
+<textarea cols=50 rows=20 id="output"></textarea>
+<br>
+<button id="button1">Click 1</button>
+<button id="button2">Click 2</button>
+<button id="button3">Click 3</button>
+</body>
+
+<script>
+
+var output = document.getElementById("output");
+
+function handle(button, text, callback) {
+    var b = document.getElementById(button);
+    b.innerText = text;
+    b.addEventListener("click", callback);
+}
+
+var adapter = tizen.bluetooth.getDefaultAdapter();
+var devices = [];
+var device_index = 0;
+
+var discoverDevicesSuccessCallback = {
+    onstarted: function() {
+        output.value += '\n\n## Discovery Started ##';
+    },
+    ondevicefound: function(device) {
+        output.value += '\n' + device_index + '- Device Found: ' + device.name;
+        devices[device_index] = device;
+        device_index += 1;
+    },
+    ondevicedisappeared: function(address) {
+        output.value += '\nDevice Disappeared: ' + address;
+    },
+    onfinished: function(devices) {
+        output.value += '\n\n## Discovery Finished. Devices Found: ##';
+        for (var i = 0; i < devices.length; i++) {
+           output.value += '\nDevice Name: ' + devices[i].name;
+        }
+    }
+};
+
+var onErrorCallback = function(e) {
+    console.log("\nFailed: " + e.message);
+};
+
+var onGotKnownDevices = function(devices) {
+    output.value += '\n\n## Known Devices: ##';
+    for (var i = 0; i < devices.length; i++) {
+       output.value += '\nDevice Name: ' + devices[i].name;
+    }
+}
+
+handle("button1", "Scan", function() {
+    adapter.discoverDevices(discoverDevicesSuccessCallback, function(e){
+        console.log ("Failed to search devices: " + e.message + "(" + e.name + ")");
+    });
+});
+
+handle("button2", "Stop Scan", function() {
+    adapter.stopDiscovery(function() {
+        output.value += "\n## Discovery Stopped ##";
+        }, onErrorCallback);
+});
+
+handle("button3", "Get Known Devices", function() {
+    adapter.getKnownDevices(onGotKnownDevices, onErrorCallback);
+});
+
+</script>
