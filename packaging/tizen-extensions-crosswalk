@@ -1,0 +1,8 @@
+#!/bin/sh
+
+if [ ! -f /usr/bin/xwalk ]; then
+   echo "The xwalk binary could not be found. Exiting."
+   exit 1
+fi
+
+exec /usr/bin/xwalk --external-extensions-path=/usr/lib/tizen-extensions-crosswalk "$@"
