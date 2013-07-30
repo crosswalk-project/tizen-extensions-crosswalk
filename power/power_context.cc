@@ -46,14 +46,33 @@ void PowerContext::HandleMessage(const char* message) {
     HandleSetScreenBrightness(v);
   } else if (cmd == "PowerSetScreenEnabled") {
     HandleSetScreenEnabled(v);
+  } else {
+    std::cout << "ASSERT NOT REACHED.\n";
   }
 }
 
-void PowerContext::OnScreenStateChanged(ResourceState state, double brightness) {
+void PowerContext::HandleSyncMessage(const char* message) {
+  picojson::value v;
+
+  std::string err;
+  picojson::parse(v, message, message + strlen(message), &err);
+  if (!err.empty()) {
+    std::cout << "Ignoring message.\n";
+    return;
+  }
+
+  std::string cmd = v.get("cmd").to_str();
+  if (cmd == "PowerGetScreenBrightness") {
+    HandleGetScreenBrightness();
+  } else {
+    std::cout << "ASSERT NOT REACHED.\n";
+  }
+}
+
+void PowerContext::OnScreenStateChanged(ResourceState state) {
   picojson::value::object o;
   o["cmd"] = picojson::value("ScreenStateChanged");
   o["state"] = picojson::value(static_cast<double>(state));
-  o["brightness"] = picojson::value(brightness);
 
   picojson::value v(o);
   api_->PostMessage(v.serialize().c_str());

@@ -38,10 +38,6 @@ ResourceType getResourceState(const picojson::value& msg, bool* error) {
 void OnPlatformStateChanged(power_state_e pstate, void *user_data) {
   PowerContext* self = static_cast<PowerContext*>(user_data);
 
-  int platformBrightness;
-  vconf_get_int(VCONFKEY_SETAPPL_LCD_BRIGHTNESS, &platformBrightness);
-  double brightness = platformBrightness / 100.0;
-
   State state;
   switch (pstate) {
     case POWER_STATE_NORMAL:
@@ -55,7 +51,7 @@ void OnPlatformStateChanged(power_state_e pstate, void *user_data) {
       break;
   }
 
-  OnScreenStateChanged(state, brightness);
+  OnScreenStateChanged(state);
 }
 
 void PowerContext::HandleRequest(const picojson::value& msg) {
@@ -70,7 +66,7 @@ void PowerContext::HandleRequest(const picojson::value& msg) {
     case SCREEN_NORMAL:
       pstate = POWER_STATE_NORMAL;
       break;
-    case SCREEN_DIMMED:
+    case SCREEN_DIM:
       pstate = POWER_STATE_SCREEN_OFF;
       break;
     case SCREEN_OFF:
@@ -118,6 +114,15 @@ void PowerContext::HandleSetScreenBrightness(const picojson::value& msg) {
   device_get_max_brightness(0, &maxBrightness);
 
   device_set_brightness(0, static_cast<int>(brightness * maxBrightness));
+}
+
+void PowerContext::HandleGetScreenBrightness() {
+  int platformBrightness;
+  vconf_get_int(VCONFKEY_SETAPPL_LCD_BRIGHTNESS, &platformBrightness);
+  double brightness = platformBrightness / 100.0;
+  char brightnessAsString[32];
+  snprintf(brightnessAsString, 32, "%g", brightness);
+  api_->SetSyncReply(brightnessAsString);
 }
 
 void PowerContext::HandleSetScreenEnabled(const picojson::value& msg) {
