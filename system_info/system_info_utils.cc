@@ -50,4 +50,16 @@ char* read_one_line(const char* path) {
   return line;
 }
 
+std::string get_udev_property(struct udev_device* dev,
+                              const std::string& attr) {
+  struct udev_list_entry *attr_list_entry, *attr_entry;
+
+  attr_list_entry = udev_device_get_properties_list_entry(dev);
+  attr_entry = udev_list_entry_get_by_name(attr_list_entry, attr.c_str());
+  if (0 == attr_entry)
+   return NULL;
+
+  return std::string(udev_list_entry_get_value(attr_entry));
+}
+
 }  // system_info

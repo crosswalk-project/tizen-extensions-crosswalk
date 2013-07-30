@@ -8,6 +8,7 @@
 
 #include "common/picojson.h"
 #include "system_info/system_info_display.h"
+#include "system_info/system_info_storage.h"
 
 CXWalkExtension* xwalk_extension_init(int32_t api_version) {
   return ExtensionAdapter<SystemInfoContext>::Initialize();
@@ -60,42 +61,11 @@ void SystemInfoContext::GetCPU(picojson::value& error,
 
 void SystemInfoContext::GetStorage(picojson::value& error,
                                    picojson::value& data) {
+  SysInfoStorage& s = SysInfoStorage::GetSysInfoStorage(error);
   picojson::object& error_map = error.get<picojson::object>();
-  picojson::object& data_map = data.get<picojson::object>();
 
-  // FIXME(halton): Add actual implementation
-  picojson::value units = picojson::value(picojson::array(2));
-  picojson::array& units_arr = units.get<picojson::array>();
-
-  picojson::value unit1 = picojson::value(picojson::object());
-  picojson::object& unit1_map = unit1.get<picojson::object>();
-  unit1_map["type"] = picojson::value("INTERNAL");
-  // 20g
-  unit1_map["capacity"] = picojson::value((double)20971520);
-  // 5g
-  unit1_map["availableCapacity"] = picojson::value((double)5242880);
-  unit1_map["isRemovable"] = picojson::value(true);
-  // deperacated, same as isRemovable
-  unit1_map["isRemoveable"] = picojson::value(true);
-  units_arr[0] = unit1;
-
-  picojson::value unit2 = picojson::value(picojson::object());
-  picojson::object& unit2_map = unit2.get<picojson::object>();
-  unit2_map["type"] = picojson::value("USB_HOST");
-  // 10g
-  unit2_map["capacity"] = picojson::value((double)10485760);
-  // 2g
-  unit2_map["availableCapacity"] = picojson::value((double)2097152);
-  unit2_map["isRemovable"] = picojson::value(true);
-  // deperacated, same as isRemovable
-  unit2_map["isRemoveable"] = picojson::value(true);
-  units_arr[1] = unit2;
-
-  data_map["units"] = units;
-  error_map["message"] = picojson::value("");
-
-  // uncomment out below line to try error
-  // error_map["message"] = picojson::value("Get Storage failed.");
+  if (error.get("message").to_str().empty())
+    s.Update(error, data);
 }
 
 void SystemInfoContext::GetDisplay(picojson::value& error,
