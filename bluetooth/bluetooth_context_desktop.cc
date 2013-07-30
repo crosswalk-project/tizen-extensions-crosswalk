@@ -37,7 +37,7 @@ void BluetoothContext::OnPropertiesChanged(GDBusProxy* proxy,
     g_variant_get(changed_properties, "a{sv}", &iter);
 
     if (interface == "org.bluez.Device1") {
-      std::map<std::string, GDBusProxy*>::iterator it =
+      DeviceMap::iterator it =
           handler->known_devices_.find(g_dbus_proxy_get_object_path(proxy));
 
       if (it == handler->known_devices_.end())
@@ -163,7 +163,7 @@ BluetoothContext::~BluetoothContext() {
   if (object_manager_ != NULL)
     g_object_unref(object_manager_);
 
-  std::map<std::string, GDBusProxy*>::iterator it;
+  DeviceMap::iterator it;
   for (it = known_devices_.begin(); it != known_devices_.end(); ++it)
     g_object_unref(it->second);
 }
@@ -269,7 +269,7 @@ void BluetoothContext::DeviceFound(GObject*, GAsyncResult* res) {
 
 void BluetoothContext::DeviceRemoved(GDBusObject* object) {
   if (object) {
-    std::map<std::string, GDBusProxy*>::iterator it =
+    DeviceMap::iterator it =
         known_devices_.find(g_dbus_object_get_object_path(object));
 
     if (it == known_devices_.end())

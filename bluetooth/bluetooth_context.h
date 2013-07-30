@@ -20,6 +20,12 @@
 
 #include <gio/gio.h>
 
+#if defined(GENERIC_DESKTOP)
+typedef std::map<std::string, GDBusProxy*> DeviceMap;
+#elif defined(TIZEN_MOBILE)
+typedef std::map<std::string, GVariantIter*> DeviceMap;
+#endif
+
 namespace picojson {
 class value;
 }
@@ -60,6 +66,7 @@ class BluetoothContext {
   typedef std::vector<picojson::value> MessageQueue;
   MessageQueue queue_;
 
+  DeviceMap known_devices_;
   bool is_js_context_initialized_;
 
 #if defined(GENERIC_DESKTOP)
@@ -77,8 +84,6 @@ class BluetoothContext {
   GDBusProxy* CreateDeviceProxy(GAsyncResult* res);
 
   GDBusObjectManager* object_manager_;
-  std::map<std::string, GDBusProxy*> known_devices_;
-
 #elif defined(TIZEN_MOBILE)
   G_CALLBACK_1(OnGotDefaultAdapterPath, GObject*, GAsyncResult*);
   G_CALLBACK_1(OnGotAdapterProperties, GObject*, GAsyncResult*);
@@ -89,8 +94,6 @@ class BluetoothContext {
   void DeviceFound(std::string address, GVariantIter* properties);
 
   GDBusProxy* manager_proxy_;
-  typedef std::map<std::string, GVariantIter*> DeviceMap;
-  DeviceMap found_devices_;
 #endif
 };
 
