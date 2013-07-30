@@ -62,4 +62,11 @@ std::string get_udev_property(struct udev_device* dev,
   return std::string(udev_list_entry_get_value(attr_entry));
 }
 
+void SetPicoJsonObjectValue(picojson::value& obj,
+                            const char* prop,
+                            const picojson::value& val) {
+  picojson::object& o = obj.get<picojson::object>();
+  o[prop] = val;
+}
+
 }  // system_info

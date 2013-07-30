@@ -10,6 +10,9 @@
 #include "system_info/system_info_battery.h"
 #include "system_info/system_info_display.h"
 #include "system_info/system_info_storage.h"
+#include "system_info/system_info_utils.h"
+
+using namespace system_info;
 
 CXWalkExtension* xwalk_extension_init(int32_t api_version) {
   return ExtensionAdapter<SystemInfoContext>::Initialize();
@@ -40,23 +43,20 @@ void SystemInfoContext::GetBattery(picojson::value& error,
 
 void SystemInfoContext::GetCPU(picojson::value& error,
                                picojson::value& data) {
-  picojson::object& error_map = error.get<picojson::object>();
-  picojson::object& data_map = data.get<picojson::object>();
-
   double load[1];
   if (getloadavg(load, 1) == -1) {  
-    error_map["message"] = picojson::value("Get CPU load failed.");
+    SetPicoJsonObjectValue(error, "message",
+        picojson::value("Get CPU load failed."));
     return;
   }
 
-  data_map["load"] = picojson::value(load[0]);
-  error_map["message"] = picojson::value("");
+  SetPicoJsonObjectValue(data, "load", picojson::value(load[0]));
+  SetPicoJsonObjectValue(error, "message", picojson::value(""));
 }
 
 void SystemInfoContext::GetStorage(picojson::value& error,
                                    picojson::value& data) {
   SysInfoStorage& s = SysInfoStorage::GetSysInfoStorage(error);
-  picojson::object& error_map = error.get<picojson::object>();
 
   if (error.get("message").to_str().empty())
     s.Update(error, data);
@@ -64,82 +64,66 @@ void SystemInfoContext::GetStorage(picojson::value& error,
 
 void SystemInfoContext::GetDisplay(picojson::value& error,
                                    picojson::value& data) {
-  picojson::object& error_map = error.get<picojson::object>();
-  picojson::object& data_map = data.get<picojson::object>();
   double ret;
-
   SysInfoDisplay& disp = SysInfoDisplay::GetSysInfoDisplay();
 
-  error_map["message"] = picojson::value("");
-
+  SetPicoJsonObjectValue(error, "message", picojson::value(""));
   ret = static_cast<double>(disp.GetResolutionWidth(error));
   if (DidFail(error))
     return;
-  data_map["resolutionWidth"] = picojson::value(ret);
+  SetPicoJsonObjectValue(data, "resolutionWidth", picojson::value(ret));
 
   ret = static_cast<double>(disp.GetResolutionHeight(error));
   if (DidFail(error))
     return;
-  data_map["resolutionHeight"] = picojson::value(ret);
+  SetPicoJsonObjectValue(data, "resolutionHeight", picojson::value(ret));
 
   ret = static_cast<double>(disp.GetDotsPerInchWidth(error));
   if (DidFail(error))
     return;
-  data_map["dotsPerInchWidth"] = picojson::value(ret);
+  SetPicoJsonObjectValue(data, "dotsPerInchWidth", picojson::value(ret));
 
   ret = static_cast<double>(disp.GetDotsPerInchWidth(error));
   if (DidFail(error))
     return;
-  data_map["dotsPerInchWidth"] = picojson::value(ret);
+  SetPicoJsonObjectValue(data, "dotsPerInchWidth", picojson::value(ret));
 
   ret = static_cast<double>(disp.GetDotsPerInchHeight(error));
   if (DidFail(error))
     return;
-  data_map["dotsPerInchHeight"] = picojson::value(ret);
+  SetPicoJsonObjectValue(data, "dotsPerInchHeight", picojson::value(ret));
 
   ret = static_cast<double>(disp.GetPhysicalWidth(error));
   if (DidFail(error))
     return;
-  data_map["physicalWidth"] = picojson::value(ret);
+  SetPicoJsonObjectValue(data, "physicalWidth", picojson::value(ret));
 
   ret = static_cast<double>(disp.GetPhysicalHeight(error));
   if (DidFail(error))
     return;
-  data_map["physicalHeight"] = picojson::value(ret);
+  SetPicoJsonObjectValue(data, "physicalHeight", picojson::value(ret));
 
   ret = static_cast<double>(disp.GetBrightness(error));
   if (DidFail(error))
     return;
-  data_map["brightness"] = picojson::value(ret);
+  SetPicoJsonObjectValue(data, "brightness", picojson::value(ret));
 }
 
 void SystemInfoContext::GetBuild(picojson::value& error,
                                  picojson::value& data) {
-  picojson::object& error_map = error.get<picojson::object>();
-  picojson::object& data_map = data.get<picojson::object>();
-
   // FIXME(halton): Add actual implementation
-  data_map["model"] = picojson::value("Tizen PC");
-  data_map["manufacturer"] = picojson::value("Intel Corp.");
-  data_map["buildVersion"] = picojson::value("3.0");
-  error_map["message"] = picojson::value("");
-
-  // uncomment out below line to try error
-  // error_map["message"] = picojson::value("Get Display failed.");
+  SetPicoJsonObjectValue(data, "model", picojson::value("Tizen PC"));
+  SetPicoJsonObjectValue(data, "manufacturer", picojson::value("Intel Corp."));
+  SetPicoJsonObjectValue(data, "buildVersion", picojson::value("3.0"));
+  SetPicoJsonObjectValue(error, "message", picojson::value(""));
 }
 
 void SystemInfoContext::GetLocale(picojson::value& error,
                                   picojson::value& data) {
-  picojson::object& error_map = error.get<picojson::object>();
-  picojson::object& data_map = data.get<picojson::object>();
-
   // FIXME(halton): Add actual implementation
-  data_map["language"] = picojson::value("zh_CN");
-  data_map["country"] = picojson::value("PRC");
-  error_map["message"] = picojson::value("");
-
-  // uncomment out below line to try error
-  // error_map["message"] = picojson::value("Get Display failed.");
+  SetPicoJsonObjectValue(data, "language", picojson::value("zh_CN"));
+  SetPicoJsonObjectValue(data, "country", picojson::value("PRC"));
+  SetPicoJsonObjectValue(error, "message", picojson::value(""));
 }
 
 void SystemInfoContext::HandleGetPropertyValue(const picojson::value& input,
@@ -151,8 +135,7 @@ void SystemInfoContext::HandleGetPropertyValue(const picojson::value& input,
   error = picojson::value(picojson::object());
   data = picojson::value(picojson::object());
 
-  picojson::object& error_map = error.get<picojson::object>();
-  error_map["message"] = picojson::value("");
+  SetPicoJsonObjectValue(error, "message", picojson::value(""));
 
   prop = input.get("prop").to_str();
   if (prop == "BATTERY") {
@@ -180,14 +163,14 @@ void SystemInfoContext::HandleGetPropertyValue(const picojson::value& input,
   } else if (prop == "PERIPHERAL") {
     GetPeripheral(error, data);
   } else {
-    error_map["message"] = picojson::value("Not supportted property " + prop);
+    SetPicoJsonObjectValue(error, "message",
+        picojson::value("Not supportted property " + prop));
   }
 
-  picojson::object& output_map = output.get<picojson::object>();
   if (!error.get("message").to_str().empty()) {
-    output_map["error"] = error;
+    SetPicoJsonObjectValue(output, "error", error);
   } else {
-    output_map["data"] = data;
+    SetPicoJsonObjectValue(output, "data", data);
   }
 }
 
@@ -202,11 +185,9 @@ void SystemInfoContext::HandleMessage(const char* message) {
     return;
   }
 
-  picojson::object& input_map = input.get<picojson::object>();
   output = picojson::value(picojson::object());
-  picojson::object& output_map = output.get<picojson::object>();
   std::string reply_id = input.get("_reply_id").to_str();
-  output_map["_reply_id"] = picojson::value(reply_id);
+  SetPicoJsonObjectValue(output, "_reply_id", picojson::value(reply_id));
 
   std::string cmd = input.get("cmd").to_str();
   if (cmd == "getPropertyValue")

@@ -20,39 +20,45 @@
   #error "Unsupported platform"
 #endif
 
+using namespace system_info;
+
 void SysInfoDisplay::Update(picojson::value& error) {
-  picojson::object& error_map = error.get<picojson::object>();
   Display *dpy = XOpenDisplay(NULL);
 
   if (NULL == dpy) {
-    error_map["message"] = picojson::value("XOpenDisplay Failed");
+    SetPicoJsonObjectValue(error, "message",
+        picojson::value("XOpenDisplay Failed"));
     return;
   }
 
   resolution_width_ = DisplayWidth(dpy, DefaultScreen(dpy));
   if (!resolution_width_) {
-    error_map["message"] = picojson::value("SCREEN WIDTH is 0px.");
+    SetPicoJsonObjectValue(error, "message",
+        picojson::value("SCREEN WIDTH is 0px."));
     XCloseDisplay(dpy);
     return;
   }
 
   resolution_height_ = DisplayHeight(dpy, DefaultScreen(dpy));
   if (!resolution_height_) {
-    error_map["message"] = picojson::value("SCREEN HEIGHT is 0px.");
+    SetPicoJsonObjectValue(error, "message",
+        picojson::value("SCREEN HEIGHT is 0px."));
     XCloseDisplay(dpy);
     return;
   }
 
   physical_width_ = DisplayWidthMM(dpy, DefaultScreen(dpy));
   if (!physical_width_) {
-    error_map["message"] = picojson::value("SCREEN WIDTH is 0mm.");
+    SetPicoJsonObjectValue(error, "message",
+        picojson::value("SCREEN WIDTH is 0mm."));
     XCloseDisplay(dpy);
     return;
   }
 
   physical_height_ = DisplayHeightMM(dpy, DefaultScreen(dpy));
   if (!physical_width_) {
-    error_map["message"] = picojson::value("SCREEN HEIGHT is 0mm.");
+    SetPicoJsonObjectValue(error, "message",
+        picojson::value("SCREEN HEIGHT is 0mm."));
     XCloseDisplay(dpy);
     return;
   }
@@ -104,7 +110,7 @@ double SysInfoDisplay::GetBrightness(picojson::value& error) {
   char brightness_path[] = ACPI_BACKLIGHT_DIR"/brightness";
   int max_val, val;
 
-  str_val = system_info::read_one_line(max_path);
+  str_val = read_one_line(max_path);
   if(NULL == str_val) {
     // FIXME(halton): ACPI is not enabled, fallback to maximum.
     return 1.0;
@@ -112,7 +118,7 @@ double SysInfoDisplay::GetBrightness(picojson::value& error) {
   max_val = atoi(str_val);
   free(str_val);
 
-  str_val = system_info::read_one_line(brightness_path);
+  str_val = read_one_line(brightness_path);
   if(!str_val) {
     // FIXME(halton): ACPI is not enabled, fallback to maximum.
     return 1.0;

@@ -17,12 +17,13 @@ const char* sMountTable = "/proc/mounts";
 
 }  // namespace
 
-SysInfoStorage::SysInfoStorage(picojson::value& error) {
-  picojson::object& error_map = error.get<picojson::object>();
+using namespace system_info;
 
+SysInfoStorage::SysInfoStorage(picojson::value& error) {
   udev_ = udev_new();
   if (!udev_) {
-    error_map["message"] = picojson::value("Can't create udev");
+    SetPicoJsonObjectValue(error, "message",
+        picojson::value("Can't create udev."));
   }
 }
 
@@ -36,15 +37,13 @@ void SysInfoStorage::Update(picojson::value& error,
   struct mntent *entry;
   FILE *aFile;
 
-  picojson::object& error_map = error.get<picojson::object>();
-  picojson::object& data_map = data.get<picojson::object>();
-
   picojson::value units = picojson::value(picojson::array(0));
   picojson::array& units_arr = units.get<picojson::array>();
 
   aFile = setmntent(sMountTable, "r");
   if (!aFile) {
-    error_map["message"] = picojson::value("Read mount table failed.");
+    SetPicoJsonObjectValue(error, "message",
+        picojson::value("Read mount table failed."));
     return;
   }
 
@@ -61,8 +60,8 @@ void SysInfoStorage::Update(picojson::value& error,
   }
 
   endmntent(aFile);
-  data_map["units"] = units;
-  error_map["message"] = picojson::value("");
+  SetPicoJsonObjectValue(data, "units", units);
+  SetPicoJsonObjectValue(error, "message", picojson::value(""));
 }
 
 std::string
@@ -87,7 +86,7 @@ SysInfoStorage::GetDevPathFromMountPath(const std::string& mnt_path) {
     path = udev_list_entry_get_name(dev_list_entry);
     dev = udev_device_new_from_syspath(udev_, path);
 
-    dev_path = system_info::get_udev_property(dev, "DEVPATH");
+    dev_path = get_udev_property(dev, "DEVPATH");
     if (dev_path.empty()) {
       udev_device_unref(dev);
       udev_enumerate_unref(enumerate);
@@ -96,14 +95,14 @@ SysInfoStorage::GetDevPathFromMountPath(const std::string& mnt_path) {
 
     dev_path = "/sys" + dev_path;
 
-    str = system_info::get_udev_property(dev, "DEVNAME");
+    str = get_udev_property(dev, "DEVNAME");
     if (!str.empty() && (str == mnt_path)) {
       udev_device_unref(dev);
       udev_enumerate_unref(enumerate);
       return dev_path;
     }
 
-    str = system_info::get_udev_property(dev, "DEVLINKS");
+    str = get_udev_property(dev, "DEVLINKS");
     if (!str.empty() && (std::string::npos != str.find(mnt_path))) {
       udev_device_unref(dev);
       udev_enumerate_unref(enumerate);
@@ -125,18 +124,17 @@ void SysInfoStorage::GetDetails(const std::string& mnt_fsname,
   const char* str;
   bool is_removable;
 
-  picojson::object& error_map = error.get<picojson::object>();
-  picojson::object& unit_map = unit.get<picojson::object>();
-
   std::string dev_path = GetDevPathFromMountPath(mnt_fsname);
   if (dev_path.empty()) {
-    error_map["message"] = picojson::value("Get storage DEVPATH failed.");
+    SetPicoJsonObjectValue(error, "message",
+        picojson::value("Get storage DEVPATH failed."));
     return;
   }
 
   dev = udev_device_new_from_syspath(udev_, (char *)dev_path.c_str());
   if (!dev) {
-    error_map["message"] = picojson::value("Get storage udev from device_id failed.");
+    SetPicoJsonObjectValue(error, "message",
+        picojson::value("Get storage udev from device_id failed."));
   }
 
   attr_list_entry = udev_device_get_properties_list_entry(dev);
@@ -145,26 +143,27 @@ void SysInfoStorage::GetDetails(const std::string& mnt_fsname,
   parent_dev = udev_device_get_parent_with_subsystem_devtype(dev, "block", "disk");
   str = udev_device_get_sysattr_value(parent_dev, "removable");
   if (!str) {
-    error_map["message"] = picojson::value("Get storage attribute removable failed.");
+    SetPicoJsonObjectValue(error, "message",
+        picojson::value("Get storage attribute removable failed."));
     udev_device_unref(parent_dev);
     udev_device_unref(dev);
     return;
   }
 
   is_removable = (1 == atoi(str));
-  unit_map["isRemovable"] = picojson::value(is_removable);
+  SetPicoJsonObjectValue(unit, "isRemovable", picojson::value(is_removable));
   // deprecated, same as isRemovable
-  unit_map["isRemoveable"] = picojson::value(is_removable);
+  SetPicoJsonObjectValue(unit, "isRemoveable", picojson::value(is_removable));
 
-  unit_map["type"] = picojson::value("UNKNOWN");
+  SetPicoJsonObjectValue(unit, "type", picojson::value("UNKNOWN"));
   if (!is_removable) {
-    unit_map["type"] = picojson::value("INTERNAL");
+    SetPicoJsonObjectValue(unit, "type", picojson::value("INTERNAL"));
   } else {
     attr_entry = udev_list_entry_get_by_name(attr_list_entry, "ID_BUS");
     if (attr_entry) {
       str = udev_list_entry_get_value(attr_entry);
       if (str && (strcmp(str, "usb") == 0)) {
-        unit_map["type"] = picojson::value("USB_HOST");
+        SetPicoJsonObjectValue(unit, "type", picojson::value("USB_HOST"));
       }
     }
     // FIXME(halton): Add MMC type support, we do not find a correct
@@ -173,23 +172,24 @@ void SysInfoStorage::GetDetails(const std::string& mnt_fsname,
 
   str = udev_device_get_sysattr_value(dev, "size");
   if (!str) {
-    error_map["message"] =
-        picojson::value("Get storage attribute size failed.");
+    SetPicoJsonObjectValue(error, "message",
+        picojson::value("Get storage attribute size failed."));
     udev_device_unref(dev);
     return;
   }
-  unit_map["capacity"] = picojson::value(static_cast<double>(atoll(str)*512));
+  SetPicoJsonObjectValue(unit, "capacity", 
+      picojson::value(static_cast<double>(atoll(str)*512)));
 
   struct statvfs buf;
   int ret = statvfs(mnt_dir.c_str(), &buf);
   if (-1 == ret) {
-    error_map["message"] =
-        picojson::value("Get storage availableCapacity failed.");
+    SetPicoJsonObjectValue(error, "message",
+        picojson::value("Get storage availableCapacity failed."));
     udev_device_unref(dev);
     return;
   }
 
   udev_device_unref(dev);
-  unit_map["availableCapacity"] =
-      picojson::value(static_cast<double>(buf.f_bavail * buf.f_bsize));
+  SetPicoJsonObjectValue(unit, "availableCapacity", 
+      picojson::value(static_cast<double>(buf.f_bavail * buf.f_bsize)));
 }

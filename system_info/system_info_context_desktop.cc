@@ -7,66 +7,58 @@
 #include "common/picojson.h"
 #include "system_info/system_info_utils.h"
 
+using namespace system_info;
+
 void SystemInfoContext::GetDeviceOrientation(picojson::value& error,
                                              picojson::value& data) {
-  picojson::object& error_map = error.get<picojson::object>();
-  error_map["message"] = picojson::value("Device Orientation is not support on desktop.");
+  SetPicoJsonObjectValue(error, "message",
+      picojson::value("Device Orientation is not support on desktop."));
 }
 
 void SystemInfoContext::GetNetwork(picojson::value& error,
                                    picojson::value& data) {
-  picojson::object& error_map = error.get<picojson::object>();
-  picojson::object& data_map = data.get<picojson::object>();
-
-  error_map["message"] = picojson::value("");
-
   // FIXME(halton): Support other ethernet interface name
-  if (system_info::is_interface_on("eth0")) {
-    data_map["networkType"] = picojson::value("ETHERNET");
+  if (is_interface_on("eth0")) {
+    SetPicoJsonObjectValue(data, "networkType", picojson::value("ETHERNET"));
     return;
   }
 
   // FIXME(halton): Support other wireless interface name
-  if (system_info::is_interface_on("wlan0")) {
-    data_map["networkType"] = picojson::value("WIFI");
+  if (is_interface_on("wlan0")) {
+    SetPicoJsonObjectValue(data, "networkType", picojson::value("WIFI"));
     return;
   }
 
   // FIXME(halton): Add other network type support
-  data_map["networkType"] = picojson::value("NONE");
+  SetPicoJsonObjectValue(data, "networkType", picojson::value("NONE"));
 }
 
 void SystemInfoContext::GetWifiNetwork(picojson::value& error,
                                        picojson::value& data) {
-  picojson::object& error_map = error.get<picojson::object>();
-  picojson::object& data_map = data.get<picojson::object>();
-
   // FIXME(halton): Add actual implementation
-  data_map["status"] = picojson::value("ON");
-  data_map["ssid"] = picojson::value("test");
-  data_map["ipAddress"] = picojson::value("192.168.11.5");
-  data_map["ipv6Address"] = picojson::value("fe80::250:56ff:fec0:8");
-  data_map["signalStrength"] = picojson::value(0.3);
-  error_map["message"] = picojson::value("");
-
-  // uncomment out below line to try error
-  // error_map["message"] = picojson::value("Get Display failed.");
+  SetPicoJsonObjectValue(data, "status", picojson::value("ON"));
+  SetPicoJsonObjectValue(data, "ssid", picojson::value("test"));
+  SetPicoJsonObjectValue(data, "ipAddress", picojson::value("192.168.11.5"));
+  SetPicoJsonObjectValue(data, "ipv6Address",
+      picojson::value("fe80::250:56ff:fec0:8"));
+  SetPicoJsonObjectValue(data, "signalStrength", picojson::value(0.3));
+  SetPicoJsonObjectValue(error, "message", picojson::value(""));
 }
 
 void SystemInfoContext::GetCellularNetwork(picojson::value& error,
                                            picojson::value& data) {
-  picojson::object& error_map = error.get<picojson::object>();
-  error_map["message"] = picojson::value("Cellular Network is not support on desktop.");
+  SetPicoJsonObjectValue(error, "message",
+      picojson::value("Cellular Network is not support on desktop."));
 }
 
 void SystemInfoContext::GetSIM(picojson::value& error,
                                picojson::value& data) {
-  picojson::object& error_map = error.get<picojson::object>();
-  error_map["message"] = picojson::value("SIM is not support on desktop.");
+  SetPicoJsonObjectValue(error, "message",
+      picojson::value("SIM is not support on desktop."));
 }
 
 void SystemInfoContext::GetPeripheral(picojson::value& error,
                                       picojson::value& data) {
-  picojson::object& error_map = error.get<picojson::object>();
-  error_map["message"] = picojson::value("Peripheral is not support on desktop.");
+  SetPicoJsonObjectValue(error, "message",
+      picojson::value("Peripheral is not support on desktop."));
 }
