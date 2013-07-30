@@ -5,8 +5,8 @@
 // FIXME: A lot of these methods should throw NOT_SUPPORTED_ERR on desktop.
 // There is no easy way to do verify which methods are supported yet.
 
-var brightness = undefined;
 var screenState = undefined;
+var defaultScreenBrightness = undefined;
 
 var listeners = [];
 function callListeners(oldState, newState) {
@@ -19,10 +19,13 @@ var postMessage = function(msg) {
   extension.postMessage(JSON.stringify(msg));
 };
 
+var sendSyncMessage = function(msg) {
+  return extension.internal.sendSyncMessage(JSON.stringify(msg));
+};
+
 extension.setMessageListener(function(msg) {
   var m = JSON.parse(msg);
   if (m.cmd == "ScreenStateChanged") {
-    brightness = m.brightness;
     oldScreenState = screenState;
     screenState = m.state;
     if (oldScreenState !== screenState)
@@ -171,10 +174,13 @@ exports.unsetScreenStateChangeListener = function() {
 }
 
 exports.getScreenBrightness = function() {
-  if (typeof brightness !== 'number')
-    throw new tizen.WebAPIException(tizen.WebAPIException.UNKNOWN_ERR);
+  var brightness = parseFloat(sendSyncMessage({
+    "cmd": "PowerGetScreenBrightness",
+  }));
   return brightness;
 }
+
+defaultScreenBrightness = exports.getScreenBrightness();
 
 exports.setScreenBrightness = function(brightness) {
   // Validate permission to 'power'.
@@ -202,11 +208,12 @@ exports.restoreScreenBrightness = function() {
   // Validate permission to 'power'.
   // throw new WebAPIException(SECURITY_ERR);
 
-  // FIXME: throw UNKNOWN_ERR during failure to set the new value.
+  if (defaultScreenBrightness < 0 || defaultScreenBrightness > 1)
+    throw new tizen.WebAPIException(tizen.WebAPIException.UNKNOWN_ERR);
 
   postMessage({
     "cmd": "PowerSetScreenBrightness",
-    "value": -1
+    "value": defaultScreenBrightness
   });
 }
 

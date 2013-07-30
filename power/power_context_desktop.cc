@@ -5,6 +5,8 @@
 #include "power/power_context.h"
 #include "common/picojson.h"
 
+static double kBrightness = 1;
+
 void PowerContext::Initialize() {
 }
 
@@ -18,7 +20,13 @@ void PowerContext::HandleRelease(const picojson::value& msg) {
 }
 
 void PowerContext::HandleSetScreenBrightness(const picojson::value& msg) {
-  double brightness = msg.get("value").get<double>();
+  kBrightness = msg.get("value").get<double>();
+}
+
+void PowerContext::HandleGetScreenBrightness() {
+  char brightnessAsString[32];
+  snprintf(brightnessAsString, 32, "%g", kBrightness);
+  api_->SetSyncReply(brightnessAsString);
 }
 
 void PowerContext::HandleSetScreenEnabled(const picojson::value& msg) {

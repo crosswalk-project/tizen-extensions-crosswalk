@@ -24,7 +24,7 @@ class PowerContext {
   static const char name[];
   static const char* GetJavaScript();
   void HandleMessage(const char* message);
-  void HandleSyncMessage(const char* message) {}
+  void HandleSyncMessage(const char* message);
 
  private:
   // These enums must be kept in sync with the JS object notation.
@@ -43,10 +43,11 @@ class PowerContext {
     ResourceStateValueCount
   };
 
-  void OnScreenStateChanged(ResourceState state, double brightness);
+  void OnScreenStateChanged(ResourceState state);
   void HandleRequest(const picojson::value& msg);
   void HandleRelease(const picojson::value& msg);
   void HandleSetScreenBrightness(const picojson::value& msg);
+  void HandleGetScreenBrightness();
   void HandleSetScreenEnabled(const picojson::value& msg);
 
   ContextAPI* api_;

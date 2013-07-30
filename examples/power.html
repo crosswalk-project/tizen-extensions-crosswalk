@@ -88,7 +88,6 @@ var screenBrightness = tizen.power.getScreenBrightness();
 shouldThrow("tizen.power.setScreenBrightness('1')", "new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR)")
 shouldThrow("tizen.power.setScreenBrightness(2)", "new tizen.WebAPIException(tizen.WebAPIException.INVALID_VALUES_ERR)")
 tizen.power.setScreenBrightness(0.5);
-// FIXME: This results in 1 because getScreenBrightness() is async.
 shouldBe("tizen.power.getScreenBrightness()", "0.5");
 
 tizen.power.restoreScreenBrightness();
