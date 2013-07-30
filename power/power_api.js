@@ -5,11 +5,31 @@
 // FIXME: A lot of these methods should throw NOT_SUPPORTED_ERR on desktop.
 // There is no easy way to do verify which methods are supported yet.
 
-var brightness = undefined;
 var screenState = undefined;
+var defaultScreenBrightness = undefined;
+
+var resources = {
+  "SCREEN": {
+    type: 0,
+    states: {
+      "SCREEN_OFF": 0,
+      "SCREEN_DIM": 1,
+      "SCREEN_NORMAL": 2,
+      "SCREEN_BRIGHT": 3 // Deprecated.
+    }
+  },
+  "CPU": {
+    type: 1,
+    states: {
+      "CPU_AWAKE": 4
+    }
+  }
+}
 
 var listeners = [];
 function callListeners(oldState, newState) {
+  var previousState = Object.keys(resources["SCREEN"].states)[oldState];
+  var changedState = Object.keys(resources["SCREEN"].states)[newState];
   listeners.forEach(function(listener) {
     listener(previousState, changedState);
   });
@@ -19,14 +39,21 @@ var postMessage = function(msg) {
   extension.postMessage(JSON.stringify(msg));
 };
 
+var sendSyncMessage = function(msg) {
+  return extension.internal.sendSyncMessage(JSON.stringify(msg));
+};
+
 extension.setMessageListener(function(msg) {
   var m = JSON.parse(msg);
   if (m.cmd == "ScreenStateChanged") {
-    brightness = m.brightness;
-    oldScreenState = screenState;
-    screenState = m.state;
-    if (oldScreenState !== screenState)
-      callListeners(oldScreenState, screenState);
+    var newState = parseInt(m.state);
+    if (screenState == undefined || screenState !== newState) {
+      if (screenState == undefined) {
+        screenState = 0; // "SCREEN_OFF"
+      }
+      callListeners(screenState, newState);
+      screenState = newState;
+    }
   }
 });
 
@@ -92,24 +119,6 @@ tizen.WebAPIException = function(code, message, name) {
 for (var i = 0; i < errors.length; i++)
   Object.defineProperty(tizen.WebAPIException, errors[i].type, { value: errors[i].value });
 
-var resources = {
-  "SCREEN": {
-    type: 0,
-    states: {
-      "SCREEN_OFF": 0,
-      "SCREEN_DIM": 1,
-      "SCREEN_NORMAL": 2,
-      "SCREEN_BRIGHT": 3 // Deprecated.
-    }
-  },
-  "CPU": {
-    type: 1,
-    states: {
-      "CPU_AWAKE": 4
-    }
-  }
-}
-
 exports.request = function(resource, state) {
   // Validate permission to 'power'.
   // throw new WebAPIException(SECURITY_ERR);
@@ -171,10 +180,13 @@ exports.unsetScreenStateChangeListener = function() {
 }
 
 exports.getScreenBrightness = function() {
-  if (typeof brightness !== 'number')
-    throw new tizen.WebAPIException(tizen.WebAPIException.UNKNOWN_ERR);
+  var brightness = parseFloat(sendSyncMessage({
+    "cmd": "PowerGetScreenBrightness",
+  }));
   return brightness;
 }
+
+defaultScreenBrightness = exports.getScreenBrightness();
 
 exports.setScreenBrightness = function(brightness) {
   // Validate permission to 'power'.
@@ -202,11 +214,12 @@ exports.restoreScreenBrightness = function() {
   // Validate permission to 'power'.
   // throw new WebAPIException(SECURITY_ERR);
 
-  // FIXME: throw UNKNOWN_ERR during failure to set the new value.
+  if (defaultScreenBrightness < 0 || defaultScreenBrightness > 1)
+    throw new tizen.WebAPIException(tizen.WebAPIException.UNKNOWN_ERR);
 
   postMessage({
     "cmd": "PowerSetScreenBrightness",
-    "value": -1
+    "value": defaultScreenBrightness
   });
 }
 
