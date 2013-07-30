@@ -8,8 +8,28 @@
 var screenState = undefined;
 var defaultScreenBrightness = undefined;
 
+var resources = {
+  "SCREEN": {
+    type: 0,
+    states: {
+      "SCREEN_OFF": 0,
+      "SCREEN_DIM": 1,
+      "SCREEN_NORMAL": 2,
+      "SCREEN_BRIGHT": 3 // Deprecated.
+    }
+  },
+  "CPU": {
+    type: 1,
+    states: {
+      "CPU_AWAKE": 4
+    }
+  }
+}
+
 var listeners = [];
 function callListeners(oldState, newState) {
+  var previousState = Object.keys(resources["SCREEN"].states)[oldState];
+  var changedState = Object.keys(resources["SCREEN"].states)[newState];
   listeners.forEach(function(listener) {
     listener(previousState, changedState);
   });
@@ -26,10 +46,14 @@ var sendSyncMessage = function(msg) {
 extension.setMessageListener(function(msg) {
   var m = JSON.parse(msg);
   if (m.cmd == "ScreenStateChanged") {
-    oldScreenState = screenState;
-    screenState = m.state;
-    if (oldScreenState !== screenState)
-      callListeners(oldScreenState, screenState);
+    var newState = parseInt(m.state);
+    if (screenState == undefined || screenState !== newState) {
+      if (screenState == undefined) {
+        screenState = 0; // "SCREEN_OFF"
+      }
+      callListeners(screenState, newState);
+      screenState = newState;
+    }
   }
 });
 
@@ -94,24 +118,6 @@ tizen.WebAPIException = function(code, message, name) {
 
 for (var i = 0; i < errors.length; i++)
   Object.defineProperty(tizen.WebAPIException, errors[i].type, { value: errors[i].value });
-
-var resources = {
-  "SCREEN": {
-    type: 0,
-    states: {
-      "SCREEN_OFF": 0,
-      "SCREEN_DIM": 1,
-      "SCREEN_NORMAL": 2,
-      "SCREEN_BRIGHT": 3 // Deprecated.
-    }
-  },
-  "CPU": {
-    type: 1,
-    states: {
-      "CPU_AWAKE": 4
-    }
-  }
-}
 
 exports.request = function(resource, state) {
   // Validate permission to 'power'.

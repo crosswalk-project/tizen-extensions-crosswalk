@@ -12,7 +12,18 @@ void PowerContext::Initialize() {
 
 void PowerContext::HandleRequest(const picojson::value& msg) {
   std::string resource = msg.get("resource").to_str();
-  std::string state = msg.get("state").to_str();
+  ResourceState state = static_cast<ResourceState>(msg.get("state").get<double>());
+
+  switch (state) {
+    case SCREEN_OFF:
+    case SCREEN_DIM:
+    case SCREEN_NORMAL:
+    case SCREEN_BRIGHT:
+      OnScreenStateChanged(state);
+      break;
+    default:
+      break;
+  }
 }
 
 void PowerContext::HandleRelease(const picojson::value& msg) {

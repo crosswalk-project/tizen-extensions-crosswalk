@@ -75,15 +75,6 @@ shouldNotThrow("tizen.power.request('SCREEN', 'SCREEN_DIM')");
 shouldNotThrow("tizen.power.request('SCREEN', 'SCREEN_NORMAL')");
 shouldNotThrow("tizen.power.request('SCREEN', 'SCREEN_BRIGHT')");
 
-var isCallbackFired = false;
-var onScreenStateChanged = function(previousState, changedState) {
-  isCallbackFired = true;
-  shouldBe("previousState", "SCREEN_BRIGHT");
-  shouldBe("changedState", "SCREEN_NORMAL");
-}
-tizen.power.setScreenStateChangeListener(onScreenStateChanged);
-tizen.power.request('SCREEN', 'SCREEN_NORMAL');
-
 var screenBrightness = tizen.power.getScreenBrightness();
 shouldThrow("tizen.power.setScreenBrightness('1')", "new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR)")
 shouldThrow("tizen.power.setScreenBrightness(2)", "new tizen.WebAPIException(tizen.WebAPIException.INVALID_VALUES_ERR)")
@@ -93,11 +84,23 @@ shouldBe("tizen.power.getScreenBrightness()", "0.5");
 tizen.power.restoreScreenBrightness();
 shouldBeTrue("tizen.power.getScreenBrightness() == screenBrightness");
 
+
+var previousState = "";
+var changedState = "";
+function ScreenStateChangeListener(prevState, newState) {
+  previousState = prevState;
+  changedState = newState;
+}
+tizen.power.setScreenStateChangeListener(ScreenStateChangeListener);
+tizen.power.request('SCREEN', 'SCREEN_NORMAL');
+
 setTimeout(finish, 100);
 
 function finish() {
-  // FIXME: onScreenStateChanged() did not called.
-  shouldBe("isCallbackFired", "true");
+  // ScreenStateChangeListener will be called asynchronously, so we check it a bit later.
+  shouldBe("previousState", "'SCREEN_BRIGHT'");
+  shouldBe("changedState", "'SCREEN_NORMAL'");
+
   shouldThrow("tizen.power.release(1)", "new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR)")
   shouldThrow("tizen.power.release('MOUSE')", "new tizen.WebAPIException(tizen.WebAPIException.INVALID_VALUES_ERR)");
   shouldNotThrow("tizen.power.release('CPU')");
