@@ -18,13 +18,13 @@ void SystemInfoContext::GetDeviceOrientation(picojson::value& error,
 void SystemInfoContext::GetNetwork(picojson::value& error,
                                    picojson::value& data) {
   // FIXME(halton): Support other ethernet interface name
-  if (is_interface_on("eth0")) {
+  if (IsInterfaceOn("eth0")) {
     SetPicoJsonObjectValue(data, "networkType", picojson::value("ETHERNET"));
     return;
   }
 
   // FIXME(halton): Support other wireless interface name
-  if (is_interface_on("wlan0")) {
+  if (IsInterfaceOn("wlan0")) {
     SetPicoJsonObjectValue(data, "networkType", picojson::value("WIFI"));
     return;
   }

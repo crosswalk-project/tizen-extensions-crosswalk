@@ -12,11 +12,11 @@
 
 namespace system_info {
 
-bool is_interface_on(const char* interface);
-int read_one_byte(const char* path);
+bool IsInterfaceOn(const char* interface);
+int ReadOneByte(const char* path);
 // free the returned value when not using
-char* read_one_line(const char* path);
-std::string get_udev_property(struct udev_device* dev,
+char* ReadOneLine(const char* path);
+std::string GetUdevProperty(struct udev_device* dev,
                               const std::string& attr);
 void SetPicoJsonObjectValue(picojson::value& obj,
                             const char* prop,

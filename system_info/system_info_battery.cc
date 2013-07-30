@@ -45,8 +45,8 @@ void SysInfoBattery::Update(picojson::value& error,
     path = udev_list_entry_get_name(dev_list_entry);
     dev = udev_device_new_from_syspath(udev_, path);
 
-    str_capacity = get_udev_property(dev, "POWER_SUPPLY_CAPACITY");
-    str_charging = get_udev_property(dev, "POWER_SUPPLY_STATUS");
+    str_capacity = GetUdevProperty(dev, "POWER_SUPPLY_CAPACITY");
+    str_charging = GetUdevProperty(dev, "POWER_SUPPLY_STATUS");
     if (str_capacity.empty() && str_charging.empty()) {
       udev_device_unref(dev);
       continue;

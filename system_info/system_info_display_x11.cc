@@ -110,7 +110,7 @@ double SysInfoDisplay::GetBrightness(picojson::value& error) {
   char brightness_path[] = ACPI_BACKLIGHT_DIR"/brightness";
   int max_val, val;
 
-  str_val = read_one_line(max_path);
+  str_val = ReadOneLine(max_path);
   if(NULL == str_val) {
     // FIXME(halton): ACPI is not enabled, fallback to maximum.
     return 1.0;
@@ -118,7 +118,7 @@ double SysInfoDisplay::GetBrightness(picojson::value& error) {
   max_val = atoi(str_val);
   free(str_val);
 
-  str_val = read_one_line(brightness_path);
+  str_val = ReadOneLine(brightness_path);
   if(!str_val) {
     // FIXME(halton): ACPI is not enabled, fallback to maximum.
     return 1.0;

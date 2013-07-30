@@ -86,7 +86,7 @@ SysInfoStorage::GetDevPathFromMountPath(const std::string& mnt_path) {
     path = udev_list_entry_get_name(dev_list_entry);
     dev = udev_device_new_from_syspath(udev_, path);
 
-    dev_path = get_udev_property(dev, "DEVPATH");
+    dev_path = GetUdevProperty(dev, "DEVPATH");
     if (dev_path.empty()) {
       udev_device_unref(dev);
       udev_enumerate_unref(enumerate);
@@ -95,14 +95,14 @@ SysInfoStorage::GetDevPathFromMountPath(const std::string& mnt_path) {
 
     dev_path = "/sys" + dev_path;
 
-    str = get_udev_property(dev, "DEVNAME");
+    str = GetUdevProperty(dev, "DEVNAME");
     if (!str.empty() && (str == mnt_path)) {
       udev_device_unref(dev);
       udev_enumerate_unref(enumerate);
       return dev_path;
     }
 
-    str = get_udev_property(dev, "DEVLINKS");
+    str = GetUdevProperty(dev, "DEVLINKS");
     if (!str.empty() && (std::string::npos != str.find(mnt_path))) {
       udev_device_unref(dev);
       udev_enumerate_unref(enumerate);

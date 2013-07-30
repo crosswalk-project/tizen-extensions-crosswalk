@@ -11,16 +11,16 @@
 
 namespace system_info {
 
-bool is_interface_on(const char* interface) {
+bool IsInterfaceOn(const char* interface) {
   char path[MAXBUFSIZE];
   sprintf(path, "%s/%s/%s", SYS_CLASS_NET_DIR, interface, "carrier");
 
-  int if_on = read_one_byte(path);
+  int if_on = ReadOneByte(path);
 
   return (49 == if_on);  // ascii code for '1'
 }
 
-int read_one_byte(const char* path) {
+int ReadOneByte(const char* path) {
   FILE* fp = fopen(path, "r");
 
   if (!fp)
@@ -32,7 +32,7 @@ int read_one_byte(const char* path) {
   return ret;
 }
 
-char* read_one_line(const char* path) {
+char* ReadOneLine(const char* path) {
   FILE* fp = fopen(path, "r");
   char *line = NULL;
   size_t len = 0;
@@ -50,8 +50,8 @@ char* read_one_line(const char* path) {
   return line;
 }
 
-std::string get_udev_property(struct udev_device* dev,
-                              const std::string& attr) {
+std::string GetUdevProperty(struct udev_device* dev,
+                            const std::string& attr) {
   struct udev_list_entry *attr_list_entry, *attr_entry;
 
   attr_list_entry = udev_device_get_properties_list_entry(dev);
