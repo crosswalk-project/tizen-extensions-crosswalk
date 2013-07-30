@@ -42,11 +42,14 @@ install -p -m 644 out/Default/libtizen_*.so %{buildroot}%{_libdir}/%{name}
 
 # Examples.
 mkdir -p %{buildroot}%{_datarootdir}/%{name}/examples
-install -p -m 644 examples/* %{buildroot}%{_datarootdir}/%{name}/examples
+mkdir -p %{buildroot}%{_datarootdir}/%{name}/examples/js
+install -p -m 644 examples/*.html %{buildroot}%{_datarootdir}/%{name}/examples
+install -p -m 644 examples/js/*.js %{buildroot}%{_datarootdir}/%{name}/examples/js
 
 %files
 # TODO(rakuco): This causes problems on 2.1 when creating the package.
 # %license LICENSE
 %{_bindir}/%{name}
 %{_libdir}/%{name}/libtizen_*.so
-%{_datarootdir}/%{name}/examples/*
+%{_datarootdir}/%{name}/examples/*.html
+%{_datarootdir}/%{name}/examples/js/*.js
