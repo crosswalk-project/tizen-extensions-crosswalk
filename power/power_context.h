@@ -24,6 +24,7 @@ class PowerContext {
   static const char name[];
   static const char* GetJavaScript();
   void HandleMessage(const char* message);
+  void HandleSyncMessage(const char* message) {}
 
  private:
   // These enums must be kept in sync with the JS object notation.

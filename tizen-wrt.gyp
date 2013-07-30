@@ -45,7 +45,8 @@
     ['type == "desktop"', {
       'includes': {
         'notification/notification.gypi',
-        'power/power.gypi'
+        'power/power.gypi',
+        'bluetooth/bluetooth.gypi'
       }
     }]
    ],

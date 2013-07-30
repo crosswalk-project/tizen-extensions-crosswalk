@@ -15,6 +15,10 @@ class ContextAPI {
     xwalk_extension_context_post_message(context_, message);
   }
 
+  void SetSyncReply(const char* message) {
+    xwalk_extension_context_set_sync_reply(context_, message);
+  }
+
  private:
   CXWalkExtensionContext* context_;
 };
@@ -34,6 +38,8 @@ class ExtensionAdapter {
   static void Shutdown(CXWalkExtension* extension);
   static CXWalkExtensionContext* ContextCreate(CXWalkExtension* extension);
   static void ContextHandleMessage(CXWalkExtensionContext* context,
+                                   const char* message);
+  static void ContextHandleSyncMessage(CXWalkExtensionContext* context,
                                    const char* message);
   static void ContextDestroy(CXWalkExtensionContext* context);
 };
@@ -69,9 +75,17 @@ CXWalkExtensionContext* ExtensionAdapter<T>::ContextCreate(
 
   adapter->context.destroy = ContextDestroy;
   adapter->context.handle_message = ContextHandleMessage;
+  adapter->context.handle_sync_message = ContextHandleSyncMessage;
   adapter->cpp_context = new T(new ContextAPI(&adapter->context));
 
   return reinterpret_cast<CXWalkExtensionContext*>(adapter);
+}
+
+template <class T>
+void ExtensionAdapter<T>::ContextHandleSyncMessage(
+    CXWalkExtensionContext* context, const char* message) {
+  Context* adapter = reinterpret_cast<Context*>(context);
+  adapter->cpp_context->HandleSyncMessage(message);
 }
 
 template <class T>
