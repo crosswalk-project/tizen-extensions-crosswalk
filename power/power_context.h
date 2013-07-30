@@ -2,12 +2,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef NOTIFICATION_NOTIFICATION_CONTEXT_H_
-#define NOTIFICATION_NOTIFICATION_CONTEXT_H_
+#ifndef POWER_CONTEXT_H_
+#define POWER_CONTEXT_H_
 
 #include "common/extension_adapter.h"
 #include <map>
 #include <string>
+
+#if defined(GENERIC_DESKTOP)
+#include <gio/gio.h>
+#endif
 
 namespace picojson {
 class value;
@@ -18,7 +22,8 @@ class PowerContext {
   PowerContext(ContextAPI* api);
   ~PowerContext();
 
-  void Initialize();
+  void PlatformInitialize();
+  void PlatformUninitialize();
 
   // ExtensionAdapter implementation.
   static const char name[];
@@ -51,6 +56,11 @@ class PowerContext {
   void HandleSetScreenEnabled(const picojson::value& msg);
 
   ContextAPI* api_;
+
+#if defined(GENERIC_DESKTOP)
+  friend void OnScreenProxyCreatedThunk(GObject* source, GAsyncResult*, gpointer);
+  GDBusProxy* screen_proxy_;
+#endif
 };
 
-#endif  // NOTIFICATION_NOTIFICATION_CONTEXT_H_
+#endif  // POWER_CONTEXT_H_
