@@ -41,6 +41,7 @@ class BluetoothContext {
   G_CALLBACK_1(OnAdapterProxyCreated, GObject*, GAsyncResult*);
   G_CALLBACK_1(OnDiscoveryStarted, GObject*, GAsyncResult*);
   G_CALLBACK_1(OnDiscoveryStopped, GObject*, GAsyncResult*);
+  G_CALLBACK_1(OnManagerCreated, GObject*, GAsyncResult*);
 
   void HandleDiscoverDevices(const picojson::value& msg);
   void HandleStopDiscovery(const picojson::value& msg);
@@ -62,7 +63,6 @@ class BluetoothContext {
   bool is_js_context_initialized_;
 
 #if defined(GENERIC_DESKTOP)
-  G_CALLBACK_1(OnObjectManagerCreated, GObject*, GAsyncResult*);
   G_CALLBACK_1(OnDBusObjectAdded, GDBusObjectManager*, GDBusObject*);
   G_CALLBACK_1(OnDBusObjectRemoved, GDBusObjectManager*, GDBusObject*);
   G_CALLBACK_1(DeviceFound, GObject*, GAsyncResult*);
@@ -80,7 +80,6 @@ class BluetoothContext {
   std::map<std::string, GDBusProxy*> known_devices_;
 
 #elif defined(TIZEN_MOBILE)
-  G_CALLBACK_1(OnManagerProxyCreated, GObject*, GAsyncResult*);
   G_CALLBACK_1(OnGotDefaultAdapterPath, GObject*, GAsyncResult*);
   G_CALLBACK_1(OnGotAdapterProperties, GObject*, GAsyncResult*);
 

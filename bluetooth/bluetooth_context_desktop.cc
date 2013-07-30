@@ -136,7 +136,7 @@ void BluetoothContext::CacheManagedObject(gpointer data, gpointer user_data)
   }
 }
 
-void BluetoothContext::OnObjectManagerCreated(GObject*, GAsyncResult* res) {
+void BluetoothContext::OnManagerCreated(GObject*, GAsyncResult* res) {
   GError* err = NULL;
   object_manager_ = g_dbus_object_manager_client_new_for_bus_finish(res, &err);
 
@@ -191,7 +191,7 @@ void BluetoothContext::PlatformInitialize() {
       NULL,
       NULL,
       NULL,
-      OnObjectManagerCreatedThunk,
+      OnManagerCreatedThunk,
       this);
 }
 

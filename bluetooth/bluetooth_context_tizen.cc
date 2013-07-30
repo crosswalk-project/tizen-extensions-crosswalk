@@ -76,7 +76,7 @@ void BluetoothContext::OnAdapterProxyCreated(GObject*, GAsyncResult* res) {
       G_CALLBACK(BluetoothContext::OnSignal), this);
 }
 
-void BluetoothContext::OnManagerProxyCreated(GObject*, GAsyncResult* res) {
+void BluetoothContext::OnManagerCreated(GObject*, GAsyncResult* res) {
   GError* err = NULL;
   manager_proxy_ = g_dbus_proxy_new_for_bus_finish(res, &err);
 
@@ -140,7 +140,7 @@ void BluetoothContext::PlatformInitialize() {
       "/",
       "org.bluez.Manager",
       NULL, /* GCancellable */
-      OnManagerProxyCreatedThunk,
+      OnManagerCreatedThunk,
       this);
 }
 
