@@ -51,6 +51,7 @@
     }]
    ],
   'includes': {
+    'tizen/tizen.gypi',
     'time/time.gypi',
   },
 }
