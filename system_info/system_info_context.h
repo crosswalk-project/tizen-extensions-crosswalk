@@ -7,6 +7,7 @@
 
 #include "common/extension_adapter.h"
 #include "common/picojson.h"
+#include "system_info/system_info_cpu.h"
 
 namespace picojson {
 class value;
@@ -26,10 +27,10 @@ class SystemInfoContext {
  private:
   void HandleGetPropertyValue(const picojson::value& input,
                               picojson::value& output);
+  void HandleStartListen(const picojson::value& input);
+  void HandleStopListen(const picojson::value& input);
   void GetBattery(picojson::value& error,
                   picojson::value& data);
-  void GetCPU(picojson::value& error,
-              picojson::value& data);
   void GetStorage(picojson::value& error,
                   picojson::value& data);
   void GetDisplay(picojson::value& error,
@@ -57,6 +58,7 @@ class SystemInfoContext {
   }
 
   ContextAPI* api_;
+  SysInfoCpu& cpu_;
 };
 
 #endif  // SYSTEM_INFO_SYSTEM_INFO_CONTEXT_H_

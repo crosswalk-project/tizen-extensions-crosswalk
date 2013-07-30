@@ -21,7 +21,9 @@ CXWalkExtension* xwalk_extension_init(int32_t api_version) {
 }
 
 SystemInfoContext::SystemInfoContext(ContextAPI* api)
-    : api_(api) {}
+    : api_(api),
+      cpu_(SysInfoCpu::GetSysInfoCpu(api)) {
+}
 
 SystemInfoContext::~SystemInfoContext() {
   delete api_;
@@ -41,19 +43,6 @@ void SystemInfoContext::GetBattery(picojson::value& error,
   SysInfoBattery& b = SysInfoBattery::GetSysInfoBattery(error);
   if (error.get("message").to_str().empty())
     b.Update(error, data);
-}
-
-void SystemInfoContext::GetCPU(picojson::value& error,
-                               picojson::value& data) {
-  double load[1];
-  if (getloadavg(load, 1) == -1) {
-    SetPicoJsonObjectValue(error, "message",
-        picojson::value("Get CPU load failed."));
-    return;
-  }
-
-  SetPicoJsonObjectValue(data, "load", picojson::value(load[0]));
-  SetPicoJsonObjectValue(error, "message", picojson::value(""));
 }
 
 void SystemInfoContext::GetStorage(picojson::value& error,
@@ -148,20 +137,19 @@ void SystemInfoContext::GetLocale(picojson::value& error,
 
 void SystemInfoContext::HandleGetPropertyValue(const picojson::value& input,
                                                picojson::value& output) {
-  picojson::value error;
-  picojson::value data;
-  std::string prop;
+  std::string reply_id = input.get("_reply_id").to_str();
+  SetPicoJsonObjectValue(output, "_reply_id", picojson::value(reply_id));
 
-  error = picojson::value(picojson::object());
-  data = picojson::value(picojson::object());
+  picojson::value error = picojson::value(picojson::object());
+  picojson::value data = picojson::value(picojson::object());
 
   SetPicoJsonObjectValue(error, "message", picojson::value(""));
+  std::string prop = input.get("prop").to_str();
 
-  prop = input.get("prop").to_str();
   if (prop == "BATTERY") {
     GetBattery(error, data);
   } else if (prop == "CPU") {
-    GetCPU(error, data);
+    cpu_.Get(error, data);
   } else if (prop == "STORAGE") {
     GetStorage(error, data);
   } else if (prop == "DISPLAY") {
@@ -192,29 +180,90 @@ void SystemInfoContext::HandleGetPropertyValue(const picojson::value& input,
   } else {
     SetPicoJsonObjectValue(output, "data", data);
   }
+
+  std::string result = output.serialize();
+  api_->PostMessage(result.c_str());
+}
+
+void SystemInfoContext::HandleStartListen(const picojson::value& input) {
+  std::string prop = input.get("prop").to_str();
+
+  if (prop == "BATTERY") {
+    // FIXME(halton): Add BATTERY listener
+  } else if (prop == "CPU") {
+    cpu_.StartListen();
+  } else if (prop == "STORAGE") {
+    // FIXME(halton): Add STORAGE listener
+  } else if (prop == "DISPLAY") {
+    // FIXME(halton): Add DISPLAY listener
+  } else if (prop == "DEVICE_ORIENTATION ") {
+    // FIXME(halton): Add DEVICE_ORIENTATION listener
+  } else if (prop == "BUILD") {
+    // FIXME(halton): Add BUILD listener
+  } else if (prop == "LOCALE") {
+    // FIXME(halton): Add LOCALE listener
+  } else if (prop == "NETWORK") {
+    // FIXME(halton): Add NETWORK listener
+  } else if (prop == "WIFI_NETWORK") {
+    // FIXME(halton): Add WIFI_NETWORK listener
+  } else if (prop == "CELLULAR_NETWORK") {
+    // FIXME(halton): Add CELLULAR_NETWORK listener
+  } else if (prop == "SIM") {
+    // FIXME(halton): Add SIM listener
+  } else if (prop == "PERIPHERAL") {
+    // FIXME(halton): Add PERIPHERAL listener
+  } 
+}
+
+void SystemInfoContext::HandleStopListen(const picojson::value& input) {
+  std::string prop = input.get("prop").to_str();
+
+  if (prop == "BATTERY") {
+    // FIXME(halton): Remove BATTERY listener
+  } else if (prop == "CPU") {
+    cpu_.StopListen();
+  } else if (prop == "STORAGE") {
+    // FIXME(halton): Remove STORAGE listener
+  } else if (prop == "DISPLAY") {
+    // FIXME(halton): Remove DISPLAY listener
+  } else if (prop == "DEVICE_ORIENTATION ") {
+    // FIXME(halton): Remove DEVICE_ORIENTATION listener
+  } else if (prop == "BUILD") {
+    // FIXME(halton): Remove BUILD listener
+  } else if (prop == "LOCALE") {
+    // FIXME(halton): Remove LOCALE listener
+  } else if (prop == "NETWORK") {
+    // FIXME(halton): Remove NETWORK listener
+  } else if (prop == "WIFI_NETWORK") {
+    // FIXME(halton): Remove WIFI_NETWORK listener
+  } else if (prop == "CELLULAR_NETWORK") {
+    // FIXME(halton): Remove CELLULAR_NETWORK listener
+  } else if (prop == "SIM") {
+    // FIXME(halton): Remove SIM listener
+  } else if (prop == "PERIPHERAL") {
+    // FIXME(halton): Remove PERIPHERAL listener
+  } 
 }
 
 void SystemInfoContext::HandleMessage(const char* message) {
   picojson::value input;
-  picojson::value output;
-
   std::string err;
+
   picojson::parse(input, message, message + strlen(message), &err);
   if (!err.empty()) {
     std::cout << "Ignoring message.\n";
     return;
   }
 
-  output = picojson::value(picojson::object());
-  std::string reply_id = input.get("_reply_id").to_str();
-  SetPicoJsonObjectValue(output, "_reply_id", picojson::value(reply_id));
-
   std::string cmd = input.get("cmd").to_str();
-  if (cmd == "getPropertyValue")
+  if (cmd == "getPropertyValue") {
+    picojson::value output = picojson::value(picojson::object());
     HandleGetPropertyValue(input, output);
-
-  std::string result = output.serialize();
-  api_->PostMessage(result.c_str());
+  } else if (cmd == "startListen") {
+    HandleStartListen(input);
+  } else if (cmd == "stopListen") {
+    HandleStopListen(input);
+  }
 }
 
 void SystemInfoContext::HandleSyncMessage(const char*) {

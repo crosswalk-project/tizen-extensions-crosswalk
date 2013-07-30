@@ -5,6 +5,7 @@
       'type': 'loadable_module',
       'variables': {
         'packages': [
+          'glib-2.0',
           'libudev',
         ]
       },
@@ -21,6 +22,8 @@
         'system_info_context.h',
         'system_info_context_desktop.cc',
         'system_info_context_mobile.cc',
+        'system_info_cpu.cc',
+        'system_info_cpu.h',
         'system_info_display.h',
         'system_info_display_x11.cc',
         'system_info_locale.cc',
