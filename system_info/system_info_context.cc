@@ -7,6 +7,7 @@
 #include <stdlib.h>
 
 #include "common/picojson.h"
+#include "system_info/system_info_battery.h"
 #include "system_info/system_info_display.h"
 #include "system_info/system_info_storage.h"
 
@@ -32,16 +33,9 @@ const char* SystemInfoContext::GetJavaScript() {
 
 void SystemInfoContext::GetBattery(picojson::value& error,
                                    picojson::value& data) {
-  picojson::object& error_map = error.get<picojson::object>();
-  picojson::object& data_map = data.get<picojson::object>();
-
-  // FIXME(halton): Add actual implementation
-  data_map["level"] = picojson::value(0.5);
-  data_map["isCharging"] = picojson::value(false);
-  error_map["message"] = picojson::value("");
-
-  // uncomment out below line to try error
-  // error_map["message"] = picojson::value("Get battery failed.");
+  SysInfoBattery& b = SysInfoBattery::GetSysInfoBattery(error);
+  if (error.get("message").to_str().empty())
+    b.Update(error, data);
 }
 
 void SystemInfoContext::GetCPU(picojson::value& error,
