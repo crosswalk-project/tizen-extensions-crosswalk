@@ -19,10 +19,18 @@ SystemInfoContext::SystemInfoContext(ContextAPI* api)
     : api_(api),
       battery_(SysInfoBattery::GetSysInfoBattery(api)),
       build_(SysInfoBuild::GetSysInfoBuild(api)),
+      cellular_network_(
+          SysInfoCellularNetwork::GetSysInfoCellularNetwork(api)),
       cpu_(SysInfoCpu::GetSysInfoCpu(api)),
+      device_orientation_(
+          SysInfoDeviceOrientation::GetSysInfoDeviceOrientation(api)),
       display_(SysInfoDisplay::GetSysInfoDisplay(api)),
       locale_(SysInfoLocale::GetSysInfoLocale(api)),
-      storage_(SysInfoStorage::GetSysInfoStorage(api)) {
+      sim_(SysInfoSim::GetSysInfoSim(api)),
+      storage_(SysInfoStorage::GetSysInfoStorage(api)),
+      network_(SysInfoNetwork::GetSysInfoNetwork(api)),
+      peripheral_(SysInfoPeripheral::GetSysInfoPeripheral(api)),
+      wifi_network_(SysInfoWifiNetwork::GetSysInfoWifiNetwork(api)) {
 }
 
 SystemInfoContext::~SystemInfoContext() {
@@ -58,21 +66,21 @@ void SystemInfoContext::HandleGetPropertyValue(const picojson::value& input,
   } else if (prop == "DISPLAY") {
     display_.Get(error, data);
   } else if (prop == "DEVICE_ORIENTATION ") {
-    GetDeviceOrientation(error, data);
+    device_orientation_.Get(error, data);
   } else if (prop == "BUILD") {
     build_.Get(error, data);
   } else if (prop == "LOCALE") {
     locale_.Get(error, data);
   } else if (prop == "NETWORK") {
-    GetNetwork(error, data);
+    network_.Get(error, data);
   } else if (prop == "WIFI_NETWORK") {
-    GetWifiNetwork(error, data);
+    wifi_network_.Get(error, data);
   } else if (prop == "CELLULAR_NETWORK") {
-    GetCellularNetwork(error, data);
+    cellular_network_.Get(error, data);
   } else if (prop == "SIM") {
-    GetSIM(error, data);
+    sim_.Get(error, data);
   } else if (prop == "PERIPHERAL") {
-    GetPeripheral(error, data);
+    peripheral_.Get(error, data);
   } else {
     SetPicoJsonObjectValue(error, "message",
         picojson::value("Not supportted property " + prop));
@@ -100,7 +108,7 @@ void SystemInfoContext::HandleStartListen(const picojson::value& input) {
   } else if (prop == "DISPLAY") {
     display_.StartListen();
   } else if (prop == "DEVICE_ORIENTATION ") {
-    // FIXME(halton): Add DEVICE_ORIENTATION listener
+    device_orientation_.StartListen();
   } else if (prop == "BUILD") {
     build_.StartListen();
   } else if (prop == "LOCALE") {
@@ -130,21 +138,21 @@ void SystemInfoContext::HandleStopListen(const picojson::value& input) {
   } else if (prop == "DISPLAY") {
     display_.StopListen();
   } else if (prop == "DEVICE_ORIENTATION ") {
-    // FIXME(halton): Remove DEVICE_ORIENTATION listener
+    device_orientation_.StopListen();
   } else if (prop == "BUILD") {
     build_.StopListen();
   } else if (prop == "LOCALE") {
     locale_.StopListen();
   } else if (prop == "NETWORK") {
-    // FIXME(halton): Remove NETWORK listener
+    network_.StopListen();
   } else if (prop == "WIFI_NETWORK") {
-    // FIXME(halton): Remove WIFI_NETWORK listener
+    wifi_network_.StopListen();
   } else if (prop == "CELLULAR_NETWORK") {
-    // FIXME(halton): Remove CELLULAR_NETWORK listener
+    cellular_network_.StopListen();
   } else if (prop == "SIM") {
-    // FIXME(halton): Remove SIM listener
+    sim_.StopListen();
   } else if (prop == "PERIPHERAL") {
-    // FIXME(halton): Remove PERIPHERAL listener
+    peripheral_.StopListen();
   } 
 }
 

@@ -9,10 +9,16 @@
 #include "common/picojson.h"
 #include "system_info/system_info_battery.h"
 #include "system_info/system_info_build.h"
+#include "system_info/system_info_cellular_network.h"
 #include "system_info/system_info_cpu.h"
+#include "system_info/system_info_device_orientation.h"
 #include "system_info/system_info_display.h"
 #include "system_info/system_info_locale.h"
+#include "system_info/system_info_network.h"
+#include "system_info/system_info_peripheral.h"
+#include "system_info/system_info_sim.h"
 #include "system_info/system_info_storage.h"
+#include "system_info/system_info_wifi_network.h"
 
 namespace picojson {
 class value;
@@ -50,10 +56,16 @@ class SystemInfoContext {
   ContextAPI* api_;
   SysInfoBattery& battery_;
   SysInfoBuild& build_;
+  SysInfoCellularNetwork& cellular_network_;
   SysInfoCpu& cpu_;
+  SysInfoDeviceOrientation& device_orientation_;
   SysInfoDisplay& display_;
   SysInfoLocale& locale_;
+  SysInfoNetwork& network_;
+  SysInfoPeripheral& peripheral_;
+  SysInfoSim& sim_;
   SysInfoStorage& storage_;
+  SysInfoWifiNetwork& wifi_network_;
 };
 
 #endif  // SYSTEM_INFO_SYSTEM_INFO_CONTEXT_H_
