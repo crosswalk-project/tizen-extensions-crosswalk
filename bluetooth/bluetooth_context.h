@@ -18,8 +18,12 @@
 #include <string>
 #include <vector>
 
-#if defined(GENERIC_DESKTOP)
 #include <gio/gio.h>
+
+#if defined(GENERIC_DESKTOP)
+typedef std::map<std::string, GDBusProxy*> DeviceMap;
+#elif defined(TIZEN_MOBILE)
+typedef std::map<std::string, GVariantIter*> DeviceMap;
 #endif
 
 namespace picojson {
@@ -40,25 +44,36 @@ class BluetoothContext {
  private:
   void PlatformInitialize();
 
+  G_CALLBACK_1(OnAdapterProxyCreated, GObject*, GAsyncResult*);
+  G_CALLBACK_1(OnDiscoveryStarted, GObject*, GAsyncResult*);
+  G_CALLBACK_1(OnDiscoveryStopped, GObject*, GAsyncResult*);
+  G_CALLBACK_1(OnManagerCreated, GObject*, GAsyncResult*);
+
   void HandleDiscoverDevices(const picojson::value& msg);
   void HandleStopDiscovery(const picojson::value& msg);
   picojson::value HandleGetDefaultAdapter(const picojson::value& msg);
 
-  ContextAPI* api_;
-
-#if defined(GENERIC_DESKTOP)
   void PostMessage(picojson::value v);
   void SetSyncReply(picojson::value v);
   void FlushPendingMessages();
 
-  G_CALLBACK_1(OnObjectManagerCreated, GObject*, GAsyncResult*);
-  G_CALLBACK_1(OnAdapterProxyCreated, GObject*, GAsyncResult*);
-  G_CALLBACK_1(OnDiscoveryStarted, GObject*, GAsyncResult*);
-  G_CALLBACK_1(OnDiscoveryStopped, GObject*, GAsyncResult*);
-  G_CALLBACK_1(DeviceFound, GObject*, GAsyncResult*);
-  G_CALLBACK_1(KnownDeviceFound, GObject*, GAsyncResult*);
+  ContextAPI* api_;
+  std::string discover_callback_id_;
+  std::string stop_discovery_callback_id_;
+  std::map<std::string, std::string> adapter_info_;
+  GDBusProxy* adapter_proxy_;
+
+  typedef std::vector<picojson::value> MessageQueue;
+  MessageQueue queue_;
+
+  DeviceMap known_devices_;
+  bool is_js_context_initialized_;
+
+#if defined(GENERIC_DESKTOP)
   G_CALLBACK_1(OnDBusObjectAdded, GDBusObjectManager*, GDBusObject*);
   G_CALLBACK_1(OnDBusObjectRemoved, GDBusObjectManager*, GDBusObject*);
+  G_CALLBACK_1(DeviceFound, GObject*, GAsyncResult*);
+  G_CALLBACK_1(KnownDeviceFound, GObject*, GAsyncResult*);
 
   static void CacheManagedObject(gpointer data, gpointer user_data);
   static void OnPropertiesChanged(GDBusProxy* proxy,
@@ -68,19 +83,17 @@ class BluetoothContext {
   void DeviceRemoved(GDBusObject* object);
   GDBusProxy* CreateDeviceProxy(GAsyncResult* res);
 
-  std::string discover_callback_id_;
-  std::string stop_discovery_callback_id_;
-
-  std::map<std::string, std::string> adapter_info_;
-
-  GDBusProxy* adapter_proxy_;
   GDBusObjectManager* object_manager_;
-  std::map<std::string, GDBusProxy*> known_devices_;
+#elif defined(TIZEN_MOBILE)
+  G_CALLBACK_1(OnGotDefaultAdapterPath, GObject*, GAsyncResult*);
+  G_CALLBACK_1(OnGotAdapterProperties, GObject*, GAsyncResult*);
 
-  typedef std::vector<picojson::value> MessageQueue;
-  MessageQueue queue_;
+  static void OnSignal(GDBusProxy* proxy, gchar* sender_name, gchar* signal,
+      GVariant* parameters, gpointer user_data);
 
-  bool is_js_context_initialized_;
+  void DeviceFound(std::string address, GVariantIter* properties);
+
+  GDBusProxy* manager_proxy_;
 #endif
 };
 
