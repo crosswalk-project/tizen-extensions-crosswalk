@@ -8,6 +8,7 @@
 #include "common/extension_adapter.h"
 #include "common/picojson.h"
 #include "system_info/system_info_battery.h"
+#include "system_info/system_info_build.h"
 #include "system_info/system_info_cpu.h"
 #include "system_info/system_info_display.h"
 #include "system_info/system_info_storage.h"
@@ -34,8 +35,6 @@ class SystemInfoContext {
   void HandleStopListen(const picojson::value& input);
   void GetDeviceOrientation(picojson::value& error,
                             picojson::value& data);
-  void GetBuild(picojson::value& error,
-                picojson::value& data);
   void GetLocale(picojson::value& error,
                  picojson::value& data);
   void GetNetwork(picojson::value& error,
@@ -51,6 +50,7 @@ class SystemInfoContext {
 
   ContextAPI* api_;
   SysInfoBattery& battery_;
+  SysInfoBuild& build_;
   SysInfoCpu& cpu_;
   SysInfoDisplay& display_;
   SysInfoStorage& storage_;

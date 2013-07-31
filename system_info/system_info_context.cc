@@ -7,7 +7,6 @@
 #include <stdlib.h>
 
 #include "common/picojson.h"
-#include "system_info/system_info_build.h"
 #include "system_info/system_info_locale.h"
 #include "system_info/system_info_utils.h"
 
@@ -20,6 +19,7 @@ CXWalkExtension* xwalk_extension_init(int32_t api_version) {
 SystemInfoContext::SystemInfoContext(ContextAPI* api)
     : api_(api),
       battery_(SysInfoBattery::GetSysInfoBattery(api)),
+      build_(SysInfoBuild::GetSysInfoBuild(api)),
       cpu_(SysInfoCpu::GetSysInfoCpu(api)),
       display_(SysInfoDisplay::GetSysInfoDisplay(api)),
       storage_(SysInfoStorage::GetSysInfoStorage(api)) {
@@ -36,24 +36,6 @@ extern const char kSource_system_info_api[];
 
 const char* SystemInfoContext::GetJavaScript() {
   return kSource_system_info_api;
-}
-
-void SystemInfoContext::GetBuild(picojson::value& error,
-                                 picojson::value& data) {
-  SysInfoBuild& build = SysInfoBuild::GetSysInfoBuild(error);
-
-  std::string Manufacturer;
-  std::string Model;
-  std::string Build;
-  if (build.GetBuildInfo(Manufacturer, Model, Build)) {
-    SetPicoJsonObjectValue(data, "model", picojson::value(Model));
-    SetPicoJsonObjectValue(data, "manufacturer", picojson::value(Manufacturer));
-    SetPicoJsonObjectValue(data, "buildVersion", picojson::value(Build));
-    SetPicoJsonObjectValue(error, "message", picojson::value(""));
-  } else {
-    SetPicoJsonObjectValue(error, "message",
-        picojson::value("Unable to get info."));
-  }
 }
 
 void SystemInfoContext::GetLocale(picojson::value& error,
@@ -95,7 +77,7 @@ void SystemInfoContext::HandleGetPropertyValue(const picojson::value& input,
   } else if (prop == "DEVICE_ORIENTATION ") {
     GetDeviceOrientation(error, data);
   } else if (prop == "BUILD") {
-    GetBuild(error, data);
+    build_.Get(error, data);
   } else if (prop == "LOCALE") {
     GetLocale(error, data);
   } else if (prop == "NETWORK") {
@@ -137,7 +119,7 @@ void SystemInfoContext::HandleStartListen(const picojson::value& input) {
   } else if (prop == "DEVICE_ORIENTATION ") {
     // FIXME(halton): Add DEVICE_ORIENTATION listener
   } else if (prop == "BUILD") {
-    // FIXME(halton): Add BUILD listener
+    build_.StartListen();
   } else if (prop == "LOCALE") {
     // FIXME(halton): Add LOCALE listener
   } else if (prop == "NETWORK") {
@@ -167,7 +149,7 @@ void SystemInfoContext::HandleStopListen(const picojson::value& input) {
   } else if (prop == "DEVICE_ORIENTATION ") {
     // FIXME(halton): Remove DEVICE_ORIENTATION listener
   } else if (prop == "BUILD") {
-    // FIXME(halton): Remove BUILD listener
+    build_.StopListen();
   } else if (prop == "LOCALE") {
     // FIXME(halton): Remove LOCALE listener
   } else if (prop == "NETWORK") {

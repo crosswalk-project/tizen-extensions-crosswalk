@@ -158,6 +158,23 @@ handle("device_orientation_btn", function() {
 });
 
 handle("build_btn", function() {
+  var count = 0;
+  var id = tizen.systeminfo.addPropertyValueChangeListener(
+               "BUILD",
+               function(build) {
+                 output.value += '\n Property BUILD changed.';
+                 output.value += '\n\t model: ' + build.model;
+                 output.value += '\n\t manufacturer: ' + build.manufacturer;
+                 output.value += '\n\t buildVersion: ' + build.buildVersion;
+                 count += 1;
+                 if (count == 3) {
+                   output.value += '\n Maximum listen times(3) reached. Remove listener with id = ' + id;
+                   output.scrollTop = output.scrollHeight;
+                   count = 0;
+                   tizen.systeminfo.removePropertyValueChangeListener(id);
+                 }
+              });
+
   tizen.systeminfo.getPropertyValue(
     "BUILD",
     function(build) {

@@ -5,28 +5,39 @@
 #ifndef SYSTEM_INFO_SYSTEM_INFO_BUILD_H_
 #define SYSTEM_INFO_SYSTEM_INFO_BUILD_H_
 
-#include <libudev.h>
+#include <glib.h>
 
-#include <string>
-
+#include "common/extension_adapter.h"
 #include "common/picojson.h"
 #include "common/utils.h"
 
 class SysInfoBuild {
  public:
-  static SysInfoBuild& GetSysInfoBuild(picojson::value& error) {
-    static SysInfoBuild instance(error);
+  static SysInfoBuild& GetSysInfoBuild(ContextAPI* api) {
+    static SysInfoBuild instance(api);
     return instance;
   }
   ~SysInfoBuild();
-  bool GetBuildInfo(std::string& Manufactor,
-                    std::string& Model,
-                    std::string& Build);
+  void Get(picojson::value& error, picojson::value& data);
+  inline void StartListen() {
+    stopping_ = false;
+    g_timeout_add_seconds(3,
+                          SysInfoBuild::TimedOutUpdate,
+                          static_cast<gpointer>(this));
+  }
+  inline void StopListen() { stopping_ = true; }
 
  private:
-  SysInfoBuild(picojson::value& error);
+  SysInfoBuild(ContextAPI* api);
+  bool UpdateHardware();
+  bool UpdateOSBuild();
+  static gboolean TimedOutUpdate(gpointer user_data);
 
-  struct udev* udev_;
+  ContextAPI* api_;
+  std::string model_;
+  std::string manufacturer_;
+  std::string buildversion_;
+  bool stopping_;
 
   DISALLOW_COPY_AND_ASSIGN(SysInfoBuild);
 };
