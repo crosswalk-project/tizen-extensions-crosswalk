@@ -22,6 +22,8 @@ class NotificationContext {
   NotificationContext(ContextAPI* api);
   ~NotificationContext();
 
+  static void PlatformInitialize();
+
   // ExtensionAdapter implementation.
   static const char name[];
   static const char* GetJavaScript();
