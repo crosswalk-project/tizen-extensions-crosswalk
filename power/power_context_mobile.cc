@@ -12,13 +12,16 @@
 
 static void OnPlatformStateChanged(power_state_e state, void *user_data);
 
-void PowerContext::Initialize() {
+void PowerContext::PlatformInitialize() {
   // Set initial state.
   power_state_e pstate = power_get_state();
   OnPlatformStateChanged(pstate, this);
 
   // Hook up for changes.
   power_set_changed_cb(OnPlatformStateChanged, this);
+}
+
+void PowerContext::PlatformUninitialize() {
 }
 
 ResourceType getResourceType(const picojson::value& msg, bool* error) {

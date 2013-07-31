@@ -11,10 +11,11 @@ CXWalkExtension* xwalk_extension_init(int32_t api_version) {
 
 PowerContext::PowerContext(ContextAPI* api)
   : api_(api) {
-  Initialize();
+  PlatformInitialize();
 }
 
 PowerContext::~PowerContext() {
+  PlatformUninitialize();
 }
 
 const char PowerContext::name[] = "tizen.power";

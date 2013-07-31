@@ -9,6 +9,14 @@
         'power_context.h',
         'power_context_desktop.cc',
       ],
+
+      'conditions': [
+        [ 'type == "desktop"', {
+            'variables': { 'packages': ['gio-2.0'] },
+            'includes': [ '../pkg-config.gypi' ],
+          }
+        ],
+      ],
     },
   ],
 }
