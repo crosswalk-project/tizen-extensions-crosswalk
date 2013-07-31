@@ -6,40 +6,34 @@
 
 #include <vconf>
 
-#include "system_info/system_info_utils.h"
-
-using namespace system_info;
-
-void SysInfoNetwork::Get(picojson::value& error,
-                         picojson::value& data) {
+bool SysInfoNetwork::Update(picojson::value& error);
   int service_type = 0;
   if (vconf_get_int(VCONFKEY_TELEPHONY_SVCTYPE, &service_type)) {
-    SetPicoJsonObjectValue(error, "message",
-        picojson::value("Get network type failed."));
-    return;
+    return false;
   }
 
-  SetPicoJsonObjectValue(error, "message", picojson::value(""));
   switch (service_type) {
     case VCONFKEY_TELEPHONY_SVCTYPE_NONE:
     case VCONFKEY_TELEPHONY_SVCTYPE_NOSVC:
     case VCONFKEY_TELEPHONY_SVCTYPE_EMERGENCY:
-      SetPicoJsonObjectValue(data, "networkType", picojson::value("NONE"));
+      type_ = SYSTEM_INFO_NETWORK_NONE;
       break;
     case VCONFKEY_TELEPHONY_SVCTYPE_2G:
-      SetPicoJsonObjectValue(data, "networkType", picojson::value("2G"));
+      type_ = SYSTEM_INFO_NETWORK_2G;
       break;
     case VCONFKEY_TELEPHONY_SVCTYPE_2_5G:
     case VCONFKEY_TELEPHONY_SVCTYPE_2_5G_EDGE:
-      SetPicoJsonObjectValue(data, "networkType", picojson::value("2.5G"));
+      type_ = SYSTEM_INFO_NETWORK_2_5G;
       break;
     case VCONFKEY_TELEPHONY_SVCTYPE_3G:
-      SetPicoJsonObjectValue(data, "networkType", picojson::value("3G"));
+      type_ = SYSTEM_INFO_NETWORK_3G;
       break;
     case VCONFKEY_TELEPHONY_SVCTYPE_HSDPA:
-      SetPicoJsonObjectValue(data, "networkType", picojson::value("4G"));
+      type_ = SYSTEM_INFO_NETWORK_4G;
       break;
     default:
-      SetPicoJsonObjectValue(data, "networkType", picojson::value("UNKNOWN"));
+      type_ = SYSTEM_INFO_NETWORK_UNKNOWN;
   }
+
+  return true;
 }

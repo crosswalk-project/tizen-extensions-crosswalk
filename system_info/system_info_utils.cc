@@ -6,19 +6,7 @@
 
 #include <stdio.h>
 
-#define SYS_CLASS_NET_DIR "/sys/class/net"
-#define MAXBUFSIZE 512
-
 namespace system_info {
-
-bool IsInterfaceOn(const char* interface) {
-  char path[MAXBUFSIZE];
-  sprintf(path, "%s/%s/%s", SYS_CLASS_NET_DIR, interface, "carrier");
-
-  int if_on = ReadOneByte(path);
-
-  return (49 == if_on);  // ascii code for '1'
-}
 
 int ReadOneByte(const char* path) {
   FILE* fp = fopen(path, "r");

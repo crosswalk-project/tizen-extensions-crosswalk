@@ -12,7 +12,6 @@
 
 namespace system_info {
 
-bool IsInterfaceOn(const char* interface);
 int ReadOneByte(const char* path);
 // free the returned value when not using
 char* ReadOneLine(const char* path);

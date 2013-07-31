@@ -28,6 +28,7 @@
     ],
     'include_dirs': [
       '.',
+      '<(SHARED_INTERMEDIATE_DIR)',
     ],
     'sources': [
       '../common/extension_adapter.h',

@@ -216,6 +216,22 @@ handle("locale_btn", function() {
 });
 
 handle("network_btn", function() {
+  var count = 0;
+  var id = tizen.systeminfo.addPropertyValueChangeListener(
+               "NETWORK",
+               function(network) {
+                 output.value += '\n Property NETWORK changed.';
+                 output.value += '\n\t networkType: ' + network.networkType;
+                 output.scrollTop = output.scrollHeight;
+                 count += 1;
+                 if (count == 3) {
+                   output.value += '\n Maximum listen times(3) reached. Remove listener with id = ' + id;
+                   output.scrollTop = output.scrollHeight;
+                   count = 0;
+                   tizen.systeminfo.removePropertyValueChangeListener(id);
+                 }
+              });
+
   tizen.systeminfo.getPropertyValue(
     "NETWORK",
     function(network) {

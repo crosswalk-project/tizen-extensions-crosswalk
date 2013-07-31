@@ -5,8 +5,10 @@
       'type': 'loadable_module',
       'variables': {
         'packages': [
+          'dbus-glib-1',
           'glib-2.0',
           'libudev',
+          'NetworkManager',
         ]
       },
       'includes': [
@@ -32,6 +34,7 @@
         'system_info_display_x11.cc',
         'system_info_locale.cc',
         'system_info_locale.h',
+        'system_info_network.cc',
         'system_info_network.h',
         'system_info_network_desktop.cc',
         'system_info_network_mobile.cc',
@@ -48,6 +51,40 @@
         'system_info_wifi_network.h',
         'system_info_wifi_network_desktop.cc',
         'system_info_wifi_network_mobile.cc',
+        '<(SHARED_INTERMEDIATE_DIR)/system_info_marshaller.c'
+        '<(SHARED_INTERMEDIATE_DIR)/system_info_marshaller.h'
+      ],
+      'actions': [
+        {
+         'action_name': 'generateDBusMarshallerHeader',
+         'inputs': [
+           'marshaller.list'
+          ],
+         'outputs': [
+           '<(SHARED_INTERMEDIATE_DIR)/system_info_marshaller.h',
+          ],
+          'action': [
+            '<(DEPTH)/tools/redirect-stdout.sh',
+            'glib-genmarshal --header <@(_inputs)',
+            '<@(_outputs)',
+          ],
+          'message': 'Generate system_info DBus marshaller header',
+        },
+        {
+         'action_name': 'generateDBusMarshallerBody',
+         'inputs': [
+           'marshaller.list'
+          ],
+         'outputs': [
+           '<(SHARED_INTERMEDIATE_DIR)/system_info_marshaller.c',
+          ],
+          'action': [
+            '<(DEPTH)/tools/redirect-stdout.sh',
+            'glib-genmarshal --body <@(_inputs)',
+            '<@(_outputs)',
+          ],
+          'message': 'Generate system_info DBus marshaller body',
+        },
       ],
     },
   ],
