@@ -9,7 +9,6 @@
 #include "common/picojson.h"
 #include "system_info/system_info_build.h"
 #include "system_info/system_info_locale.h"
-#include "system_info/system_info_storage.h"
 #include "system_info/system_info_utils.h"
 
 using namespace system_info;
@@ -22,7 +21,8 @@ SystemInfoContext::SystemInfoContext(ContextAPI* api)
     : api_(api),
       battery_(SysInfoBattery::GetSysInfoBattery(api)),
       cpu_(SysInfoCpu::GetSysInfoCpu(api)),
-      display_(SysInfoDisplay::GetSysInfoDisplay(api)) {
+      display_(SysInfoDisplay::GetSysInfoDisplay(api)),
+      storage_(SysInfoStorage::GetSysInfoStorage(api)) {
 }
 
 SystemInfoContext::~SystemInfoContext() {
@@ -36,14 +36,6 @@ extern const char kSource_system_info_api[];
 
 const char* SystemInfoContext::GetJavaScript() {
   return kSource_system_info_api;
-}
-
-void SystemInfoContext::GetStorage(picojson::value& error,
-                                   picojson::value& data) {
-  SysInfoStorage& s = SysInfoStorage::GetSysInfoStorage(error);
-
-  if (error.get("message").to_str().empty())
-    s.Update(error, data);
 }
 
 void SystemInfoContext::GetBuild(picojson::value& error,
@@ -97,7 +89,7 @@ void SystemInfoContext::HandleGetPropertyValue(const picojson::value& input,
   } else if (prop == "CPU") {
     cpu_.Get(error, data);
   } else if (prop == "STORAGE") {
-    GetStorage(error, data);
+    storage_.Get(error, data);
   } else if (prop == "DISPLAY") {
     display_.Get(error, data);
   } else if (prop == "DEVICE_ORIENTATION ") {
@@ -139,7 +131,7 @@ void SystemInfoContext::HandleStartListen(const picojson::value& input) {
   } else if (prop == "CPU") {
     cpu_.StartListen();
   } else if (prop == "STORAGE") {
-    // FIXME(halton): Add STORAGE listener
+    storage_.StartListen();
   } else if (prop == "DISPLAY") {
     display_.StartListen();
   } else if (prop == "DEVICE_ORIENTATION ") {
@@ -169,7 +161,7 @@ void SystemInfoContext::HandleStopListen(const picojson::value& input) {
   } else if (prop == "CPU") {
     cpu_.StopListen();
   } else if (prop == "STORAGE") {
-    // FIXME(halton): Remove STORAGE listener
+    storage_.StopListen();
   } else if (prop == "DISPLAY") {
     display_.StopListen();
   } else if (prop == "DEVICE_ORIENTATION ") {

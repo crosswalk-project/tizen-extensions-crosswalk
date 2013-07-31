@@ -10,6 +10,7 @@
 #include "system_info/system_info_battery.h"
 #include "system_info/system_info_cpu.h"
 #include "system_info/system_info_display.h"
+#include "system_info/system_info_storage.h"
 
 namespace picojson {
 class value;
@@ -31,8 +32,6 @@ class SystemInfoContext {
                               picojson::value& output);
   void HandleStartListen(const picojson::value& input);
   void HandleStopListen(const picojson::value& input);
-  void GetStorage(picojson::value& error,
-                  picojson::value& data);
   void GetDeviceOrientation(picojson::value& error,
                             picojson::value& data);
   void GetBuild(picojson::value& error,
@@ -54,6 +53,7 @@ class SystemInfoContext {
   SysInfoBattery& battery_;
   SysInfoCpu& cpu_;
   SysInfoDisplay& display_;
+  SysInfoStorage& storage_;
 };
 
 #endif  // SYSTEM_INFO_SYSTEM_INFO_CONTEXT_H_

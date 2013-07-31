@@ -19,12 +19,9 @@ const char* sMountTable = "/proc/mounts";
 
 using namespace system_info;
 
-SysInfoStorage::SysInfoStorage(picojson::value& error) {
+SysInfoStorage::SysInfoStorage(ContextAPI* api) {
+  api_ = api;
   udev_ = udev_new();
-  if (!udev_) {
-    SetPicoJsonObjectValue(error, "message",
-        picojson::value("Can't create udev."));
-  }
 }
 
 SysInfoStorage::~SysInfoStorage() {
@@ -32,8 +29,8 @@ SysInfoStorage::~SysInfoStorage() {
     udev_unref(udev_);
 }
 
-void SysInfoStorage::Update(picojson::value& error,
-                            picojson::value& data) {
+void SysInfoStorage::Get(picojson::value& error,
+                         picojson::value& data) {
   struct mntent *entry;
   FILE *aFile;
 
@@ -192,4 +189,12 @@ void SysInfoStorage::GetDetails(const std::string& mnt_fsname,
   udev_device_unref(dev);
   SetPicoJsonObjectValue(unit, "availableCapacity", 
       picojson::value(static_cast<double>(buf.f_bavail * buf.f_bsize)));
+}
+
+void SysInfoStorage::StartListen() {
+  // FIXME(halton): Added later
+}
+
+void SysInfoStorage::StopListen() {
+  // FIXME(halton): Added later
 }

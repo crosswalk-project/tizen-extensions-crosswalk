@@ -7,27 +7,30 @@
 
 #include <libudev.h>
 
+#include "common/extension_adapter.h"
 #include "common/picojson.h"
 #include "common/utils.h"
 
 class SysInfoStorage {
  public:
-  static SysInfoStorage& GetSysInfoStorage(picojson::value& error) {
-    static SysInfoStorage d(error);
+  static SysInfoStorage& GetSysInfoStorage(ContextAPI* api) {
+    static SysInfoStorage d(api);
     return d;
   }
   ~SysInfoStorage();
-  void Update(picojson::value& error, picojson::value& data);
+  void Get(picojson::value& error, picojson::value& data);
+  void StartListen();
+  void StopListen();
 
  private:
-  SysInfoStorage(picojson::value& error);
-
+  SysInfoStorage(ContextAPI* api);
   void GetDetails(const std::string& mnt_fsname,
                   const std::string& mnt_dir,
                   picojson::value& error,
                   picojson::value& unit);
   std::string GetDevPathFromMountPath(const std::string& mnt_path);
 
+  ContextAPI* api_;
   struct udev* udev_;
 
   DISALLOW_COPY_AND_ASSIGN(SysInfoStorage);
