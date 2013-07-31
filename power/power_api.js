@@ -43,13 +43,23 @@ var sendSyncMessage = function(msg) {
   return extension.internal.sendSyncMessage(JSON.stringify(msg));
 };
 
+function getScreenState() {
+  if (screenState === undefined) {
+    var msg = {
+      'cmd': 'PowerGetScreenState'
+    };
+    var r = JSON.parse(sendSyncMessage(msg));
+    screenState = r.state;
+  }
+}
+
 extension.setMessageListener(function(msg) {
   var m = JSON.parse(msg);
   if (m.cmd == "ScreenStateChanged") {
-    var newState = parseInt(m.state);
-    if (screenState == undefined || screenState !== newState) {
+    var newState = m.state;
+    if (screenState !== newState) {
       if (screenState == undefined) {
-        screenState = 0; // "SCREEN_OFF"
+        screenState = resources["SCREEN"].states["SCREEN_OFF"];
       }
       callListeners(screenState, newState);
       screenState = newState;
@@ -143,7 +153,8 @@ exports.setScreenBrightness = function(brightness) {
 }
 
 exports.isScreenOn = function() {
-   if (typeof screenState !== 'number')
+  getScreenState();
+  if (typeof screenState !== 'number')
     throw new tizen.WebAPIException(tizen.WebAPIException.UNKNOWN_ERR);
   return screenState !== resources["SCREEN"].states["SCREEN_OFF"]
 }
@@ -168,7 +179,7 @@ exports.turnScreenOff = function() {
   // FIXME: throw UNKNOWN_ERR during failure to set the new value.
   postMessage({
     "cmd": "PowerSetScreenEnabled",
-    "value": true
+    "value": false
   });
 }
 

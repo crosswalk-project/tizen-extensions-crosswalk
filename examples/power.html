@@ -92,20 +92,27 @@ function ScreenStateChangeListener(prevState, newState) {
   changedState = newState;
 }
 tizen.power.setScreenStateChangeListener(ScreenStateChangeListener);
-tizen.power.request('SCREEN', 'SCREEN_NORMAL');
+tizen.power.request('SCREEN', 'SCREEN_DIM');
+setTimeout(waitForListener, 100);
 
-setTimeout(finish, 100);
-
-function finish() {
+function waitForListener() {
   // ScreenStateChangeListener will be called asynchronously, so we check it a bit later.
-  shouldBe("previousState", "'SCREEN_BRIGHT'");
-  shouldBe("changedState", "'SCREEN_NORMAL'");
+  shouldBe("previousState", "'SCREEN_NORMAL'");
+  shouldBe("changedState", "'SCREEN_DIM'");
+  shouldBeTrue("tizen.power.isScreenOn()");
+  shouldNotThrow("tizen.power.turnScreenOff()");
+  setTimeout(waitForScreenOff, 100);
+}
 
-  shouldThrow("tizen.power.release(1)", "new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR)")
+function waitForScreenOff() {
+  shouldBeFalse("tizen.power.isScreenOn()");
+  shouldNotThrow("tizen.power.turnScreenOn()");
+  shouldThrow("tizen.power.release(1)", "new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR)");
   shouldThrow("tizen.power.release('MOUSE')", "new tizen.WebAPIException(tizen.WebAPIException.INVALID_VALUES_ERR)");
   shouldNotThrow("tizen.power.release('CPU')");
   shouldNotThrow("tizen.power.release('SCREEN')");
 }
+
 </script>
 </body>
 </html>
