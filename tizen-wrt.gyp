@@ -45,11 +45,11 @@
     ['type == "desktop"', {
       'includes': {
         'notification/notification.gypi',
-        'power/power.gypi'
       }
     }]
    ],
   'includes': {
+    'power/power.gypi',
     'tizen/tizen.gypi',
     'time/time.gypi',
     'bluetooth/bluetooth.gypi'
