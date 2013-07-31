@@ -540,8 +540,8 @@ function shouldThrow(_a, _e)
       _ev =  eval(_e);
 
   if (exception) {
-    // Handle WebAPIException. We consider a exception as WebAPIException if code, type and name properties exist.
-    if (typeof exception.code == "number" && typeof exception.message == "string" && typeof exception.name == "string") {
+    // Handle WebAPIException and WebAPIError.
+    if (exception instanceof tizen.WebAPIException || exception instanceof tizen.WebAPIError) {
       exception = exception.name;
       _ev = _ev.name;
     }
