@@ -11,6 +11,7 @@
 #include "system_info/system_info_build.h"
 #include "system_info/system_info_cpu.h"
 #include "system_info/system_info_display.h"
+#include "system_info/system_info_locale.h"
 #include "system_info/system_info_storage.h"
 
 namespace picojson {
@@ -35,8 +36,6 @@ class SystemInfoContext {
   void HandleStopListen(const picojson::value& input);
   void GetDeviceOrientation(picojson::value& error,
                             picojson::value& data);
-  void GetLocale(picojson::value& error,
-                 picojson::value& data);
   void GetNetwork(picojson::value& error,
                   picojson::value& data);
   void GetWifiNetwork(picojson::value& error,
@@ -53,6 +52,7 @@ class SystemInfoContext {
   SysInfoBuild& build_;
   SysInfoCpu& cpu_;
   SysInfoDisplay& display_;
+  SysInfoLocale& locale_;
   SysInfoStorage& storage_;
 };
 

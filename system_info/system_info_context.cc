@@ -7,7 +7,6 @@
 #include <stdlib.h>
 
 #include "common/picojson.h"
-#include "system_info/system_info_locale.h"
 #include "system_info/system_info_utils.h"
 
 using namespace system_info;
@@ -22,6 +21,7 @@ SystemInfoContext::SystemInfoContext(ContextAPI* api)
       build_(SysInfoBuild::GetSysInfoBuild(api)),
       cpu_(SysInfoCpu::GetSysInfoCpu(api)),
       display_(SysInfoDisplay::GetSysInfoDisplay(api)),
+      locale_(SysInfoLocale::GetSysInfoLocale(api)),
       storage_(SysInfoStorage::GetSysInfoStorage(api)) {
 }
 
@@ -36,23 +36,6 @@ extern const char kSource_system_info_api[];
 
 const char* SystemInfoContext::GetJavaScript() {
   return kSource_system_info_api;
-}
-
-void SystemInfoContext::GetLocale(picojson::value& error,
-                                  picojson::value& data) {
-  SysInfoLocale& locale = SysInfoLocale::GetSysInfoLocale(error);
-
-  std::string Lang;
-  std::string Locale;
-  // FIXME(faimar): Convert the city name to actual "country" name
-  if (locale.GetLocaleInfo(Lang, Locale)) {
-    SetPicoJsonObjectValue(data, "language", picojson::value(Lang));
-    SetPicoJsonObjectValue(data, "country", picojson::value(Locale));
-    SetPicoJsonObjectValue(error, "message", picojson::value(""));
-  } else {
-    SetPicoJsonObjectValue(error, "message",
-        picojson::value("Unable to get info."));
-  }
 }
 
 void SystemInfoContext::HandleGetPropertyValue(const picojson::value& input,
@@ -79,7 +62,7 @@ void SystemInfoContext::HandleGetPropertyValue(const picojson::value& input,
   } else if (prop == "BUILD") {
     build_.Get(error, data);
   } else if (prop == "LOCALE") {
-    GetLocale(error, data);
+    locale_.Get(error, data);
   } else if (prop == "NETWORK") {
     GetNetwork(error, data);
   } else if (prop == "WIFI_NETWORK") {
@@ -121,7 +104,7 @@ void SystemInfoContext::HandleStartListen(const picojson::value& input) {
   } else if (prop == "BUILD") {
     build_.StartListen();
   } else if (prop == "LOCALE") {
-    // FIXME(halton): Add LOCALE listener
+    locale_.StartListen();
   } else if (prop == "NETWORK") {
     // FIXME(halton): Add NETWORK listener
   } else if (prop == "WIFI_NETWORK") {
@@ -151,7 +134,7 @@ void SystemInfoContext::HandleStopListen(const picojson::value& input) {
   } else if (prop == "BUILD") {
     build_.StopListen();
   } else if (prop == "LOCALE") {
-    // FIXME(halton): Remove LOCALE listener
+    locale_.StopListen();
   } else if (prop == "NETWORK") {
     // FIXME(halton): Remove NETWORK listener
   } else if (prop == "WIFI_NETWORK") {

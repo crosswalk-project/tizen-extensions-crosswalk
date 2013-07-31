@@ -5,27 +5,38 @@
 #ifndef SYSTEM_INFO_SYSTEM_INFO_LOCALE_H_
 #define SYSTEM_INFO_SYSTEM_INFO_LOCALE_H_
 
-#include <libudev.h>
+#include <glib.h>
 
-#include <string>
-
+#include "common/extension_adapter.h"
 #include "common/picojson.h"
 #include "common/utils.h"
 
 class SysInfoLocale {
  public:
-  static SysInfoLocale& GetSysInfoLocale(picojson::value& error) {
-    static SysInfoLocale instance(error);
+  static SysInfoLocale& GetSysInfoLocale(ContextAPI* api) {
+    static SysInfoLocale instance(api);
     return instance;
   }
   ~SysInfoLocale();
-  bool GetLocaleInfo(std::string& Language,
-                     std::string& Locale);
+  void Get(picojson::value& error, picojson::value& data);
+  inline void StartListen() {
+    stopping_ = false;
+    g_timeout_add_seconds(3,
+                          SysInfoLocale::TimedOutUpdate,
+                          static_cast<gpointer>(this));
+  }
+  inline void StopListen() { stopping_ = true; }
 
  private:
-  SysInfoLocale(picojson::value& error);
+  SysInfoLocale(ContextAPI* api);
+  bool UpdateLanguage();
+  bool UpdateCountry();
+  static gboolean TimedOutUpdate(gpointer user_data);
 
-  struct udev* udev_;
+  ContextAPI* api_;
+  std::string language_;
+  std::string country_;
+  bool stopping_;
 
   DISALLOW_COPY_AND_ASSIGN(SysInfoLocale);
 };
