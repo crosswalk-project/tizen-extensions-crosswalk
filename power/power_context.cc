@@ -65,6 +65,8 @@ void PowerContext::HandleSyncMessage(const char* message) {
   std::string cmd = v.get("cmd").to_str();
   if (cmd == "PowerGetScreenBrightness") {
     HandleGetScreenBrightness();
+  }  else if (cmd == "PowerGetScreenState") {
+    HandleGetScreenState();
   } else {
     std::cout << "ASSERT NOT REACHED.\n";
   }

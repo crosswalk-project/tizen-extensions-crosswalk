@@ -31,7 +31,6 @@ class PowerContext {
   void HandleMessage(const char* message);
   void HandleSyncMessage(const char* message);
 
- private:
   // These enums must be kept in sync with the JS object notation.
   enum ResourceType {
     SCREEN = 0,
@@ -49,11 +48,14 @@ class PowerContext {
   };
 
   void OnScreenStateChanged(ResourceState state);
+
+private:
   void HandleRequest(const picojson::value& msg);
   void HandleRelease(const picojson::value& msg);
   void HandleSetScreenBrightness(const picojson::value& msg);
   void HandleGetScreenBrightness();
   void HandleSetScreenEnabled(const picojson::value& msg);
+  void HandleGetScreenState();
 
   ContextAPI* api_;
 

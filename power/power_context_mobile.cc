@@ -13,10 +13,6 @@
 static void OnPlatformStateChanged(power_state_e state, void *user_data);
 
 void PowerContext::PlatformInitialize() {
-  // Set initial state.
-  power_state_e pstate = power_get_state();
-  OnPlatformStateChanged(pstate, this);
-
   // Hook up for changes.
   power_set_changed_cb(OnPlatformStateChanged, this);
 }
@@ -24,37 +20,36 @@ void PowerContext::PlatformInitialize() {
 void PowerContext::PlatformUninitialize() {
 }
 
-ResourceType getResourceType(const picojson::value& msg, bool* error) {
-    int type = msg.get("resource").get<int>();
-    if (type < 0 || type >= ResourceTypeValueCount)
-        error = true;
-    return static_cast<ResourceType>(type);
+PowerContext::ResourceType getResourceType(const picojson::value& msg, bool* error) {
+    int type = msg.get("resource").get<double>();
+    if (type < 0 || type >= PowerContext::ResourceTypeValueCount)
+        *error = true;
+    return static_cast<PowerContext::ResourceType>(type);
 }
 
-ResourceType getResourceState(const picojson::value& msg, bool* error) {
-    int type = msg.get("state").get<int>();
-    if (type < 0 || type >= ResourceStateValueCount)
-        error = true;
-    return static_cast<ResourceState>(type);
+PowerContext::ResourceState getResourceState(const picojson::value& msg, bool* error) {
+    int state = msg.get("state").get<double>();
+    if (state < 0 || state >= PowerContext::ResourceStateValueCount)
+        *error = true;
+    return static_cast<PowerContext::ResourceState>(state);
 }
 
-void OnPlatformStateChanged(power_state_e pstate, void *user_data) {
-  PowerContext* self = static_cast<PowerContext*>(user_data);
-
-  State state;
-  switch (pstate) {
+static PowerContext::ResourceState toResourceState(power_state_e pstate)
+{
+    switch (pstate) {
     case POWER_STATE_NORMAL:
-      state = SCREEN_NORMAL;
-      break;
+      return PowerContext::SCREEN_NORMAL;
     case POWER_STATE_SCREEN_DIM:
-      state = SCREEN_DIMMED;
-      break;
+      return PowerContext::SCREEN_DIM;
     case POWER_STATE_SCREEN_OFF:
-      state = SCREEN_OFF;
-      break;
-  }
+    default:
+      return PowerContext::SCREEN_OFF;
+    }
+}
 
-  OnScreenStateChanged(state);
+void OnPlatformStateChanged(power_state_e pstate, void *data) {
+  PowerContext* self = static_cast<PowerContext*>(data);
+  self->OnScreenStateChanged(toResourceState(pstate));
 }
 
 void PowerContext::HandleRequest(const picojson::value& msg) {
@@ -62,18 +57,18 @@ void PowerContext::HandleRequest(const picojson::value& msg) {
   // ResourceType is unused in this impl, as the JS API verifies
   // that resource type and state fit.
   ResourceState state = getResourceState(msg, &error);
-  ASSERT(!error); // Would indicate wrapper error.
 
   power_state_e pstate;
   switch (state) {
-    case SCREEN_NORMAL:
+    case PowerContext::SCREEN_NORMAL:
       pstate = POWER_STATE_NORMAL;
       break;
-    case SCREEN_DIM:
-      pstate = POWER_STATE_SCREEN_OFF;
+    case PowerContext::SCREEN_DIM:
+      pstate = POWER_STATE_SCREEN_DIM;
       break;
-    case SCREEN_OFF:
-    case CPU_AWAKE:
+    case PowerContext::SCREEN_OFF:
+    case PowerContext::CPU_AWAKE:
+    default:
       pstate = POWER_STATE_SCREEN_OFF;
       break;
   }
@@ -85,7 +80,6 @@ void PowerContext::HandleRequest(const picojson::value& msg) {
 void PowerContext::HandleRelease(const picojson::value& msg) {
   bool error = false;
   ResourceType resource = getResourceType(msg, &error);
-  ASSERT(!error); // Would indicate wrapper error.
 
   switch (resource) {
     case SCREEN: {
@@ -100,6 +94,8 @@ void PowerContext::HandleRelease(const picojson::value& msg) {
       power_unlock_state(POWER_STATE_SCREEN_OFF);
       break;
     }
+    default:
+      break;
   }
   // FIXME: Check return value and throw exception if needed.
 }
@@ -114,9 +110,21 @@ void PowerContext::HandleSetScreenBrightness(const picojson::value& msg) {
   }
 
   int maxBrightness;
-  device_get_max_brightness(0, &maxBrightness);
+  int ret = device_get_max_brightness(0, &maxBrightness);
+  if (ret != 0) {
+    fprintf(stderr, "Can't get the max brightness from the platform. \n");
+    device_set_brightness(0, static_cast<int>(brightness * 1000));
+  } else {
+    device_set_brightness(0, static_cast<int>(brightness * maxBrightness));
+  }
+}
 
-  device_set_brightness(0, static_cast<int>(brightness * maxBrightness));
+void PowerContext::HandleGetScreenState() {
+  power_state_e pstate = power_get_state();
+  picojson::value::object o;
+  o["state"] = picojson::value(static_cast<double>(toResourceState(pstate)));
+  picojson::value v(o);
+  api_->SetSyncReply(v.serialize().c_str());
 }
 
 void PowerContext::HandleGetScreenBrightness() {
