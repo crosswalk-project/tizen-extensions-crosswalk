@@ -33,6 +33,23 @@ function onErrorCallback(error) {
 }
 
 handle("battery_btn", function() {
+  var count = 0;
+  var id = tizen.systeminfo.addPropertyValueChangeListener(
+               "BATTERY",
+               function(battery) {
+                 output.value += '\n Property BATTERY changed.';
+                 output.value += '\n\t level : ' + battery.level;
+                 output.value += '\n\t isCharging : %' + battery.isCharging;
+                 output.scrollTop = output.scrollHeight;
+                 count += 1;
+                 if (count == 3) {
+                   output.value += '\n Maximum listen times(3) reached. Remove listener with id = ' + id;
+                   output.scrollTop = output.scrollHeight;
+                   count = 0;
+                   tizen.systeminfo.removePropertyValueChangeListener(id);
+                 }
+              });
+
   tizen.systeminfo.getPropertyValue(
     "BATTERY",
     function(battery) {

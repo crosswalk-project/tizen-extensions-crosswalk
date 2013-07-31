@@ -7,7 +7,6 @@
 #include <stdlib.h>
 
 #include "common/picojson.h"
-#include "system_info/system_info_battery.h"
 #include "system_info/system_info_build.h"
 #include "system_info/system_info_locale.h"
 #include "system_info/system_info_storage.h"
@@ -21,6 +20,7 @@ CXWalkExtension* xwalk_extension_init(int32_t api_version) {
 
 SystemInfoContext::SystemInfoContext(ContextAPI* api)
     : api_(api),
+      battery_(SysInfoBattery::GetSysInfoBattery(api)),
       cpu_(SysInfoCpu::GetSysInfoCpu(api)),
       display_(SysInfoDisplay::GetSysInfoDisplay(api)) {
 }
@@ -36,13 +36,6 @@ extern const char kSource_system_info_api[];
 
 const char* SystemInfoContext::GetJavaScript() {
   return kSource_system_info_api;
-}
-
-void SystemInfoContext::GetBattery(picojson::value& error,
-                                   picojson::value& data) {
-  SysInfoBattery& b = SysInfoBattery::GetSysInfoBattery(error);
-  if (error.get("message").to_str().empty())
-    b.Update(error, data);
 }
 
 void SystemInfoContext::GetStorage(picojson::value& error,
@@ -100,7 +93,7 @@ void SystemInfoContext::HandleGetPropertyValue(const picojson::value& input,
   std::string prop = input.get("prop").to_str();
 
   if (prop == "BATTERY") {
-    GetBattery(error, data);
+    battery_.Get(error, data);
   } else if (prop == "CPU") {
     cpu_.Get(error, data);
   } else if (prop == "STORAGE") {
@@ -142,7 +135,7 @@ void SystemInfoContext::HandleStartListen(const picojson::value& input) {
   std::string prop = input.get("prop").to_str();
 
   if (prop == "BATTERY") {
-    // FIXME(halton): Add BATTERY listener
+    battery_.StartListen();
   } else if (prop == "CPU") {
     cpu_.StartListen();
   } else if (prop == "STORAGE") {
@@ -172,7 +165,7 @@ void SystemInfoContext::HandleStopListen(const picojson::value& input) {
   std::string prop = input.get("prop").to_str();
 
   if (prop == "BATTERY") {
-    // FIXME(halton): Remove BATTERY listener
+    battery_.StopListen();
   } else if (prop == "CPU") {
     cpu_.StopListen();
   } else if (prop == "STORAGE") {

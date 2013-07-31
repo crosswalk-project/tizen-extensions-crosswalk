@@ -11,12 +11,12 @@
 
 using namespace system_info;
 
-SysInfoBattery::SysInfoBattery(picojson::value& error) {
+SysInfoBattery::SysInfoBattery(ContextAPI* api)
+    : level_(0.0),
+      charging_(false),
+      stopping_(false) {
+  api_ = api;
   udev_ = udev_new();
-  if (!udev_) {
-    SetPicoJsonObjectValue(error, "message",
-        picojson::value("Can't create udev."));
-  }
 }
 
 SysInfoBattery::~SysInfoBattery() {
@@ -24,8 +24,20 @@ SysInfoBattery::~SysInfoBattery() {
     udev_unref(udev_);
 }
 
-void SysInfoBattery::Update(picojson::value& error,
-                            picojson::value& data) {
+void SysInfoBattery::Get(picojson::value& error,
+                         picojson::value& data) {
+  if (!Update(error)) {
+    SetPicoJsonObjectValue(error, "message",
+        picojson::value("Battery not found."));
+    return;
+  } 
+  
+  SetData(data);
+  SetPicoJsonObjectValue(error, "message", picojson::value(""));
+}
+
+bool SysInfoBattery::Update(picojson::value& error) {
+  bool found;
   struct udev_enumerate *enumerate;
   struct udev_list_entry *devices, *dev_list_entry;
 
@@ -34,19 +46,13 @@ void SysInfoBattery::Update(picojson::value& error,
   udev_enumerate_scan_devices(enumerate);
   devices = udev_enumerate_get_list_entry(enumerate);
 
-  SetPicoJsonObjectValue(error, "message",
-        picojson::value("Battery not found."));
-
+  found = false;
   udev_list_entry_foreach(dev_list_entry, devices) {
-    struct udev_device *dev;
-    const char *path;
-    std::string str_capacity, str_charging;
+    const char *path  = udev_list_entry_get_name(dev_list_entry);
+    struct udev_device* dev = udev_device_new_from_syspath(udev_, path);
 
-    path = udev_list_entry_get_name(dev_list_entry);
-    dev = udev_device_new_from_syspath(udev_, path);
-
-    str_capacity = GetUdevProperty(dev, "POWER_SUPPLY_CAPACITY");
-    str_charging = GetUdevProperty(dev, "POWER_SUPPLY_STATUS");
+    std::string str_capacity = GetUdevProperty(dev, "POWER_SUPPLY_CAPACITY");
+    std::string str_charging = GetUdevProperty(dev, "POWER_SUPPLY_STATUS");
     if (str_capacity.empty() && str_charging.empty()) {
       udev_device_unref(dev);
       continue;
@@ -54,16 +60,59 @@ void SysInfoBattery::Update(picojson::value& error,
 
     // Found the battery
     int capacity = std::min(100, atoi(str_capacity.c_str()));
-    SetPicoJsonObjectValue(data, "level",
-        picojson::value(static_cast<double>(capacity / 100)));
-
-    SetPicoJsonObjectValue(data, "isCharging",
-        picojson::value(str_capacity == "Discharging"));
-    SetPicoJsonObjectValue(error, "message", picojson::value(""));
+    level_ = static_cast<double>(capacity / 100);
+    charging_ = (str_charging == "Discharging");
 
     udev_device_unref(dev);
+    found = true;
     break;
   }
 
   udev_enumerate_unref(enumerate);
+
+  if (!found) {
+    SetPicoJsonObjectValue(error, "message",
+        picojson::value("Battery not found."));
+  }
+
+  return found;
+}
+
+gboolean SysInfoBattery::TimedOutUpdate(gpointer user_data) {
+  SysInfoBattery* instance = static_cast<SysInfoBattery*>(user_data);
+  
+  if (instance->stopping_) {
+    instance->stopping_ = false;
+    return FALSE;
+  } 
+  
+  double old_level = instance->level_;
+  double old_charging = instance->charging_;
+  picojson::value error = picojson::value(picojson::object());;
+  if (!instance->Update(error)) {
+    // Fail to update, wait for next round
+    return TRUE;
+  } 
+  
+  if ((old_level != instance->level_) ||
+      (old_charging != instance->charging_)) {
+    picojson::value output = picojson::value(picojson::object());;
+    picojson::value data = picojson::value(picojson::object());
+    
+    instance->SetData(data);
+    SetPicoJsonObjectValue(output, "cmd",
+        picojson::value("SystemInfoPropertyValueChanged"));
+    SetPicoJsonObjectValue(output, "prop", picojson::value("BATTERY"));
+    SetPicoJsonObjectValue(output, "data", data);
+
+    std::string result = output.serialize();
+    instance->api_->PostMessage(result.c_str());
+  }
+
+  return TRUE;
+}
+
+void SysInfoBattery::SetData(picojson::value& data) {
+  SetPicoJsonObjectValue(data, "level", picojson::value(level_));
+  SetPicoJsonObjectValue(data, "isCharging", picojson::value(charging_));
 }
