@@ -54,14 +54,14 @@ void BluetoothContext::HandleSyncMessage(const char* message) {
 
 void BluetoothContext::HandleDiscoverDevices(const picojson::value& msg) {
   discover_callback_id_ = msg.get("reply_id").to_str();
-  if (adapter_proxy_ != NULL)
+  if (adapter_proxy_)
     g_dbus_proxy_call(adapter_proxy_, "StartDiscovery", NULL,
         G_DBUS_CALL_FLAGS_NONE, 20000, NULL, OnDiscoveryStartedThunk, this);
 }
 
 void BluetoothContext::HandleStopDiscovery(const picojson::value& msg) {
   stop_discovery_callback_id_ = msg.get("reply_id").to_str();
-  if (adapter_proxy_ != NULL)
+  if (adapter_proxy_)
     g_dbus_proxy_call(adapter_proxy_, "StopDiscovery", NULL,
         G_DBUS_CALL_FLAGS_NONE, 20000, NULL, OnDiscoveryStoppedThunk, this);
 }
@@ -75,14 +75,14 @@ void BluetoothContext::OnDiscoveryStarted(GObject*, GAsyncResult* res) {
   o["cmd"] = picojson::value("");
   o["reply_id"] = picojson::value(discover_callback_id_);
 
-  double errorCode = 0.0;
-  if (result == NULL) {
+  int errorCode = 0;
+  if (!result) {
     g_printerr ("Error discovering: %s\n", error->message);
     g_error_free(error);
-    errorCode = 1.0; /* FIXME(jeez): error*/
+    errorCode = 1; /* FIXME(jeez): error*/
   }
 
-  o["error"] = picojson::value(errorCode);
+  o["error"] = picojson::value(static_cast<double>(errorCode));
 
   picojson::value v(o);
   PostMessage(v);
@@ -95,17 +95,17 @@ void BluetoothContext::OnDiscoveryStopped(GObject* source, GAsyncResult* res) {
   GError* error = NULL;
   GVariant* result = g_dbus_proxy_call_finish(adapter_proxy_, res, &error);
 
-  int e = 0;
-  if (result == NULL) {
-    g_printerr ("Error stop discovery: %s\n", error->message);
+  int errorCode = 0;
+  if (!result) {
+    g_printerr ("Error discovering: %s\n", error->message);
     g_error_free(error);
-    e = 1;
+    errorCode = 1; /* FIXME(jeez): error*/
   }
 
   picojson::value::object o;
   o["cmd"] = picojson::value("");
   o["reply_id"] = picojson::value(stop_discovery_callback_id_);
-  o["error"] = picojson::value(static_cast<double>(e));
+  o["error"] = picojson::value(static_cast<double>(errorCode));
   picojson::value v(o);
   PostMessage(v);
 }

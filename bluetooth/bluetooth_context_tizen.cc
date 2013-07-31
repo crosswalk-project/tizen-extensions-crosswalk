@@ -7,32 +7,29 @@
 
 static void getPropertyValue(const char* key, GVariant* value,
     picojson::value::object& o) {
-  const std::string key_str(key);
-  if (key_str == "Class") {
+  if (!strcmp(key, "Class")) {
     guint32 class_id = g_variant_get_uint32(value);
-    o[key_str] = picojson::value(static_cast<double>(class_id));
-  } else if (key_str == "RSSI") {
+    o[key] = picojson::value(static_cast<double>(class_id));
+  } else if (!strcmp(key, "RSSI")) {
     gint16 class_id = g_variant_get_int16(value);
-    o[key_str] = picojson::value(static_cast<double>(class_id));
-  } else if (key_str != "Devices") {
-    char* value_str = g_variant_print(value, FALSE);
-    o[key_str] = picojson::value(value_str);
+    o[key] = picojson::value(static_cast<double>(class_id));
+  } else if (strcmp(key, "Devices")) {
+    char* value_str = g_variant_print(value, false);
+    o[key] = picojson::value(value_str);
     g_free(value_str);
   }
 }
 
-void BluetoothContext::OnSignal(GDBusProxy* proxy, gchar* sender_name, gchar* signal,
-      GVariant* parameters, gpointer user_data) {
+void BluetoothContext::OnSignal(GDBusProxy* proxy, gchar* sender, gchar* signal,
+      GVariant* parameters, gpointer data) {
+  BluetoothContext* handler = reinterpret_cast<BluetoothContext*>(data);
 
-  BluetoothContext* handler = reinterpret_cast<BluetoothContext*>(user_data);
-
-  std::string s(signal);
-  if (s == "DeviceFound") {
+  if (!strcmp(signal, "DeviceFound")) {
     char* address;
-    GVariantIter* iter;
+    GVariantIter* it;
 
-    g_variant_get(parameters, "(sa{sv})", &address, &iter);
-    handler->DeviceFound(std::string(address), iter);
+    g_variant_get(parameters, "(sa{sv})", &address, &it);
+    handler->DeviceFound(std::string(address), it);
   }
 }
 
@@ -40,7 +37,7 @@ void BluetoothContext::OnGotAdapterProperties(GObject*, GAsyncResult* res) {
   GError* error = NULL;
   GVariant* result = g_dbus_proxy_call_finish(adapter_proxy_, res, &error);
 
-  if (result == NULL) {
+  if (!result) {
     g_printerr("\n\nError Got DefaultAdapter Properties: %s\n", error->message);
     g_error_free(error);
     return;
@@ -48,22 +45,21 @@ void BluetoothContext::OnGotAdapterProperties(GObject*, GAsyncResult* res) {
 
   const gchar* key;
   GVariant* value;
-  GVariantIter* iter;
-  g_variant_get(result, "(a{sv})", &iter);
+  GVariantIter* it;
+  g_variant_get(result, "(a{sv})", &it);
 
-  while (g_variant_iter_loop(iter, "{sv}", &key, &value)) {
-    const std::string key_str(key);
-    if (key_str != "Devices")
-      adapter_info_[key] = g_variant_print(value, FALSE);
+  while (g_variant_iter_loop(it, "{sv}", &key, &value)) {
+    if (strcmp(key, "Devices"))
+      adapter_info_[key] = g_variant_print(value, false);
   }
-  g_variant_iter_free(iter);
+  g_variant_iter_free(it);
 }
 
 void BluetoothContext::OnAdapterProxyCreated(GObject*, GAsyncResult* res) {
   GError* error = NULL;
   adapter_proxy_ = g_dbus_proxy_new_for_bus_finish(res, &error);
 
-  if (adapter_proxy_ == NULL) {
+  if (!adapter_proxy_) {
     g_printerr("\n\n## adapter_proxy_ creation error: %s\n", error->message);
     g_error_free(error);
     return;
@@ -80,7 +76,7 @@ void BluetoothContext::OnManagerCreated(GObject*, GAsyncResult* res) {
   GError* err = NULL;
   manager_proxy_ = g_dbus_proxy_new_for_bus_finish(res, &err);
 
-  if (manager_proxy_ == NULL) {
+  if (!manager_proxy_) {
     g_printerr("## Manager Proxy creation error: %s\n", err->message);
     g_error_free(err);
     return;
@@ -94,7 +90,7 @@ void BluetoothContext::OnGotDefaultAdapterPath(GObject*, GAsyncResult* res) {
   GError* error = NULL;
   GVariant* result = g_dbus_proxy_call_finish(manager_proxy_, res, &error);
 
-  if (result == NULL) {
+  if (!result) {
     g_printerr("\n\nError Got DefaultAdapter Path: %s\n", error->message);
     g_error_free(error);
     return;
@@ -120,7 +116,7 @@ void BluetoothContext::OnGotDefaultAdapterPath(GObject*, GAsyncResult* res) {
 BluetoothContext::~BluetoothContext() {
   delete api_;
 
-  if (adapter_proxy_ != NULL)
+  if (adapter_proxy_)
     g_object_unref(adapter_proxy_);
 
   DeviceMap::iterator it;
