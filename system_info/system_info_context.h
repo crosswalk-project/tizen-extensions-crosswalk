@@ -8,6 +8,7 @@
 #include "common/extension_adapter.h"
 #include "common/picojson.h"
 #include "system_info/system_info_cpu.h"
+#include "system_info/system_info_display.h"
 
 namespace picojson {
 class value;
@@ -33,8 +34,6 @@ class SystemInfoContext {
                   picojson::value& data);
   void GetStorage(picojson::value& error,
                   picojson::value& data);
-  void GetDisplay(picojson::value& error,
-                  picojson::value& data);
   void GetDeviceOrientation(picojson::value& error,
                             picojson::value& data);
   void GetBuild(picojson::value& error,
@@ -52,13 +51,9 @@ class SystemInfoContext {
   void GetPeripheral(picojson::value& error,
                      picojson::value& data);
 
-  inline bool DidFail(picojson::value& error) {
-    picojson::object& error_map = error.get<picojson::object>();
-    return !error_map["message"].to_str().empty();
-  }
-
   ContextAPI* api_;
   SysInfoCpu& cpu_;
+  SysInfoDisplay& display_;
 };
 
 #endif  // SYSTEM_INFO_SYSTEM_INFO_CONTEXT_H_

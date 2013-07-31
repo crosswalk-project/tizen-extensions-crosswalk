@@ -91,6 +91,28 @@ handle("storage_btn", function() {
 });
 
 handle("display_btn", function() {
+  var count = 0;
+  var id = tizen.systeminfo.addPropertyValueChangeListener(
+               "DISPLAY",
+               function(display) {
+                 output.value += '\n Property DISPLAY changed.';
+                 output.value += '\n\t resolutionWidth: ' + display.resolutionWidth;
+                 output.value += '\n\t resolutionHeight: ' + display.resolutionHeight;
+                 output.value += '\n\t dotsPerInchWidth: ' + display.dotsPerInchWidth;
+                 output.value += '\n\t dotsPerInchHeight: ' + display.dotsPerInchHeight;
+                 output.value += '\n\t physicalWidth: ' + display.physicalWidth;
+                 output.value += '\n\t physicalHeight: ' + display.physicalHeight;
+                 output.value += '\n\t brightness: ' + display.brightness;
+                 output.scrollTop = output.scrollHeight;
+                 count += 1;
+                 if (count == 3) {
+                   output.value += '\n Maximum listen times(3) reached. Remove listener with id = ' + id;
+                   output.scrollTop = output.scrollHeight;
+                   count = 0;
+                   tizen.systeminfo.removePropertyValueChangeListener(id);
+                 }
+              });
+
   tizen.systeminfo.getPropertyValue(
     "DISPLAY",
     function(display) {

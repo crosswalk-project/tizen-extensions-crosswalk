@@ -9,7 +9,6 @@
 #include "common/picojson.h"
 #include "system_info/system_info_battery.h"
 #include "system_info/system_info_build.h"
-#include "system_info/system_info_display.h"
 #include "system_info/system_info_locale.h"
 #include "system_info/system_info_storage.h"
 #include "system_info/system_info_utils.h"
@@ -22,7 +21,8 @@ CXWalkExtension* xwalk_extension_init(int32_t api_version) {
 
 SystemInfoContext::SystemInfoContext(ContextAPI* api)
     : api_(api),
-      cpu_(SysInfoCpu::GetSysInfoCpu(api)) {
+      cpu_(SysInfoCpu::GetSysInfoCpu(api)),
+      display_(SysInfoDisplay::GetSysInfoDisplay(api)) {
 }
 
 SystemInfoContext::~SystemInfoContext() {
@@ -51,53 +51,6 @@ void SystemInfoContext::GetStorage(picojson::value& error,
 
   if (error.get("message").to_str().empty())
     s.Update(error, data);
-}
-
-void SystemInfoContext::GetDisplay(picojson::value& error,
-                                   picojson::value& data) {
-  double ret;
-  SysInfoDisplay& disp = SysInfoDisplay::GetSysInfoDisplay();
-
-  SetPicoJsonObjectValue(error, "message", picojson::value(""));
-  ret = static_cast<double>(disp.GetResolutionWidth(error));
-  if (DidFail(error))
-    return;
-  SetPicoJsonObjectValue(data, "resolutionWidth", picojson::value(ret));
-
-  ret = static_cast<double>(disp.GetResolutionHeight(error));
-  if (DidFail(error))
-    return;
-  SetPicoJsonObjectValue(data, "resolutionHeight", picojson::value(ret));
-
-  ret = static_cast<double>(disp.GetDotsPerInchWidth(error));
-  if (DidFail(error))
-    return;
-  SetPicoJsonObjectValue(data, "dotsPerInchWidth", picojson::value(ret));
-
-  ret = static_cast<double>(disp.GetDotsPerInchWidth(error));
-  if (DidFail(error))
-    return;
-  SetPicoJsonObjectValue(data, "dotsPerInchWidth", picojson::value(ret));
-
-  ret = static_cast<double>(disp.GetDotsPerInchHeight(error));
-  if (DidFail(error))
-    return;
-  SetPicoJsonObjectValue(data, "dotsPerInchHeight", picojson::value(ret));
-
-  ret = static_cast<double>(disp.GetPhysicalWidth(error));
-  if (DidFail(error))
-    return;
-  SetPicoJsonObjectValue(data, "physicalWidth", picojson::value(ret));
-
-  ret = static_cast<double>(disp.GetPhysicalHeight(error));
-  if (DidFail(error))
-    return;
-  SetPicoJsonObjectValue(data, "physicalHeight", picojson::value(ret));
-
-  ret = static_cast<double>(disp.GetBrightness(error));
-  if (DidFail(error))
-    return;
-  SetPicoJsonObjectValue(data, "brightness", picojson::value(ret));
 }
 
 void SystemInfoContext::GetBuild(picojson::value& error,
@@ -153,7 +106,7 @@ void SystemInfoContext::HandleGetPropertyValue(const picojson::value& input,
   } else if (prop == "STORAGE") {
     GetStorage(error, data);
   } else if (prop == "DISPLAY") {
-    GetDisplay(error, data);
+    display_.Get(error, data);
   } else if (prop == "DEVICE_ORIENTATION ") {
     GetDeviceOrientation(error, data);
   } else if (prop == "BUILD") {
@@ -195,7 +148,7 @@ void SystemInfoContext::HandleStartListen(const picojson::value& input) {
   } else if (prop == "STORAGE") {
     // FIXME(halton): Add STORAGE listener
   } else if (prop == "DISPLAY") {
-    // FIXME(halton): Add DISPLAY listener
+    display_.StartListen();
   } else if (prop == "DEVICE_ORIENTATION ") {
     // FIXME(halton): Add DEVICE_ORIENTATION listener
   } else if (prop == "BUILD") {
@@ -225,7 +178,7 @@ void SystemInfoContext::HandleStopListen(const picojson::value& input) {
   } else if (prop == "STORAGE") {
     // FIXME(halton): Remove STORAGE listener
   } else if (prop == "DISPLAY") {
-    // FIXME(halton): Remove DISPLAY listener
+    display_.StopListen();
   } else if (prop == "DEVICE_ORIENTATION ") {
     // FIXME(halton): Remove DEVICE_ORIENTATION listener
   } else if (prop == "BUILD") {

@@ -5,33 +5,45 @@
 #ifndef SYSTEM_INFO_SYSTEM_INFO_DISPLAY_H_
 #define SYSTEM_INFO_SYSTEM_INFO_DISPLAY_H_
 
+#include <glib.h>
+
+#include "common/extension_adapter.h"
 #include "common/picojson.h"
 #include "common/utils.h"
 
 class SysInfoDisplay {
  public:
-  static SysInfoDisplay& GetSysInfoDisplay() {
-    static SysInfoDisplay d;
+  static SysInfoDisplay& GetSysInfoDisplay(ContextAPI* api) {
+    static SysInfoDisplay d(api);
     return d;
   }
   ~SysInfoDisplay() { }
-
-  unsigned long GetResolutionWidth(picojson::value& error);
-  unsigned long GetResolutionHeight(picojson::value& error);
-  unsigned long GetDotsPerInchWidth(picojson::value& error);
-  unsigned long GetDotsPerInchHeight(picojson::value& error);
-  double GetPhysicalWidth(picojson::value& error);
-  double GetPhysicalHeight(picojson::value& error);
-  double GetBrightness(picojson::value& error);
+  // Get support
+  void Get(picojson::value& error, picojson::value& data);
+  // Listerner support
+  inline void StartListen() {
+    stopping_ = false;
+    g_timeout_add_seconds(3,
+                          SysInfoDisplay::TimedOutUpdate,
+                          static_cast<gpointer>(this));
+  }
+  void StopListen() { stopping_ = true; }
 
  private:
-  SysInfoDisplay();
-  void Update(picojson::value& error);
+  SysInfoDisplay(ContextAPI* api);
 
+  static gboolean TimedOutUpdate(gpointer user_data);
+  bool UpdateSize();
+  bool UpdateBrightness();
+  void SetData(picojson::value& data);
+
+  ContextAPI* api_;
   unsigned long resolution_width_;
   unsigned long resolution_height_;
   double physical_width_;
   double physical_height_;
+  double brightness_;
+  double stopping_;
 
   DISALLOW_COPY_AND_ASSIGN(SysInfoDisplay);
 };

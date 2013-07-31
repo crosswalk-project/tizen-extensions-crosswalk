@@ -22,109 +22,134 @@
 
 using namespace system_info;
 
-void SysInfoDisplay::Update(picojson::value& error) {
-  Display *dpy = XOpenDisplay(NULL);
-
-  if (NULL == dpy) {
-    SetPicoJsonObjectValue(error, "message",
-        picojson::value("XOpenDisplay Failed"));
-    return;
-  }
-
-  resolution_width_ = DisplayWidth(dpy, DefaultScreen(dpy));
-  if (!resolution_width_) {
-    SetPicoJsonObjectValue(error, "message",
-        picojson::value("SCREEN WIDTH is 0px."));
-    XCloseDisplay(dpy);
-    return;
-  }
-
-  resolution_height_ = DisplayHeight(dpy, DefaultScreen(dpy));
-  if (!resolution_height_) {
-    SetPicoJsonObjectValue(error, "message",
-        picojson::value("SCREEN HEIGHT is 0px."));
-    XCloseDisplay(dpy);
-    return;
-  }
-
-  physical_width_ = DisplayWidthMM(dpy, DefaultScreen(dpy));
-  if (!physical_width_) {
-    SetPicoJsonObjectValue(error, "message",
-        picojson::value("SCREEN WIDTH is 0mm."));
-    XCloseDisplay(dpy);
-    return;
-  }
-
-  physical_height_ = DisplayHeightMM(dpy, DefaultScreen(dpy));
-  if (!physical_width_) {
-    SetPicoJsonObjectValue(error, "message",
-        picojson::value("SCREEN HEIGHT is 0mm."));
-    XCloseDisplay(dpy);
-    return;
-  }
-
-  XCloseDisplay(dpy);
-}
-
-SysInfoDisplay::SysInfoDisplay()
+SysInfoDisplay::SysInfoDisplay(ContextAPI* api)
     : resolution_width_(0),
       resolution_height_(0),
       physical_width_(0.0),
-      physical_height_(0.0) {
+      physical_height_(0.0),
+      brightness_(0.0),
+      stopping_(false) {
+  api_ = api;
 }
 
-unsigned long SysInfoDisplay::GetResolutionWidth(picojson::value& error) {
-  Update(error);
-  return resolution_width_;
-}
-
-unsigned long SysInfoDisplay::GetResolutionHeight(picojson::value& error) {
-  Update(error);
-  return resolution_height_;
-}
-
-unsigned long SysInfoDisplay::GetDotsPerInchWidth(picojson::value& error) {
-  Update(error);
-  // dpi = N * 25.4 pixels / M inch
-  return (resolution_width_ * 25.4) / physical_width_;
-}
-
-unsigned long SysInfoDisplay::GetDotsPerInchHeight(picojson::value& error) {
-  Update(error);
-  return (resolution_height_ * 25.4) / physical_height_;
-}
-
-double SysInfoDisplay::GetPhysicalWidth(picojson::value& error) {
-  Update(error);
-  return physical_width_;
-}
-
-double SysInfoDisplay::GetPhysicalHeight(picojson::value& error) {
-  Update(error);
-  return physical_height_;
-}
-
-double SysInfoDisplay::GetBrightness(picojson::value& error) {
-  char* str_val = NULL;
-  char max_path[] = ACPI_BACKLIGHT_DIR"/max_brightness";
-  char brightness_path[] = ACPI_BACKLIGHT_DIR"/brightness";
-  int max_val, val;
-
-  str_val = ReadOneLine(max_path);
-  if(NULL == str_val) {
-    // FIXME(halton): ACPI is not enabled, fallback to maximum.
-    return 1.0;
+void SysInfoDisplay::Get(picojson::value& error,
+                         picojson::value& data) {
+  if (!UpdateSize()) {
+    SetPicoJsonObjectValue(error, "message",
+        picojson::value("Get display size failed."));
+    return;
   }
-  max_val = atoi(str_val);
-  free(str_val);
 
-  str_val = ReadOneLine(brightness_path);
+  if (!UpdateBrightness()) {
+    SetPicoJsonObjectValue(error, "message",
+        picojson::value("Get display brightness failed."));
+    return;
+  }
+
+  SetData(data);
+  SetPicoJsonObjectValue(error, "message", picojson::value(""));
+}
+
+bool SysInfoDisplay::UpdateSize() {
+  Display *dpy = XOpenDisplay(NULL);
+
+  if (NULL == dpy) {
+    return false;
+  }
+
+  resolution_width_ = DisplayWidth(dpy, DefaultScreen(dpy));
+  resolution_height_ = DisplayHeight(dpy, DefaultScreen(dpy));
+  physical_width_ = DisplayWidthMM(dpy, DefaultScreen(dpy));
+  physical_height_ = DisplayHeightMM(dpy, DefaultScreen(dpy));
+
+  XCloseDisplay(dpy);
+  return true;
+}
+
+bool SysInfoDisplay::UpdateBrightness() {
+  char* str_val;
+
+  str_val = ReadOneLine(ACPI_BACKLIGHT_DIR"/max_brightness");
   if(!str_val) {
     // FIXME(halton): ACPI is not enabled, fallback to maximum.
-    return 1.0;
+    brightness_ = 1.0;
+    return true;
   }
-  val = atoi(str_val);
+  int max_val = atoi(str_val);
   free(str_val);
 
-  return val / max_val;
+  str_val = ReadOneLine(ACPI_BACKLIGHT_DIR"/max_brightness");
+  if(!str_val) {
+    // FIXME(halton): ACPI is not enabled, fallback to maximum.
+    brightness_ = 1.0;
+    return true;
+  }
+  int val = atoi(str_val);
+  free(str_val);
+
+  brightness_ = val / max_val;
+  return true;
+}
+
+gboolean SysInfoDisplay::TimedOutUpdate(gpointer user_data) {
+  SysInfoDisplay* instance = static_cast<SysInfoDisplay*>(user_data);
+  
+  if (instance->stopping_) {
+    instance->stopping_ = false;
+    return FALSE;
+  } 
+  
+  double old_brightness = instance->brightness_;
+  if (!instance->UpdateBrightness()) {
+    // Fail to update brightness, wait for next round
+    return TRUE;
+  }
+
+  unsigned long old_resolution_width = instance->resolution_width_;
+  unsigned long old_resolution_height = instance->resolution_width_;
+  double old_physical_width = instance->physical_width_;
+  double old_physical_height = instance->physical_height_;
+  if (!instance->UpdateSize()) {
+    // Fail to update size, wait for next round
+    return TRUE;
+  }
+
+  if ((old_brightness != instance->brightness_) ||
+      (old_resolution_width != instance->resolution_width_) ||
+      (old_resolution_height != instance->resolution_width_) ||
+      (old_physical_width != instance->physical_width_) ||
+      (old_physical_height != instance->physical_height_)) {
+    picojson::value output = picojson::value(picojson::object());;
+    picojson::value data = picojson::value(picojson::object());
+    
+    instance->SetData(data);
+    SetPicoJsonObjectValue(output, "cmd",
+        picojson::value("SystemInfoPropertyValueChanged"));
+    SetPicoJsonObjectValue(output, "prop", picojson::value("DISPLAY"));
+    SetPicoJsonObjectValue(output, "data", data);
+    
+    std::string result = output.serialize();
+    instance->api_->PostMessage(result.c_str());
+  } 
+  
+  return TRUE;
+}
+
+void SysInfoDisplay::SetData(picojson::value& data) {
+  SetPicoJsonObjectValue(data, "brightness", picojson::value(brightness_));
+
+  SetPicoJsonObjectValue(data, "resolutionWidth",
+      picojson::value(static_cast<double>(resolution_width_)));
+  SetPicoJsonObjectValue(data, "resolutionHeight",
+      picojson::value(static_cast<double>(resolution_height_)));
+  SetPicoJsonObjectValue(data, "physicalWidth",
+      picojson::value(physical_width_));
+  SetPicoJsonObjectValue(data, "physicalHeight",
+      picojson::value(physical_height_));
+
+  // dpi = N * 25.4 pixels / M inch
+  SetPicoJsonObjectValue(data, "dotsPerInchWidth",
+      picojson::value((resolution_width_ * 25.4) / physical_width_));
+  SetPicoJsonObjectValue(data, "dotsPerInchHeight",
+      picojson::value((resolution_width_ * 25.4) / physical_width_));
 }
