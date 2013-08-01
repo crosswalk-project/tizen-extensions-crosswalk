@@ -16,7 +16,7 @@
 #if defined(TIZEN_MOBILE)
 class NotificationClient {
  public:
-  virtual void OnNotificationRemoved(int priv_id) = 0;
+  virtual void OnNotificationRemoved(const std::string& id) = 0;
  protected:
   virtual ~NotificationClient() {}
 };
@@ -61,7 +61,7 @@ class NotificationContext
 
 #if defined(TIZEN_MOBILE)
   // NotificationClient implementation.
-  virtual void OnNotificationRemoved(int priv_id);
+  virtual void OnNotificationRemoved(const std::string& id);
 
   typedef std::map<std::string, int> NotificationsMap;
   NotificationsMap notifications_;

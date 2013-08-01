@@ -24,17 +24,19 @@ class NotificationManager {
   notification_h CreateNotification();
 
   // Post a notification created with the function above. The passed client will
-  // be informed when the notification was destroyed. Return value is either a
-  // priv_id identifying it or NOTIFICATION_PRIV_ID_NONE in case of error.
+  // be informed when the notification was destroyed. Return value is false if
+  // the notification couldn't be posted. This function is thread-safe.
   //
   // Ownership of notification_h is taken by the NotificationManager.
-  int PostNotification(notification_h notification, NotificationClient* client);
+  bool PostNotification(const std::string& id, notification_h notification,
+                        NotificationClient* client);
 
   // Asks for a Notification to be removed, should be called with the identifier
   // received from PostNotification. If returns false, an error happened; if
   // true the removal was dispatched. Later the function OnNotificationRemoved()
-  // from the client associated with priv_id will be called.
-  bool RemoveNotification(int priv_id);
+  // from the client associated with the id will be called. This function is
+  // thread-safe.
+  bool RemoveNotification(const std::string& id);
 
   // Called when a Client is being destroyed, so we stop watching its
   // notifications.
@@ -55,11 +57,22 @@ class NotificationManager {
       notification_type_e type, notification_op* op_list, int num_op);
 
   struct NotificationEntry {
+    int priv_id;
     notification_h handle;
     NotificationClient* client;
   };
-  typedef std::map<int, NotificationEntry> PrivIDMap;
-  PrivIDMap priv_ids_;
+
+  typedef std::map<std::string, NotificationEntry> IDMap;
+  IDMap::iterator FindByPrivID(int priv_id) {
+    IDMap::iterator it = id_map_.begin();
+    while (it != id_map_.end()) {
+      if (it->second.priv_id == priv_id)
+        break;
+    }
+    return it;
+  }
+
+  IDMap id_map_;
 
   // Utility to lock this object in a certain scope.
   struct Locker {
@@ -79,6 +92,8 @@ NotificationManager::NotificationManager() {
 }
 
 NotificationManager::~NotificationManager() {
+  // Extension should outlive all its contexts, so when it is shutdown, all the
+  // contexts were destroyed, so no contention here.
   pthread_mutex_destroy(&mutex_);
 }
 
@@ -89,32 +104,35 @@ notification_h NotificationManager::CreateNotification() {
                           NOTIFICATION_PRIV_ID_NONE);
 }
 
-int NotificationManager::PostNotification(notification_h notification,
-                                          NotificationClient* client) {
+bool NotificationManager::PostNotification(const std::string& id,
+                                           notification_h notification,
+                                           NotificationClient* client) {
   Locker l(&mutex_);
   int priv_id;
   notification_error_e err = notification_insert(notification, &priv_id);
   if (err != NOTIFICATION_ERROR_NONE)
-    return NOTIFICATION_PRIV_ID_NONE;
+    return false;
 
   NotificationEntry entry;
+  entry.priv_id = priv_id;
   entry.handle = notification;
   entry.client = client;
 
-  priv_ids_[priv_id] = entry;
-  return priv_id;
+  id_map_[id] = entry;
+  return true;
 }
 
-bool NotificationManager::RemoveNotification(int priv_id) {
+bool NotificationManager::RemoveNotification(const std::string& id) {
   Locker l(&mutex_);
-  PrivIDMap::iterator it = priv_ids_.find(priv_id);
-  if (it == priv_ids_.end())
+  IDMap::iterator it = id_map_.find(id);
+  if (it == id_map_.end())
     return false;
 
-  // We don't erase this priv_id from the map here, but when the
-  // OnDetailedChanged is called later.
+  // We don't erase the entry from the map here, but when the OnDetailedChanged
+  // is called later.
+  const NotificationEntry& entry = it->second;
   notification_error_e err = notification_delete_by_priv_id(
-      NULL, NOTIFICATION_TYPE_NOTI, it->first);
+      NULL, NOTIFICATION_TYPE_NOTI, entry.priv_id);
   if (err != NOTIFICATION_ERROR_NONE)
     return false;
 
@@ -123,12 +141,12 @@ bool NotificationManager::RemoveNotification(int priv_id) {
 
 void NotificationManager::DetachClient(NotificationClient* client) {
   Locker l(&mutex_);
-  PrivIDMap::iterator it = priv_ids_.begin();
-  while (it != priv_ids_.end()) {
-    PrivIDMap::iterator current = it++;
+  IDMap::iterator it = id_map_.begin();
+  while (it != id_map_.end()) {
+    IDMap::iterator current = it++;
     NotificationEntry entry = current->second;
     if (entry.client == client) {
-      priv_ids_.erase(current);
+      id_map_.erase(current);
       notification_free(entry.handle);
     }
   }
@@ -145,13 +163,13 @@ void NotificationManager::OnDetailedChanged(
     if (operation->type != NOTIFICATION_OP_DELETE)
       continue;
 
-    PrivIDMap::iterator it = priv_ids_.find(operation->priv_id);
-    if (it == priv_ids_.end())
+    IDMap::iterator it = FindByPrivID(operation->priv_id);
+    if (it == id_map_.end())
       continue;
 
     NotificationEntry entry = it->second;
     entry.client->OnNotificationRemoved(it->first);
-    priv_ids_.erase(it);
+    id_map_.erase(it);
     notification_free(entry.handle);
   }
 }
@@ -193,54 +211,25 @@ void NotificationContext::HandlePost(const picojson::value& msg) {
                       msg.get("content").to_str());
 
   std::string id = msg.get("id").to_str();
-  int priv_id = g_notification_manager->PostNotification(notification, this);
-  if (priv_id == NOTIFICATION_PRIV_ID_NONE) {
+  if (!g_notification_manager->PostNotification(id, notification, this)) {
     std::cerr << "tizen.notification error: "
               << " couldn't post notification with id '" << id << "'";
     return;
   }
-
-  notifications_[id] = priv_id;
 }
 
 void NotificationContext::HandleRemove(const picojson::value& msg) {
   std::string id = msg.get("id").to_str();
-  NotificationsMap::iterator it = notifications_.find(id);
-  if (it == notifications_.end()) {
-    std::cerr << "tizen.notification error: "
-              << "couldn't find notification with id '"
-              << id << "' to remove\n";
-    return;
-  }
-
-  int priv_id = it->second;
-  if (!g_notification_manager->RemoveNotification(priv_id)) {
+  if (!g_notification_manager->RemoveNotification(id)) {
     std::cerr << "tizen.notification error: "
               << "couldn't remove notification with id '" << id << "'\n";
   }
 }
 
-void NotificationContext::OnNotificationRemoved(int priv_id) {
-  NotificationsMap::iterator it = notifications_.begin();
-  while (it != notifications_.end()) {
-    if (it->second == priv_id)
-      break;
-    ++it;
-  }
-
-  if (it == notifications_.end()) {
-    std::cerr << "tizen.notification error: internal error when removing "
-              << "notification with priv_id=" << priv_id << "\n";
-    return;
-  }
-
-  const std::string id = it->first;
+void NotificationContext::OnNotificationRemoved(const std::string& id) {
   picojson::value::object o;
   o["cmd"] = picojson::value("NotificationRemoved");
   o["id"] = picojson::value(id);
   picojson::value v(o);
   api_->PostMessage(v.serialize().c_str());
-
-  // FIXME(cmarcelo): race condition.
-  notifications_.erase(it);
 }
