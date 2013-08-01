@@ -28,12 +28,12 @@ void BluetoothContext::OnPropertiesChanged(GDBusProxy* proxy,
   BluetoothContext* handler = reinterpret_cast<BluetoothContext*>(data);
 
   if (g_variant_n_children(changed_properties) > 0) {
-    GVariantIter* it;
+    GVariantIter* iter;
     const gchar* key;
     GVariant* value;
     picojson::value::object o;
 
-    g_variant_get(changed_properties, "a{sv}", &it);
+    g_variant_get(changed_properties, "a{sv}", &iter);
 
     if (!strcmp(interface, "org.bluez.Device1")) {
       DeviceMap::iterator it =
@@ -44,7 +44,7 @@ void BluetoothContext::OnPropertiesChanged(GDBusProxy* proxy,
 
       o["cmd"] = picojson::value("DeviceUpdated");
 
-      while (g_variant_iter_loop(it, "{&sv}", &key, &value))
+      while (g_variant_iter_loop(iter, "{&sv}", &key, &value))
         getPropertyValue(key, value, o);
 
       GVariant* addr = g_dbus_proxy_get_cached_property(it->second, "Address");
@@ -55,12 +55,12 @@ void BluetoothContext::OnPropertiesChanged(GDBusProxy* proxy,
     } else if (!strcmp(interface, "org.bluez.Adapter1")) {
       o["cmd"] = picojson::value("AdapterUpdated");
 
-      while (g_variant_iter_loop(it, "{&sv}", &key, &value)) {
+      while (g_variant_iter_loop(iter, "{&sv}", &key, &value)) {
         getPropertyValue(key, value, o);
         handler->adapter_info_[key] = o[key].get<std::string>();
       }
     }
-    g_variant_iter_free(it);
+    g_variant_iter_free(iter);
     picojson::value v(o);
     handler->PostMessage(v);
   }
@@ -118,7 +118,7 @@ void BluetoothContext::OnAdapterProxyCreated(GObject*, GAsyncResult* res) {
   g_strfreev(properties);
 }
 
-void BluetoothContext::CacheManagedObject(gpointer data, gpointer data)
+void BluetoothContext::CacheManagedObject(gpointer data, gpointer user_data)
 {
   GDBusObject* object = static_cast<GDBusObject*>(data);
   GDBusInterface* interface = g_dbus_object_get_interface(object,
@@ -129,7 +129,7 @@ void BluetoothContext::CacheManagedObject(gpointer data, gpointer data)
         NULL /* GDBusInterfaceInfo */, "org.bluez",
         g_dbus_object_get_object_path(object), "org.bluez.Device1",
         NULL /* GCancellable */, BluetoothContext::KnownDeviceFoundThunk,
-        data);
+        user_data);
 
     g_object_unref(interface);
   }
