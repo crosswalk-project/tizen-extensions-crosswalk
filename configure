@@ -13,4 +13,7 @@ if [ $# -eq 1 ] && [ $1 == "--desktop" ]; then
     TYPE=desktop
 fi
 
+echo To build use: ninja -C out/Default
+echo Works with individual targets too: ninja -C out/Default tizen_notification
+
 gyp -D build=Debug -D type=$TYPE --depth=. tizen-wrt.gyp
