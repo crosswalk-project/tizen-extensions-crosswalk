@@ -14,6 +14,7 @@ BuildRequires: pkgconfig(capi-system-device)
 BuildRequires: pkgconfig(capi-system-power)
 BuildRequires: pkgconfig(pmapi)
 BuildRequires: pkgconfig(vconf)
+BuildRequires: pkgconfig(notification)
 Requires:      crosswalk
 
 %description

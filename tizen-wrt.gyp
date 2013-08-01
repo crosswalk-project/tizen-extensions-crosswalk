@@ -1,8 +1,8 @@
 {
   'target_defaults': {
     'conditions': [
-      ['type != "mobile"', { 'sources/': [['exclude', '_mobile\\.cc$']] } ],
-      ['type != "desktop"', { 'sources/': [['exclude', '_desktop\\.cc$']] } ],
+      ['type != "mobile"', { 'sources/': [['exclude', '_mobile\\.cc$|mobile/']] } ],
+      ['type != "desktop"', { 'sources/': [['exclude', '_desktop\\.cc$|desktop/']] } ],
       ['type == "mobile"', { 'defines': ['TIZEN_MOBILE'] } ],
       ['type == "desktop"', { 'defines': ['GENERIC_DESKTOP'] } ],
       ['build == "Debug"', {
