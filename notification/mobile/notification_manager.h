@@ -80,15 +80,6 @@ class NotificationManager {
   }
 
   IDMap id_map_;
-
-  // Utility to lock this object in a certain scope.
-  struct Locker {
-    Locker(pthread_mutex_t* m) : m_(m) { pthread_mutex_lock(m_); }
-    ~Locker() { pthread_mutex_unlock(m_); }
-   private:
-    pthread_mutex_t* m_;
-  };
-
   pthread_mutex_t mutex_;
 };
 
