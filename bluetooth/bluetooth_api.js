@@ -155,13 +155,13 @@ exports.getDefaultAdapter = function() {
   var msg = {
     'cmd': 'GetDefaultAdapter'
   };
-  var r = JSON.parse(extension.internal.sendSyncMessage(JSON.stringify(msg)));
-  defaultAdapter.name = r.name;
-  defaultAdapter.address = r.address;
-  defaultAdapter.powered = r.powered;
-  defaultAdapter.visible = r.visible;
+  var result = JSON.parse(extension.internal.sendSyncMessage(JSON.stringify(msg)));
+  defaultAdapter.name = result.name;
+  defaultAdapter.address = result.address;
+  defaultAdapter.powered = result.powered;
+  defaultAdapter.visible = result.visible;
 
-  if (r.hasOwnProperty("address") && r.address != "")
+  if (result.hasOwnProperty("address") && result.address != "")
     adapter.isReady = true;
 
   return defaultAdapter;
@@ -291,10 +291,10 @@ BluetoothAdapter.prototype.setName = function(name, successCallback, errorCallba
     'value': name
   };
 
-  postMessage(msg, function(r) {
-    if (r.error != 0) { // FIXME(jeez): fix error codes
+  postMessage(msg, function(result) {
+    if (result.error != 0) { // FIXME(jeez): fix error codes
       var error = {};
-      error.code = r.error;
+      error.code = result.error;
       error.name = ""; // FIXME(jeez): add error names
       error.message = "ERROR!" // FIXME(jeez): add error messages
 
@@ -322,10 +322,10 @@ BluetoothAdapter.prototype.setPowered = function(state, successCallback, errorCa
     'value': state
   };
 
-  postMessage(msg, function(r) {
-    if (r.error != 0) { // FIXME(jeez): fix error codes
+  postMessage(msg, function(result) {
+    if (result.error != 0) { // FIXME(jeez): fix error codes
       var error = {};
-      error.code = r.error;
+      error.code = result.error;
       error.name = ""; // FIXME(jeez): add error names
       error.message = "ERROR!" // FIXME(jeez): add error messages
 
@@ -353,10 +353,10 @@ BluetoothAdapter.prototype.setVisible = function(mode, successCallback, errorCal
     'value': mode
   };
 
-  postMessage(msg, function(r) {
-    if (r.error != 0) { // FIXME(jeez): fix error codes
+  postMessage(msg, function(result) {
+    if (result.error != 0) { // FIXME(jeez): fix error codes
       var error = {};
-      error.code = r.error;
+      error.code = result.error;
       error.name = ""; // FIXME(jeez): add error names
       error.message = "ERROR!" // FIXME(jeez): add error messages
 
@@ -381,10 +381,10 @@ BluetoothAdapter.prototype.discoverDevices = function(discoverySuccessCallback, 
   var msg = {
     'cmd': 'DiscoverDevices'
   };
-  postMessage(msg, function(r) {
-    if (r.error != 0) { // FIXME(jeez): fix error codes
+  postMessage(msg, function(result) {
+    if (result.error != 0) { // FIXME(jeez): fix error codes
       var error = {};
-      error.code = r.error;
+      error.code = result.error;
       error.name = ""; // FIXME(jeez): add error names
       error.message = "ERROR!" // FIXME(jeez): add error messages
 
@@ -410,10 +410,10 @@ BluetoothAdapter.prototype.stopDiscovery = function(successCallback, errorCallba
   var msg = {
     'cmd': 'StopDiscovery'
   };
-  postMessage(msg, function(r) {
-    if (r.error != 0) { // FIXME(jeez): fix error codes
+  postMessage(msg, function(result) {
+    if (result.error != 0) { // FIXME(jeez): fix error codes
       var error = {};
-      error.code = r.error;
+      error.code = result.error;
       error.name = ""; // FIXME(jeez): add error names
       error.message = "ERROR!" // FIXME(jeez): add error messages
 
