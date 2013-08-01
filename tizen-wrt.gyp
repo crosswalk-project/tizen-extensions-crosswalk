@@ -12,7 +12,7 @@
       ['build == "Release"', {
         'defines': ['NDEBUG', ],
         'cflags': [
-          '-O2'
+          '-O2',
           # Don't emit the GCC version ident directives, they just end up
           # in the .comment section taking up binary size.
           '-fno-ident',
