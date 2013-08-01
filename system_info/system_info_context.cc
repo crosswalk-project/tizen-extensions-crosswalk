@@ -10,6 +10,7 @@
 #include "system_info/system_info_battery.h"
 #include "system_info/system_info_build.h"
 #include "system_info/system_info_display.h"
+#include "system_info/system_info_locale.h"
 #include "system_info/system_info_storage.h"
 #include "system_info/system_info_utils.h"
 
@@ -130,10 +131,19 @@ void SystemInfoContext::GetBuild(picojson::value& error,
 
 void SystemInfoContext::GetLocale(picojson::value& error,
                                   picojson::value& data) {
-  // FIXME(halton): Add actual implementation
-  SetPicoJsonObjectValue(data, "language", picojson::value("zh_CN"));
-  SetPicoJsonObjectValue(data, "country", picojson::value("PRC"));
-  SetPicoJsonObjectValue(error, "message", picojson::value(""));
+  SysInfoLocale& locale = SysInfoLocale::GetSysInfoLocale(error);
+
+  std::string Lang;
+  std::string Locale;
+  // FIXME(faimar): Convert the city name to actual "country" name
+  if (locale.GetLocaleInfo(Lang, Locale)) {
+    SetPicoJsonObjectValue(data, "language", picojson::value(Lang));
+    SetPicoJsonObjectValue(data, "country", picojson::value(Locale));
+    SetPicoJsonObjectValue(error, "message", picojson::value(""));
+  } else {
+    SetPicoJsonObjectValue(error, "message",
+        picojson::value("Unable to get info."));
+  }
 }
 
 void SystemInfoContext::HandleGetPropertyValue(const picojson::value& input,

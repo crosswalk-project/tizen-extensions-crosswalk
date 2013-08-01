@@ -23,6 +23,8 @@
         'system_info_context_mobile.cc',
         'system_info_display.h',
         'system_info_display_x11.cc',
+        'system_info_locale.cc',
+        'system_info_locale.h',
         'system_info_storage.cc',
         'system_info_storage.h',
         'system_info_utils.cc',
