@@ -8,6 +8,7 @@
         'notification_context.cc',
         'notification_context.h',
         'notification_context_desktop.cc',
+        'notification_context_mobile.cc',
       ],
 
       'conditions': [

@@ -8,4 +8,12 @@ if [ ! `which gyp` ]; then
    exit 1
 fi
 
-gyp -D build=Debug -D type=mobile --depth=. tizen-wrt.gyp
+TYPE=mobile
+if [ $# -eq 1 ] && [ $1 == "--desktop" ]; then
+    TYPE=desktop
+fi
+
+echo To build use: ninja -C out/Default
+echo Works with individual targets too: ninja -C out/Default tizen_notification
+
+gyp -D build=Debug -D type=$TYPE --depth=. tizen-wrt.gyp
