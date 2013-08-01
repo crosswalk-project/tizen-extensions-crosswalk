@@ -9,6 +9,8 @@
         'notification_context.h',
         'notification_context_desktop.cc',
         'notification_context_mobile.cc',
+	'mobile/notification_manager.cc',
+	'mobile/notification_manager.h',
       ],
 
       'conditions': [

@@ -14,12 +14,7 @@
 #endif
 
 #if defined(TIZEN_MOBILE)
-class NotificationClient {
- public:
-  virtual void OnNotificationRemoved(const std::string& id) = 0;
- protected:
-  virtual ~NotificationClient() {}
-};
+#include "notification/mobile/notification_manager.h"
 #endif
 
 namespace picojson {
