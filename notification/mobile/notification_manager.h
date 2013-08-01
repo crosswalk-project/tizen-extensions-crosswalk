@@ -46,7 +46,7 @@ class NotificationManager {
   bool RemoveNotification(const std::string& id);
 
   // Called when a Client is being destroyed, so we stop watching its
-  // notifications.
+  // notifications. This function is thread-safe.
   void DetachClient(NotificationClient* client);
 
  private:
