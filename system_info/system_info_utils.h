@@ -21,6 +21,6 @@ void SetPicoJsonObjectValue(picojson::value& obj,
                             const char* prop,
                             const picojson::value& val);
 
-}  // system_info
+}  // namespace system_info
 
 #endif  // SYSTEM_INFO_SYSTEM_INFO_UTILS_H_

@@ -31,8 +31,8 @@ class SysInfoCpu {
   inline void StopListen() { stopping_ = true; }
 
  private:
-  SysInfoCpu(ContextAPI* api)
-      : load_ (0.0),
+  explicit SysInfoCpu(ContextAPI* api)
+      : load_(0.0),
         stopping_(false) {
     api_ = api;
   }

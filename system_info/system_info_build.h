@@ -6,6 +6,7 @@
 #define SYSTEM_INFO_SYSTEM_INFO_BUILD_H_
 
 #include <glib.h>
+#include <string>
 
 #include "common/extension_adapter.h"
 #include "common/picojson.h"
@@ -28,7 +29,7 @@ class SysInfoBuild {
   inline void StopListen() { stopping_ = true; }
 
  private:
-  SysInfoBuild(ContextAPI* api);
+  explicit SysInfoBuild(ContextAPI* api);
   bool UpdateHardware();
   bool UpdateOSBuild();
   static gboolean TimedOutUpdate(gpointer user_data);

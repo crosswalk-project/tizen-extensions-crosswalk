@@ -5,11 +5,10 @@
 #include "system_info/system_info_context.h"
 
 #include <stdlib.h>
+#include <string>
 
 #include "common/picojson.h"
 #include "system_info/system_info_utils.h"
-
-using namespace system_info;
 
 CXWalkExtension* xwalk_extension_init(int32_t api_version) {
   return ExtensionAdapter<SystemInfoContext>::Initialize();
@@ -49,12 +48,13 @@ const char* SystemInfoContext::GetJavaScript() {
 void SystemInfoContext::HandleGetPropertyValue(const picojson::value& input,
                                                picojson::value& output) {
   std::string reply_id = input.get("_reply_id").to_str();
-  SetPicoJsonObjectValue(output, "_reply_id", picojson::value(reply_id));
+  system_info::SetPicoJsonObjectValue(output, "_reply_id",
+      picojson::value(reply_id));
 
   picojson::value error = picojson::value(picojson::object());
   picojson::value data = picojson::value(picojson::object());
 
-  SetPicoJsonObjectValue(error, "message", picojson::value(""));
+  system_info::SetPicoJsonObjectValue(error, "message", picojson::value(""));
   std::string prop = input.get("prop").to_str();
 
   if (prop == "BATTERY") {
@@ -82,14 +82,14 @@ void SystemInfoContext::HandleGetPropertyValue(const picojson::value& input,
   } else if (prop == "PERIPHERAL") {
     peripheral_.Get(error, data);
   } else {
-    SetPicoJsonObjectValue(error, "message",
+    system_info::SetPicoJsonObjectValue(error, "message",
         picojson::value("Not supportted property " + prop));
   }
 
   if (!error.get("message").to_str().empty()) {
-    SetPicoJsonObjectValue(output, "error", error);
+    system_info::SetPicoJsonObjectValue(output, "error", error);
   } else {
-    SetPicoJsonObjectValue(output, "data", data);
+    system_info::SetPicoJsonObjectValue(output, "data", data);
   }
 
   std::string result = output.serialize();
@@ -123,7 +123,7 @@ void SystemInfoContext::HandleStartListen(const picojson::value& input) {
     // FIXME(halton): Add SIM listener
   } else if (prop == "PERIPHERAL") {
     // FIXME(halton): Add PERIPHERAL listener
-  } 
+  }
 }
 
 void SystemInfoContext::HandleStopListen(const picojson::value& input) {
@@ -153,7 +153,7 @@ void SystemInfoContext::HandleStopListen(const picojson::value& input) {
     sim_.StopListen();
   } else if (prop == "PERIPHERAL") {
     peripheral_.StopListen();
-  } 
+  }
 }
 
 void SystemInfoContext::HandleMessage(const char* message) {

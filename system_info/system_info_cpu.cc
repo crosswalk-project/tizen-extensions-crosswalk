@@ -5,21 +5,20 @@
 #include "system_info/system_info_cpu.h"
 
 #include <stdlib.h>
+#include <string>
 
 #include "system_info/system_info_utils.h"
-
-using namespace system_info;
 
 void SysInfoCpu::Get(picojson::value& error,
                      picojson::value& data) {
   if (!UpdateLoad()) {
-    SetPicoJsonObjectValue(error, "message",
+    system_info::SetPicoJsonObjectValue(error, "message",
         picojson::value("Get CPU load failed."));
     return;
   }
 
-  SetPicoJsonObjectValue(data, "load", picojson::value(load_));
-  SetPicoJsonObjectValue(error, "message", picojson::value(""));
+  system_info::SetPicoJsonObjectValue(data, "load", picojson::value(load_));
+  system_info::SetPicoJsonObjectValue(error, "message", picojson::value(""));
 }
 
 gboolean SysInfoCpu::TimedOutUpdate(gpointer user_data) {
@@ -36,11 +35,12 @@ gboolean SysInfoCpu::TimedOutUpdate(gpointer user_data) {
     picojson::value output = picojson::value(picojson::object());;
     picojson::value data = picojson::value(picojson::object());
 
-    SetPicoJsonObjectValue(data, "load", picojson::value(instance->load_));
-    SetPicoJsonObjectValue(output, "cmd",
+    system_info::SetPicoJsonObjectValue(data, "load",
+        picojson::value(instance->load_));
+    system_info::SetPicoJsonObjectValue(output, "cmd",
         picojson::value("SystemInfoPropertyValueChanged"));
-    SetPicoJsonObjectValue(output, "prop", picojson::value("CPU"));
-    SetPicoJsonObjectValue(output, "data", data);
+    system_info::SetPicoJsonObjectValue(output, "prop", picojson::value("CPU"));
+    system_info::SetPicoJsonObjectValue(output, "data", data);
 
     std::string result = output.serialize();
     instance->api_->PostMessage(result.c_str());

@@ -6,50 +6,48 @@
 
 #include "system_info/system_info_utils.h"
 
-using namespace system_info;
-
 void SysInfoNetwork::Get(picojson::value& error,
                          picojson::value& data) {
   if (!Update(error)) {
     if (error.get("message").to_str().empty())
-      SetPicoJsonObjectValue(error, "message",
+      system_info::SetPicoJsonObjectValue(error, "message",
           picojson::value("Get network type faild."));
     return;
   }
 
   SetData(data);
-  SetPicoJsonObjectValue(error, "message", picojson::value(""));
+  system_info::SetPicoJsonObjectValue(error, "message", picojson::value(""));
 }
 
 gboolean SysInfoNetwork::TimedOutUpdate(gpointer user_data) {
   SysInfoNetwork* instance = static_cast<SysInfoNetwork*>(user_data);
-  
   if (instance->stopping_) {
     instance->stopping_ = false;
     return FALSE;
-  } 
-  
+  }
+
   SystemInfoNetworkType old_type = instance->type_;
   picojson::value error = picojson::value(picojson::object());;
   if (!instance->Update(error)) {
     // Fail to update, wait for next round
     return TRUE;
-  } 
-  
+  }
+
   if (old_type != instance->type_) {
     picojson::value output = picojson::value(picojson::object());;
     picojson::value data = picojson::value(picojson::object());
-    
+
     instance->SetData(data);
-    SetPicoJsonObjectValue(output, "cmd",
+    system_info::SetPicoJsonObjectValue(output, "cmd",
         picojson::value("SystemInfoPropertyValueChanged"));
-    SetPicoJsonObjectValue(output, "prop", picojson::value("NETWORK"));
-    SetPicoJsonObjectValue(output, "data", data);
-    
+    system_info::SetPicoJsonObjectValue(output, "prop",
+        picojson::value("NETWORK"));
+    system_info::SetPicoJsonObjectValue(output, "data", data);
+
     std::string result = output.serialize();
     instance->api_->PostMessage(result.c_str());
-  } 
-  
+  }
+
   return TRUE;
 }
 
@@ -87,6 +85,6 @@ SysInfoNetwork::ToNetworkTypeString(SystemInfoNetworkType type) {
 }
 
 void SysInfoNetwork::SetData(picojson::value& data) {
-  SetPicoJsonObjectValue(data, "networkType",
+  system_info::SetPicoJsonObjectValue(data, "networkType",
       picojson::value(ToNetworkTypeString(type_)));
 }

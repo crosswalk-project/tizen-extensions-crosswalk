@@ -6,10 +6,8 @@
 
 #include "system_info/system_info_utils.h"
 
-using namespace system_info;
-
 void SysInfoDeviceOrientation::Get(picojson::value& error,
                                    picojson::value& data) {
-  SetPicoJsonObjectValue(error, "message",
+  system_info::SetPicoJsonObjectValue(error, "message",
       picojson::value("Device Orientation is not support on desktop."));
 }

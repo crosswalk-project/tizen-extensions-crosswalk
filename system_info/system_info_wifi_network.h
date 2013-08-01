@@ -18,11 +18,11 @@ class SysInfoWifiNetwork {
   }
   ~SysInfoWifiNetwork() { }
   void Get(picojson::value& error, picojson::value& data);
-  void StartListen() { };
-  void StopListen() { };
+  void StartListen() { }
+  void StopListen() { }
 
  private:
-  SysInfoWifiNetwork(ContextAPI* api) {
+  explicit SysInfoWifiNetwork(ContextAPI* api) {
     api_ = api;
   }
 

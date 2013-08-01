@@ -5,16 +5,16 @@
 #ifndef SYSTEM_INFO_SYSTEM_INFO_NETWORK_H_
 #define SYSTEM_INFO_SYSTEM_INFO_NETWORK_H_
 
+#if defined(GENERIC_DESKTOP)
+#include <dbus/dbus.h>
+#include <dbus/dbus-glib.h>
+#endif
 #include <glib.h>
+#include <string>
 
 #include "common/extension_adapter.h"
 #include "common/picojson.h"
 #include "common/utils.h"
-
-#if defined(GENERIC_DESKTOP) 
-#include <dbus/dbus.h>
-#include <dbus/dbus-glib.h>
-#endif
 
 enum SystemInfoNetworkType {
   SYSTEM_INFO_NETWORK_NONE = 0,
@@ -45,7 +45,7 @@ class SysInfoNetwork {
   inline void StopListen() {  stopping_ = true; }
 
  private:
-  SysInfoNetwork(ContextAPI* api);
+  explicit SysInfoNetwork(ContextAPI* api);
 
   static gboolean TimedOutUpdate(gpointer user_data);
   bool Update(picojson::value& error);
@@ -57,7 +57,7 @@ class SysInfoNetwork {
   SystemInfoNetworkType type_;
   bool stopping_;
 
-#if defined(GENERIC_DESKTOP) 
+#if defined(GENERIC_DESKTOP)
   static void OnNMStateChanged(DBusGProxy* proxy,
                                guint new_state,
                                guint old_state,

@@ -18,11 +18,11 @@ class SysInfoDeviceOrientation {
   }
   ~SysInfoDeviceOrientation() { }
   void Get(picojson::value& error, picojson::value& data);
-  void StartListen() { };
-  void StopListen() { };
+  void StartListen() { }
+  void StopListen() { }
 
  private:
-  SysInfoDeviceOrientation(ContextAPI* api) {
+  explicit SysInfoDeviceOrientation(ContextAPI* api) {
     api_ = api;
   }
 

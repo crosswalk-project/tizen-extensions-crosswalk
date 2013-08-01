@@ -9,10 +9,8 @@
 #include "system_info/system_info_utils.h"
 #include "system_info_marshaller.h"
 
-using namespace system_info;
-
 namespace {
- 
+
 #define DBUS_NM_SERVICE "org.freedesktop.NetworkManager"
 // for StateChanged
 #define DBUS_NM_DEVICE "/org/freedesktop/NetworkManager/Device"
@@ -68,15 +66,15 @@ SysInfoNetwork::SysInfoNetwork(ContextAPI* api)
 }
 
 SysInfoNetwork::~SysInfoNetwork() {
-  if(dbus_nm_proxy_)
+  if (dbus_nm_proxy_)
     g_object_unref(dbus_nm_proxy_);
-  if(dbus_prop_proxy_)
+  if (dbus_prop_proxy_)
     g_object_unref(dbus_prop_proxy_);
 }
 
 bool SysInfoNetwork::Update(picojson::value& error) {
   GError* err = NULL;
-  GValue value = {0,};
+  GValue value = {0, };
   if (!dbus_g_proxy_call(dbus_prop_proxy_, "Get",
                          &err,
                          G_TYPE_STRING, DBUS_NM_DEVICE_INTERFACE,
@@ -84,7 +82,7 @@ bool SysInfoNetwork::Update(picojson::value& error) {
                          G_TYPE_INVALID,
                          G_TYPE_VALUE, &value,
                          G_TYPE_INVALID)) {
-    SetPicoJsonObjectValue(error, "message",
+    system_info::SetPicoJsonObjectValue(error, "message",
         picojson::value(err->message));
     return false;
   }
@@ -106,19 +104,20 @@ void SysInfoNetwork::OnNMStateChanged(DBusGProxy* proxy,
   guint old_nm_device_type = instance->nm_device_type_;
 
   picojson::value error = picojson::value(picojson::object());;
-  if(!instance->Update(error))
+  if (!instance->Update(error))
     return;
 
   if (old_nm_device_type != instance->nm_device_type_) {
     picojson::value output = picojson::value(picojson::object());;
     picojson::value data = picojson::value(picojson::object());
 
-    SetPicoJsonObjectValue(data, "networkType",
+    system_info::SetPicoJsonObjectValue(data, "networkType",
         picojson::value(static_cast<double>(instance->type_)));
-    SetPicoJsonObjectValue(output, "cmd",
+    system_info::SetPicoJsonObjectValue(output, "cmd",
         picojson::value("SystemInfoPropertyValueChanged"));
-    SetPicoJsonObjectValue(output, "prop", picojson::value("NETWORK"));
-    SetPicoJsonObjectValue(output, "data", data);
+    system_info::SetPicoJsonObjectValue(output, "prop",
+        picojson::value("NETWORK"));
+    system_info::SetPicoJsonObjectValue(output, "data", data);
 
     std::string result = output.serialize();
     instance->api_->PostMessage(result.c_str());
@@ -130,7 +129,7 @@ SystemInfoNetworkType SysInfoNetwork::ToNetworkType(guint device_type) {
 
   switch (device_type) {
     case NM_DEVICE_TYPE_ETHERNET:
-      ret = SYSTEM_INFO_NETWORK_ETHERNET; 
+      ret = SYSTEM_INFO_NETWORK_ETHERNET;
       break;
     case NM_DEVICE_TYPE_WIFI:
       ret = SYSTEM_INFO_NETWORK_WIFI;

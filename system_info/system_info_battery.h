@@ -29,7 +29,7 @@ class SysInfoBattery {
   inline void StopListen() { stopping_ = true; }
 
  private:
-  SysInfoBattery(ContextAPI* api);
+  explicit SysInfoBattery(ContextAPI* api);
 
   static gboolean TimedOutUpdate(gpointer user_data);
   bool Update(picojson::value& error);

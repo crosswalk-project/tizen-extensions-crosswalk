@@ -17,15 +17,13 @@ const char* sMountTable = "/proc/mounts";
 
 }  // namespace
 
-using namespace system_info;
-
 SysInfoStorage::SysInfoStorage(ContextAPI* api) {
   api_ = api;
   udev_ = udev_new();
 }
 
 SysInfoStorage::~SysInfoStorage() {
-  if(udev_)
+  if (udev_)
     udev_unref(udev_);
 }
 
@@ -39,13 +37,13 @@ void SysInfoStorage::Get(picojson::value& error,
 
   aFile = setmntent(sMountTable, "r");
   if (!aFile) {
-    SetPicoJsonObjectValue(error, "message",
+    system_info::SetPicoJsonObjectValue(error, "message",
         picojson::value("Read mount table failed."));
     return;
   }
 
   while (entry = getmntent(aFile)) {
-    if(entry->mnt_fsname[0] == '/') {
+    if (entry->mnt_fsname[0] == '/') {
       picojson::value unit = picojson::value(picojson::object());
       GetDetails(entry->mnt_fsname, entry->mnt_dir, error, unit);
       if (!error.get("message").to_str().empty()) {
@@ -57,8 +55,8 @@ void SysInfoStorage::Get(picojson::value& error,
   }
 
   endmntent(aFile);
-  SetPicoJsonObjectValue(data, "units", units);
-  SetPicoJsonObjectValue(error, "message", picojson::value(""));
+  system_info::SetPicoJsonObjectValue(data, "units", units);
+  system_info::SetPicoJsonObjectValue(error, "message", picojson::value(""));
 }
 
 std::string
@@ -66,7 +64,7 @@ SysInfoStorage::GetDevPathFromMountPath(const std::string& mnt_path) {
   struct udev_enumerate *enumerate;
   struct udev_list_entry *devices, *dev_list_entry;
 
-  if(mnt_path.empty() || mnt_path[0] != '/' || mnt_path.size() <=1) {
+  if (mnt_path.empty() || mnt_path[0] != '/' || mnt_path.size() <=1) {
     return NULL;
   }
 
@@ -83,7 +81,7 @@ SysInfoStorage::GetDevPathFromMountPath(const std::string& mnt_path) {
     path = udev_list_entry_get_name(dev_list_entry);
     dev = udev_device_new_from_syspath(udev_, path);
 
-    dev_path = GetUdevProperty(dev, "DEVPATH");
+    dev_path = system_info::GetUdevProperty(dev, "DEVPATH");
     if (dev_path.empty()) {
       udev_device_unref(dev);
       udev_enumerate_unref(enumerate);
@@ -92,14 +90,14 @@ SysInfoStorage::GetDevPathFromMountPath(const std::string& mnt_path) {
 
     dev_path = "/sys" + dev_path;
 
-    str = GetUdevProperty(dev, "DEVNAME");
+    str = system_info::GetUdevProperty(dev, "DEVNAME");
     if (!str.empty() && (str == mnt_path)) {
       udev_device_unref(dev);
       udev_enumerate_unref(enumerate);
       return dev_path;
     }
 
-    str = GetUdevProperty(dev, "DEVLINKS");
+    str = system_info::GetUdevProperty(dev, "DEVLINKS");
     if (!str.empty() && (std::string::npos != str.find(mnt_path))) {
       udev_device_unref(dev);
       udev_enumerate_unref(enumerate);
@@ -123,24 +121,24 @@ void SysInfoStorage::GetDetails(const std::string& mnt_fsname,
 
   std::string dev_path = GetDevPathFromMountPath(mnt_fsname);
   if (dev_path.empty()) {
-    SetPicoJsonObjectValue(error, "message",
+    system_info::SetPicoJsonObjectValue(error, "message",
         picojson::value("Get storage DEVPATH failed."));
     return;
   }
 
-  dev = udev_device_new_from_syspath(udev_, (char *)dev_path.c_str());
+  dev = udev_device_new_from_syspath(udev_, dev_path.c_str());
   if (!dev) {
-    SetPicoJsonObjectValue(error, "message",
+    system_info::SetPicoJsonObjectValue(error, "message",
         picojson::value("Get storage udev from device_id failed."));
   }
 
   attr_list_entry = udev_device_get_properties_list_entry(dev);
 
-  struct udev_device* parent_dev;
-  parent_dev = udev_device_get_parent_with_subsystem_devtype(dev, "block", "disk");
+  struct udev_device* parent_dev =
+    udev_device_get_parent_with_subsystem_devtype(dev, "block", "disk");
   str = udev_device_get_sysattr_value(parent_dev, "removable");
   if (!str) {
-    SetPicoJsonObjectValue(error, "message",
+    system_info::SetPicoJsonObjectValue(error, "message",
         picojson::value("Get storage attribute removable failed."));
     udev_device_unref(parent_dev);
     udev_device_unref(dev);
@@ -148,19 +146,23 @@ void SysInfoStorage::GetDetails(const std::string& mnt_fsname,
   }
 
   is_removable = (1 == atoi(str));
-  SetPicoJsonObjectValue(unit, "isRemovable", picojson::value(is_removable));
+  system_info::SetPicoJsonObjectValue(unit, "isRemovable",
+      picojson::value(is_removable));
   // deprecated, same as isRemovable
-  SetPicoJsonObjectValue(unit, "isRemoveable", picojson::value(is_removable));
+  system_info::SetPicoJsonObjectValue(unit, "isRemoveable",
+      picojson::value(is_removable));
 
-  SetPicoJsonObjectValue(unit, "type", picojson::value("UNKNOWN"));
+  system_info::SetPicoJsonObjectValue(unit, "type", picojson::value("UNKNOWN"));
   if (!is_removable) {
-    SetPicoJsonObjectValue(unit, "type", picojson::value("INTERNAL"));
+    system_info::SetPicoJsonObjectValue(unit, "type",
+        picojson::value("INTERNAL"));
   } else {
     attr_entry = udev_list_entry_get_by_name(attr_list_entry, "ID_BUS");
     if (attr_entry) {
       str = udev_list_entry_get_value(attr_entry);
       if (str && (strcmp(str, "usb") == 0)) {
-        SetPicoJsonObjectValue(unit, "type", picojson::value("USB_HOST"));
+        system_info::SetPicoJsonObjectValue(unit, "type",
+            picojson::value("USB_HOST"));
       }
     }
     // FIXME(halton): Add MMC type support, we do not find a correct
@@ -169,25 +171,25 @@ void SysInfoStorage::GetDetails(const std::string& mnt_fsname,
 
   str = udev_device_get_sysattr_value(dev, "size");
   if (!str) {
-    SetPicoJsonObjectValue(error, "message",
+    system_info::SetPicoJsonObjectValue(error, "message",
         picojson::value("Get storage attribute size failed."));
     udev_device_unref(dev);
     return;
   }
-  SetPicoJsonObjectValue(unit, "capacity", 
+  system_info::SetPicoJsonObjectValue(unit, "capacity",
       picojson::value(static_cast<double>(atoll(str)*512)));
 
   struct statvfs buf;
   int ret = statvfs(mnt_dir.c_str(), &buf);
   if (-1 == ret) {
-    SetPicoJsonObjectValue(error, "message",
+    system_info::SetPicoJsonObjectValue(error, "message",
         picojson::value("Get storage availableCapacity failed."));
     udev_device_unref(dev);
     return;
   }
 
   udev_device_unref(dev);
-  SetPicoJsonObjectValue(unit, "availableCapacity", 
+  system_info::SetPicoJsonObjectValue(unit, "availableCapacity",
       picojson::value(static_cast<double>(buf.f_bavail * buf.f_bsize)));
 }
 

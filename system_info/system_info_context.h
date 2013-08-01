@@ -26,7 +26,7 @@ class value;
 
 class SystemInfoContext {
  public:
-  SystemInfoContext(ContextAPI* api);
+  explicit SystemInfoContext(ContextAPI* api);
   ~SystemInfoContext();
 
   // ExtensionAdapter implementation.

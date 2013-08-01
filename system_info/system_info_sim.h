@@ -18,11 +18,11 @@ class SysInfoSim {
   }
   ~SysInfoSim() { }
   void Get(picojson::value& error, picojson::value& data);
-  void StartListen() { };
-  void StopListen() { };
+  void StartListen() { }
+  void StopListen() { }
 
  private:
-  SysInfoSim(ContextAPI* api) {
+  explicit SysInfoSim(ContextAPI* api) {
     api_ = api;
   }
 

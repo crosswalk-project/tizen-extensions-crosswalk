@@ -6,6 +6,7 @@
 #define SYSTEM_INFO_SYSTEM_INFO_STORAGE_H_
 
 #include <libudev.h>
+#include <string>
 
 #include "common/extension_adapter.h"
 #include "common/picojson.h"
@@ -23,7 +24,7 @@ class SysInfoStorage {
   void StopListen();
 
  private:
-  SysInfoStorage(ContextAPI* api);
+  explicit SysInfoStorage(ContextAPI* api);
   void GetDetails(const std::string& mnt_fsname,
                   const std::string& mnt_dir,
                   picojson::value& error,

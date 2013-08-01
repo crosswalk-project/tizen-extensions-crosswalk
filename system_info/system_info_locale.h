@@ -6,6 +6,7 @@
 #define SYSTEM_INFO_SYSTEM_INFO_LOCALE_H_
 
 #include <glib.h>
+#include <string>
 
 #include "common/extension_adapter.h"
 #include "common/picojson.h"
@@ -28,7 +29,7 @@ class SysInfoLocale {
   inline void StopListen() { stopping_ = true; }
 
  private:
-  SysInfoLocale(ContextAPI* api);
+  explicit SysInfoLocale(ContextAPI* api);
   bool UpdateLanguage();
   bool UpdateCountry();
   static gboolean TimedOutUpdate(gpointer user_data);

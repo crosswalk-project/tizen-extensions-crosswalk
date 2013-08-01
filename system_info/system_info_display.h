@@ -30,7 +30,7 @@ class SysInfoDisplay {
   void StopListen() { stopping_ = true; }
 
  private:
-  SysInfoDisplay(ContextAPI* api);
+  explicit SysInfoDisplay(ContextAPI* api);
 
   static gboolean TimedOutUpdate(gpointer user_data);
   bool UpdateSize();
@@ -38,8 +38,8 @@ class SysInfoDisplay {
   void SetData(picojson::value& data);
 
   ContextAPI* api_;
-  unsigned long resolution_width_;
-  unsigned long resolution_height_;
+  int resolution_width_;
+  int resolution_height_;
   double physical_width_;
   double physical_height_;
   double brightness_;

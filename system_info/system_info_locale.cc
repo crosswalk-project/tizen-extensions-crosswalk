@@ -6,16 +6,15 @@
 
 #include <locale.h>
 
+// FIXME(halton): CppLint - Streams are highly discouraged.
 #include <fstream>
 #include <string>
 
 #include "common/picojson.h"
 #include "system_info/system_info_utils.h"
 
-using namespace system_info;
-
 SysInfoLocale::SysInfoLocale(ContextAPI* api)
-   : stopping_(false) {
+    : stopping_(false) {
   api_ = api;
 }
 
@@ -25,22 +24,25 @@ SysInfoLocale::~SysInfoLocale() {
 void SysInfoLocale::Get(picojson::value& error,
                        picojson::value& data) {
   // language
-  if(!UpdateLanguage()) {
-    SetPicoJsonObjectValue(error, "message",
+  if (!UpdateLanguage()) {
+    system_info::SetPicoJsonObjectValue(error, "message",
         picojson::value("Get language failed."));
     return;
   }
-  SetPicoJsonObjectValue(data, "language", picojson::value(language_));
+  system_info::SetPicoJsonObjectValue(data, "language",
+      picojson::value(language_));
 
   // timezone
-  if(!UpdateCountry()) {
-    SetPicoJsonObjectValue(error, "message",
+  if (!UpdateCountry()) {
+    system_info::SetPicoJsonObjectValue(error, "message",
         picojson::value("Get timezone failed."));
     return;
   }
-  SetPicoJsonObjectValue(data, "country", picojson::value(country_));
+  system_info::SetPicoJsonObjectValue(data, "country",
+      picojson::value(country_));
 
-  SetPicoJsonObjectValue(error, "message", picojson::value(""));
+  system_info::SetPicoJsonObjectValue(error, "message",
+      picojson::value(""));
 }
 
 bool SysInfoLocale::UpdateLanguage() {
@@ -71,6 +73,7 @@ bool SysInfoLocale::UpdateCountry() {
   int pos = info.find('/', 0);
   str.assign(info, pos + 1, info.length() - pos - 1);
 
+  // FIXME (halton): Use city to get real country
   if (str.empty()) {
     return false;
   } else {
@@ -92,16 +95,20 @@ gboolean SysInfoLocale::TimedOutUpdate(gpointer user_data) {
   instance->UpdateLanguage();
   instance->UpdateCountry();
 
-  if (oldlanguage_ != instance->language_ || oldcountry_ != instance->country_) {
+  if (oldlanguage_ != instance->language_ ||
+      oldcountry_ != instance->country_) {
     picojson::value output = picojson::value(picojson::object());
     picojson::value data = picojson::value(picojson::object());
 
-    SetPicoJsonObjectValue(data, "language", picojson::value(instance->language_));
-    SetPicoJsonObjectValue(data, "country", picojson::value(instance->country_));
-    SetPicoJsonObjectValue(output, "cmd",
+    system_info::SetPicoJsonObjectValue(data, "language",
+        picojson::value(instance->language_));
+    system_info::SetPicoJsonObjectValue(data, "country",
+        picojson::value(instance->country_));
+    system_info::SetPicoJsonObjectValue(output, "cmd",
         picojson::value("SystemInfoPropertyValueChanged"));
-    SetPicoJsonObjectValue(output, "prop", picojson::value("LOCALE"));
-    SetPicoJsonObjectValue(output, "data", data);
+    system_info::SetPicoJsonObjectValue(output, "prop",
+        picojson::value("LOCALE"));
+    system_info::SetPicoJsonObjectValue(output, "data", data);
 
     std::string result = output.serialize();
     instance->api_->PostMessage(result.c_str());

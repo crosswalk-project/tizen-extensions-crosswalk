@@ -18,11 +18,11 @@ class SysInfoPeripheral {
   }
   ~SysInfoPeripheral() { }
   void Get(picojson::value& error, picojson::value& data);
-  void StartListen() { };
-  void StopListen() { };
+  void StartListen() { }
+  void StopListen() { }
 
  private:
-  SysInfoPeripheral(ContextAPI* api) {
+  explicit SysInfoPeripheral(ContextAPI* api) {
     api_ = api;
   }
 

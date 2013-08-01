@@ -7,17 +7,15 @@
 #include <stdlib.h>
 #include <sys/utsname.h>
 #include <unistd.h>
-
+// FIXME(halton): CppLint - Streams are highly discouraged.
 #include <fstream>
 #include <string>
 
 #include "common/picojson.h"
 #include "system_info/system_info_utils.h"
 
-using namespace system_info;
-
 SysInfoBuild::SysInfoBuild(ContextAPI* api)
-   : stopping_(false) {
+    : stopping_(false) {
   api_ = api;
 }
 
@@ -27,23 +25,26 @@ SysInfoBuild::~SysInfoBuild() {
 void SysInfoBuild::Get(picojson::value& error,
                        picojson::value& data) {
   // model and manufacturer
-  if(!UpdateHardware()) {
-    SetPicoJsonObjectValue(error, "message",
+  if (!UpdateHardware()) {
+    system_info::SetPicoJsonObjectValue(error, "message",
         picojson::value("Get Hardware info failed."));
     return;
   }
-  SetPicoJsonObjectValue(data, "model", picojson::value(model_));
-  SetPicoJsonObjectValue(data, "manufacturer", picojson::value(manufacturer_));
+  system_info::SetPicoJsonObjectValue(data, "model",
+      picojson::value(model_));
+  system_info::SetPicoJsonObjectValue(data, "manufacturer",
+      picojson::value(manufacturer_));
 
   // build version
-  if(!UpdateOSBuild()) {
-    SetPicoJsonObjectValue(error, "message",
+  if (!UpdateOSBuild()) {
+    system_info::SetPicoJsonObjectValue(error, "message",
         picojson::value("Get Build version failed."));
     return;
   }
-  SetPicoJsonObjectValue(data, "buildVersion", picojson::value(buildversion_));
+  system_info::SetPicoJsonObjectValue(data, "buildVersion",
+      picojson::value(buildversion_));
 
-  SetPicoJsonObjectValue(error, "message", picojson::value(""));
+  system_info::SetPicoJsonObjectValue(error, "message", picojson::value(""));
 }
 
 bool SysInfoBuild::UpdateHardware() {
@@ -66,7 +67,7 @@ bool SysInfoBuild::UpdateHardware() {
   // manufacturer
   tail = info.find(' ', 0);
   str.assign(info, head, tail - head);
-  if(str.empty()) {
+  if (str.empty()) {
     return false;
   } else {
     manufacturer_.assign(str);
@@ -76,7 +77,7 @@ bool SysInfoBuild::UpdateHardware() {
   head = tail + 1;
   tail = info.find(',', 0);
   str.assign(info, head, tail - head);
-  if(str.empty()) {
+  if (str.empty()) {
     return false;
   } else {
     model_.assign(str);
@@ -87,13 +88,16 @@ bool SysInfoBuild::UpdateHardware() {
 
 bool SysInfoBuild::UpdateOSBuild() {
   static struct utsname buf;
-  memset(&buf, 0, sizeof (struct utsname));
+  memset(&buf, 0, sizeof(struct utsname));
   uname(&buf);
-  char* build_version = strcat(buf.sysname, buf.release);
-  if(!build_version) {
+
+  std::string build_version = std::string(buf.sysname);
+  build_version += buf.release;
+
+  if (build_version.empty()) {
     return false;
   } else {
-    buildversion_.assign(build_version);
+    buildversion_ = build_version;
     return true;
   }
 }
@@ -118,13 +122,17 @@ gboolean SysInfoBuild::TimedOutUpdate(gpointer user_data) {
     picojson::value output = picojson::value(picojson::object());
     picojson::value data = picojson::value(picojson::object());
 
-    SetPicoJsonObjectValue(data, "manufacturer", picojson::value(instance->manufacturer_));
-    SetPicoJsonObjectValue(data, "model", picojson::value(instance->model_));
-    SetPicoJsonObjectValue(data, "buildVersion", picojson::value(instance->buildversion_));
-    SetPicoJsonObjectValue(output, "cmd",
+    system_info::SetPicoJsonObjectValue(data, "manufacturer",
+        picojson::value(instance->manufacturer_));
+    system_info::SetPicoJsonObjectValue(data, "model",
+        picojson::value(instance->model_));
+    system_info::SetPicoJsonObjectValue(data, "buildVersion",
+        picojson::value(instance->buildversion_));
+    system_info::SetPicoJsonObjectValue(output, "cmd",
         picojson::value("SystemInfoPropertyValueChanged"));
-    SetPicoJsonObjectValue(output, "prop", picojson::value("BUILD"));
-    SetPicoJsonObjectValue(output, "data", data);
+    system_info::SetPicoJsonObjectValue(output, "prop",
+        picojson::value("BUILD"));
+    system_info::SetPicoJsonObjectValue(output, "data", data);
 
     std::string result = output.serialize();
     instance->api_->PostMessage(result.c_str());
