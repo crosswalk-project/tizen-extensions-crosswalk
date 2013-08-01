@@ -14,10 +14,13 @@
       'conditions': [
         [ 'type == "desktop"', {
             'variables': { 'packages': ['libnotify'] },
-            'includes': [ '../pkg-config.gypi' ],
-          }
-        ],
+        }],
+	[ 'type == "mobile"', {
+	    'variables': { 'packages': ['notification'] },
+	}],
       ],
+
+      'includes': [ '../pkg-config.gypi' ],
     },
   ],
 }

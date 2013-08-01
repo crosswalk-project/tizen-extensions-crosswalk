@@ -13,11 +13,24 @@
 #include <libnotify/notify.h>
 #endif
 
+#if defined(TIZEN_MOBILE)
+class NotificationClient {
+ public:
+  virtual void OnNotificationRemoved(int priv_id) = 0;
+ protected:
+  virtual ~NotificationClient() {}
+};
+#endif
+
 namespace picojson {
 class value;
 }
 
-class NotificationContext {
+class NotificationContext
+#if defined(TIZEN_MOBILE)
+    : public NotificationClient
+#endif
+{
  public:
   NotificationContext(ContextAPI* api);
   ~NotificationContext();
@@ -43,6 +56,14 @@ class NotificationContext {
   void OnNotificationClosed(NotifyNotification* notification);
 
   typedef std::map<std::string, NotifyNotification*> NotificationsMap;
+  NotificationsMap notifications_;
+#endif
+
+#if defined(TIZEN_MOBILE)
+  // NotificationClient implementation.
+  virtual void OnNotificationRemoved(int priv_id);
+
+  typedef std::map<std::string, int> NotificationsMap;
   NotificationsMap notifications_;
 #endif
 };
