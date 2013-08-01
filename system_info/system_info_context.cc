@@ -8,6 +8,7 @@
 
 #include "common/picojson.h"
 #include "system_info/system_info_battery.h"
+#include "system_info/system_info_build.h"
 #include "system_info/system_info_display.h"
 #include "system_info/system_info_storage.h"
 #include "system_info/system_info_utils.h"
@@ -44,7 +45,7 @@ void SystemInfoContext::GetBattery(picojson::value& error,
 void SystemInfoContext::GetCPU(picojson::value& error,
                                picojson::value& data) {
   double load[1];
-  if (getloadavg(load, 1) == -1) {  
+  if (getloadavg(load, 1) == -1) {
     SetPicoJsonObjectValue(error, "message",
         picojson::value("Get CPU load failed."));
     return;
@@ -111,11 +112,20 @@ void SystemInfoContext::GetDisplay(picojson::value& error,
 
 void SystemInfoContext::GetBuild(picojson::value& error,
                                  picojson::value& data) {
-  // FIXME(halton): Add actual implementation
-  SetPicoJsonObjectValue(data, "model", picojson::value("Tizen PC"));
-  SetPicoJsonObjectValue(data, "manufacturer", picojson::value("Intel Corp."));
-  SetPicoJsonObjectValue(data, "buildVersion", picojson::value("3.0"));
-  SetPicoJsonObjectValue(error, "message", picojson::value(""));
+  SysInfoBuild& build = SysInfoBuild::GetSysInfoBuild(error);
+
+  std::string Manufacturer;
+  std::string Model;
+  std::string Build;
+  if (build.GetBuildInfo(Manufacturer, Model, Build)) {
+    SetPicoJsonObjectValue(data, "model", picojson::value(Model));
+    SetPicoJsonObjectValue(data, "manufacturer", picojson::value(Manufacturer));
+    SetPicoJsonObjectValue(data, "buildVersion", picojson::value(Build));
+    SetPicoJsonObjectValue(error, "message", picojson::value(""));
+  } else {
+    SetPicoJsonObjectValue(error, "message",
+        picojson::value("Unable to get info."));
+  }
 }
 
 void SystemInfoContext::GetLocale(picojson::value& error,
