@@ -1,5 +1,13 @@
 #include "notification/mobile/notification_manager.h"
 
+// Utility to lock a mutex and unlock it in the end of the scope.
+struct AutoLock {
+  AutoLock(pthread_mutex_t* m) : m_(m) { pthread_mutex_lock(m_); }
+  ~AutoLock() { pthread_mutex_unlock(m_); }
+ private:
+  pthread_mutex_t* m_;
+};
+
 NotificationManager::NotificationManager() {
   pthread_mutex_init(&mutex_, NULL);
   notification_register_detailed_changed_cb(
@@ -13,7 +21,7 @@ NotificationManager::~NotificationManager() {
 }
 
 notification_h NotificationManager::CreateNotification() {
-  Locker l(&mutex_);
+  AutoLock lock(&mutex_);
   return notification_new(NOTIFICATION_TYPE_NOTI,
                           NOTIFICATION_GROUP_ID_NONE,
                           NOTIFICATION_PRIV_ID_NONE);
@@ -22,7 +30,7 @@ notification_h NotificationManager::CreateNotification() {
 bool NotificationManager::PostNotification(const std::string& id,
                                            notification_h notification,
                                            NotificationClient* client) {
-  Locker l(&mutex_);
+  AutoLock lock(&mutex_);
   int priv_id;
   notification_error_e err = notification_insert(notification, &priv_id);
   if (err != NOTIFICATION_ERROR_NONE)
@@ -38,7 +46,7 @@ bool NotificationManager::PostNotification(const std::string& id,
 }
 
 bool NotificationManager::RemoveNotification(const std::string& id) {
-  Locker l(&mutex_);
+  AutoLock lock(&mutex_);
   IDMap::iterator it = id_map_.find(id);
   if (it == id_map_.end())
     return false;
@@ -48,14 +56,11 @@ bool NotificationManager::RemoveNotification(const std::string& id) {
   const NotificationEntry& entry = it->second;
   notification_error_e err = notification_delete_by_priv_id(
       NULL, NOTIFICATION_TYPE_NOTI, entry.priv_id);
-  if (err != NOTIFICATION_ERROR_NONE)
-    return false;
-
-  return true;
+  return (err == NOTIFICATION_ERROR_NONE);
 }
 
 void NotificationManager::DetachClient(NotificationClient* client) {
-  Locker l(&mutex_);
+  AutoLock lock(&mutex_);
   IDMap::iterator it = id_map_.begin();
   while (it != id_map_.end()) {
     IDMap::iterator current = it++;
@@ -69,7 +74,7 @@ void NotificationManager::DetachClient(NotificationClient* client) {
 
 void NotificationManager::OnDetailedChanged(
     notification_type_e type, notification_op* op_list, int num_op) {
-  Locker l(&mutex_);
+  AutoLock lock(&mutex_);
   // This function gets warned about every notification event for every
   // application. This code filters so we just look into removals of priv_ids
   // handled by this manager.
