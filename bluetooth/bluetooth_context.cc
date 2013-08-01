@@ -37,6 +37,8 @@ void BluetoothContext::HandleMessage(const char* message) {
     HandleDiscoverDevices(v);
   else if (cmd == "StopDiscovery")
     HandleStopDiscovery(v);
+  else if (cmd == "SetAdapterProperty")
+    HandleSetAdapterProperty(v);
 }
 
 void BluetoothContext::HandleSyncMessage(const char* message) {

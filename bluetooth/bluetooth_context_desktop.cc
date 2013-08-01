@@ -208,7 +208,7 @@ picojson::value BluetoothContext::HandleGetDefaultAdapter(const picojson::value&
   bool powered = (adapter_info_["Powered"] == "true") ? true : false;
   o["powered"] = picojson::value(powered);
 
-  bool visible = (adapter_info_["Visible"] == "true") ? true : false;
+  bool visible = (adapter_info_["Discoverable"] == "true") ? true : false;
   o["visible"] = picojson::value(visible);
 
   // This is the JS API entry point, so we should clean our message queue
