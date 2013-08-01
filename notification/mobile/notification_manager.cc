@@ -56,10 +56,7 @@ bool NotificationManager::RemoveNotification(const std::string& id) {
   const NotificationEntry& entry = it->second;
   notification_error_e err = notification_delete_by_priv_id(
       NULL, NOTIFICATION_TYPE_NOTI, entry.priv_id);
-  if (err != NOTIFICATION_ERROR_NONE)
-    return false;
-
-  return true;
+  return (err == NOTIFICATION_ERROR_NONE);
 }
 
 void NotificationManager::DetachClient(NotificationClient* client) {
