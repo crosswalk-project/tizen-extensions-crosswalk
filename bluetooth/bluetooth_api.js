@@ -143,9 +143,9 @@ var handleAdapterUpdated = function(msg) {
       defaultAdapter.powered =
           (msg.Powered == "true") ? true : false;
     }
-    if (msg.Visible) {
+    if (msg.Discoverable) {
       defaultAdapter.visible =
-          (msg.Visible == "true") ? true : false;
+          (msg.Discoverable == "true") ? true : false;
     }
 };
 
@@ -155,13 +155,13 @@ exports.getDefaultAdapter = function() {
   var msg = {
     'cmd': 'GetDefaultAdapter'
   };
-  var r = JSON.parse(extension.internal.sendSyncMessage(JSON.stringify(msg)));
-  defaultAdapter.name = r.name;
-  defaultAdapter.address = r.address;
-  defaultAdapter.powered = r.powered;
-  defaultAdapter.visible = r.visible;
+  var result = JSON.parse(extension.internal.sendSyncMessage(JSON.stringify(msg)));
+  defaultAdapter.name = result.name;
+  defaultAdapter.address = result.address;
+  defaultAdapter.powered = result.powered;
+  defaultAdapter.visible = result.visible;
 
-  if (r.hasOwnProperty("address") && r.address != "")
+  if (result.hasOwnProperty("address") && result.address != "")
     adapter.isReady = true;
 
   return defaultAdapter;
@@ -275,9 +275,98 @@ function BluetoothAdapter() {
   this.visible = false;
 };
 
-BluetoothAdapter.prototype.setName = function(name, successCallback, errorCallback) {};
-BluetoothAdapter.prototype.setPowered = function(state, successCallback, errorCallback) {};
-BluetoothAdapter.prototype.setVisible = function(mode, successCallback, errorCallback, timeout) {};
+BluetoothAdapter.prototype.setName = function(name, successCallback, errorCallback) {
+  if (!adapter.isReady) {
+    var error = {};
+    error.code = 1; // FIXME(jeez): it has to be ServiceNotAvailableError
+    error.name = "ServiceNotAvailableError"; // FIXME(jeez): add error names
+    error.message = "BLUETOOTH ERROR: ServiceNotAvailableError"
+    errorCallback(error);
+    return;
+  }
+
+  var msg = {
+    'cmd': 'SetAdapterProperty',
+    'property': 'Name',
+    'value': name
+  };
+
+  postMessage(msg, function(result) {
+    if (result.error != 0) { // FIXME(jeez): fix error codes
+      var error = {};
+      error.code = result.error;
+      error.name = ""; // FIXME(jeez): add error names
+      error.message = "ERROR!" // FIXME(jeez): add error messages
+
+      errorCallback(error);
+      return;
+    }
+
+    successCallback();
+  });
+};
+
+BluetoothAdapter.prototype.setPowered = function(state, successCallback, errorCallback) {
+  if (!adapter.isReady) {
+    var error = {};
+    error.code = 1; // FIXME(jeez): it has to be ServiceNotAvailableError
+    error.name = "ServiceNotAvailableError"; // FIXME(jeez): add error names
+    error.message = "BLUETOOTH ERROR: ServiceNotAvailableError"
+    errorCallback(error);
+    return;
+  }
+
+  var msg = {
+    'cmd': 'SetAdapterProperty',
+    'property': 'Powered',
+    'value': state
+  };
+
+  postMessage(msg, function(result) {
+    if (result.error != 0) { // FIXME(jeez): fix error codes
+      var error = {};
+      error.code = result.error;
+      error.name = ""; // FIXME(jeez): add error names
+      error.message = "ERROR!" // FIXME(jeez): add error messages
+
+      errorCallback(error);
+      return;
+    }
+
+    successCallback();
+  });
+};
+
+BluetoothAdapter.prototype.setVisible = function(mode, successCallback, errorCallback, timeout) {
+  if (!adapter.isReady) {
+    var error = {};
+    error.code = 1; // FIXME(jeez): it has to be ServiceNotAvailableError
+    error.name = "ServiceNotAvailableError"; // FIXME(jeez): add error names
+    error.message = "BLUETOOTH ERROR: ServiceNotAvailableError"
+    errorCallback(error);
+    return;
+  }
+
+  var msg = {
+    'cmd': 'SetAdapterProperty',
+    'property': 'Discoverable',
+    'value': mode
+  };
+
+  postMessage(msg, function(result) {
+    if (result.error != 0) { // FIXME(jeez): fix error codes
+      var error = {};
+      error.code = result.error;
+      error.name = ""; // FIXME(jeez): add error names
+      error.message = "ERROR!" // FIXME(jeez): add error messages
+
+      errorCallback(error);
+      return;
+    }
+
+    successCallback();
+  });
+};
 
 BluetoothAdapter.prototype.discoverDevices = function(discoverySuccessCallback, errorCallback) {
   if (!adapter.isReady) {
@@ -292,10 +381,10 @@ BluetoothAdapter.prototype.discoverDevices = function(discoverySuccessCallback, 
   var msg = {
     'cmd': 'DiscoverDevices'
   };
-  postMessage(msg, function(r) {
-    if (r.error != 0) { // FIXME(jeez): fix error codes
+  postMessage(msg, function(result) {
+    if (result.error != 0) { // FIXME(jeez): fix error codes
       var error = {};
-      error.code = r.error;
+      error.code = result.error;
       error.name = ""; // FIXME(jeez): add error names
       error.message = "ERROR!" // FIXME(jeez): add error messages
 
@@ -321,10 +410,10 @@ BluetoothAdapter.prototype.stopDiscovery = function(successCallback, errorCallba
   var msg = {
     'cmd': 'StopDiscovery'
   };
-  postMessage(msg, function(r) {
-    if (r.error != 0) { // FIXME(jeez): fix error codes
+  postMessage(msg, function(result) {
+    if (result.error != 0) { // FIXME(jeez): fix error codes
       var error = {};
-      error.code = r.error;
+      error.code = result.error;
       error.name = ""; // FIXME(jeez): add error names
       error.message = "ERROR!" // FIXME(jeez): add error messages
 

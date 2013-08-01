@@ -13,10 +13,13 @@ static void getPropertyValue(const char* key, GVariant* value,
   } else if (!strcmp(key, "RSSI")) {
     gint16 class_id = g_variant_get_int16(value);
     o[key] = picojson::value(static_cast<double>(class_id));
-  } else if (strcmp(key, "Devices")) {
-    char* value_str = g_variant_print(value, false);
+  } else if (strcmp(key, "Devices")) { // FIXME(jeez): Handle 'Devices' property.
+    std::string value_str;
+    if (g_variant_is_of_type(value, G_VARIANT_TYPE_STRING))
+      value_str = g_variant_get_string(value, NULL);
+    else
+      value_str = g_variant_print(value, false);
     o[key] = picojson::value(value_str);
-    g_free(value_str);
   }
 }
 
@@ -30,6 +33,44 @@ void BluetoothContext::OnSignal(GDBusProxy* proxy, gchar* sender, gchar* signal,
 
     g_variant_get(parameters, "(sa{sv})", &address, &it);
     handler->DeviceFound(std::string(address), it);
+  } else if (!strcmp(signal, "PropertyChanged")) {
+    char* name;
+    GVariant* value;
+
+    g_variant_get(parameters, "(sv)", &name, &value);
+
+    // FIXME(jeez): Handle 'Devices' property.
+    if (strcmp(name, "Devices")) {
+      if (g_variant_is_of_type(value, G_VARIANT_TYPE_STRING)) {
+        handler->adapter_info_[name] = std::string(g_variant_get_string(value,
+            NULL));
+      } else {
+        handler->adapter_info_[name] = g_variant_print(value, false);
+      }
+
+      picojson::value::object property_updated;
+      property_updated["cmd"] = picojson::value("AdapterUpdated");
+      property_updated[name] = picojson::value(handler->adapter_info_[name]);
+      handler->PostMessage(picojson::value(property_updated));
+
+      // If in our callback ids map we have a reply_id related to the property
+      // being updated now, then we must also reply to the PostMessage call.
+      // This way we enforce that our JavaScript context calls the onsuccess
+      // return callback only after the property has actually been modified.
+      std::map<std::string, std::string>::iterator it =
+          handler->callbacks_map_.find(name);
+
+      if (it != handler->callbacks_map_.end()) {
+        picojson::value::object property_changed;
+        property_changed["cmd"] = picojson::value("");
+        property_changed["reply_id"] = picojson::value(it->second);
+        property_changed["error"] = picojson::value(static_cast<double>(0)); //FIXME(jeez): error
+        handler->PostMessage(picojson::value(property_changed));
+        handler->callbacks_map_.erase(it);
+      }
+
+      g_variant_unref(value);
+    }
   }
 }
 
@@ -49,10 +90,40 @@ void BluetoothContext::OnGotAdapterProperties(GObject*, GAsyncResult* res) {
   g_variant_get(result, "(a{sv})", &it);
 
   while (g_variant_iter_loop(it, "{sv}", &key, &value)) {
-    if (strcmp(key, "Devices"))
-      adapter_info_[key] = g_variant_print(value, false);
+    if (strcmp(key, "Devices")) { // FIXME(jeez): Handle 'Devices' property.
+      if (g_variant_is_of_type(value, G_VARIANT_TYPE_STRING))
+        adapter_info_[key] = std::string(g_variant_get_string(value, NULL));
+      else
+        adapter_info_[key] = g_variant_print(value, false);
+    }
   }
+
   g_variant_iter_free(it);
+}
+
+void BluetoothContext::OnAdapterPropertySet(std::string property, GAsyncResult* res) {
+  GError* error = NULL;
+  GVariant* result = g_dbus_proxy_call_finish(adapter_proxy_, res, &error);
+
+  // We should only reply to the PostMessage here if an error happened when
+  // changing the property. For replying to the successful property change
+  // we wait until BluetoothContext::OnSignal receives the related PropertyChange
+  // signal, so we avoid that our JavaScript context calls the onsuccess return
+  // callback before the property was actually updated on the adapter.
+  if (!result) {
+    g_printerr("\n\nError Got DefaultAdapter Property SET: %s\n", error->message);
+    g_error_free(error);
+    picojson::value::object o;
+    o["cmd"] = picojson::value("");
+    o["reply_id"] = picojson::value(callbacks_map_[property]);
+    o["error"] = picojson::value(static_cast<double>(1)); //FIXME(jeez): error
+    PostMessage(picojson::value(o));
+
+    callbacks_map_.erase(property);
+    return;
+  }
+
+  g_variant_unref(result);
 }
 
 void BluetoothContext::OnAdapterProxyCreated(GObject*, GAsyncResult* res) {
@@ -69,7 +140,7 @@ void BluetoothContext::OnAdapterProxyCreated(GObject*, GAsyncResult* res) {
     G_DBUS_CALL_FLAGS_NONE, 5000, NULL, OnGotAdapterPropertiesThunk, this);
 
   g_signal_connect(adapter_proxy_, "g-signal",
-      G_CALLBACK(BluetoothContext::OnSignal), this);
+    G_CALLBACK(BluetoothContext::OnSignal), this);
 }
 
 void BluetoothContext::OnManagerCreated(GObject*, GAsyncResult* res) {
@@ -154,7 +225,7 @@ picojson::value BluetoothContext::HandleGetDefaultAdapter(const picojson::value&
   bool powered = (adapter_info_["Powered"] == "true") ? true : false;
   o["powered"] = picojson::value(powered);
 
-  bool visible = (adapter_info_["Visible"] == "true") ? true : false;
+  bool visible = (adapter_info_["Discoverable"] == "true") ? true : false;
   o["visible"] = picojson::value(visible);
 
   // This is the JS API entry point, so we should clean our message queue
@@ -192,4 +263,26 @@ void BluetoothContext::DeviceFound(std::string address, GVariantIter* properties
 
   picojson::value v(o);
   PostMessage(v);
+}
+
+void BluetoothContext::HandleSetAdapterProperty(const picojson::value& msg) {
+  std::string property = msg.get("property").to_str();
+
+  callbacks_map_[property] = msg.get("reply_id").to_str();
+
+  OnAdapterPropertySetData* property_set_callback_data_ =
+      new OnAdapterPropertySetData;
+  property_set_callback_data_->property = property;
+  property_set_callback_data_->bt_context = this;
+
+  GVariant* value;
+  if (property == "Name")
+     value = g_variant_new("s", msg.get("value").to_str().c_str());
+  else if (property == "Discoverable" || property == "Powered")
+     value = g_variant_new("b", msg.get("value").get<bool>());
+
+  g_dbus_proxy_call(adapter_proxy_, "SetProperty",
+      g_variant_new("(sv)", property.c_str(), value),
+      G_DBUS_CALL_FLAGS_NONE, 5000, NULL, OnAdapterPropertySetThunk,
+      property_set_callback_data_);
 }

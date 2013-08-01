@@ -5,20 +5,31 @@
 #ifndef BLUETOOTH_BLUETOOTH_CONTEXT_H_
 #define BLUETOOTH_BLUETOOTH_CONTEXT_H_
 
-#define G_CALLBACK_1(METHOD, SENDER, ARG0)                          \
+#include "common/extension_adapter.h"
+#include <map>
+#include <string>
+#include <vector>
+#include <gio/gio.h>
+
+#define G_CALLBACK_1(METHOD, SENDER, ARG0)                                     \
   static void METHOD ## Thunk(SENDER sender, ARG0 res, gpointer userdata) {    \
     return reinterpret_cast<BluetoothContext*>(userdata)->METHOD(sender, res); \
   }                                                                            \
                                                                                \
   void METHOD(SENDER, ARG0);
 
-
-#include "common/extension_adapter.h"
-#include <map>
-#include <string>
-#include <vector>
-
-#include <gio/gio.h>
+#define G_CALLBACK_2(METHOD, SENDER, ARG0)                                     \
+  static void METHOD ## Thunk(SENDER sender, ARG0 res, gpointer userdata) {    \
+    OnAdapterPropertySetData* callback_data =                                  \
+        reinterpret_cast<OnAdapterPropertySetData*>(userdata);                 \
+    std::string property = callback_data->property;                            \
+    reinterpret_cast<BluetoothContext*>(callback_data->bt_context)->METHOD(property,\
+        res);                                                                  \
+    delete callback_data;                                                      \
+    return;                                                                    \
+  }                                                                            \
+                                                                               \
+  void METHOD(std::string, ARG0);
 
 #if defined(GENERIC_DESKTOP)
 typedef std::map<std::string, GDBusProxy*> DeviceMap;
@@ -29,6 +40,12 @@ typedef std::map<std::string, GVariantIter*> DeviceMap;
 namespace picojson {
 class value;
 }
+
+typedef struct OnAdapterPropertySetData_ {
+  std::string property;
+  void* bt_context;
+} OnAdapterPropertySetData;
+
 
 class BluetoothContext {
  public:
@@ -52,6 +69,7 @@ class BluetoothContext {
   void HandleDiscoverDevices(const picojson::value& msg);
   void HandleStopDiscovery(const picojson::value& msg);
   picojson::value HandleGetDefaultAdapter(const picojson::value& msg);
+  void HandleSetAdapterProperty(const picojson::value& msg);
 
   void PostMessage(picojson::value v);
   void SetSyncReply(picojson::value v);
@@ -87,6 +105,7 @@ class BluetoothContext {
 #elif defined(TIZEN_MOBILE)
   G_CALLBACK_1(OnGotDefaultAdapterPath, GObject*, GAsyncResult*);
   G_CALLBACK_1(OnGotAdapterProperties, GObject*, GAsyncResult*);
+  G_CALLBACK_2(OnAdapterPropertySet, GObject*, GAsyncResult*);
 
   static void OnSignal(GDBusProxy* proxy, gchar* sender_name, gchar* signal,
       GVariant* parameters, gpointer user_data);
@@ -94,6 +113,7 @@ class BluetoothContext {
   void DeviceFound(std::string address, GVariantIter* properties);
 
   GDBusProxy* manager_proxy_;
+  std::map<std::string, std::string> callbacks_map_;
 #endif
 };
 

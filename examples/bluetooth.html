@@ -1,18 +1,28 @@
 <h2>Bluetooth Tizen-WRT</h2>
 
 <body>
-<input type="text" size=50 id="text"><button id="bluetooth">Connect to</button>
+
+<input type="text" size=50 id="text">
 <br>
 <textarea cols=50 rows=20 id="output"></textarea>
 <br>
 <button id="button1">Click 1</button>
 <button id="button2">Click 2</button>
 <button id="button3">Click 3</button>
+<button id="button4">Click 4</button>
+
+<pre id="console"></pre>
+<script src="js/js-test-pre.js"></script>
 </body>
 
 <script>
 
 var output = document.getElementById("output");
+
+var adapter = tizen.bluetooth.getDefaultAdapter();
+
+var devices = [];
+var device_index = 0;
 
 function handle(button, text, callback) {
     var b = document.getElementById(button);
@@ -20,9 +30,31 @@ function handle(button, text, callback) {
     b.addEventListener("click", callback);
 }
 
-var adapter = tizen.bluetooth.getDefaultAdapter();
-var devices = [];
-var device_index = 0;
+var oldName = "";
+var oldVisible = false;
+function runChangePropertiesTest() {
+    oldName = adapter.name;
+    oldVisible = adapter.visible;
+
+    debug("Adapter Name (oldName): " + adapter.name);
+    debug("Adapter Visible (oldVisible): " + adapter.visible);
+
+    shouldBe("adapter.name === oldName", "true");
+    shouldBe("adapter.powered", "true");
+    shouldBe("adapter.visible === oldVisible", "true");
+
+    adapter.setName("FooBigBarrrrr", onChangedAdapterName, onErrorCallback);
+    adapter.setVisible(!oldVisible, onChangedAdapterVisible, onErrorCallback);
+
+    setTimeout(function() {
+        shouldBe("adapter.name === oldName", "false");
+    }, 1000);
+
+    setTimeout(function() {
+        adapter.setName(oldName, onChangedAdapterName, onErrorCallback);
+        adapter.setVisible(!oldVisible, onChangedAdapterVisible, onErrorCallback);
+    }, 1000);
+};
 
 var discoverDevicesSuccessCallback = {
     onstarted: function() {
@@ -55,6 +87,15 @@ var onGotKnownDevices = function(devices) {
     }
 }
 
+var onChangedAdapterName = function() {
+    debug("Adapter New Name: " + adapter.name);
+}
+
+var onChangedAdapterVisible = function() {
+    shouldBe("adapter.visible === !oldVisible", "true");
+    oldVisible = adapter.visible;
+}
+
 handle("button1", "Scan", function() {
     adapter.discoverDevices(discoverDevicesSuccessCallback, function(e){
         console.log ("Failed to search devices: " + e.message + "(" + e.name + ")");
@@ -71,4 +112,7 @@ handle("button3", "Get Known Devices", function() {
     adapter.getKnownDevices(onGotKnownDevices, onErrorCallback);
 });
 
+handle("button4", "Run Adapter properties test", function() {
+    runChangePropertiesTest();
+});
 </script>
