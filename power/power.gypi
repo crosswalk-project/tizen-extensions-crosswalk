@@ -10,11 +10,19 @@
         'power_context_desktop.cc',
         'power_context_mobile.cc',
       ],
-      'dependencies': [
-        'capi-system-device',
-        'capi-system-power',
-        'pmapi',
-        'vconf',
+      'conditions': [
+        ['type=="mobile"', {
+          'dependencies': [
+            'capi-system-device',
+            'capi-system-power',
+            'pmapi',
+            'vconf',
+          ],
+        }],
+        [ 'type == "desktop"', {
+            'variables': { 'packages': ['gio-2.0'] },
+            'includes': [ '../pkg-config.gypi' ],
+        }],
       ],
     },
 
@@ -104,15 +112,6 @@
           }
         }],
       ],
-
-      'conditions': [
-        [ 'type == "desktop"', {
-            'variables': { 'packages': ['gio-2.0'] },
-            'includes': [ '../pkg-config.gypi' ],
-          }
-        ],
-      ],
     },
-
   ],
 }

@@ -6,18 +6,8 @@
 #include "common/picojson.h"
 
 CXWalkExtension* xwalk_extension_init(int32_t api_version) {
-  notify_init("Tizen-WRT");
+  NotificationContext::PlatformInitialize();
   return ExtensionAdapter<NotificationContext>::Initialize();
-}
-
-NotificationContext::NotificationContext(ContextAPI* api)
-    : api_(api) {}
-
-NotificationContext::~NotificationContext() {
-  NotificationsMap::iterator it;
-  for (it = notifications_.begin(); it != notifications_.end(); it++)
-    g_object_unref(it->second);
-  delete api_;
 }
 
 const char NotificationContext::name[] = "tizen.notification";

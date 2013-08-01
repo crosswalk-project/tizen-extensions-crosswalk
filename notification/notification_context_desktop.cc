@@ -5,6 +5,21 @@
 #include "notification/notification_context.h"
 #include "common/picojson.h"
 
+// static
+void NotificationContext::PlatformInitialize() {
+  notify_init("Tizen-WRT");
+}
+
+NotificationContext::NotificationContext(ContextAPI* api)
+    : api_(api) {}
+
+NotificationContext::~NotificationContext() {
+  NotificationsMap::iterator it;
+  for (it = notifications_.begin(); it != notifications_.end(); it++)
+    g_object_unref(it->second);
+  delete api_;
+}
+
 void NotificationContext::HandlePost(const picojson::value& msg) {
   NotifyNotification* notification =
       notify_notification_new(msg.get("title").to_str().c_str(),

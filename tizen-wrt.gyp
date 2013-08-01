@@ -39,16 +39,8 @@
     ],
   },
 
-  # TODO: These modules still do not build properly with the mobile profile,
-  #       so only enable them when building their desktop versions.
-  'conditions': [
-    ['type == "desktop"', {
-      'includes': {
-        'notification/notification.gypi',
-      }
-    }]
-   ],
   'includes': {
+    'notification/notification.gypi',
     'power/power.gypi',
     'tizen/tizen.gypi',
     'time/time.gypi',
