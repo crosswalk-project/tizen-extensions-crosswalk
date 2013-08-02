@@ -12,9 +12,14 @@ Source1001: %{name}.manifest
 BuildRequires: python
 BuildRequires: pkgconfig(capi-system-device)
 BuildRequires: pkgconfig(capi-system-power)
-BuildRequires: pkgconfig(pmapi)
-BuildRequires: pkgconfig(vconf)
+BuildRequires: pkgconfig(dbus-glib-1)
+BuildRequires: pkgconfig(glib-2.0)
+BuildRequires: pkgconfig(libudev)
 BuildRequires: pkgconfig(notification)
+BuildRequires: pkgconfig(pmapi)
+BuildRequires: pkgconfig(x11)
+BuildRequires: pkgconfig(xrandr)
+BuildRequires: pkgconfig(vconf)
 Requires:      crosswalk
 
 %description
