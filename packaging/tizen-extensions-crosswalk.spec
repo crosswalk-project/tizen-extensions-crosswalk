@@ -1,5 +1,5 @@
 Name:       tizen-extensions-crosswalk
-Version:    1.0.0
+Version:    0.0.1
 Release:    0
 License:    BSD-3-Clause
 Group:      Development/Libraries
