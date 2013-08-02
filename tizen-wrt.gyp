@@ -7,7 +7,7 @@
       }],
       ['type != "desktop"', {
         'sources/': [['exclude', '_desktop\\.cc$|desktop/']],
-        'sources/': [['exclude', '_desktop\\.gypi$|desktop/']],
+        'includes/': [['exclude', '_desktop\\.gypi$|desktop/']],
       }],
       ['type == "mobile"', { 'defines': ['TIZEN_MOBILE'] } ],
       ['type == "desktop"', { 'defines': ['GENERIC_DESKTOP'] } ],
