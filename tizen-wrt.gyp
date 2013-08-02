@@ -1,8 +1,14 @@
 {
   'target_defaults': {
     'conditions': [
-      ['type != "mobile"', { 'sources/': [['exclude', '_mobile\\.cc$|mobile/']] } ],
-      ['type != "desktop"', { 'sources/': [['exclude', '_desktop\\.cc$|desktop/']] } ],
+      ['type != "mobile"', {
+        'sources/': [['exclude', '_mobile\\.cc$|mobile/']],
+        'includes/': [['exclude', '_mobile\\.gypi$|mobile/']],
+      }],
+      ['type != "desktop"', {
+        'sources/': [['exclude', '_desktop\\.cc$|desktop/']],
+        'sources/': [['exclude', '_desktop\\.gypi$|desktop/']],
+      }],
       ['type == "mobile"', { 'defines': ['TIZEN_MOBILE'] } ],
       ['type == "desktop"', { 'defines': ['GENERIC_DESKTOP'] } ],
       ['build == "Debug"', {
@@ -41,6 +47,7 @@
     ],
   },
   'includes': {
+    'common/tizen_mobile.gypi',
     'bluetooth/bluetooth.gypi',
     'notification/notification.gypi',
     'power/power.gypi',
