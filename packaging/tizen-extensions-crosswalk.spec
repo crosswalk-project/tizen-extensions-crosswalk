@@ -60,6 +60,6 @@ install -p -m 644 examples/js/*.js %{buildroot}%{_datarootdir}/%{name}/examples/
 # TODO(rakuco): This causes problems on 2.1 when creating the package.
 # %license LICENSE
 %{_bindir}/%{name}
-%{_libdir}/%{name}/libtizen_*.so
+%{_libdir}/%{name}/libtizen*.so
 %{_datarootdir}/%{name}/examples/*.html
 %{_datarootdir}/%{name}/examples/js/*.js
