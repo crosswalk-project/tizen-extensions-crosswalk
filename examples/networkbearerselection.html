@@ -1,0 +1,59 @@
+<html>
+  <h1>Hello, Tizen Network Bearer Selection API!</h1>
+  <script>
+    function print(value) {
+      var text = document.getElementById(output)
+      output.value = output.value + '\n' + value;
+    };
+
+    function getNetworkType() {
+      var networkType = document.getElementById("networkType");
+      return networkType.options[networkType.selectedIndex].value;
+    }
+
+    function errorCb(error) {
+      print(error.name);
+    }
+
+    function requestRouteToHost() {
+      try {
+        var networkSuccessCb = {
+          onsuccess: function() {
+            print("requestRouteToHost success");
+          },
+          ondisconnected: function() {
+            print("requestRouteToHost success");
+          },
+        };
+
+        api.requestRouteToHost(getNetworkType(), "tizen.org", networkSuccessCb, errorCb);
+      } catch (err) {
+        print(err.name);
+      }
+    };
+
+    function releaseRouteToHost() {
+      try {
+        var successCb = function() {
+          print("releaseRouteToHost success");
+        };
+
+        api.releaseRouteToHost(getNetworkType(), "tizen.org", successCb, errorCb);
+      } catch (err) {
+        print(err.name);
+      }
+    };
+
+    var api = tizen.networkbearerselection;
+  </script>
+  <body>
+    <textarea cols=20 rows=10 id="output"></textarea>
+    <br>
+    <select id="networkType">
+      <option value="CELLULAR">Cellular</option>
+      <option value="UNKNOWN">Unknown</option>
+    </select>
+    <button id="requestRouteToHost" onClick="requestRouteToHost()">Request Route</button>
+    <button id="releaseRouteToHost" onClick="releaseRouteToHost()">Release Route</button>
+  </body>
+</html>
