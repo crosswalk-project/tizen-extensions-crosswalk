@@ -4,7 +4,7 @@
       'target_name': 'vconf',
       'type': 'none',
       'conditions': [
-        ['type=="mobile"', {
+        ['extension_host_os=="mobile"', {
           'direct_dependent_settings': {
             'cflags': [
               '<!@(pkg-config --cflags vconf)',
@@ -26,7 +26,7 @@
       'target_name': 'capi-system-power',
       'type': 'none',
       'conditions': [
-        ['type=="mobile"', {
+        ['extension_host_os=="mobile"', {
           'direct_dependent_settings': {
             'cflags': [
               '<!@(pkg-config --cflags capi-system-power)',
@@ -48,7 +48,7 @@
       'target_name': 'capi-system-device',
       'type': 'none',
       'conditions': [
-        ['type=="mobile"', {
+        ['extension_host_os=="mobile"', {
           'direct_dependent_settings': {
             'cflags': [
               '<!@(pkg-config --cflags capi-system-device)',
@@ -70,7 +70,7 @@
       'target_name': 'pmapi',
       'type': 'none',
       'conditions': [
-        ['type=="mobile"', {
+        ['extension_host_os=="mobile"', {
           'direct_dependent_settings': {
             'cflags': [
               '<!@(pkg-config --cflags pmapi)',

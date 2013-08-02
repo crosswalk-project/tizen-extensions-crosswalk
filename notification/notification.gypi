@@ -9,17 +9,17 @@
         'notification_context.h',
         'notification_context_desktop.cc',
         'notification_context_mobile.cc',
-	'mobile/notification_manager.cc',
-	'mobile/notification_manager.h',
+        'mobile/notification_manager.cc',
+        'mobile/notification_manager.h',
       ],
 
       'conditions': [
-        [ 'type == "desktop"', {
+        [ 'extension_host_os == "desktop"', {
             'variables': { 'packages': ['libnotify'] },
         }],
-	[ 'type == "mobile"', {
-	    'variables': { 'packages': ['notification'] },
-	}],
+        [ 'extension_host_os == "mobile"', {
+            'variables': { 'packages': ['notification'] },
+        }],
       ],
 
       'includes': [ '../pkg-config.gypi' ],

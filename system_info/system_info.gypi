@@ -4,14 +4,14 @@
       'target_name': 'tizen_system_info',
       'type': 'loadable_module',
       'conditions': [
-        [ 'type == "desktop"', {
+        [ 'extension_host_os == "desktop"', {
           'variables': {
             'packages': [
               'NetworkManager',
             ]
           },
         }],
-        [ 'type == "mobile"', {
+        [ 'extension_host_os == "mobile"', {
           'dependencies': [
             'vconf',
           ],

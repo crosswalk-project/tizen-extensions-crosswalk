@@ -36,8 +36,8 @@ cp %{SOURCE1001} .
 export GYP_GENERATORS='make'
 ./tools/gyp/gyp \
 --depth=.       \
--Dbuild=Debug   \
--Dtype=mobile   \
+-Dextension_build_type=Debug   \
+-Dextension_host_os=mobile   \
 tizen-wrt.gyp
 
 make %{?_smp_mflags}

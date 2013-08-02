@@ -2,21 +2,21 @@
   'variables': { 'type%': 'mobile' },
   'target_defaults': {
     'conditions': [
-      ['type != "mobile"', {
+      ['extension_host_os != "mobile"', {
         'sources/': [['exclude', '_mobile\\.cc$|mobile/']],
         'includes/': [['exclude', '_mobile\\.gypi$|mobile/']],
       }],
-      ['type != "desktop"', {
+      ['extension_host_os != "desktop"', {
         'sources/': [['exclude', '_desktop\\.cc$|desktop/']],
         'includes/': [['exclude', '_desktop\\.gypi$|desktop/']],
       }],
-      ['type == "mobile"', { 'defines': ['TIZEN_MOBILE'] } ],
-      ['type == "desktop"', { 'defines': ['GENERIC_DESKTOP'] } ],
-      ['build == "Debug"', {
+      ['extension_host_os == "mobile"', { 'defines': ['TIZEN_MOBILE'] } ],
+      ['extension_host_os == "desktop"', { 'defines': ['GENERIC_DESKTOP'] } ],
+      ['extensino_build_type == "Debug"', {
         'defines': ['_DEBUG', ],
         'cflags': [ '-O0', '-g', ],
       }],
-      ['build == "Release"', {
+      ['extension_build_type == "Release"', {
         'defines': ['NDEBUG', ],
         'cflags': [
           '-O2',
