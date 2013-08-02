@@ -4,9 +4,9 @@
 
 #include "system_info/system_info_network.h"
 
-#include <vconf>
+#include <vconf.h>
 
-bool SysInfoNetwork::Update(picojson::value& error);
+bool SysInfoNetwork::Update(picojson::value& error) {
   int service_type = 0;
   if (vconf_get_int(VCONFKEY_TELEPHONY_SVCTYPE, &service_type)) {
     return false;
