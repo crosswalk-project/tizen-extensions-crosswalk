@@ -12,8 +12,11 @@
 
 namespace system_info {
 
+// The default timeout interval is set to 3s to match the top update interval.
+const int default_timeout_interval = 3000;
+
 int ReadOneByte(const char* path);
-// free the returned value when not using
+// Free the returned value after using.
 char* ReadOneLine(const char* path);
 std::string GetUdevProperty(struct udev_device* dev,
                               const std::string& attr);

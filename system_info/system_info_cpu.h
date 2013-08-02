@@ -10,6 +10,7 @@
 #include "common/extension_adapter.h"
 #include "common/picojson.h"
 #include "common/utils.h"
+#include "system_info/system_info_utils.h"
 
 class SysInfoCpu {
  public:
@@ -24,9 +25,9 @@ class SysInfoCpu {
   // Listerner support
   inline void StartListen() {
     stopping_ = false;
-    g_timeout_add_seconds(3,
-                          SysInfoCpu::TimedOutUpdate,
-                          static_cast<gpointer>(this));
+    g_timeout_add(system_info::default_timeout_interval,
+                  SysInfoCpu::TimedOutUpdate,
+                  static_cast<gpointer>(this));
   }
   inline void StopListen() { stopping_ = true; }
 

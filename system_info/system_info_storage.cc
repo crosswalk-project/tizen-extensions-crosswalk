@@ -4,9 +4,9 @@
 
 #include "system_info/system_info_storage.h"
 
+#include <mntent.h>
 #include <stdlib.h>
 #include <sys/statvfs.h>
-#include <mntent.h>
 
 #include "common/picojson.h"
 #include "system_info/system_info_utils.h"
@@ -17,9 +17,11 @@ const char* sMountTable = "/proc/mounts";
 
 }  // namespace
 
-SysInfoStorage::SysInfoStorage(ContextAPI* api) {
+SysInfoStorage::SysInfoStorage(ContextAPI* api)
+    : stopping_(false) {
   api_ = api;
   udev_ = udev_new();
+  units_ = picojson::value(picojson::array(0));
 }
 
 SysInfoStorage::~SysInfoStorage() {
@@ -29,17 +31,26 @@ SysInfoStorage::~SysInfoStorage() {
 
 void SysInfoStorage::Get(picojson::value& error,
                          picojson::value& data) {
+  if (!Update(error)) {
+    return;
+  }
+
+  system_info::SetPicoJsonObjectValue(data, "units", units_);
+  system_info::SetPicoJsonObjectValue(error, "message", picojson::value(""));
+}
+
+bool SysInfoStorage::Update(picojson::value& error) {
+  picojson::array& units_arr = units_.get<picojson::array>();
+  units_arr.clear();
+
   struct mntent *entry;
   FILE *aFile;
-
-  picojson::value units = picojson::value(picojson::array(0));
-  picojson::array& units_arr = units.get<picojson::array>();
 
   aFile = setmntent(sMountTable, "r");
   if (!aFile) {
     system_info::SetPicoJsonObjectValue(error, "message",
         picojson::value("Read mount table failed."));
-    return;
+    return false;
   }
 
   while (entry = getmntent(aFile)) {
@@ -48,15 +59,14 @@ void SysInfoStorage::Get(picojson::value& error,
       GetDetails(entry->mnt_fsname, entry->mnt_dir, error, unit);
       if (!error.get("message").to_str().empty()) {
         endmntent(aFile);
-        return;
+        return false;
       }
       units_arr.push_back(unit);
     }
   }
 
   endmntent(aFile);
-  system_info::SetPicoJsonObjectValue(data, "units", units);
-  system_info::SetPicoJsonObjectValue(error, "message", picojson::value(""));
+  return true;
 }
 
 std::string
@@ -134,6 +144,7 @@ void SysInfoStorage::GetDetails(const std::string& mnt_fsname,
 
   attr_list_entry = udev_device_get_properties_list_entry(dev);
 
+  // FIXME(guanxian): may need to fix problems of encrypted or LVM storages
   struct udev_device* parent_dev =
     udev_device_get_parent_with_subsystem_devtype(dev, "block", "disk");
   str = udev_device_get_sysattr_value(parent_dev, "removable");
@@ -191,12 +202,51 @@ void SysInfoStorage::GetDetails(const std::string& mnt_fsname,
   udev_device_unref(dev);
   system_info::SetPicoJsonObjectValue(unit, "availableCapacity",
       picojson::value(static_cast<double>(buf.f_bavail * buf.f_bsize)));
+
+  // set message to confirm no errors
+  system_info::SetPicoJsonObjectValue(error, "message", picojson::value(""));
 }
 
-void SysInfoStorage::StartListen() {
-  // FIXME(halton): Added later
-}
+gboolean SysInfoStorage::TimedOutUpdate(gpointer user_data) {
+  SysInfoStorage* instance = static_cast<SysInfoStorage*>(user_data);
 
-void SysInfoStorage::StopListen() {
-  // FIXME(halton): Added later
+  if (instance->stopping_) {
+    instance->stopping_ = false;
+    return FALSE;
+  }
+
+  // can't to take a reference (&), just copy
+  picojson::array old_units_arr = instance->units_.get<picojson::array>();
+  picojson::value error = picojson::value(picojson::object());;
+  instance->Update(error);
+
+  bool is_changed = false;
+  picojson::array& units_arr = instance->units_.get<picojson::array>();
+  if (old_units_arr.size() != units_arr.size()) {
+    is_changed = true;
+  } else {
+    for (int i = 0; i < units_arr.size(); i++) {
+      if (old_units_arr[i] != units_arr[i]) {
+        is_changed = true;
+        break;
+      }
+    }
+  }
+
+  if (is_changed) {
+    picojson::value output = picojson::value(picojson::object());;
+    picojson::value data = picojson::value(picojson::object());
+
+    system_info::SetPicoJsonObjectValue(data, "units", instance->units_);
+    system_info::SetPicoJsonObjectValue(output, "cmd",
+        picojson::value("SystemInfoPropertyValueChanged"));
+    system_info::SetPicoJsonObjectValue(output, "prop",
+        picojson::value("STORAGE"));
+    system_info::SetPicoJsonObjectValue(output, "data", data);
+
+    std::string result = output.serialize();
+    instance->api_->PostMessage(result.c_str());
+  }
+
+  return TRUE;
 }
