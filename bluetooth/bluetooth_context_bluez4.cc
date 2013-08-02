@@ -268,18 +268,21 @@ void BluetoothContext::DeviceFound(std::string address, GVariantIter* properties
 void BluetoothContext::HandleSetAdapterProperty(const picojson::value& msg) {
   std::string property = msg.get("property").to_str();
 
+  GVariant* value = NULL;
+  if (property == "Name")
+     value = g_variant_new("s", msg.get("value").to_str().c_str());
+  else if (property == "Discoverable" || property == "Powered")
+     value = g_variant_new("b", msg.get("value").get<bool>());
+
+  if (!value)
+    return;
+
   callbacks_map_[property] = msg.get("reply_id").to_str();
 
   OnAdapterPropertySetData* property_set_callback_data_ =
       new OnAdapterPropertySetData;
   property_set_callback_data_->property = property;
   property_set_callback_data_->bt_context = this;
-
-  GVariant* value;
-  if (property == "Name")
-     value = g_variant_new("s", msg.get("value").to_str().c_str());
-  else if (property == "Discoverable" || property == "Powered")
-     value = g_variant_new("b", msg.get("value").get<bool>());
 
   g_dbus_proxy_call(adapter_proxy_, "SetProperty",
       g_variant_new("(sv)", property.c_str(), value),
