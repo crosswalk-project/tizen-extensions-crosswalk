@@ -53,6 +53,7 @@
     'power/power.gypi',
     'system_info/system_info.gypi',
     'tizen/tizen.gypi',
+    'networkbearerselection/networkbearerselection.gypi',
     'time/time.gypi',
   },
 }
