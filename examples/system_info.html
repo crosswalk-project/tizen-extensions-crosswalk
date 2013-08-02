@@ -89,6 +89,29 @@ handle("cpu_btn", function() {
 });
 
 handle("storage_btn", function() {
+  var count = 0;
+  var id = tizen.systeminfo.addPropertyValueChangeListener(
+               "STORAGE",
+               function(storage) {
+                 output.value += '\n Get property STORAGE returned.';
+                 output.value += '\n\t There are ' + storage.units.length + ' storage units.\n';
+                 for (i=0; i< storage.units.length; i++) {
+                   output.value += '\n\t storage[' + i + ']:';
+                   output.value += '\n\t\t type: ' + storage.units[i].type;
+                   output.value += '\n\t\t capacity: ' + storage.units[i].capacity + ' bytes';
+                   output.value += '\n\t\t availableCapacity: ' + storage.units[i].availableCapacity + ' bytes';
+                   output.value += '\n\t\t isRemovable: ' + storage.units[i].isRemovable;
+                   output.value += '\n\t\t isRemoveable: ' + storage.units[i].isRemoveable + '\n';
+                   output.scrollTop = output.scrollHeight;
+                 }
+                 count += 1;
+                 if (count == 3) {
+                   output.value += '\n Maximum listen times(3) reached. Remove listener with id = ' + id;
+                   output.scrollTop = output.scrollHeight;
+                   count = 0;
+                   tizen.systeminfo.removePropertyValueChangeListener(id);
+                 }
+              });
   tizen.systeminfo.getPropertyValue(
     "STORAGE",
     function(storage) {

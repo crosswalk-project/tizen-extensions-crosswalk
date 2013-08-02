@@ -11,6 +11,7 @@
 #include "common/extension_adapter.h"
 #include "common/picojson.h"
 #include "common/utils.h"
+#include "system_info/system_info_utils.h"
 
 class SysInfoBuild {
  public:
@@ -22,9 +23,9 @@ class SysInfoBuild {
   void Get(picojson::value& error, picojson::value& data);
   inline void StartListen() {
     stopping_ = false;
-    g_timeout_add_seconds(3,
-                          SysInfoBuild::TimedOutUpdate,
-                          static_cast<gpointer>(this));
+    g_timeout_add(system_info::default_timeout_interval,
+                  SysInfoBuild::TimedOutUpdate,
+                  static_cast<gpointer>(this));
   }
   inline void StopListen() { stopping_ = true; }
 
