@@ -9,21 +9,21 @@
 void SysInfoSim::Get(picojson::value& error,
                      picojson::value& data) {
   // FIXME(halton): Add actual implementation
-  SetPicoJsonObjectValue(data, "state",
+  system_info::SetPicoJsonObjectValue(data, "state",
       picojson::value("READY"));
-  SetPicoJsonObjectValue(data, "operatorName",
+  system_info::SetPicoJsonObjectValue(data, "operatorName",
       picojson::value("China Mobile"));
-  SetPicoJsonObjectValue(data, "msisdn",
+  system_info::SetPicoJsonObjectValue(data, "msisdn",
       picojson::value("12321312"));
-  SetPicoJsonObjectValue(data, "iccid",
+  system_info::SetPicoJsonObjectValue(data, "iccid",
       picojson::value("234234234"));
-  SetPicoJsonObjectValue(data, "mcc",
+  system_info::SetPicoJsonObjectValue(data, "mcc",
       picojson::value(static_cast<double>(50)));
-  SetPicoJsonObjectValue(data, "mnc",
+  system_info::SetPicoJsonObjectValue(data, "mnc",
       picojson::value(static_cast<double>(51)));
-  SetPicoJsonObjectValue(data, "msin",
+  system_info::SetPicoJsonObjectValue(data, "msin",
       picojson::value("China Mobile - msin"));
-  SetPicoJsonObjectValue(data, "spn",
+  system_info::SetPicoJsonObjectValue(data, "spn",
       picojson::value("China Mobile - spn"));
-  SetPicoJsonObjectValue(error, "message", picojson::value(""));
+  system_info::SetPicoJsonObjectValue(error, "message", picojson::value(""));
 }

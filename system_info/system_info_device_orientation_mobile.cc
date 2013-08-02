@@ -15,5 +15,4 @@ void SysInfoDeviceOrientation::Get(picojson::value& error,
       picojson::value(false));
   system_info::SetPicoJsonObjectValue(error, "message",
       picojson::value(""));
-  system_info::SetPicoJsonObjectValue(error, "message",
 }
