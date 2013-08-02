@@ -12,6 +12,7 @@ Source1001: %{name}.manifest
 BuildRequires: python
 BuildRequires: pkgconfig(capi-system-device)
 BuildRequires: pkgconfig(capi-system-power)
+BuildRequires: pkgconfig(capi-system-system-settings)
 BuildRequires: pkgconfig(dbus-glib-1)
 BuildRequires: pkgconfig(glib-2.0)
 BuildRequires: pkgconfig(libudev)
