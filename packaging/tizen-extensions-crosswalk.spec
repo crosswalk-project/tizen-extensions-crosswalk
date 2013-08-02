@@ -48,7 +48,7 @@ install -m 755 -D %{SOURCE1} %{buildroot}%{_bindir}/%{name}
 
 # Extensions.
 mkdir -p %{buildroot}%{_libdir}/%{name}
-install -p -m 644 out/Default/libtizen_*.so %{buildroot}%{_libdir}/%{name}
+install -p -m 644 out/Default/libtizen*.so %{buildroot}%{_libdir}/%{name}
 
 # Examples.
 mkdir -p %{buildroot}%{_datarootdir}/%{name}/examples
