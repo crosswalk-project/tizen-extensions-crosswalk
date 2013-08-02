@@ -31,9 +31,9 @@
                                                                                \
   void METHOD(std::string, ARG0);
 
-#if defined(GENERIC_DESKTOP)
+#if defined(BLUEZ_5)
 typedef std::map<std::string, GDBusProxy*> DeviceMap;
-#elif defined(TIZEN_MOBILE)
+#elif defined(BLUEZ_4)
 typedef std::map<std::string, GVariantIter*> DeviceMap;
 #endif
 
@@ -87,7 +87,7 @@ class BluetoothContext {
   DeviceMap known_devices_;
   bool is_js_context_initialized_;
 
-#if defined(GENERIC_DESKTOP)
+#if defined(BLUEZ_5)
   G_CALLBACK_1(OnDBusObjectAdded, GDBusObjectManager*, GDBusObject*);
   G_CALLBACK_1(OnDBusObjectRemoved, GDBusObjectManager*, GDBusObject*);
   G_CALLBACK_1(DeviceFound, GObject*, GAsyncResult*);
@@ -102,7 +102,7 @@ class BluetoothContext {
   GDBusProxy* CreateDeviceProxy(GAsyncResult* res);
 
   GDBusObjectManager* object_manager_;
-#elif defined(TIZEN_MOBILE)
+#elif defined(BLUEZ_4)
   G_CALLBACK_1(OnGotDefaultAdapterPath, GObject*, GAsyncResult*);
   G_CALLBACK_1(OnGotAdapterProperties, GObject*, GAsyncResult*);
   G_CALLBACK_2(OnAdapterPropertySet, GObject*, GAsyncResult*);

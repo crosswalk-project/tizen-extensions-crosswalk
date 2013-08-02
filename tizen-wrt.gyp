@@ -1,4 +1,5 @@
 {
+  'variables': { 'type%': 'mobile' },
   'target_defaults': {
     'conditions': [
       ['type != "mobile"', {

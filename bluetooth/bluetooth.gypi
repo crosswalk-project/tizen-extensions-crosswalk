@@ -1,6 +1,12 @@
 {
   'targets': [
     {
+      'variables': {
+        'packages': ['gio-2.0'],
+        'bluetooth%': 'bluez4',
+      },
+
+      'includes': [ '../pkg-config.gypi' ],
       'target_name': 'tizen_bluetooth',
       'type': 'loadable_module',
       'sources': [
@@ -10,16 +16,14 @@
       ],
 
       'conditions': [
-        [ 'type == "desktop"', {
-            'variables': { 'packages': ['gio-2.0'] },
-            'includes': [ '../pkg-config.gypi' ],
-            'sources': ['bluetooth_context_desktop.cc'],
+        [ 'bluetooth == "bluez5"', {
+            'sources': ['bluetooth_context_bluez5.cc'],
+            'defines': ['BLUEZ_5'],
           }
         ],
-        [ 'type == "mobile"', {
-            'variables': { 'packages': ['gio-2.0'] },
-            'includes': [ '../pkg-config.gypi' ],
-            'sources': ['bluetooth_context_tizen.cc'],
+        [ 'bluetooth == "bluez4"', {
+            'sources': ['bluetooth_context_bluez4.cc'],
+            'defines': ['BLUEZ_4'],
           }
         ],
       ],
