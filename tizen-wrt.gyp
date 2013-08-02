@@ -52,6 +52,7 @@
     'notification/notification.gypi',
     'power/power.gypi',
     'system_info/system_info.gypi',
+    'systemsetting/systemsetting.gypi',
     'tizen/tizen.gypi',
     'time/time.gypi',
   },
