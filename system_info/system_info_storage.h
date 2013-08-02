@@ -12,6 +12,7 @@
 #include "common/extension_adapter.h"
 #include "common/picojson.h"
 #include "common/utils.h"
+#include "system_info/system_info_utils.h"
 
 class SysInfoStorage {
  public:
@@ -26,9 +27,10 @@ class SysInfoStorage {
   // Listerner support
   inline void StartListen() {
     stopping_ = false;
-    g_timeout_add_seconds(3,
-                          SysInfoStorage::TimedOutUpdate,
-                          static_cast<gpointer>(this));
+    // FIXME(halton): Use udev D-Bus interface to monitor.
+    g_timeout_add(system_info::default_timeout_interval,
+                  SysInfoStorage::TimedOutUpdate,
+                  static_cast<gpointer>(this));
   }
   inline void StopListen() { stopping_ = true; }
 
