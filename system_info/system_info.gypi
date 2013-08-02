@@ -3,12 +3,25 @@
     {
       'target_name': 'tizen_system_info',
       'type': 'loadable_module',
+      'conditions': [
+        [ 'type == "desktop"', {
+          'variables': {
+            'packages': [
+              'NetworkManager',
+            ]
+          },
+        }],
+        [ 'type == "mobile"', {
+          'dependencies': [
+            'vconf',
+          ],
+        }],
+      ],
       'variables': {
         'packages': [
           'dbus-glib-1',
           'glib-2.0',
           'libudev',
-          'NetworkManager',
         ]
       },
       'includes': [
