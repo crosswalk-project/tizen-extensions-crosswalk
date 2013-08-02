@@ -28,22 +28,24 @@
     ],
     'include_dirs': [
       '.',
+      '<(SHARED_INTERMEDIATE_DIR)',
     ],
     'sources': [
       '../common/extension_adapter.h',
       '../common/picojson.h',
+      '../common/utils.h',
     ],
     'cflags': [
       '-fPIC',
       '-fvisibility=hidden',
     ],
   },
-
   'includes': {
+    'bluetooth/bluetooth.gypi',
     'notification/notification.gypi',
     'power/power.gypi',
+    'system_info/system_info.gypi',
     'tizen/tizen.gypi',
     'time/time.gypi',
-    'bluetooth/bluetooth.gypi'
   },
 }
