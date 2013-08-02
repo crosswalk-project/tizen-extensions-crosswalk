@@ -1,4 +1,7 @@
 {
+  'includes':[
+    '../common/common.gypi',
+  ],
   'targets': [
     {
       'target_name': 'tizen_power',
@@ -21,7 +24,7 @@
         }],
         [ 'extension_host_os == "desktop"', {
             'variables': { 'packages': ['gio-2.0'] },
-            'includes': [ '../pkg-config.gypi' ],
+            'includes': [ '../common/pkg-config.gypi' ],
         }],
       ],
     },

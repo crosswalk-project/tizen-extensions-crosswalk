@@ -1,60 +1,17 @@
 {
-  'variables': { 'type%': 'mobile' },
-  'target_defaults': {
-    'conditions': [
-      ['extension_host_os != "mobile"', {
-        'sources/': [['exclude', '_mobile\\.cc$|mobile/']],
-        'includes/': [['exclude', '_mobile\\.gypi$|mobile/']],
-      }],
-      ['extension_host_os != "desktop"', {
-        'sources/': [['exclude', '_desktop\\.cc$|desktop/']],
-        'includes/': [['exclude', '_desktop\\.gypi$|desktop/']],
-      }],
-      ['extension_host_os == "mobile"', { 'defines': ['TIZEN_MOBILE'] } ],
-      ['extension_host_os == "desktop"', { 'defines': ['GENERIC_DESKTOP'] } ],
-      ['extensino_build_type == "Debug"', {
-        'defines': ['_DEBUG', ],
-        'cflags': [ '-O0', '-g', ],
-      }],
-      ['extension_build_type == "Release"', {
-        'defines': ['NDEBUG', ],
-        'cflags': [
-          '-O2',
-          # Don't emit the GCC version ident directives, they just end up
-          # in the .comment section taking up binary size.
-          '-fno-ident',
-          # Put data and code in their own sections, so that unused symbols
-          # can be removed at link time with --gc-sections.
-          '-fdata-sections',
-          '-ffunction-sections',
-        ],
-      }],
-    ],
-    'includes': [
-      'xwalk_js2c.gypi',
-    ],
-    'include_dirs': [
-      '.',
-      '<(SHARED_INTERMEDIATE_DIR)',
-    ],
-    'sources': [
-      '../common/extension_adapter.h',
-      '../common/picojson.h',
-      '../common/utils.h',
-    ],
-    'cflags': [
-      '-fPIC',
-      '-fvisibility=hidden',
-    ],
-  },
-  'includes': {
-    'common/tizen_mobile.gypi',
-    'bluetooth/bluetooth.gypi',
-    'notification/notification.gypi',
-    'power/power.gypi',
-    'system_info/system_info.gypi',
-    'tizen/tizen.gypi',
-    'networkbearerselection/networkbearerselection.gypi',
-    'time/time.gypi',
-  },
+  'targets': [
+    {
+      'target_name': 'build_all_tizen_extensions',
+      'type': 'none',
+      'dependencies': [
+        'bluetooth/bluetooth.gyp:*',
+        'networkbearerselection/networkbearerselection.gyp:*',
+        'notification/notification.gyp:*',
+        'power/power.gyp:*',
+        'system_info/system_info.gyp:*',
+        'time/time.gyp:*',
+        'tizen/tizen.gyp:*',
+      ],
+    },
+  ],
 }

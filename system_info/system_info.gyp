@@ -1,4 +1,7 @@
 {
+  'includes':[
+    '../common/common.gypi',
+  ],
   'targets': [
     {
       'target_name': 'tizen_system_info',
@@ -25,7 +28,7 @@
         ]
       },
       'includes': [
-        '../pkg-config.gypi',
+        '../common/pkg-config.gypi',
       ],
       'sources': [
         'system_info_api.js',
@@ -77,7 +80,7 @@
            '<(SHARED_INTERMEDIATE_DIR)/system_info_marshaller.h',
           ],
           'action': [
-            '<(DEPTH)/tools/redirect-stdout.sh',
+            '../tools/redirect-stdout.sh',
             'glib-genmarshal --header <@(_inputs)',
             '<@(_outputs)',
           ],
@@ -92,7 +95,7 @@
            '<(SHARED_INTERMEDIATE_DIR)/system_info_marshaller.c',
           ],
           'action': [
-            '<(DEPTH)/tools/redirect-stdout.sh',
+            '../tools/redirect-stdout.sh',
             'glib-genmarshal --body <@(_inputs)',
             '<@(_outputs)',
           ],

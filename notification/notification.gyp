@@ -1,8 +1,14 @@
 {
+  'includes':[
+    '../common/common.gypi',
+  ],
   'targets': [
     {
       'target_name': 'tizen_notification',
       'type': 'loadable_module',
+      'includes': [
+        '../common/pkg-config.gypi',
+      ],
       'sources': [
         'notification_api.js',
         'notification_context.cc',
@@ -21,8 +27,6 @@
             'variables': { 'packages': ['notification'] },
         }],
       ],
-
-      'includes': [ '../pkg-config.gypi' ],
     },
   ],
 }
