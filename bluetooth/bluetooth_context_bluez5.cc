@@ -91,7 +91,7 @@ void BluetoothContext::OnDBusObjectRemoved(GDBusObjectManager* manager,
 }
 
 void BluetoothContext::OnAdapterProxyCreated(GObject*, GAsyncResult* res) {
-  GError* error = NULL;
+  GError* error = 0;
   adapter_proxy_ = g_dbus_proxy_new_for_bus_finish(res, &error);
 
   if (!adapter_proxy_) {
@@ -136,7 +136,7 @@ void BluetoothContext::CacheManagedObject(gpointer data, gpointer user_data)
 }
 
 void BluetoothContext::OnManagerCreated(GObject*, GAsyncResult* res) {
-  GError* err = NULL;
+  GError* err = 0;
   object_manager_ = g_dbus_object_manager_client_new_for_bus_finish(res, &err);
 
   if (!object_manager_) {
@@ -168,8 +168,8 @@ BluetoothContext::~BluetoothContext() {
 }
 
 void BluetoothContext::PlatformInitialize() {
-  adapter_proxy_ = NULL;
-  object_manager_ = NULL;
+  adapter_proxy_ = 0;
+  object_manager_ = 0;
   is_js_context_initialized_ = false;
 
   g_dbus_proxy_new_for_bus(G_BUS_TYPE_SYSTEM,
@@ -221,7 +221,7 @@ picojson::value BluetoothContext::HandleGetDefaultAdapter(const picojson::value&
 }
 
 GDBusProxy* BluetoothContext::CreateDeviceProxy(GAsyncResult* res) {
-  GError* error = NULL;
+  GError* error = 0;
   GDBusProxy* deviceProxy = g_dbus_proxy_new_for_bus_finish(res, &error);
   if (deviceProxy) {
     known_devices_[g_dbus_proxy_get_object_path(deviceProxy)] = deviceProxy;
