@@ -350,7 +350,8 @@ BluetoothAdapter.prototype.setVisible = function(mode, successCallback, errorCal
   var msg = {
     'cmd': 'SetAdapterProperty',
     'property': 'Discoverable',
-    'value': mode
+    'value': mode,
+    'timeout': timeout
   };
 
   postMessage(msg, function(result) {
