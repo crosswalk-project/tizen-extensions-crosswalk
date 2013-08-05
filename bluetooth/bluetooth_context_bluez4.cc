@@ -116,7 +116,10 @@ void BluetoothContext::OnAdapterPropertySet(std::string property, GAsyncResult* 
     picojson::value::object o;
     o["cmd"] = picojson::value("");
     o["reply_id"] = picojson::value(callbacks_map_[property]);
-    o["error"] = picojson::value(static_cast<double>(1)); //FIXME(jeez): error
+
+    // No matter the error info here, BlueZ4's documentation says the only
+    // error that can be raised here is org.bluez.Error.InvalidArguments.
+    o["error"] = picojson::value(static_cast<double>(1));
     PostMessage(picojson::value(o));
 
     callbacks_map_.erase(property);
