@@ -1,20 +1,25 @@
 {
+  'includes':[
+    '../common/common.gypi',
+  ],
   'targets': [
     {
-      'variables': {
-        'packages': ['gio-2.0'],
-        'bluetooth%': 'bluez4',
-      },
-
-      'includes': [ '../pkg-config.gypi' ],
       'target_name': 'tizen_bluetooth',
       'type': 'loadable_module',
+      'variables': {
+        'packages': [
+          'gio-2.0',
+        ],
+        'bluetooth%': 'bluez4',
+      },
+      'includes': [
+        '../common/pkg-config.gypi',
+      ],
       'sources': [
         'bluetooth_api.js',
         'bluetooth_context.cc',
         'bluetooth_context.h',
       ],
-
       'conditions': [
         [ 'bluetooth == "bluez5"', {
             'sources': ['bluetooth_context_bluez5.cc'],
