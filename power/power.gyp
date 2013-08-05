@@ -1,4 +1,7 @@
 {
+  'includes':[
+    '../common/common.gypi',
+  ],
   'targets': [
     {
       'target_name': 'tizen_power',
@@ -11,7 +14,7 @@
         'power_context_mobile.cc',
       ],
       'conditions': [
-        ['type=="mobile"', {
+        ['extension_host_os=="mobile"', {
           'dependencies': [
             'capi-system-device',
             'capi-system-power',
@@ -19,9 +22,9 @@
             'vconf',
           ],
         }],
-        [ 'type == "desktop"', {
+        [ 'extension_host_os == "desktop"', {
             'variables': { 'packages': ['gio-2.0'] },
-            'includes': [ '../pkg-config.gypi' ],
+            'includes': [ '../common/pkg-config.gypi' ],
         }],
       ],
     },

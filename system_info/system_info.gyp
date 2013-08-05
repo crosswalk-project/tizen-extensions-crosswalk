@@ -1,17 +1,20 @@
 {
+  'includes':[
+    '../common/common.gypi',
+  ],
   'targets': [
     {
       'target_name': 'tizen_system_info',
       'type': 'loadable_module',
       'conditions': [
-        [ 'type == "desktop"', {
+        [ 'extension_host_os == "desktop"', {
           'variables': {
             'packages': [
               'NetworkManager',
             ]
           },
         }],
-        [ 'type == "mobile"', {
+        [ 'extension_host_os == "mobile"', {
           'dependencies': [
             'vconf',
           ],
@@ -25,7 +28,7 @@
         ]
       },
       'includes': [
-        '../pkg-config.gypi',
+        '../common/pkg-config.gypi',
       ],
       'sources': [
         'system_info_api.js',
@@ -77,7 +80,7 @@
            '<(SHARED_INTERMEDIATE_DIR)/system_info_marshaller.h',
           ],
           'action': [
-            '<(DEPTH)/tools/redirect-stdout.sh',
+            '../tools/redirect-stdout.sh',
             'glib-genmarshal --header <@(_inputs)',
             '<@(_outputs)',
           ],
@@ -92,7 +95,7 @@
            '<(SHARED_INTERMEDIATE_DIR)/system_info_marshaller.c',
           ],
           'action': [
-            '<(DEPTH)/tools/redirect-stdout.sh',
+            '../tools/redirect-stdout.sh',
             'glib-genmarshal --body <@(_inputs)',
             '<@(_outputs)',
           ],

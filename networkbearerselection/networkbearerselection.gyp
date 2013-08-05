@@ -1,4 +1,7 @@
 {
+  'includes':[
+    '../common/common.gypi',
+  ],
   'targets': [
     {
       'target_name': 'tizen_networkbearerselection',
@@ -11,7 +14,7 @@
         'networkbearerselection_context_mobile.cc',
       ],
       'conditions': [
-        ['type=="mobile"', {
+        ['extension_host_os=="mobile"', {
           'cflags': [
             '<!@(pkg-config --cflags capi-network-connection)',
           ],
