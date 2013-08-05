@@ -270,9 +270,18 @@ void BluetoothContext::HandleSetAdapterProperty(const picojson::value& msg) {
 
   GVariant* value = 0;
   if (property == "Name")
-     value = g_variant_new("s", msg.get("value").to_str().c_str());
-  else if (property == "Discoverable" || property == "Powered")
-     value = g_variant_new("b", msg.get("value").get<bool>());
+    value = g_variant_new("s", msg.get("value").to_str().c_str());
+  else if (property == "Discoverable") {
+    value = g_variant_new("b", msg.get("value").get<bool>());
+
+    if (msg.contains("timeout")) {
+      const guint32 timeout = static_cast<guint32>(msg.get("timeout").get<double>());
+      g_dbus_proxy_call(adapter_proxy_, "SetProperty",
+          g_variant_new("(sv)", "DiscoverableTimeout", g_variant_new("u", timeout)),
+          G_DBUS_CALL_FLAGS_NONE, 5000, NULL, NULL, NULL);
+    }
+  } else if (property == "Powered")
+    value = g_variant_new("b", msg.get("value").get<bool>());
 
   assert(value);
 
