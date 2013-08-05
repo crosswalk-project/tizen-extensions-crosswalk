@@ -75,7 +75,7 @@ void BluetoothContext::OnSignal(GDBusProxy* proxy, gchar* sender, gchar* signal,
 }
 
 void BluetoothContext::OnGotAdapterProperties(GObject*, GAsyncResult* res) {
-  GError* error = NULL;
+  GError* error = 0;
   GVariant* result = g_dbus_proxy_call_finish(adapter_proxy_, res, &error);
 
   if (!result) {
@@ -102,7 +102,7 @@ void BluetoothContext::OnGotAdapterProperties(GObject*, GAsyncResult* res) {
 }
 
 void BluetoothContext::OnAdapterPropertySet(std::string property, GAsyncResult* res) {
-  GError* error = NULL;
+  GError* error = 0;
   GVariant* result = g_dbus_proxy_call_finish(adapter_proxy_, res, &error);
 
   // We should only reply to the PostMessage here if an error happened when
@@ -127,7 +127,7 @@ void BluetoothContext::OnAdapterPropertySet(std::string property, GAsyncResult* 
 }
 
 void BluetoothContext::OnAdapterProxyCreated(GObject*, GAsyncResult* res) {
-  GError* error = NULL;
+  GError* error = 0;
   adapter_proxy_ = g_dbus_proxy_new_for_bus_finish(res, &error);
 
   if (!adapter_proxy_) {
@@ -144,7 +144,7 @@ void BluetoothContext::OnAdapterProxyCreated(GObject*, GAsyncResult* res) {
 }
 
 void BluetoothContext::OnManagerCreated(GObject*, GAsyncResult* res) {
-  GError* err = NULL;
+  GError* err = 0;
   manager_proxy_ = g_dbus_proxy_new_for_bus_finish(res, &err);
 
   if (!manager_proxy_) {
@@ -158,7 +158,7 @@ void BluetoothContext::OnManagerCreated(GObject*, GAsyncResult* res) {
 }
 
 void BluetoothContext::OnGotDefaultAdapterPath(GObject*, GAsyncResult* res) {
-  GError* error = NULL;
+  GError* error = 0;
   GVariant* result = g_dbus_proxy_call_finish(manager_proxy_, res, &error);
 
   if (!result) {
@@ -196,8 +196,8 @@ BluetoothContext::~BluetoothContext() {
 }
 
 void BluetoothContext::PlatformInitialize() {
-  adapter_proxy_ = NULL;
-  manager_proxy_ = NULL;
+  adapter_proxy_ = 0;
+  manager_proxy_ = 0;
   is_js_context_initialized_ = false;
 
   g_dbus_proxy_new_for_bus(G_BUS_TYPE_SYSTEM,
@@ -268,14 +268,13 @@ void BluetoothContext::DeviceFound(std::string address, GVariantIter* properties
 void BluetoothContext::HandleSetAdapterProperty(const picojson::value& msg) {
   std::string property = msg.get("property").to_str();
 
-  GVariant* value = NULL;
+  GVariant* value = 0;
   if (property == "Name")
      value = g_variant_new("s", msg.get("value").to_str().c_str());
   else if (property == "Discoverable" || property == "Powered")
      value = g_variant_new("b", msg.get("value").get<bool>());
 
-  if (!value)
-    return;
+  assert(value);
 
   callbacks_map_[property] = msg.get("reply_id").to_str();
 
