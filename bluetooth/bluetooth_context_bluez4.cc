@@ -64,7 +64,7 @@ void BluetoothContext::OnSignal(GDBusProxy* proxy, gchar* sender, gchar* signal,
         picojson::value::object property_changed;
         property_changed["cmd"] = picojson::value("");
         property_changed["reply_id"] = picojson::value(it->second);
-        property_changed["error"] = picojson::value(static_cast<double>(0)); //FIXME(jeez): error
+        property_changed["error"] = picojson::value(static_cast<double>(0));
         handler->PostMessage(picojson::value(property_changed));
         handler->callbacks_map_.erase(it);
       }

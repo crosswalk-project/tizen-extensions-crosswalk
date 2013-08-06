@@ -81,7 +81,7 @@ void BluetoothContext::OnDiscoveryStarted(GObject*, GAsyncResult* res) {
   if (!result) {
     g_printerr ("Error discovering: %s\n", error->message);
     g_error_free(error);
-    errorCode = 1; /* FIXME(jeez): error*/
+    errorCode = 1;
   }
 
   o["error"] = picojson::value(static_cast<double>(errorCode));
@@ -101,7 +101,7 @@ void BluetoothContext::OnDiscoveryStopped(GObject* source, GAsyncResult* res) {
   if (!result) {
     g_printerr ("Error discovering: %s\n", error->message);
     g_error_free(error);
-    errorCode = 1; /* FIXME(jeez): error*/
+    errorCode = 1;
   }
 
   picojson::value::object o;

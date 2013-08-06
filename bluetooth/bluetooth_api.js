@@ -46,6 +46,17 @@ function Adapter() {
   this.isReady = false;
 };
 
+Adapter.prototype.serviceNotAvailable = function(errorCallback) {
+  if (adapter.isReady)
+    return false;
+
+  if (errorCallback) {
+    var error = new tizen.WebAPIError(tizen.WebAPIException.SERVICE_NOT_AVAILABLE_ERR);
+    errorCallback(error);
+  }
+  return true;
+}
+
 Adapter.prototype.indexOfDevice = function(devices, address) {
   for (var i = 0; i < devices.length; i++) {
     if (devices[i].address == address)
@@ -276,19 +287,16 @@ function BluetoothAdapter() {
 };
 
 BluetoothAdapter.prototype.setName = function(name, successCallback, errorCallback) {
-  if (!adapter.isReady) {
-    var error = new tizen.WebAPIError(tizen.WebAPIException.SERVICE_NOT_AVAILABLE_ERR);
-    if (errorCallback)
-      errorCallback(error);
+  if (adapter.serviceNotAvailable(errorCallback))
     return;
-  }
 
   if (typeof name !== 'string'
         || (successCallback && typeof successCallback !== 'function')
         || (errorCallback && typeof errorCallback !== 'function')) {
-    var error = new tizen.WebAPIError(tizen.WebAPIException.INVALID_VALUES_ERR);
-    if (errorCallback)
+    if (errorCallback) {
+      var error = new tizen.WebAPIError(tizen.WebAPIException.INVALID_VALUES_ERR);
       errorCallback(error);
+    }
 
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
     return;
@@ -302,9 +310,10 @@ BluetoothAdapter.prototype.setName = function(name, successCallback, errorCallba
 
   postMessage(msg, function(result) {
     if (result.error != 0) {
-      var error = new tizen.WebAPIError(tizen.WebAPIException.INVALID_VALUES_ERR);
-      if (errorCallback)
+      if (errorCallback) {
+        var error = new tizen.WebAPIError(tizen.WebAPIException.INVALID_VALUES_ERR);
         errorCallback(error);
+      }
 
       throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
       return;
@@ -316,13 +325,13 @@ BluetoothAdapter.prototype.setName = function(name, successCallback, errorCallba
 };
 
 BluetoothAdapter.prototype.setPowered = function(state, successCallback, errorCallback) {
-  if (!adapter.isReady) {
-    var error = {};
-    error.code = 1; // FIXME(jeez): it has to be ServiceNotAvailableError
-    error.name = "ServiceNotAvailableError"; // FIXME(jeez): add error names
-    error.message = "BLUETOOTH ERROR: ServiceNotAvailableError"
-    errorCallback(error);
+  if (adapter.serviceNotAvailable(errorCallback))
     return;
+
+  if (typeof state !== 'boolean'
+        || (successCallback && typeof successCallback !== 'function')
+        || (errorCallback && typeof errorCallback !== 'function')) {
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
   }
 
   var msg = {
@@ -332,29 +341,39 @@ BluetoothAdapter.prototype.setPowered = function(state, successCallback, errorCa
   };
 
   postMessage(msg, function(result) {
-    if (result.error != 0) { // FIXME(jeez): fix error codes
-      var error = {};
-      error.code = result.error;
-      error.name = ""; // FIXME(jeez): add error names
-      error.message = "ERROR!" // FIXME(jeez): add error messages
+    if (result.error != 0) {
+      if (errorCallback) {
+        var error = new tizen.WebAPIError(tizen.WebAPIException.INVALID_VALUES_ERR);
+        errorCallback(error);
+      }
 
-      errorCallback(error);
+      throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
       return;
     }
 
-    successCallback();
+    if (successCallback)
+      successCallback();
   });
 };
 
 BluetoothAdapter.prototype.setVisible = function(mode, successCallback, errorCallback, timeout) {
-  if (!adapter.isReady) {
-    var error = {};
-    error.code = 1; // FIXME(jeez): it has to be ServiceNotAvailableError
-    error.name = "ServiceNotAvailableError"; // FIXME(jeez): add error names
-    error.message = "BLUETOOTH ERROR: ServiceNotAvailableError"
-    errorCallback(error);
+  if (adapter.serviceNotAvailable(errorCallback))
+    return;
+
+  if (typeof mode !== 'boolean'
+        || (successCallback && typeof successCallback !== 'function')
+        || (errorCallback && typeof errorCallback !== 'function')) {
+    if (errorCallback) {
+      var error = new tizen.WebAPIError(tizen.WebAPIException.INVALID_VALUES_ERR);
+      errorCallback(error);
+    }
+
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
     return;
   }
+
+  if (timeout === undefined || typeof timeout !== 'number' || timeout < 0)
+    timeout = 180; // According to tizen.bluetooth documentation.
 
   var msg = {
     'cmd': 'SetAdapterProperty',
@@ -364,41 +383,39 @@ BluetoothAdapter.prototype.setVisible = function(mode, successCallback, errorCal
   };
 
   postMessage(msg, function(result) {
-    if (result.error != 0) { // FIXME(jeez): fix error codes
-      var error = {};
-      error.code = result.error;
-      error.name = ""; // FIXME(jeez): add error names
-      error.message = "ERROR!" // FIXME(jeez): add error messages
+    if (result.error != 0) {
+      if (errorCallback) {
+        var error = new tizen.WebAPIError(tizen.WebAPIException.INVALID_VALUES_ERR);
+        errorCallback(error);
+      }
 
-      errorCallback(error);
+      throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
       return;
     }
 
-    successCallback();
+    if (successCallback)
+      successCallback();
   });
 };
 
 BluetoothAdapter.prototype.discoverDevices = function(discoverySuccessCallback, errorCallback) {
-  if (!adapter.isReady) {
-    var error = {};
-    error.code = 1; // FIXME(jeez): it has to be ServiceNotAvailableError
-    error.name = "ServiceNotAvailableError"; // FIXME(jeez): add error names
-    error.message = "BLUETOOTH ERROR: ServiceNotAvailableError"
-    errorCallback(error);
+  if (adapter.serviceNotAvailable(errorCallback))
     return;
+
+  if ((deviceSuccessCallback && typeof deviceSuccessCallback !== 'object')
+        || (errorCallback && typeof errorCallback !== 'function')) {
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
   }
 
   var msg = {
     'cmd': 'DiscoverDevices'
   };
   postMessage(msg, function(result) {
-    if (result.error != 0) { // FIXME(jeez): fix error codes
-      var error = {};
-      error.code = result.error;
-      error.name = ""; // FIXME(jeez): add error names
-      error.message = "ERROR!" // FIXME(jeez): add error messages
-
-      errorCallback(error);
+    if (result.error != 0) {
+      if (errorCallback) {
+        var error = new tizen.WebAPIError(tizen.WebAPIException.UNKNOWN_ERR);
+        errorCallback(error);
+      }
       return;
     }
 
@@ -408,26 +425,23 @@ BluetoothAdapter.prototype.discoverDevices = function(discoverySuccessCallback, 
 };
 
 BluetoothAdapter.prototype.stopDiscovery = function(successCallback, errorCallback) {
-  if (!adapter.isReady) {
-    var error = {};
-    error.code = 1; // FIXME(jeez): it has to be ServiceNotAvailableError
-    error.name = "ServiceNotAvailableError"; // FIXME(jeez): add error names
-    error.message = "BLUETOOTH ERROR: ServiceNotAvailableError" // FIXME(jeez): add error msgs
-    errorCallback(error);
+  if (adapter.serviceNotAvailable(errorCallback))
     return;
+
+  if ((successCallback && typeof successCallback !== 'function')
+        || (errorCallback && typeof errorCallback !== 'function')) {
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
   }
 
   var msg = {
     'cmd': 'StopDiscovery'
   };
   postMessage(msg, function(result) {
-    if (result.error != 0) { // FIXME(jeez): fix error codes
-      var error = {};
-      error.code = result.error;
-      error.name = ""; // FIXME(jeez): add error names
-      error.message = "ERROR!" // FIXME(jeez): add error messages
-
-      errorCallback(error);
+    if (result.error != 0) {
+      if (errorCallback) {
+        var error = new tizen.WebAPIError(tizen.WebAPIException.UNKNOWN_ERR);
+        errorCallback(error);
+      }
       return;
     }
 
@@ -437,13 +451,12 @@ BluetoothAdapter.prototype.stopDiscovery = function(successCallback, errorCallba
 };
 
 BluetoothAdapter.prototype.getKnownDevices = function(deviceArraySuccessCallback, errorCallback) {
-  if (!adapter.isReady) {
-    var error = {};
-    error.code = 1; // FIXME(jeez): it has to be ServiceNotAvailableError
-    error.name = "ServiceNotAvailableError"; // FIXME(jeez): add error names
-    error.message = "BLUETOOTH ERROR: ServiceNotAvailableError"
-    errorCallback(error);
+  if (adapter.serviceNotAvailable(errorCallback))
     return;
+
+  if ((successCallback && typeof successCallback !== 'function')
+        || (errorCallback && typeof errorCallback !== 'function')) {
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
   }
 
   // FIXME(jeez): we are not returning a deep copy so we can keep
