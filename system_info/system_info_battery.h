@@ -24,7 +24,7 @@ class SysInfoBattery {
   inline void StartListen() {
     // FIXME(halton): Use udev D-Bus interface to monitor.
     g_timeout_add(system_info::default_timeout_interval,
-                  SysInfoBattery::TimedOutUpdate,
+                  SysInfoBattery::OnUpdateTimeout,
                   static_cast<gpointer>(this));
     stopping_ = false;
   }
@@ -33,7 +33,7 @@ class SysInfoBattery {
  private:
   explicit SysInfoBattery(ContextAPI* api);
 
-  static gboolean TimedOutUpdate(gpointer user_data);
+  static gboolean OnUpdateTimeout(gpointer user_data);
   bool Update(picojson::value& error);
   void SetData(picojson::value& data);
 

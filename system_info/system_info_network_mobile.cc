@@ -42,7 +42,7 @@ bool SysInfoNetwork::Update(picojson::value& error) {
   return true;
 }
 
-gboolean SysInfoNetwork::TimedOutUpdate(gpointer user_data) {
+gboolean SysInfoNetwork::OnUpdateTimeout(gpointer user_data) {
   SysInfoNetwork* instance = static_cast<SysInfoNetwork*>(user_data);
   if (instance->stopping_) {
     instance->stopping_ = false;
@@ -52,7 +52,7 @@ gboolean SysInfoNetwork::TimedOutUpdate(gpointer user_data) {
   SystemInfoNetworkType old_type = instance->type_;
   picojson::value error = picojson::value(picojson::object());;
   if (!instance->Update(error)) {
-    // Fail to update, wait for next round
+    // Fail to update, wait for next round.
     return TRUE;
   }
 

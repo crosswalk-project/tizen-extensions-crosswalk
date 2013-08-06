@@ -207,7 +207,7 @@ void SysInfoStorage::GetDetails(const std::string& mnt_fsname,
   system_info::SetPicoJsonObjectValue(error, "message", picojson::value(""));
 }
 
-gboolean SysInfoStorage::TimedOutUpdate(gpointer user_data) {
+gboolean SysInfoStorage::OnUpdateTimeout(gpointer user_data) {
   SysInfoStorage* instance = static_cast<SysInfoStorage*>(user_data);
 
   if (instance->stopping_) {

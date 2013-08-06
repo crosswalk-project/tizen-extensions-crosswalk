@@ -20,8 +20,8 @@ const char sDeviceInterface[] = "org.freedesktop.NetworkManager.Device";
 }  // namespace
 
 void SysInfoNetwork::PlatformInitialize() {
-  active_connection_ = std::string("");
-  active_device_ = std::string("");
+  active_connection_ = "";
+  active_device_ = "";
   device_type_ = NM_DEVICE_TYPE_UNKNOWN;
 
   g_dbus_proxy_new_for_bus(G_BUS_TYPE_SYSTEM,
@@ -39,11 +39,11 @@ SysInfoNetwork::~SysInfoNetwork() {
 }
 
 void SysInfoNetwork::OnNetworkManagerCreated(GObject*, GAsyncResult* res) {
-  GError* err = NULL;
+  GError* err = 0;
   GDBusProxy* proxy = g_dbus_proxy_new_for_bus_finish(res, &err);
 
   if (!proxy) {
-    g_printerr("## NetworkManager proxy creation error: %s\n", err->message);
+    g_printerr("NetworkManager proxy creation error: %s\n", err->message);
     g_error_free(err);
     return;
   }
@@ -56,24 +56,24 @@ void SysInfoNetwork::OnNetworkManagerCreated(GObject*, GAsyncResult* res) {
   }
   UpdateActiveConnection(value);
 
-  // FXIME(halton): NetworkManager does not support g-properties-changed signal.
+  // FIXME(halton): NetworkManager does not support g-properties-changed signal.
   g_signal_connect(proxy, "g-signal",
       G_CALLBACK(SysInfoNetwork::OnNetworkManagerSignal), this);
 }
 
 void SysInfoNetwork::OnActiveConnectionCreated(GObject*, GAsyncResult* res) {
-  GError* err = NULL;
+  GError* err = 0;
   GDBusProxy* proxy = g_dbus_proxy_new_for_bus_finish(res, &err);
 
   if (!proxy) {
-    g_printerr("## ActiveConnection proxy creation error: %s\n", err->message);
+    g_printerr("ActiveConnection proxy creation error: %s\n", err->message);
     g_error_free(err);
     return;
   }
 
   GVariant* value = g_dbus_proxy_get_cached_property(proxy, "Devices");
   if (!value) {
-    g_printerr("Get Devices failed.");
+    g_printerr("Failed to get devices.");
     return;
   }
   UpdateActiveDevice(value);
@@ -83,11 +83,11 @@ void SysInfoNetwork::OnActiveConnectionCreated(GObject*, GAsyncResult* res) {
 }
 
 void SysInfoNetwork::OnDevicesCreated(GObject*, GAsyncResult* res) {
-  GError* err = NULL;
+  GError* err = 0;
   GDBusProxy* proxy = g_dbus_proxy_new_for_bus_finish(res, &err);
 
   if (!proxy) {
-    g_printerr("## Devices proxy creation error: %s\n", err->message);
+    g_printerr("Devices proxy creation error: %s\n", err->message);
     g_error_free(err);
     return;
   }
@@ -127,9 +127,9 @@ SystemInfoNetworkType SysInfoNetwork::ToNetworkType(guint device_type) {
 }
 
 void SysInfoNetwork::UpdateActiveConnection(GVariant* value) {
-  if (!value || (g_variant_n_children(value) == 0)) {
-    active_connection_ = std::string("");
-    active_device_ = std::string("");
+  if (!value || !g_variant_n_children(value)) {
+    active_connection_ = "";
+    active_device_ = "";
     SendUpdate(NM_DEVICE_TYPE_UNKNOWN);
     return;
   }
@@ -144,7 +144,7 @@ void SysInfoNetwork::UpdateActiveConnection(GVariant* value) {
   const char* str = g_variant_get_string(child, NULL);
   if (str && (strcmp(active_connection_.c_str(), str) != 0)) {
     active_connection_ = std::string(str);
-    active_device_ = std::string("");
+    active_device_ = "";
     SendUpdate(NM_DEVICE_TYPE_UNKNOWN);
   }
 
@@ -163,8 +163,8 @@ void SysInfoNetwork::UpdateActiveConnection(GVariant* value) {
 }
 
 void SysInfoNetwork::UpdateActiveDevice(GVariant* value) {
-  if (!value || (g_variant_n_children(value) == 0)) {
-    active_device_ = std::string("");
+  if (!value || !g_variant_n_children(value)) {
+    active_device_ = "";
     SendUpdate(NM_DEVICE_TYPE_UNKNOWN);
     return;
   }
