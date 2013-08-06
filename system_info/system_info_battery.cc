@@ -80,7 +80,7 @@ bool SysInfoBattery::Update(picojson::value& error) {
   return found;
 }
 
-gboolean SysInfoBattery::TimedOutUpdate(gpointer user_data) {
+gboolean SysInfoBattery::OnUpdateTimeout(gpointer user_data) {
   SysInfoBattery* instance = static_cast<SysInfoBattery*>(user_data);
 
   if (instance->stopping_) {

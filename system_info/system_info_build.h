@@ -24,7 +24,7 @@ class SysInfoBuild {
   inline void StartListen() {
     stopping_ = false;
     g_timeout_add(system_info::default_timeout_interval,
-                  SysInfoBuild::TimedOutUpdate,
+                  SysInfoBuild::OnUpdateTimeout,
                   static_cast<gpointer>(this));
   }
   inline void StopListen() { stopping_ = true; }
@@ -33,7 +33,7 @@ class SysInfoBuild {
   explicit SysInfoBuild(ContextAPI* api);
   bool UpdateHardware();
   bool UpdateOSBuild();
-  static gboolean TimedOutUpdate(gpointer user_data);
+  static gboolean OnUpdateTimeout(gpointer user_data);
 
   ContextAPI* api_;
   std::string model_;

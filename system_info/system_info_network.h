@@ -50,7 +50,7 @@ class SysInfoNetwork {
 #if defined(TIZEN_MOBILE)
     stopping_ = false;
     g_timeout_add(system_info::default_timeout_interval,
-                  SysInfoNetwork::TimedOutUpdate,
+                  SysInfoNetwork::OnUpdateTimeout,
                   static_cast<gpointer>(this));
 #endif
   }
@@ -90,9 +90,9 @@ class SysInfoNetwork {
 
   std::string active_connection_;
   std::string active_device_;
-  guint       device_type_;
+  guint device_type_;
 #elif defined(TIZEN_MOBILE)
-  static gboolean TimedOutUpdate(gpointer user_data);
+  static gboolean OnUpdateTimeout(gpointer user_data);
   bool stopping_;
 #endif
 
