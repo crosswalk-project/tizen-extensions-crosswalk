@@ -402,7 +402,7 @@ BluetoothAdapter.prototype.discoverDevices = function(discoverySuccessCallback, 
   if (adapter.serviceNotAvailable(errorCallback))
     return;
 
-  if ((deviceSuccessCallback && typeof deviceSuccessCallback !== 'object')
+  if ((discoverySuccessCallback && typeof discoverySuccessCallback !== 'object')
         || (errorCallback && typeof errorCallback !== 'function')) {
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
   }
@@ -454,7 +454,7 @@ BluetoothAdapter.prototype.getKnownDevices = function(deviceArraySuccessCallback
   if (adapter.serviceNotAvailable(errorCallback))
     return;
 
-  if ((successCallback && typeof successCallback !== 'function')
+  if ((deviceArraySuccessCallback && typeof deviceArraySuccessCallback !== 'function')
         || (errorCallback && typeof errorCallback !== 'function')) {
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
   }
