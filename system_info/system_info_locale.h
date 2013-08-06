@@ -24,7 +24,7 @@ class SysInfoLocale {
   inline void StartListen() {
     stopping_ = false;
     g_timeout_add(system_info::default_timeout_interval,
-                  SysInfoLocale::TimedOutUpdate,
+                  SysInfoLocale::OnUpdateTimeout,
                   static_cast<gpointer>(this));
   }
   inline void StopListen() { stopping_ = true; }
@@ -33,7 +33,7 @@ class SysInfoLocale {
   explicit SysInfoLocale(ContextAPI* api);
   bool UpdateLanguage();
   bool UpdateCountry();
-  static gboolean TimedOutUpdate(gpointer user_data);
+  static gboolean OnUpdateTimeout(gpointer user_data);
 
   ContextAPI* api_;
   std::string language_;

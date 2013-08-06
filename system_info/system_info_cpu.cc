@@ -21,7 +21,7 @@ void SysInfoCpu::Get(picojson::value& error,
   system_info::SetPicoJsonObjectValue(error, "message", picojson::value(""));
 }
 
-gboolean SysInfoCpu::TimedOutUpdate(gpointer user_data) {
+gboolean SysInfoCpu::OnUpdateTimeout(gpointer user_data) {
   SysInfoCpu* instance = static_cast<SysInfoCpu*>(user_data);
 
   if (instance->stopping_) {

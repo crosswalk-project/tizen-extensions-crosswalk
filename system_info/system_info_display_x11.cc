@@ -89,7 +89,7 @@ bool SysInfoDisplay::UpdateBrightness() {
   return true;
 }
 
-gboolean SysInfoDisplay::TimedOutUpdate(gpointer user_data) {
+gboolean SysInfoDisplay::OnUpdateTimeout(gpointer user_data) {
   SysInfoDisplay* instance = static_cast<SysInfoDisplay*>(user_data);
 
   if (instance->stopping_) {

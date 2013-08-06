@@ -26,7 +26,7 @@ class SysInfoCpu {
   inline void StartListen() {
     stopping_ = false;
     g_timeout_add(system_info::default_timeout_interval,
-                  SysInfoCpu::TimedOutUpdate,
+                  SysInfoCpu::OnUpdateTimeout,
                   static_cast<gpointer>(this));
   }
   inline void StopListen() { stopping_ = true; }
@@ -38,7 +38,7 @@ class SysInfoCpu {
     api_ = api;
   }
 
-  static gboolean TimedOutUpdate(gpointer user_data);
+  static gboolean OnUpdateTimeout(gpointer user_data);
   bool UpdateLoad();
 
   ContextAPI* api_;
