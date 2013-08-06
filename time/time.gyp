@@ -1,4 +1,7 @@
 {
+  'includes':[
+    '../common/common.gypi',
+  ],
   'targets': [
     {
       'target_name': 'tizen_time',

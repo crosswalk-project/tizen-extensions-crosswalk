@@ -29,7 +29,7 @@ class SysInfoStorage {
     stopping_ = false;
     // FIXME(halton): Use udev D-Bus interface to monitor.
     g_timeout_add(system_info::default_timeout_interval,
-                  SysInfoStorage::TimedOutUpdate,
+                  SysInfoStorage::OnUpdateTimeout,
                   static_cast<gpointer>(this));
   }
   inline void StopListen() { stopping_ = true; }
@@ -41,7 +41,7 @@ class SysInfoStorage {
                   const std::string& mnt_dir,
                   picojson::value& error,
                   picojson::value& unit);
-  static gboolean TimedOutUpdate(gpointer user_data);
+  static gboolean OnUpdateTimeout(gpointer user_data);
   std::string GetDevPathFromMountPath(const std::string& mnt_path);
 
   ContextAPI* api_;

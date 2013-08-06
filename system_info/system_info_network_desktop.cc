@@ -7,121 +7,102 @@
 #include <NetworkManager.h>
 
 #include "system_info/system_info_utils.h"
-#include "system_info_marshaller.h"
 
 namespace {
 
-#define DBUS_NM_SERVICE "org.freedesktop.NetworkManager"
-// for StateChanged
-#define DBUS_NM_DEVICE "/org/freedesktop/NetworkManager/Device"
-#define DBUS_NM_DEVICE_INTERFACE "org.freedesktop.NetworkManager.Device"
-// for property
-#define DBUS_NM_DEVICES_0 "/org/freedesktop/NetworkManager/Devices/0"
-#define DBUS_PROPERTY_INTERFACE "org.freedesktop.DBus.Properties"
+const char sDBusServiceNM[] = "org.freedesktop.NetworkManager";
+const char sManagerPath[] = "/org/freedesktop/NetworkManager";
+const char sManagerInterface[] = "org.freedesktop.NetworkManager";
+const char sConnectionActiveInterface[] =
+    "org.freedesktop.NetworkManager.Connection.Active";
+const char sDeviceInterface[] = "org.freedesktop.NetworkManager.Device";
 
 }  // namespace
 
-SysInfoNetwork::SysInfoNetwork(ContextAPI* api)
-    : type_(SYSTEM_INFO_NETWORK_NONE),
-      stopping_(false),
-      dbus_nm_proxy_(NULL),
-      dbus_prop_proxy_(NULL),
-      nm_device_type_(NM_DEVICE_TYPE_UNKNOWN) {
-  api_ = api;
+void SysInfoNetwork::PlatformInitialize() {
+  active_connection_ = "";
+  active_device_ = "";
+  device_type_ = NM_DEVICE_TYPE_UNKNOWN;
 
-  GError *error = NULL;
-  DBusGConnection *connection = dbus_g_bus_get(DBUS_BUS_SYSTEM, &error);
-  if (!connection)
-    return;
-
-  dbus_prop_proxy_ = dbus_g_proxy_new_for_name(connection,
-                                               DBUS_NM_SERVICE,
-                                               DBUS_NM_DEVICES_0,
-                                               DBUS_PROPERTY_INTERFACE);
-
-  dbus_nm_proxy_ = dbus_g_proxy_new_for_name(connection,
-                                             DBUS_NM_SERVICE,
-                                             DBUS_NM_DEVICES_0,
-                                             DBUS_NM_DEVICE_INTERFACE);
-
-  // FIXME(halton): add marshaller will cause api expose failure
-  /*
-  dbus_g_object_register_marshaller(g_cclosure_user_marshal_VOID__UINT_UINT_UINT,
-                                    G_TYPE_NONE,
-                                    G_TYPE_UINT,
-                                    G_TYPE_UINT,
-                                    G_TYPE_UINT,
-                                    G_TYPE_INVALID);
-  */
-  dbus_g_proxy_add_signal(dbus_nm_proxy_,
-                          "StateChanged",
-                          G_TYPE_UINT,
-                          G_TYPE_UINT,
-                          G_TYPE_UINT,
-                          G_TYPE_INVALID);
-  dbus_g_proxy_connect_signal(dbus_nm_proxy_, "StateChanged",
-                              G_CALLBACK(SysInfoNetwork::OnNMStateChanged),
-                              static_cast<void *>(this),
-                              NULL);
+  g_dbus_proxy_new_for_bus(G_BUS_TYPE_SYSTEM,
+      G_DBUS_PROXY_FLAGS_NONE,
+      NULL,
+      sDBusServiceNM,
+      sManagerPath,
+      sManagerInterface,
+      NULL,
+      OnNetworkManagerCreatedThunk,
+      this);
 }
 
 SysInfoNetwork::~SysInfoNetwork() {
-  if (dbus_nm_proxy_)
-    g_object_unref(dbus_nm_proxy_);
-  if (dbus_prop_proxy_)
-    g_object_unref(dbus_prop_proxy_);
+}
+
+void SysInfoNetwork::OnNetworkManagerCreated(GObject*, GAsyncResult* res) {
+  GError* err = 0;
+  GDBusProxy* proxy = g_dbus_proxy_new_for_bus_finish(res, &err);
+
+  if (!proxy) {
+    g_printerr("NetworkManager proxy creation error: %s\n", err->message);
+    g_error_free(err);
+    return;
+  }
+
+  GVariant* value = g_dbus_proxy_get_cached_property(proxy,
+                                                     "ActiveConnections");
+  if (!value) {
+    g_printerr("Get ActiveConnections failed.");
+    return;
+  }
+  UpdateActiveConnection(value);
+
+  // FIXME(halton): NetworkManager does not support g-properties-changed signal.
+  g_signal_connect(proxy, "g-signal",
+      G_CALLBACK(SysInfoNetwork::OnNetworkManagerSignal), this);
+}
+
+void SysInfoNetwork::OnActiveConnectionCreated(GObject*, GAsyncResult* res) {
+  GError* err = 0;
+  GDBusProxy* proxy = g_dbus_proxy_new_for_bus_finish(res, &err);
+
+  if (!proxy) {
+    g_printerr("ActiveConnection proxy creation error: %s\n", err->message);
+    g_error_free(err);
+    return;
+  }
+
+  GVariant* value = g_dbus_proxy_get_cached_property(proxy, "Devices");
+  if (!value) {
+    g_printerr("Failed to get devices.");
+    return;
+  }
+  UpdateActiveDevice(value);
+
+  g_signal_connect(proxy, "g-signal",
+      G_CALLBACK(SysInfoNetwork::OnActiveConnectionsSignal), this);
+}
+
+void SysInfoNetwork::OnDevicesCreated(GObject*, GAsyncResult* res) {
+  GError* err = 0;
+  GDBusProxy* proxy = g_dbus_proxy_new_for_bus_finish(res, &err);
+
+  if (!proxy) {
+    g_printerr("Devices proxy creation error: %s\n", err->message);
+    g_error_free(err);
+    return;
+  }
+
+  GVariant* value = g_dbus_proxy_get_cached_property(proxy, "DeviceType");
+  if (!value) {
+    g_printerr("Get DeviceType failed.");
+    return;
+  }
+  UpdateDeviceType(value);
 }
 
 bool SysInfoNetwork::Update(picojson::value& error) {
-  GError* err = NULL;
-  GValue value = {0, };
-  if (!dbus_g_proxy_call(dbus_prop_proxy_, "Get",
-                         &err,
-                         G_TYPE_STRING, DBUS_NM_DEVICE_INTERFACE,
-                         G_TYPE_STRING, "DeviceType",
-                         G_TYPE_INVALID,
-                         G_TYPE_VALUE, &value,
-                         G_TYPE_INVALID)) {
-    system_info::SetPicoJsonObjectValue(error, "message",
-        picojson::value(err->message));
-    return false;
-  }
-
-  guint device_type = g_value_get_uint(&value);
-  if (device_type != nm_device_type_) {
-    nm_device_type_ = device_type;
-    type_ = ToNetworkType(device_type);
-  }
+  // type_ will be updated by NM signals
   return true;
-}
-
-void SysInfoNetwork::OnNMStateChanged(DBusGProxy* proxy,
-                                      guint new_state,
-                                      guint old_state,
-                                      guint reason,
-                                      gpointer user_data) {
-  SysInfoNetwork* instance = static_cast<SysInfoNetwork*>(user_data);
-  guint old_nm_device_type = instance->nm_device_type_;
-
-  picojson::value error = picojson::value(picojson::object());;
-  if (!instance->Update(error))
-    return;
-
-  if (old_nm_device_type != instance->nm_device_type_) {
-    picojson::value output = picojson::value(picojson::object());;
-    picojson::value data = picojson::value(picojson::object());
-
-    system_info::SetPicoJsonObjectValue(data, "networkType",
-        picojson::value(static_cast<double>(instance->type_)));
-    system_info::SetPicoJsonObjectValue(output, "cmd",
-        picojson::value("SystemInfoPropertyValueChanged"));
-    system_info::SetPicoJsonObjectValue(output, "prop",
-        picojson::value("NETWORK"));
-    system_info::SetPicoJsonObjectValue(output, "data", data);
-
-    std::string result = output.serialize();
-    instance->api_->PostMessage(result.c_str());
-  }
 }
 
 SystemInfoNetworkType SysInfoNetwork::ToNetworkType(guint device_type) {
@@ -143,4 +124,147 @@ SystemInfoNetworkType SysInfoNetwork::ToNetworkType(guint device_type) {
   }
 
   return ret;
+}
+
+void SysInfoNetwork::UpdateActiveConnection(GVariant* value) {
+  if (!value || !g_variant_n_children(value)) {
+    active_connection_ = "";
+    active_device_ = "";
+    SendUpdate(NM_DEVICE_TYPE_UNKNOWN);
+    return;
+  }
+
+  GVariant* child = g_variant_get_child_value(value, 0);
+  if (!child) {
+    g_printerr("Invalid child[0] for ActiveConnections.");
+    SendUpdate(NM_DEVICE_TYPE_UNKNOWN);
+    return;
+  }
+
+  const char* str = g_variant_get_string(child, NULL);
+  if (str && (strcmp(active_connection_.c_str(), str) != 0)) {
+    active_connection_ = std::string(str);
+    active_device_ = "";
+    SendUpdate(NM_DEVICE_TYPE_UNKNOWN);
+  }
+
+  if (active_connection_.empty())
+    return;
+
+  g_dbus_proxy_new_for_bus(G_BUS_TYPE_SYSTEM,
+      G_DBUS_PROXY_FLAGS_NONE,
+      NULL,
+      sDBusServiceNM,
+      active_connection_.c_str(),
+      sConnectionActiveInterface,
+      NULL,
+      OnActiveConnectionCreatedThunk,
+      this);
+}
+
+void SysInfoNetwork::UpdateActiveDevice(GVariant* value) {
+  if (!value || !g_variant_n_children(value)) {
+    active_device_ = "";
+    SendUpdate(NM_DEVICE_TYPE_UNKNOWN);
+    return;
+  }
+
+  GVariant* child = g_variant_get_child_value(value, 0);
+  if (!child) {
+    g_printerr("Invalid child[0] for Devices.");
+    SendUpdate(NM_DEVICE_TYPE_UNKNOWN);
+    return;
+  }
+
+  const char* str = g_variant_get_string(child, NULL);
+  if (str && (strcmp(active_device_.c_str(), str) != 0)) {
+    active_device_ = std::string(str);
+    SendUpdate(NM_DEVICE_TYPE_UNKNOWN);
+  }
+
+  if (active_device_.empty())
+    return;
+
+  g_dbus_proxy_new_for_bus(G_BUS_TYPE_SYSTEM,
+      G_DBUS_PROXY_FLAGS_NONE,
+      NULL,
+      sDBusServiceNM,
+      active_device_.c_str(),
+      sDeviceInterface,
+      NULL,
+      OnDevicesCreatedThunk,
+      this);
+}
+
+void SysInfoNetwork::UpdateDeviceType(GVariant* value) {
+  SendUpdate(g_variant_get_uint32(value));
+}
+
+void SysInfoNetwork::SendUpdate(guint new_device_type) {
+  if (device_type_ == new_device_type)
+    return;
+
+  device_type_ = new_device_type;
+  type_ = ToNetworkType(device_type_);
+
+  picojson::value output = picojson::value(picojson::object());;
+  picojson::value data = picojson::value(picojson::object());
+
+  SetData(data);
+  system_info::SetPicoJsonObjectValue(output, "cmd",
+      picojson::value("SystemInfoPropertyValueChanged"));
+  system_info::SetPicoJsonObjectValue(output, "prop",
+      picojson::value("NETWORK"));
+  system_info::SetPicoJsonObjectValue(output, "data", data);
+
+  std::string result = output.serialize();
+  api_->PostMessage(result.c_str());
+}
+
+void SysInfoNetwork::OnNetworkManagerSignal(GDBusProxy* proxy,
+                                            gchar* sender,
+                                            gchar* signal,
+                                            GVariant* parameters,
+                                            gpointer user_data) {
+  SysInfoNetwork* self = reinterpret_cast<SysInfoNetwork*>(user_data);
+
+  if (strcmp(signal, "PropertiesChanged") != 0)
+    return;
+
+  GVariantIter* iter;
+  const gchar* key;
+  GVariant* value;
+
+  g_variant_get(parameters, "(a{sv})", &iter);
+  while (g_variant_iter_loop(iter, "{&sv}", &key, &value)) {
+    if (strcmp(key, "ActiveConnections") == 0) {
+      self->UpdateActiveConnection(value);
+      break;
+    }
+  }
+  g_variant_iter_free(iter);
+}
+
+void SysInfoNetwork::OnActiveConnectionsSignal(GDBusProxy* proxy,
+                                               gchar* sender,
+                                               gchar* signal,
+                                               GVariant* parameters,
+                                               gpointer user_data) {
+  SysInfoNetwork* self = reinterpret_cast<SysInfoNetwork*>(user_data);
+
+  if (strcmp(signal, "PropertiesChanged") != 0)
+    return;
+
+  GVariantIter* iter;
+  const gchar* key;
+  GVariant* value;
+
+  g_variant_get(parameters, "(a{sv})", &iter);
+  while (g_variant_iter_loop(iter, "{&sv}", &key, &value)) {
+    if (strcmp(key, "Devices") == 0) {
+      self->UpdateActiveDevice(value);
+      break;
+    }
+  }
+  g_variant_iter_free(iter);
 }

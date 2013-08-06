@@ -82,7 +82,7 @@ bool SysInfoLocale::UpdateCountry() {
   }
 }
 
-gboolean SysInfoLocale::TimedOutUpdate(gpointer user_data) {
+gboolean SysInfoLocale::OnUpdateTimeout(gpointer user_data) {
   SysInfoLocale* instance = static_cast<SysInfoLocale*>(user_data);
 
   if (instance->stopping_) {

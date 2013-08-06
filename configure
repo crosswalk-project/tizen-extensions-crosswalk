@@ -8,12 +8,12 @@ if [ ! `which gyp` ]; then
    exit 1
 fi
 
-TYPE=mobile
 if [ $# -eq 1 ] && [ $1 == "--desktop" ]; then
-    TYPE=desktop
+   echo -e "\n--desktop is deprecated. Please use '-D extension_host_os=desktop' instead.\n"
+   exit 1
 fi
 
 echo To build use: ninja -C out/Default
 echo Works with individual targets too: ninja -C out/Default tizen_notification
 
-gyp -D build=Debug -D type=$TYPE --depth=. tizen-wrt.gyp
+gyp -D extension_build_type=Debug $@ --depth=. tizen-wrt.gyp

@@ -69,7 +69,7 @@ void BluetoothContext::HandleStopDiscovery(const picojson::value& msg) {
 }
 
 void BluetoothContext::OnDiscoveryStarted(GObject*, GAsyncResult* res) {
-  GError* error = NULL;
+  GError* error = 0;
 
   GVariant* result = g_dbus_proxy_call_finish(adapter_proxy_, res, &error);
 
@@ -94,7 +94,7 @@ void BluetoothContext::OnDiscoveryStarted(GObject*, GAsyncResult* res) {
 }
 
 void BluetoothContext::OnDiscoveryStopped(GObject* source, GAsyncResult* res) {
-  GError* error = NULL;
+  GError* error = 0;
   GVariant* result = g_dbus_proxy_call_finish(adapter_proxy_, res, &error);
 
   int errorCode = 0;

@@ -26,7 +26,7 @@ class SysInfoDisplay {
     stopping_ = false;
     // FIXME(halton): Use Xlib event or D-Bus interface to monitor.
     g_timeout_add(system_info::default_timeout_interval,
-                  SysInfoDisplay::TimedOutUpdate,
+                  SysInfoDisplay::OnUpdateTimeout,
                   static_cast<gpointer>(this));
   }
   void StopListen() { stopping_ = true; }
@@ -34,7 +34,7 @@ class SysInfoDisplay {
  private:
   explicit SysInfoDisplay(ContextAPI* api);
 
-  static gboolean TimedOutUpdate(gpointer user_data);
+  static gboolean OnUpdateTimeout(gpointer user_data);
   bool UpdateSize();
   bool UpdateBrightness();
   void SetData(picojson::value& data);

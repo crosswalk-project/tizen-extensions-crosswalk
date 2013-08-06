@@ -1,5 +1,5 @@
 Name:       tizen-extensions-crosswalk
-Version:    1.0.0
+Version:    0.0.1
 Release:    0
 License:    BSD-3-Clause
 Group:      Development/Libraries
@@ -10,6 +10,7 @@ Source1:    %{name}
 Source1001: %{name}.manifest
 
 BuildRequires: python
+BuildRequires: pkgconfig(capi-network-connection)
 BuildRequires: pkgconfig(capi-system-device)
 BuildRequires: pkgconfig(capi-system-power)
 BuildRequires: pkgconfig(capi-system-system-settings)
@@ -36,8 +37,8 @@ cp %{SOURCE1001} .
 export GYP_GENERATORS='make'
 ./tools/gyp/gyp \
 --depth=.       \
--Dbuild=Debug   \
--Dtype=mobile   \
+-Dextension_build_type=Debug   \
+-Dextension_host_os=mobile   \
 tizen-wrt.gyp
 
 make %{?_smp_mflags}

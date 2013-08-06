@@ -102,7 +102,7 @@ bool SysInfoBuild::UpdateOSBuild() {
   }
 }
 
-gboolean SysInfoBuild::TimedOutUpdate(gpointer user_data) {
+gboolean SysInfoBuild::OnUpdateTimeout(gpointer user_data) {
   SysInfoBuild* instance = static_cast<SysInfoBuild*>(user_data);
 
   if (instance->stopping_) {
