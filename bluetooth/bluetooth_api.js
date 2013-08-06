@@ -469,11 +469,16 @@ BluetoothAdapter.prototype.createBonding = function(address, deviceSuccessCallba
 BluetoothAdapter.prototype.destroyBonding = function(address, deviceSuccessCallback, errorCallback) {};
 BluetoothAdapter.prototype.registerRFCOMMServiceByUUID = function(uuid, name, serviceSuccessCallback, errorCallback) {};
 
+var _deviceClassMask = {
+  "MINOR": 0x3F,
+  "MAJOR": 0x1F,
+};
+
 function BluetoothDevice(msg) {
   if (!msg) {
     this.name = "";
     this.address = "";
-    this.deviceClass = "";
+    this.deviceClass = new BluetoothClass();
     this.isBonded = false;
     this.isTrusted = false;
     this.isConnected = false;
@@ -483,7 +488,11 @@ function BluetoothDevice(msg) {
 
   this.name = msg.Name;
   this.address = msg.Address;
-  this.deviceClass = msg.Class;
+
+  this.deviceClass = new BluetoothClass();
+  this.deviceClass.minor = (msg.Class >> 2) & _deviceClassMask.MINOR;
+  this.deviceClass.major = (msg.Class >> 8) & _deviceClassMask.MAJOR;
+
   this.isBonded = (msg.Paired == "true") ? true : false;
   this.isTrusted = (msg.Trusted == "true") ? true : false;
   this.isConnected = (msg.Connected == "true") ? true : false;
@@ -499,7 +508,6 @@ function BluetoothDevice(msg) {
   this.uuids = uuids_array;
 };
 
-BluetoothDevice.prototype.deviceClass = new BluetoothClass();
 BluetoothDevice.prototype.connectToServiceByUUID = function(uuid, socketSuccessCallback, errorCallback) {};
 
 BluetoothDevice.prototype._clone = function() {
