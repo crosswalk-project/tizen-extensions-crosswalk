@@ -277,11 +277,20 @@ function BluetoothAdapter() {
 
 BluetoothAdapter.prototype.setName = function(name, successCallback, errorCallback) {
   if (!adapter.isReady) {
-    var error = {};
-    error.code = 1; // FIXME(jeez): it has to be ServiceNotAvailableError
-    error.name = "ServiceNotAvailableError"; // FIXME(jeez): add error names
-    error.message = "BLUETOOTH ERROR: ServiceNotAvailableError"
-    errorCallback(error);
+    var error = new tizen.WebAPIError(tizen.WebAPIException.SERVICE_NOT_AVAILABLE_ERR);
+    if (errorCallback)
+      errorCallback(error);
+    return;
+  }
+
+  if (typeof name !== 'string'
+        || (successCallback && typeof successCallback !== 'function')
+        || (errorCallback && typeof errorCallback !== 'function')) {
+    var error = new tizen.WebAPIError(tizen.WebAPIException.INVALID_VALUES_ERR);
+    if (errorCallback)
+      errorCallback(error);
+
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
     return;
   }
 
@@ -292,17 +301,17 @@ BluetoothAdapter.prototype.setName = function(name, successCallback, errorCallba
   };
 
   postMessage(msg, function(result) {
-    if (result.error != 0) { // FIXME(jeez): fix error codes
-      var error = {};
-      error.code = result.error;
-      error.name = ""; // FIXME(jeez): add error names
-      error.message = "ERROR!" // FIXME(jeez): add error messages
+    if (result.error != 0) {
+      var error = new tizen.WebAPIError(tizen.WebAPIException.INVALID_VALUES_ERR);
+      if (errorCallback)
+        errorCallback(error);
 
-      errorCallback(error);
+      throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
       return;
     }
 
-    successCallback();
+    if (successCallback)
+      successCallback();
   });
 };
 
