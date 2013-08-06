@@ -14,7 +14,7 @@
       }],
       ['extension_host_os != "desktop"', {
         'sources/': [['exclude', '_desktop\\.cc$|desktop/']],
-        'sources/': [['exclude', '_desktop\\.gypi$|desktop/']],
+        'includes/': [['exclude', '_desktop\\.gypi$|desktop/']],
       }],
       ['extension_host_os == "mobile"', { 'defines': ['TIZEN_MOBILE'] } ],
       ['extension_host_os == "desktop"', { 'defines': ['GENERIC_DESKTOP'] } ],
@@ -38,7 +38,6 @@
     ],
     'includes': [
       'xwalk_js2c.gypi',
-      'tizen_mobile.gypi',
     ],
     'include_dirs': [
       '../',
@@ -54,4 +53,11 @@
       '-fvisibility=hidden',
     ],
   },
+  'conditions': [
+    ['extension_host_os == "mobile"', {
+      'includes': [
+        'tizen_mobile.gypi',
+      ],
+    }],
+  ],
 }
