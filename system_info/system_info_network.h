@@ -6,10 +6,10 @@
 #define SYSTEM_INFO_SYSTEM_INFO_NETWORK_H_
 
 #if defined(GENERIC_DESKTOP)
-#include <dbus/dbus.h>
-#include <dbus/dbus-glib.h>
-#endif
+#include <gio/gio.h>
+#elif defined(TIZEN_MOBILE)
 #include <glib.h>
+#endif
 #include <string>
 
 #include "common/extension_adapter.h"
@@ -28,6 +28,15 @@ enum SystemInfoNetworkType {
   SYSTEM_INFO_NETWORK_UNKNOWN
 };
 
+#if defined(GENERIC_DESKTOP)
+#define G_CALLBACK_1(METHOD, SENDER, ARG0)                                   \
+  static void METHOD ## Thunk(SENDER sender, ARG0 res, gpointer userdata) {  \
+    return reinterpret_cast<SysInfoNetwork*>(userdata)->METHOD(sender, res); \
+  }                                                                          \
+                                                                             \
+  void METHOD(SENDER, ARG0);
+#endif
+
 class SysInfoNetwork {
  public:
   static SysInfoNetwork& GetSysInfoNetwork(
@@ -38,38 +47,53 @@ class SysInfoNetwork {
   ~SysInfoNetwork();
   void Get(picojson::value& error, picojson::value& data);
   inline void StartListen() {
+#if defined(TIZEN_MOBILE)
     stopping_ = false;
-
-    // FIXME(halton): Use udev D-Bus interface to monitor.
     g_timeout_add(system_info::default_timeout_interval,
                   SysInfoNetwork::TimedOutUpdate,
                   static_cast<gpointer>(this));
+#endif
   }
-  inline void StopListen() {  stopping_ = true; }
+  inline void StopListen() {
+#if defined(TIZEN_MOBILE)
+    stopping_ = true;
+#endif
+}
 
  private:
   explicit SysInfoNetwork(ContextAPI* api);
+  void PlatformInitialize();
 
-  static gboolean TimedOutUpdate(gpointer user_data);
   bool Update(picojson::value& error);
   void SetData(picojson::value& data);
   std::string ToNetworkTypeString(SystemInfoNetworkType type);
 
   ContextAPI* api_;
-
   SystemInfoNetworkType type_;
-  bool stopping_;
 
 #if defined(GENERIC_DESKTOP)
-  static void OnNMStateChanged(DBusGProxy* proxy,
-                               guint new_state,
-                               guint old_state,
-                               guint reason,
-                               gpointer user_data);
+  G_CALLBACK_1(OnNetworkManagerCreated, GObject*, GAsyncResult*);
+  G_CALLBACK_1(OnActiveConnectionCreated, GObject*, GAsyncResult*);
+  G_CALLBACK_1(OnDevicesCreated, GObject*, GAsyncResult*);
+
+  void UpdateActiveConnection(GVariant* value);
+  void UpdateActiveDevice(GVariant* value);
+  void UpdateDeviceType(GVariant* value);
+  void SendUpdate(guint new_device_type);
+
+  static void OnNetworkManagerSignal(GDBusProxy* proxy, gchar* sender,
+      gchar* signal, GVariant* parameters, gpointer user_data);
+  static void OnActiveConnectionsSignal(GDBusProxy* proxy, gchar* sender,
+      gchar* signal, GVariant* parameters, gpointer user_data);
+
   SystemInfoNetworkType ToNetworkType(guint device_type);
-  DBusGProxy* dbus_prop_proxy_;
-  DBusGProxy* dbus_nm_proxy_;
-  guint       nm_device_type_;
+
+  std::string active_connection_;
+  std::string active_device_;
+  guint       device_type_;
+#elif defined(TIZEN_MOBILE)
+  static gboolean TimedOutUpdate(gpointer user_data);
+  bool stopping_;
 #endif
 
   DISALLOW_COPY_AND_ASSIGN(SysInfoNetwork);

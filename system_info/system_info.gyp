@@ -10,6 +10,7 @@
         [ 'extension_host_os == "desktop"', {
           'variables': {
             'packages': [
+              'gio-2.0',
               'NetworkManager',
             ]
           },
@@ -67,40 +68,6 @@
         'system_info_wifi_network.h',
         'system_info_wifi_network_desktop.cc',
         'system_info_wifi_network_mobile.cc',
-        '<(SHARED_INTERMEDIATE_DIR)/system_info_marshaller.c'
-        '<(SHARED_INTERMEDIATE_DIR)/system_info_marshaller.h'
-      ],
-      'actions': [
-        {
-         'action_name': 'generateDBusMarshallerHeader',
-         'inputs': [
-           'marshaller.list'
-          ],
-         'outputs': [
-           '<(SHARED_INTERMEDIATE_DIR)/system_info_marshaller.h',
-          ],
-          'action': [
-            '../tools/redirect-stdout.sh',
-            'glib-genmarshal --header <@(_inputs)',
-            '<@(_outputs)',
-          ],
-          'message': 'Generate system_info DBus marshaller header',
-        },
-        {
-         'action_name': 'generateDBusMarshallerBody',
-         'inputs': [
-           'marshaller.list'
-          ],
-         'outputs': [
-           '<(SHARED_INTERMEDIATE_DIR)/system_info_marshaller.c',
-          ],
-          'action': [
-            '../tools/redirect-stdout.sh',
-            'glib-genmarshal --body <@(_inputs)',
-            '<@(_outputs)',
-          ],
-          'message': 'Generate system_info DBus marshaller body',
-        },
       ],
     },
   ],
