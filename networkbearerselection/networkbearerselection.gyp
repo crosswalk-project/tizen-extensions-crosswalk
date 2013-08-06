@@ -14,16 +14,13 @@
         'networkbearerselection_context_mobile.cc',
       ],
       'conditions': [
-        ['extension_host_os=="mobile"', {
-          'cflags': [
-            '<!@(pkg-config --cflags capi-network-connection)',
+        [ 'extension_host_os=="mobile"', {
+          'includes': [
+            '../common/pkg-config.gypi',
           ],
-          'link_settings': {
-            'ldflags': [
-              '<!@(pkg-config --libs-only-L --libs-only-other capi-network-connection)',
-            ],
-            'libraries': [
-              '<!@(pkg-config --libs-only-l capi-network-connection)',
+          'variables': {
+            'packages': [
+              'capi-network-connection',
             ],
           },
         }],

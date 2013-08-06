@@ -16,9 +16,11 @@
           },
         }],
         [ 'extension_host_os == "mobile"', {
-          'dependencies': [
-            'vconf',
-          ],
+          'variables': {
+            'packages': [
+              'vconf',
+            ]
+          },
         }],
       ],
       'variables': {
