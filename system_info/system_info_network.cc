@@ -6,6 +6,12 @@
 
 #include "system_info/system_info_utils.h"
 
+SysInfoNetwork::SysInfoNetwork(ContextAPI* api)
+    : type_(SYSTEM_INFO_NETWORK_UNKNOWN) {
+  api_ = api;
+  PlatformInitialize();
+}
+
 void SysInfoNetwork::Get(picojson::value& error,
                          picojson::value& data) {
   if (!Update(error)) {
@@ -17,38 +23,6 @@ void SysInfoNetwork::Get(picojson::value& error,
 
   SetData(data);
   system_info::SetPicoJsonObjectValue(error, "message", picojson::value(""));
-}
-
-gboolean SysInfoNetwork::TimedOutUpdate(gpointer user_data) {
-  SysInfoNetwork* instance = static_cast<SysInfoNetwork*>(user_data);
-  if (instance->stopping_) {
-    instance->stopping_ = false;
-    return FALSE;
-  }
-
-  SystemInfoNetworkType old_type = instance->type_;
-  picojson::value error = picojson::value(picojson::object());;
-  if (!instance->Update(error)) {
-    // Fail to update, wait for next round
-    return TRUE;
-  }
-
-  if (old_type != instance->type_) {
-    picojson::value output = picojson::value(picojson::object());;
-    picojson::value data = picojson::value(picojson::object());
-
-    instance->SetData(data);
-    system_info::SetPicoJsonObjectValue(output, "cmd",
-        picojson::value("SystemInfoPropertyValueChanged"));
-    system_info::SetPicoJsonObjectValue(output, "prop",
-        picojson::value("NETWORK"));
-    system_info::SetPicoJsonObjectValue(output, "data", data);
-
-    std::string result = output.serialize();
-    instance->api_->PostMessage(result.c_str());
-  }
-
-  return TRUE;
 }
 
 std::string
