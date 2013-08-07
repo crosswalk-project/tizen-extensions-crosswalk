@@ -47,7 +47,7 @@ function Adapter() {
 };
 
 Adapter.prototype.serviceNotAvailable = function(errorCallback) {
-  if (adapter.isReady)
+  if (adapter.isReady && defaultAdapter.powered)
     return false;
 
   if (errorCallback) {
@@ -167,13 +167,19 @@ exports.getDefaultAdapter = function() {
     'cmd': 'GetDefaultAdapter'
   };
   var result = JSON.parse(extension.internal.sendSyncMessage(JSON.stringify(msg)));
-  defaultAdapter.name = result.name;
-  defaultAdapter.address = result.address;
-  defaultAdapter.powered = result.powered;
-  defaultAdapter.visible = result.visible;
 
-  if (result.hasOwnProperty("address") && result.address != "")
-    adapter.isReady = true;
+  if (!result.error) {
+    defaultAdapter.name = result.name;
+    defaultAdapter.address = result.address;
+    defaultAdapter.powered = result.powered;
+    defaultAdapter.visible = result.visible;
+
+    if (result.hasOwnProperty("address") && result.address != "")
+      adapter.isReady = true;
+  } else {
+    adapter.isReady = false;
+    throw new tizen.WebAPIException(tizen.WebAPIException.UNKNOWN_ERR);
+  }
 
   return defaultAdapter;
 };
