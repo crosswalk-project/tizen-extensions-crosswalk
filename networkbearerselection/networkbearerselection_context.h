@@ -6,11 +6,20 @@
 #define NETWORKBEARERSELECTION_NETWORKBEARERSELECTION_CONTEXT_H_
 
 #include <string>
-#include "common/extension_adapter.h"
+#include "tizen/tizen.h"
+
+class ContextAPI;
+class NetworkBearerSelectionRequest;
+
+enum NetworkType {
+  CELLULAR = 0,
+  UNKNOWN = 1,
+};
 
 class NetworkBearerSelectionContext {
  public:
-  NetworkBearerSelectionContext(ContextAPI* api);
+  explicit NetworkBearerSelectionContext(ContextAPI* api);
+  virtual ~NetworkBearerSelectionContext() {};
 
   // ExtensionAdapter implementation.
   static const char name[];
@@ -18,27 +27,12 @@ class NetworkBearerSelectionContext {
   void HandleMessage(const char* message);
   void HandleSyncMessage(const char* message) {}
 
+  void PostMessage(const std::string& cmd, WebApiAPIErrors error,
+                   bool disconnected, const std::string& reply_id);
+
  private:
-  enum NetworkType {
-      CELLULAR = 0,
-      UNKNOWN = 1,
-  };
-
-  // FIXME(tmpsantos): Move this to a common place and write a full
-  // list. We should have an equivalent on
-  enum WebApiAPIErrors {
-    UnknownError = 0,
-    NotSupportedError = 9,
-  };
-
-  void OnRequestRouteToHost(const std::string& cmd,
-                            const std::string& domain_name,
-                            NetworkType network_type,
-                            const std::string& reply_id);
-  void OnReleaseRouteToHost(const std::string& cmd,
-                            const std::string& domain_name,
-                            NetworkType network_type,
-                            const std::string& reply_id);
+  virtual void OnRequestRouteToHost(NetworkBearerSelectionRequest* request) = 0;
+  virtual void OnReleaseRouteToHost(NetworkBearerSelectionRequest* request) = 0;
 
   ContextAPI* api_;
 };

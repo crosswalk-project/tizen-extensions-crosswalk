@@ -2,34 +2,41 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "networkbearerselection/networkbearerselection_context.h"
+#include "networkbearerselection/networkbearerselection_context_mobile.h"
 
-#include "common/picojson.h"
+#include "common/extension_adapter.h"
+#include "networkbearerselection/networkbearerselection_request.h"
+#include "networkbearerselection/networkbearerselection_connection.h"
 
-void NetworkBearerSelectionContext::OnRequestRouteToHost(
-    const std::string& cmd, const std::string& domain_name,
-    NetworkType network_type, const std::string& reply_id) {
-  picojson::value::object o;
-
-  o["cmd"] = picojson::value(cmd);
-  o["error"] = picojson::value(static_cast<double>(NotSupportedError));
-  o["disconnected"] = picojson::value(false);
-  o["reply_id"] = picojson::value(reply_id);
-
-  picojson::value v(o);
-  api_->PostMessage(v.serialize().c_str());
+CXWalkExtension* xwalk_extension_init(int32_t api_version) {
+  return ExtensionAdapter<NetworkBearerSelectionContextMobile>::Initialize();
 }
 
-void NetworkBearerSelectionContext::OnReleaseRouteToHost(
-    const std::string& cmd, const std::string& domain_name,
-    NetworkType network_type, const std::string& reply_id) {
-  picojson::value::object o;
+NetworkBearerSelectionContextMobile::NetworkBearerSelectionContextMobile(
+    ContextAPI* api) : NetworkBearerSelectionContext(api) {
+  connection_ = new NetworkBearerSelectionConnection();
+}
 
-  o["cmd"] = picojson::value(cmd);
-  o["error"] = picojson::value(static_cast<double>(NotSupportedError));
-  o["disconnected"] = picojson::value(false);
-  o["reply_id"] = picojson::value(reply_id);
+NetworkBearerSelectionContextMobile::~NetworkBearerSelectionContextMobile() {
+  delete connection_;
+}
 
-  picojson::value v(o);
-  api_->PostMessage(v.serialize().c_str());
+void NetworkBearerSelectionContextMobile::OnRequestRouteToHost(
+    NetworkBearerSelectionRequest* request) {
+  if (!connection_->is_valid()) {
+    PostMessage(request->cmd(), UNKNOWN_ERR, false, request->reply_id());
+    return;
+  }
+
+  connection_->RequestRouteToHost(request);
+}
+
+void NetworkBearerSelectionContextMobile::OnReleaseRouteToHost(
+    NetworkBearerSelectionRequest* request) {
+  if (!connection_->is_valid()) {
+    PostMessage(request->cmd(), UNKNOWN_ERR, false, request->reply_id());
+    return;
+  }
+
+  PostMessage(request->cmd(), NO_ERROR, false, request->reply_id());
 }

@@ -2,34 +2,28 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "networkbearerselection/networkbearerselection_context.h"
+#include "networkbearerselection/networkbearerselection_context_desktop.h"
 
+#include "network_bearer_selection/network_bearer_selection_request.h"
+#include "common/extension_adapter.h"
 #include "common/picojson.h"
 
-void NetworkBearerSelectionContext::OnRequestRouteToHost(
-    const std::string& cmd, const std::string& domain_name,
-    NetworkType network_type, const std::string& reply_id) {
-  picojson::value::object o;
-
-  o["cmd"] = picojson::value(cmd);
-  o["error"] = picojson::value(static_cast<double>(NotSupportedError));
-  o["disconnected"] = picojson::value(false);
-  o["reply_id"] = picojson::value(reply_id);
-
-  picojson::value v(o);
-  api_->PostMessage(v.serialize().c_str());
+CXWalkExtension* xwalk_extension_init(int32_t api_version) {
+  return ExtensionAdapter<NetworkBearerSelectionContextDesktop>::Initialize();
 }
 
-void NetworkBearerSelectionContext::OnReleaseRouteToHost(
-    const std::string& cmd, const std::string& domain_name,
-    NetworkType network_type, const std::string& reply_id) {
-  picojson::value::object o;
+NetworkBearerSelectionContextDesktop::NetworkBearerSelectionContextDesktop(
+    ContextAPI* api) : NetworkBearerSelectionContext(api) {
+}
 
-  o["cmd"] = picojson::value(cmd);
-  o["error"] = picojson::value(static_cast<double>(NotSupportedError));
-  o["disconnected"] = picojson::value(false);
-  o["reply_id"] = picojson::value(reply_id);
+void NetworkBearerSelectionContextDesktop::OnRequestRouteToHost(
+    NetworkBearerSelectionRequest* request) {
+  PostMessage(request->cmd(), NOT_SUPPORTED_ERR, false, request->reply_id());
+  delete request;
+}
 
-  picojson::value v(o);
-  api_->PostMessage(v.serialize().c_str());
+void NetworkBearerSelectionContextDesktop::OnReleaseRouteToHost(
+    NetworkBearerSelectionRequest* request) {
+  PostMessage(request->cmd(), NOT_SUPPORTED_ERR, false, request->reply_id());
+  delete request;
 }

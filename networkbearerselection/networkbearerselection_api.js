@@ -13,11 +13,12 @@ var _next_reply_id = 0;
 function _messageListener(msg) {
   var m = JSON.parse(msg);
   var handler = _callbacks[m.reply_id];
+  var no_error = tizen.WebAPIError.NO_ERROR;
 
-  if (!(m.cmd == "requestRouteToHost" && m.disconnected == false && m.error == -1))
+  if (!(m.cmd == "requestRouteToHost" && m.disconnected == false && m.error == no_error))
     delete _callbacks[m.reply_id];
 
-  if (m.error != -1 && handler[1]) {
+  if (m.error != no_error && handler[1]) {
     handler[1](new tizen.WebAPIError(m.error));
     return;
   }
@@ -81,9 +82,9 @@ function _routeToHost(cmd, networkType, domainName, successCallback, errorCallba
 extension.setMessageListener(_messageListener);
 
 exports.requestRouteToHost = function(networkType, domainName, successCallback, errorCallback) {
-  _routeToHost('requestRouteToHost', networkType, domainName, successCallback, errorCallback);
+  _routeToHost("requestRouteToHost", networkType, domainName, successCallback, errorCallback);
 };
 
 exports.releaseRouteToHost = function(networkType, domainName, successCallback, errorCallback) {
-  _routeToHost('releaseRouteToHost', networkType, domainName, successCallback, errorCallback);
+  _routeToHost("releaseRouteToHost", networkType, domainName, successCallback, errorCallback);
 };
