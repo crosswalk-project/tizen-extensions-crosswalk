@@ -46,18 +46,20 @@
 
   handle("button1", "Set home screen", function () {
     api_system_setting.setProperty("HOME_SCREEN",
-      "/opt/usr/media/Images/image16.jpg", successCallback, errorCallback);
+      "/opt/usr/media/Images/image1.jpg", successCallback, errorCallback);
   });
   handle("button2", "Set lock screen", function () {
     api_system_setting.setProperty("LOCK_SCREEN",
-      "/opt/usr/media/Images/image7.jpg", successCallback, errorCallback);
+      "/opt/usr/media/Images/image16.jpg", successCallback, errorCallback);
   });
   handle("button3", "Set call ringtone", function () {
-    api_system_setting.setProperty("INCOMING_CALL", "test_incoming.mp3",
+    api_system_setting.setProperty("INCOMING_CALL",
+      "/opt/usr/share/settings/Ringtones/ringtone_sdk.mp3",
       successCallback, errorCallback);
   });
   handle("button4", "Set email alert tone ", function () {
-    api_system_setting.setProperty("NOTIFICATION_EMAIL", "test_email.mp3",
+    api_system_setting.setProperty("NOTIFICATION_EMAIL",
+      "/opt/usr/share/Alerts/General notification_sdk.wav",
       successCallback, errorCallback);
   });
   handle("button5", "Get HOME_SCREEN", function () {
