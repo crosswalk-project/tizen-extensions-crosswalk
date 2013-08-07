@@ -22,6 +22,26 @@ extension.setMessageListener(function(msg) {
   }
 });
 
+function defineReadOnlyProperty(object, key, value) {
+  Object.defineProperty(object, key, {
+    configurable: false,
+    writable: false,
+    value: value
+  });
+}
+
+// FIXME(cmarcelo): Some properties are readonly but expect a null value before
+// are set, and also changes when reused. In the future StatusNotification
+// should point to an internal data and we should set a getter. Until then, this
+// at least make the property non-writable.
+function defineConfigurableReadOnlyProperty(object, key, value) {
+  Object.defineProperty(object, key, {
+    configurable: true,
+    writable: false,
+    value: value
+  });
+}
+
 tizen.NotificationDetailInfo = function(mainText, subText) {
   this.mainText = mainText;
   this.subText = subText || null;
@@ -29,15 +49,11 @@ tizen.NotificationDetailInfo = function(mainText, subText) {
 
 tizen.StatusNotification = function(statusType, title, dict) {
   this.title = title;
-  Object.defineProperty(this, "id", {
-    // FIXME(cmarcelo): We'll have to redefine this, so keep it configurable,
-    // but at least read-only.  In the future StatusNotification should point to
-    // an internal data and this should be a getter.
-    configurable: true,
-    writable: false,
-    value: null
-  });
-  this.type = "STATUS";
+
+  defineConfigurableReadOnlyProperty(this, "id", null);
+  defineConfigurableReadOnlyProperty(this, "postedTime", null);
+  defineReadOnlyProperty(this, "type", "STATUS");
+
   if (dict) {
     this.content = dict.content;
     this.iconPath = dict.iconPath;
@@ -75,13 +91,8 @@ var copyStatusNotification = function(notification) {
     thumbnails: notification.thumbnails
   });
 
-  Object.defineProperty(copy, "id", {
-    configurable: false,
-    writable: false,
-    value: notification.id
-  });
-
-  copy.postedTime = notification.postedTime;
+  defineConfigurableReadOnlyProperty(copy, "id", notification.id);
+  defineConfigurableReadOnlyProperty(copy, "postedTime", notification.postedTime);
   copy.detailInfo = [];
   if (notification.detailInfo) {
     var i;
@@ -114,11 +125,7 @@ exports.post = function(notification) {
   }
 
   var id = (statusNotificationNextId++).toString();
-  Object.defineProperty(notification, "id", {
-    configurable: false,
-    writable: false,
-    value: id
-  });
+  defineConfigurableReadOnlyProperty(notification, "id", id);
 
   postMessage({
     "cmd": "NotificationPost",
@@ -126,7 +133,7 @@ exports.post = function(notification) {
     "title": notification.title,
     "content": notification.content,
   });
-  notification.postedTime = new Date;
+  defineConfigurableReadOnlyProperty(notification, "postedTime", new Date);
 
   var posted = copyStatusNotification(notification);
   posted.original = notification;
