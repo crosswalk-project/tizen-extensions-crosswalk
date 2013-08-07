@@ -65,6 +65,7 @@ var copyStatusNotification = function(notification) {
   });
   statusNotificationNextId--;  // Roll next id back since we are copying.
   copy.id = notification.id;
+  copy.postedTime = notification.postedTime;
   return copy;
 }
 
@@ -91,6 +92,8 @@ exports.post = function(notification) {
     "title": notification.title,
     "content": notification.content,
   });
+  notification.postedTime = new Date;
+
   var posted = copyStatusNotification(notification);
   posted.original = notification;
   postedNotifications.push(posted);
