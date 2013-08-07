@@ -29,7 +29,14 @@ tizen.NotificationDetailInfo = function(mainText, subText) {
 
 tizen.StatusNotification = function(statusType, title, dict) {
   this.title = title;
-  this.id = (statusNotificationNextId++).toString();
+  Object.defineProperty(this, "id", {
+    // FIXME(cmarcelo): We'll have to redefine this, so keep it configurable,
+    // but at least read-only.  In the future StatusNotification should point to
+    // an internal data and this should be a getter.
+    configurable: true,
+    writable: false,
+    value: null
+  });
   this.type = "STATUS";
   if (dict) {
     this.content = dict.content;
@@ -67,8 +74,13 @@ var copyStatusNotification = function(notification) {
     backgroundImagePath: notification.backgroundImagePath,
     thumbnails: notification.thumbnails
   });
-  statusNotificationNextId--;  // Roll next id back since we are copying.
-  copy.id = notification.id;
+
+  Object.defineProperty(copy, "id", {
+    configurable: false,
+    writable: false,
+    value: notification.id
+  });
+
   copy.postedTime = notification.postedTime;
   copy.detailInfo = [];
   if (notification.detailInfo) {
@@ -100,6 +112,14 @@ exports.post = function(notification) {
     console.log("tizen.notification.post(): notification " + notification.id + " already posted.");
     return;
   }
+
+  var id = (statusNotificationNextId++).toString();
+  Object.defineProperty(notification, "id", {
+    configurable: false,
+    writable: false,
+    value: id
+  });
+
   postMessage({
     "cmd": "NotificationPost",
     "id": notification.id,
