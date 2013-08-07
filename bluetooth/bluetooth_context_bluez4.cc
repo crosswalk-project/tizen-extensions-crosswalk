@@ -215,10 +215,20 @@ void BluetoothContext::PlatformInitialize() {
 }
 
 picojson::value BluetoothContext::HandleGetDefaultAdapter(const picojson::value& msg) {
-  if (adapter_info_.empty())
-    return picojson::value();
-
   picojson::value::object o;
+
+  // If the bluetooth daemon is off, then manager_proxy_ is NULL.
+  // Hence, adapter_proxy_ is also NULL and adapter_info_ won't
+  // have been filled. If the daemon is running but the
+  // adapter is off (i.e.: hci0 down), then adapter_info_ will
+  // have been filled and adapter_info_["Powered"] is false.
+  if (adapter_info_.empty()) {
+    o["cmd"] = picojson::value("");
+    o["reply_id"] = picojson::value(msg.get("reply_id").to_str());
+    o["error"] = picojson::value(static_cast<double>(1));
+    return picojson::value(o);
+  }
+
   o["cmd"] = picojson::value("");
   o["reply_id"] = picojson::value(msg.get("reply_id").to_str());
 
@@ -230,6 +240,8 @@ picojson::value BluetoothContext::HandleGetDefaultAdapter(const picojson::value&
 
   bool visible = (adapter_info_["Discoverable"] == "true") ? true : false;
   o["visible"] = picojson::value(visible);
+
+  o["error"] = picojson::value(static_cast<double>(0));
 
   // This is the JS API entry point, so we should clean our message queue
   // on the next PostMessage call.
