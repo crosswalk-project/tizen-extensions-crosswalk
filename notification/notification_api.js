@@ -68,11 +68,20 @@ var copyStatusNotification = function(notification) {
   return copy;
 }
 
+function isAlreadyPosted(notification) {
+  var i;
+  for (i = 0; i < postedNotifications.length; i++) {
+    if (postedNotifications[i].original === notification)
+      return true;
+  }
+  return false;
+}
+
 exports.post = function(notification) {
   if (!(notification instanceof tizen.StatusNotification)) {
     console.log("tizen.notification.post(): argument of invalid type " + typeof(notification));
     return;
-  } else if (postedNotifications.indexOf(notification) != -1) {
+  } else if (isAlreadyPosted(notification)) {
     console.log("tizen.notification.post(): notification " + notification.id + " already posted.");
     return;
   }
@@ -82,7 +91,9 @@ exports.post = function(notification) {
     "title": notification.title,
     "content": notification.content,
   });
-  postedNotifications.push(notification);
+  var posted = copyStatusNotification(notification);
+  posted.original = notification;
+  postedNotifications.push(posted);
 }
 
 exports.remove = function(notificationId) {
@@ -96,7 +107,7 @@ exports.getAll = function() {
   var result = [];
   var i;
   for (i = 0; i < postedNotifications.length; i++)
-    result[i] = copyStatusNotification(postedNotifications[i]);
+    result[i] = postedNotifications[i].original;
   return result;
 }
 
@@ -105,7 +116,7 @@ exports.get = function(notificationId) {
   var i;
   for (i = 0; i < postedNotifications.length; i++) {
     if (postedNotifications[i].id == notificationId) {
-      result = copyStatusNotification(postedNotifications[i]);
+      result = postedNotifications[i].original;
       break;
     }
   }
