@@ -20,6 +20,7 @@
         ['extension_host_os=="mobile"', {
           'variables': {
             'packages': [
+              'glib-2.0',
               'capi-system-device',
               'capi-system-power',
               'pmapi',
