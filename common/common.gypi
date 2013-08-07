@@ -53,11 +53,4 @@
       '-fvisibility=hidden',
     ],
   },
-  'conditions': [
-    ['extension_host_os == "mobile"', {
-      'includes': [
-        'tizen_mobile.gypi',
-      ],
-    }],
-  ],
 }
