@@ -147,16 +147,16 @@ var handleDeviceUpdated = function(msg) {
 
 var handleAdapterUpdated = function(msg) {
     if (msg.Name)
-      defaultAdapter.name = msg.Name;
+      _addConstProperty(defaultAdapter, "name", msg.Name);
     if (msg.Address)
-      defaultAdapter.address = msg.Address;
+      _addConstProperty(defaultAdapter, "address", msg.Address);
     if (msg.Powered) {
-      defaultAdapter.powered =
-          (msg.Powered == "true") ? true : false;
+      _addConstProperty(defaultAdapter, "powered",
+          (msg.Powered == "true") ? true : false);
     }
     if (msg.Discoverable) {
-      defaultAdapter.visible =
-          (msg.Discoverable == "true") ? true : false;
+      _addConstProperty(defaultAdapter, "visible",
+          (msg.Discoverable == "true") ? true : false);
     }
 };
 
@@ -169,10 +169,10 @@ exports.getDefaultAdapter = function() {
   var result = JSON.parse(extension.internal.sendSyncMessage(JSON.stringify(msg)));
 
   if (!result.error) {
-    defaultAdapter.name = result.name;
-    defaultAdapter.address = result.address;
-    defaultAdapter.powered = result.powered;
-    defaultAdapter.visible = result.visible;
+    _addConstProperty(defaultAdapter, "name", result.name);
+    _addConstProperty(defaultAdapter, "address", result.address);
+    _addConstProperty(defaultAdapter, "powered", result.powered);
+    _addConstProperty(defaultAdapter, "visible", result.visible);
 
     if (result.hasOwnProperty("address") && result.address != "")
       adapter.isReady = true;
@@ -204,7 +204,7 @@ for (var key in deviceMajor) {
     writable: false,
     value: deviceMajor[key]
   });
-}
+};
 
 exports.deviceMinor = {};
 var deviceMinor = {
@@ -287,7 +287,7 @@ for (var key in deviceMinor) {
     writable: false,
     value: deviceMinor[key]
   });
-}
+};
 
 exports.deviceService = {};
 var deviceService = {
@@ -307,14 +307,21 @@ for (var key in deviceService) {
     writable: false,
     value: deviceService[key]
   });
-}
+};
 
+function _addConstProperty(obj, propertyKey, propertyValue) {
+  Object.defineProperty(obj, propertyKey, {
+    configurable: true,
+    writable: false,
+    value: propertyValue
+  });
+};
 
 function BluetoothAdapter() {
-  this.name = "";
-  this.address = "00:00:00:00:00:00";
-  this.powered = false;
-  this.visible = false;
+  _addConstProperty(this, "name", "");
+  _addConstProperty(this, "address", "00:00:00:00:00:00");
+  _addConstProperty(this, "powered", false);
+  _addConstProperty(this, "visible", false);
 };
 
 BluetoothAdapter.prototype.setName = function(name, successCallback, errorCallback) {
@@ -507,26 +514,26 @@ var _deviceClassMask = {
 
 function BluetoothDevice(msg) {
   if (!msg) {
-    this.name = "";
-    this.address = "";
-    this.deviceClass = new BluetoothClass();
-    this.isBonded = false;
-    this.isTrusted = false;
-    this.isConnected = false;
-    this.uuids = [];
+    _addConstProperty(this, "name", "");
+    _addConstProperty(this, "address", "");
+    _addConstProperty(this, "deviceClass", new BluetoothClass());
+    _addConstProperty(this, "isBonded", false);
+    _addConstProperty(this, "isTrusted", false);
+    _addConstProperty(this, "isConnected", false);
+    _addConstProperty(this, "uuids", []);
     return;
   }
 
-  this.name = msg.Name;
-  this.address = msg.Address;
+  _addConstProperty(this, "name", msg.Name);
+  _addConstProperty(this, "address", msg.Address);
 
-  this.deviceClass = new BluetoothClass();
-  this.deviceClass.minor = (msg.Class >> 2) & _deviceClassMask.MINOR;
-  this.deviceClass.major = (msg.Class >> 8) & _deviceClassMask.MAJOR;
+  _addConstProperty(this, "deviceClass", new BluetoothClass());
+  _addConstProperty(this.deviceClass, "minor", (msg.Class >> 2) & _deviceClassMask.MINOR);
+  _addConstProperty(this.deviceClass, "major", (msg.Class >> 8) & _deviceClassMask.MAJOR);
 
-  this.isBonded = (msg.Paired == "true") ? true : false;
-  this.isTrusted = (msg.Trusted == "true") ? true : false;
-  this.isConnected = (msg.Connected == "true") ? true : false;
+  _addConstProperty(this, "isBonded", (msg.Paired == "true") ? true : false);
+  _addConstProperty(this, "isTrusted", (msg.Trusted == "true") ? true : false);
+  _addConstProperty(this, "isConnected", (msg.Connected == "true") ? true : false);
   // Parse UUIDs
   var uuids_array = [];
   if (msg.UUIDs) {
@@ -536,22 +543,25 @@ function BluetoothDevice(msg) {
       uuids_array[i] = uuids_array[i].substring(2, uuids_array[i].length - 1);
     }
   }
-  this.uuids = uuids_array;
+  _addConstProperty(this, "uuids", uuids_array);
 };
 
 BluetoothDevice.prototype.connectToServiceByUUID = function(uuid, socketSuccessCallback, errorCallback) {};
 
 BluetoothDevice.prototype._clone = function() {
   var clone = new BluetoothDevice();
-  clone.name = this.name;
-  clone.address = this.address;
-  clone.deviceClass = this.deviceClass;
-  clone.isBonded = this.isBonded;
-  clone.isTrusted = this.isTrusted;
-  clone.isConnected = this.isConnected;
-  clone.uuids = [];
+  _addConstProperty(clone, "name", this.name);
+  _addConstProperty(clone, "address", this.address);
+  _addConstProperty(clone, "deviceClass", this.deviceClass);
+  _addConstProperty(clone, "isBonded", this.isBonded);
+  _addConstProperty(clone, "isTrusted", this.isTrusted);
+  _addConstProperty(clone, "isConnected", this.isConnected);
+
+  var uuids_array = [];
   for (var i = 0; i < this.uuids.length; i++)
-    clone.uuids[i] = this.uuids[i];
+    uuids_array[i] = this,uuids[i];
+
+  _addConstProperty(clone, "uuids", uuids_array);
 
   return clone;
 };
