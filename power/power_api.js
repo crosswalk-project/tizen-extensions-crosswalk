@@ -57,10 +57,9 @@ extension.setMessageListener(function(msg) {
   var m = JSON.parse(msg);
   if (m.cmd == "ScreenStateChanged") {
     var newState = m.state;
+    if (screenState == undefined)
+      getScreenState();
     if (screenState !== newState) {
-      if (screenState == undefined) {
-        screenState = resources["SCREEN"].states["SCREEN_OFF"];
-      }
       callListeners(screenState, newState);
       screenState = newState;
     }
