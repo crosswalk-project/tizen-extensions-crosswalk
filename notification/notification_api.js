@@ -2,9 +2,80 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// FIXME(cmarcelo): Needed?
-var postedNotifications = [];
-var statusNotificationNextId = 0;
+function NotificationCenter() {
+  this.postedNotifications = [];
+  this.statusNotificationNextId = 0;
+}
+
+NotificationCenter.prototype.onNotificationRemoved = function(id) {
+  for (var i = 0; i < this.postedNotifications.length; i++) {
+    if (this.postedNotifications[i].id === id) {
+      this.postedNotifications.splice(i, 1);
+      break;
+    }
+  }
+}
+
+NotificationCenter.prototype.wasPosted = function(notification) {
+  var i;
+  for (i = 0; i < this.postedNotifications.length; i++) {
+    if (this.postedNotifications[i].original === notification)
+      return true;
+  }
+  return false;
+}
+
+NotificationCenter.prototype.postNotification = function(notification) {
+  var id = (this.statusNotificationNextId++).toString();
+  defineConfigurableReadOnlyProperty(notification, "id", id);
+
+  postMessage({
+    "cmd": "NotificationPost",
+    "id": notification.id,
+    "title": notification.title,
+    "content": notification.content,
+  });
+  defineConfigurableReadOnlyProperty(notification, "postedTime", new Date);
+
+  var posted = copyStatusNotification(notification);
+  posted.original = notification;
+  this.postedNotifications.push(posted);
+}
+
+NotificationCenter.prototype.getAll = function() {
+  var result = [];
+  var i;
+  for (i = 0; i < this.postedNotifications.length; i++)
+    result[i] = this.postedNotifications[i].original;
+  return result;
+}
+
+NotificationCenter.prototype.get = function(notificationId) {
+  var result;
+  var i;
+  for (i = 0; i < this.postedNotifications.length; i++) {
+    if (this.postedNotifications[i].id == notificationId) {
+      result = this.postedNotifications[i].original;
+      break;
+    }
+  }
+  return result;
+}
+
+NotificationCenter.prototype.remove = function(notificationId) {
+  postMessage({
+    "cmd": "NotificationRemove",
+    "id": notificationId,
+  });
+}
+
+NotificationCenter.prototype.removeAll = function() {
+  var i;
+  for (i = 0; i < this.postedNotifications.length; i++)
+    this.remove(this.postedNotifications[i].id);
+}
+
+var notificationCenter = new NotificationCenter;
 
 var postMessage = function(msg) {
   extension.postMessage(JSON.stringify(msg));
@@ -12,14 +83,8 @@ var postMessage = function(msg) {
 
 extension.setMessageListener(function(msg) {
   var m = JSON.parse(msg);
-  if (m.cmd == "NotificationRemoved") {
-    for (var i = 0; i < postedNotifications.length; i++) {
-      if (postedNotifications[i].id === m.id) {
-        postedNotifications.splice(i, 1);
-        break;
-      }
-    }
-  }
+  if (m.cmd == "NotificationRemoved")
+    notificationCenter.onNotificationRemoved(m.id);
 });
 
 function defineReadOnlyProperty(object, key, value) {
@@ -107,77 +172,37 @@ var copyStatusNotification = function(notification) {
   return copy;
 }
 
-function isAlreadyPosted(notification) {
-  var i;
-  for (i = 0; i < postedNotifications.length; i++) {
-    if (postedNotifications[i].original === notification)
-      return true;
-  }
-  return false;
-}
-
 exports.post = function(notification) {
   if (!(notification instanceof tizen.StatusNotification)) {
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
-  } else if (isAlreadyPosted(notification)) {
+  } else if (notificationCenter.wasPosted(notification)) {
     console.log("tizen.notification.post(): notification " + notification.id + " already posted.");
     return;
   }
-
-  var id = (statusNotificationNextId++).toString();
-  defineConfigurableReadOnlyProperty(notification, "id", id);
-
-  postMessage({
-    "cmd": "NotificationPost",
-    "id": notification.id,
-    "title": notification.title,
-    "content": notification.content,
-  });
-  defineConfigurableReadOnlyProperty(notification, "postedTime", new Date);
-
-  var posted = copyStatusNotification(notification);
-  posted.original = notification;
-  postedNotifications.push(posted);
+  notificationCenter.postNotification(notification);
 }
 
 exports.remove = function(notificationId) {
-  postMessage({
-    "cmd": "NotificationRemove",
-    "id": notificationId,
-  });
+  notificationCenter.remove(notificationId);
 }
 
 exports.getAll = function() {
-  var result = [];
-  var i;
-  for (i = 0; i < postedNotifications.length; i++)
-    result[i] = postedNotifications[i].original;
-  return result;
+  return notificationCenter.getAll();
 }
 
 exports.get = function(notificationId) {
-  var result;
-  var i;
-  for (i = 0; i < postedNotifications.length; i++) {
-    if (postedNotifications[i].id == notificationId) {
-      result = postedNotifications[i].original;
-      break;
-    }
-  }
-  return result;
+  return notificationCenter.get();
 }
 
 exports.removeAll = function() {
-  var i;
-  for (i = 0; i < postedNotifications.length; i++)
-    exports.remove(postedNotifications[i].id);
+  notificationCenter.removeAll();
 }
 
 exports.update = function(notification) {
   if (!(notification instanceof tizen.StatusNotification))
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
-  else if (!isAlreadyPosted(notification))
+  else if (!notificationCenter.wasPosted(notification))
     throw new tizen.WebAPIException(tizen.WebAPIException.UNKNOWN_ERR);
 
-  console.log("Not implemented");
+  console.log("tizen.notification.update() not implemented");
 }
