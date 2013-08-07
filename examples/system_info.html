@@ -39,7 +39,7 @@ handle("battery_btn", function() {
                function(battery) {
                  output.value += '\n Property BATTERY changed.';
                  output.value += '\n\t level : ' + battery.level;
-                 output.value += '\n\t isCharging : %' + battery.isCharging;
+                 output.value += '\n\t isCharging : ' + battery.isCharging;
                  output.scrollTop = output.scrollHeight;
                  count += 1;
                  if (count == 3) {
@@ -55,7 +55,7 @@ handle("battery_btn", function() {
     function(battery) {
       output.value += '\n Get property BATTERY returned.';
       output.value += '\n\t level : ' + battery.level;
-      output.value += '\n\t isCharging : %' + battery.isCharging;
+      output.value += '\n\t isCharging : ' + battery.isCharging;
       output.scrollTop = output.scrollHeight;
     },
     onErrorCallback);

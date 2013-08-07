@@ -83,7 +83,7 @@ void SystemInfoContext::HandleGetPropertyValue(const picojson::value& input,
     peripheral_.Get(error, data);
   } else {
     system_info::SetPicoJsonObjectValue(error, "message",
-        picojson::value("Not supportted property " + prop));
+        picojson::value("Not supported property " + prop));
   }
 
   if (!error.get("message").to_str().empty()) {
