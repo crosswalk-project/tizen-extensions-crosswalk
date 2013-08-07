@@ -14,10 +14,10 @@ function _messageListener(msg) {
   var m = JSON.parse(msg);
   var handler = _callbacks[m.reply_id];
 
-  if (m.cmd == "releaseRouteToHost" || m.disconnected == false)
+  if (!(m.cmd == "requestRouteToHost" && m.disconnected == false && m.error == -1))
     delete _callbacks[m.reply_id];
 
-  if (m.error && handler[1]) {
+  if (m.error != -1 && handler[1]) {
     handler[1](new tizen.WebAPIError(m.error));
     return;
   }
@@ -35,7 +35,7 @@ function _messageListener(msg) {
 
 function _typeMismatchError() {
   throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
-}
+};
 
 function _routeToHost(cmd, networkType, domainName, successCallback, errorCallback) {
   if (!networkType in NetworkType)
