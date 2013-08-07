@@ -22,6 +22,11 @@ extension.setMessageListener(function(msg) {
   }
 });
 
+tizen.NotificationDetailInfo = function(mainText, subText) {
+  this.mainText = mainText;
+  this.subText = subText || null;
+}
+
 tizen.StatusNotification = function(statusType, title, dict) {
   this.title = title;
   this.id = (statusNotificationNextId++).toString();
@@ -57,7 +62,6 @@ var copyStatusNotification = function(notification) {
     progressValue: notification.progressValue,
     number: notification.number,
     subIconPath: notification.subIconPath,
-    detailInfo: notification.detailInfo,
     ledColor: notification.ledColor,
     ledOnPeriod: notification.ledOnPeriod,
     backgroundImagePath: notification.backgroundImagePath,
@@ -66,6 +70,17 @@ var copyStatusNotification = function(notification) {
   statusNotificationNextId--;  // Roll next id back since we are copying.
   copy.id = notification.id;
   copy.postedTime = notification.postedTime;
+  copy.detailInfo = [];
+  if (notification.detailInfo) {
+    var i;
+    for (i = 0; i < notification.detailInfo.length; i++) {
+      var info = notification.detailInfo[i];
+      copy.detailInfo[i] = {
+	mainText: info.mainText,
+	subText: info.subText
+      };
+    }
+  }
   return copy;
 }
 
