@@ -28,11 +28,41 @@ tizen.StatusNotification = function(statusType, title, dict) {
   this.type = "STATUS";
   if (dict) {
     this.content = dict.content;
+    this.iconPath = dict.iconPath;
+    this.soundPath = dict.soundPath;
+    this.vibration = dict.vibration;
+    this.appControl = dict.appControl;
+    this.appId = dict.appId;
+    this.progressType = dict.progressType;
+    this.progressValue = dict.progressValue;
+    this.number = dict.number;
+    this.subIconPath = dict.subIconPath;
+    this.detailInfo = dict.detailInfo;
+    this.ledColor = dict.ledColor;
+    this.ledOnPeriod = dict.ledOnPeriod;
+    this.backgroundImagePath = dict.backgroundImagePath;
+    this.thumbnails = dict.thumbnails;
   }
 }
 
 var copyStatusNotification = function(notification) {
-  var copy = new tizen.StatusNotification(notification.type, notification.title, { content: notification.content });
+  var copy = new tizen.StatusNotification(notification.type, notification.title, {
+    content: notification.content,
+    iconPath: notification.iconPath,
+    soundPath: notification.soundPath,
+    vibration: notification.vibration,
+    appControl: notification.appControl,
+    appId: notification.appId,
+    progressType: notification.progressType,
+    progressValue: notification.progressValue,
+    number: notification.number,
+    subIconPath: notification.subIconPath,
+    detailInfo: notification.detailInfo,
+    ledColor: notification.ledColor,
+    ledOnPeriod: notification.ledOnPeriod,
+    backgroundImagePath: notification.backgroundImagePath,
+    thumbnails: notification.thumbnails
+  });
   statusNotificationNextId--;  // Roll next id back since we are copying.
   copy.id = notification.id;
   return copy;
