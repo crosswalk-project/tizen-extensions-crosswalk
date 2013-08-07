@@ -6,6 +6,9 @@
 
 #include <vconf.h>
 
+SysInfoNetwork::~SysInfoNetwork() {
+}
+
 void SysInfoNetwork::PlatformInitialize() {
   stopping_ = false;
 }

@@ -30,6 +30,9 @@
           'libudev',
         ]
       },
+      'ldflags': [
+        '-lX11',
+      ],
       'includes': [
         '../common/pkg-config.gypi',
       ],
