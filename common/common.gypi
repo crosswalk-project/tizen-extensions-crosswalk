@@ -1,9 +1,9 @@
 {
   'variables': {
-    # Copy conditionally-set variables out one scope.
-    'extension_host_os%': '<(extension_host_os)',
+    # If capi-system-power package exists, the host is considered to be Tizen Mobile.
+    # Note, the spec file requires this package: BuildRequires: pkgconfig(capi-system-power).
+    'extension_host_os%': '<!(pkg-config --exists capi-system-power; if [ $? = 0 ]; then echo mobile; else echo desktop; fi)',
     'extension_build_type%': '<(extension_build_type)',
-    'extension_host_os%': 'mobile',
     'extension_build_type%': 'Debug',
   },
   'target_defaults': {
