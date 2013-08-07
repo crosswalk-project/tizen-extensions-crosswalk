@@ -184,7 +184,8 @@ exports.getDefaultAdapter = function() {
   return defaultAdapter;
 };
 
-exports.deviceMajor = {
+exports.deviceMajor = {};
+var deviceMajor = {
   "MISC": 0x00,
   "COMPUTER": 0x01,
   "PHONE": 0x02,
@@ -197,8 +198,16 @@ exports.deviceMajor = {
   "HEALTH": 0x09,
   "UNCATEGORIZED": 0x1F
 };
+for (var key in deviceMajor) {
+  Object.defineProperty(exports.deviceMajor, key, {
+    configurable: false,
+    writable: false,
+    value: deviceMajor[key]
+  });
+}
 
-exports.deviceMinor = {
+exports.deviceMinor = {};
+var deviceMinor = {
   "COMPUTER_UNCATEGORIZED": 0x00,
   "COMPUTER_DESKTOP": 0x01,
   "COMPUTER_SERVER": 0x02,
@@ -272,8 +281,16 @@ exports.deviceMinor = {
   "HEALTH_KNEE_PROSTHESIS": 0x0c,
   "HEALTH_ANKLE_PROSTHESIS": 0x0d
 };
+for (var key in deviceMinor) {
+  Object.defineProperty(exports.deviceMinor, key, {
+    configurable: false,
+    writable: false,
+    value: deviceMinor[key]
+  });
+}
 
-exports.deviceService = {
+exports.deviceService = {};
+var deviceService = {
   "LIMITED_DISCOVERABILITY": 0x0001,
   "POSITIONING": 0x0008,
   "NETWORKING": 0x0010,
@@ -284,6 +301,14 @@ exports.deviceService = {
   "TELEPHONY": 0x0200,
   "INFORMATION": 0x0400
 };
+for (var key in deviceService) {
+  Object.defineProperty(exports.deviceService, key, {
+    configurable: false,
+    writable: false,
+    value: deviceService[key]
+  });
+}
+
 
 function BluetoothAdapter() {
   this.name = "";
