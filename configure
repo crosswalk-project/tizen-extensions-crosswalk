@@ -9,7 +9,7 @@ if [ ! `which gyp` ]; then
 fi
 
 if [ $# -eq 1 ] && [ $1 == "--desktop" ]; then
-   echo -e "\n--desktop is deprecated. Please use '-D extension_host_os=desktop' instead.\n"
+   echo -e "\n--desktop is deprecated. Do nothing. Build system can determin which is desktop or mobile automatically.\n"
    exit 1
 fi
 
