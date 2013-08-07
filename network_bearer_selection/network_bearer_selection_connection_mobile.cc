@@ -2,12 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "networkbearerselection/networkbearerselection_connection.h"
+#include "network_bearer_selection/network_bearer_selection_connection_mobile.h"
 
 #include <map>
 #include <stdlib.h>
 #include <vector>
-#include "networkbearerselection/networkbearerselection_request.h"
+#include "network_bearer_selection/network_bearer_selection_request.h"
 
 typedef std::vector<NetworkBearerSelectionRequest*> RequestList;
 typedef std::map<std::string, RequestList> ProfileMap;

@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "networkbearerselection/networkbearerselection_context_desktop.h"
+#include "network_bearer_selection/network_bearer_selection_context_desktop.h"
 
 #include "network_bearer_selection/network_bearer_selection_request.h"
 #include "common/extension_adapter.h"

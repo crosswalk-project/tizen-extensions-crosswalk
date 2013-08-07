@@ -2,10 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef NETWORKBEARERSELECTION_NETWORKBEARERSELECTION_CONNECTION_H_
-#define NETWORKBEARERSELECTION_NETWORKBEARERSELECTION_CONNECTION_H_
+#ifndef NETWORK_BEARER_SELECTION_NETWORK_BEARER_SELECTION_CONNECTION_MOBILE_H_
+#define NETWORK_BEARER_SELECTION_NETWORK_BEARER_SELECTION_CONNECTION_MOBILE_H_
 
-#include "networkbearerselection_context.h"
+#include "network_bearer_selection_context.h"
 #include <net_connection.h>
 
 class NetworkBearerSelectionConnection {
@@ -24,4 +24,4 @@ class NetworkBearerSelectionConnection {
   bool is_valid_;
 };
 
-#endif  // NETWORKBEARERSELECTION_NETWORKBEARERSELECTION_CONNECTION_H_
+#endif  // NETWORK_BEARER_SELECTION_NETWORK_BEARER_SELECTION_CONNECTION_MOBILE_H_

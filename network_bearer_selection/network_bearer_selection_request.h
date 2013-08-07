@@ -2,11 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef NETWORKBEARERSELECTION_NETWORKBEARERSELECTION_REQUEST_H_
-#define NETWORKBEARERSELECTION_NETWORKBEARERSELECTION_REQUEST_H_
+#ifndef NETWORK_BEARER_SELECTION_NETWORK_BEARER_SELECTION_REQUEST_H_
+#define NETWORK_BEARER_SELECTION_NETWORK_BEARER_SELECTION_REQUEST_H_
 
 #include <string>
-#include "networkbearerselection/networkbearerselection_context.h"
+#include "network_bearer_selection/network_bearer_selection_context.h"
 
 class NetworkBearerSelectionRequest {
  public:
@@ -38,4 +38,4 @@ class NetworkBearerSelectionRequest {
   NetworkType network_type_;
 };
 
-#endif  // NETWORKBEARERSELECTION_NETWORKBEARERSELECTION_REQUEST_H_
+#endif  // NETWORK_BEARER_SELECTION_NETWORK_BEARER_SELECTION_REQUEST_H_

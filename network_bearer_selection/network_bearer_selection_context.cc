@@ -2,13 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "networkbearerselection/networkbearerselection_context.h"
+#include "network_bearer_selection/network_bearer_selection_context.h"
 
 #include "common/extension_adapter.h"
 #include "common/picojson.h"
-#include "networkbearerselection/networkbearerselection_request.h"
+#include "network_bearer_selection/network_bearer_selection_request.h"
 
-extern const char kSource_networkbearerselection_api[];
+extern const char kSource_network_bearer_selection_api[];
 
 NetworkBearerSelectionContext::NetworkBearerSelectionContext(ContextAPI* api)
     : api_(api) {
@@ -17,7 +17,7 @@ NetworkBearerSelectionContext::NetworkBearerSelectionContext(ContextAPI* api)
 const char NetworkBearerSelectionContext::name[] = "tizen.networkbearerselection";
 
 const char* NetworkBearerSelectionContext::GetJavaScript() {
-  return kSource_networkbearerselection_api;
+  return kSource_network_bearer_selection_api;
 }
 
 void NetworkBearerSelectionContext::PostMessage(const std::string& cmd,

@@ -2,11 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "networkbearerselection/networkbearerselection_context_mobile.h"
+#include "network_bearer_selection/network_bearer_selection_context_mobile.h"
 
 #include "common/extension_adapter.h"
-#include "networkbearerselection/networkbearerselection_request.h"
-#include "networkbearerselection/networkbearerselection_connection.h"
+#include "network_bearer_selection/network_bearer_selection_request.h"
+#include "network_bearer_selection/network_bearer_selection_connection_mobile.h"
 
 CXWalkExtension* xwalk_extension_init(int32_t api_version) {
   return ExtensionAdapter<NetworkBearerSelectionContextMobile>::Initialize();
