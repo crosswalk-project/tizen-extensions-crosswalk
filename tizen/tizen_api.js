@@ -92,3 +92,22 @@ exports.WebAPIError = function (code, message, name) {
   this.__defineGetter__("message", function () { return _message; });
   this.__defineGetter__("name", function () { return _name; });
 }
+
+// NOTE: Stubs for Application. These are needed for running TCT until
+// we have a proper Application API implementation.
+exports.application = {
+  getAppInfo: function() { return { id: 0 } },
+}
+
+exports.ApplicationControlData = function(key, value) {
+  this.key = key;
+  this.value = value;
+}
+
+exports.ApplicationControl = function(operation, uri, mime, category, data) {
+  this.operation = operation;
+  this.uri = uri;
+  this.mime = mime;
+  this.category = category;
+  this.data = data || [];
+}
