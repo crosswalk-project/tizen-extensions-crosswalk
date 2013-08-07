@@ -24,7 +24,7 @@ var errors = [
   { type: "NAMESPACE_ERR", value: 14, name: "IndexSizeError", message: "" },
   { type: "INVALID_ACCESS_ERR", value: 15, name: "IndexSizeError", message: "" },
   { type: "VALIDATION_ERR", value: 16, name: "IndexSizeError", message: "" },
-  { type: "TYPE_MISMATCH_ERR", value: 17, name: "IndexSizeError", message: "" },
+  { type: "TYPE_MISMATCH_ERR", value: 17, name: "TypeMismatchError", message: "" },
   { type: "SECURITY_ERR", value: 18, name: "IndexSizeError", message: "" },
   { type: "NETWORK_ERR", value: 19, name: "IndexSizeError", message: "" },
   { type: "ABORT_ERR", value: 20, name: "IndexSizeError", message: "" },
@@ -91,4 +91,23 @@ exports.WebAPIError = function (code, message, name) {
   this.__defineGetter__("code", function () { return _code; });
   this.__defineGetter__("message", function () { return _message; });
   this.__defineGetter__("name", function () { return _name; });
+}
+
+// NOTE: Stubs for Application. These are needed for running TCT until
+// we have a proper Application API implementation.
+exports.application = {
+  getAppInfo: function() { return { id: 0 } },
+}
+
+exports.ApplicationControlData = function(key, value) {
+  this.key = key;
+  this.value = value;
+}
+
+exports.ApplicationControl = function(operation, uri, mime, category, data) {
+  this.operation = operation;
+  this.uri = uri;
+  this.mime = mime;
+  this.category = category;
+  this.data = data || [];
 }
