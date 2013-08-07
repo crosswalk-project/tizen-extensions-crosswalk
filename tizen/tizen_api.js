@@ -24,7 +24,7 @@ var errors = [
   { type: "NAMESPACE_ERR", value: 14, name: "IndexSizeError", message: "" },
   { type: "INVALID_ACCESS_ERR", value: 15, name: "IndexSizeError", message: "" },
   { type: "VALIDATION_ERR", value: 16, name: "IndexSizeError", message: "" },
-  { type: "TYPE_MISMATCH_ERR", value: 17, name: "IndexSizeError", message: "" },
+  { type: "TYPE_MISMATCH_ERR", value: 17, name: "TypeMismatchError", message: "" },
   { type: "SECURITY_ERR", value: 18, name: "IndexSizeError", message: "" },
   { type: "NETWORK_ERR", value: 19, name: "IndexSizeError", message: "" },
   { type: "ABORT_ERR", value: 20, name: "IndexSizeError", message: "" },

@@ -95,8 +95,7 @@ function isAlreadyPosted(notification) {
 
 exports.post = function(notification) {
   if (!(notification instanceof tizen.StatusNotification)) {
-    console.log("tizen.notification.post(): argument of invalid type " + typeof(notification));
-    return;
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
   } else if (isAlreadyPosted(notification)) {
     console.log("tizen.notification.post(): notification " + notification.id + " already posted.");
     return;
@@ -148,24 +147,10 @@ exports.removeAll = function() {
 }
 
 exports.update = function(notification) {
-  if (!(notification instanceof tizen.StatusNotification)) {
-    console.log("tizen.notification.update(): argument of invalid type " + typeof(notification));
-    return;
-  }
+  if (!(notification instanceof tizen.StatusNotification))
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+  else if (!isAlreadyPosted(notification))
+    throw new tizen.WebAPIException(tizen.WebAPIException.UNKNOWN_ERR);
 
-  var notificationIndex = postedNotifications.indexOf(notification);
-  if (notificationIndex == -1) {
-    console.log("tizen.notification.update(): notification " + notification.id + " not yet posted.");
-    // FIXME(jeez): needed or should we post it then?
-    return;
-  }
-
-  postedNotifications[notificationIndex] = notification;
-
-  postMessage({
-    "cmd": "NotificationPost",
-    "id": notification.id,
-    "title": notification.title,
-    "content": notification.content,
-  });
+  console.log("Not implemented");
 }
