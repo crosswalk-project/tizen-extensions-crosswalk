@@ -8,4 +8,4 @@ if [ ! `which xwalk` ]; then
    exit 1
 fi
 
-exec xwalk "$@" --external-extensions-path=$PWD/out/Default $PWD/examples/index.html
+exec xwalk "$@" --allow-external-extensions-for-remote-sources --external-extensions-path=$PWD/out/Default $PWD/examples/index.html
