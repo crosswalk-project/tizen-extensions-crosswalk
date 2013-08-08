@@ -124,11 +124,11 @@ void PowerContext::HandleRelease(const picojson::value& msg) {
 // This callback actually make sure that the code is run in the main thread.
 static gboolean set_brightness_callback(gpointer data)
 {
-  double brightness = *(static_cast<double*>(data));
-  delete data;
-  if (brightness < 0) {
+  double* brightness = static_cast<double*>(data);
+  if (*brightness < 0) {
     // Resource brightness.
     device_set_brightness_from_settings(0);
+    delete brightness;
     return false;
   }
 
@@ -137,10 +137,11 @@ static gboolean set_brightness_callback(gpointer data)
   int ret = device_get_max_brightness(0, &maxBrightness);
   if (ret != 0) {
     fprintf(stderr, "Can't get the max brightness from the platform. \n");
-    device_set_brightness(0, static_cast<int>(brightness * 100.0));
+    device_set_brightness(0, static_cast<int>(*brightness * 100.0));
   } else {
-    device_set_brightness(0, static_cast<int>(brightness * maxBrightness));
+    device_set_brightness(0, static_cast<int>(*brightness * maxBrightness));
   }
+  delete brightness;
   return false;
 }
 
