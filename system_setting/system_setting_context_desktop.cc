@@ -19,5 +19,6 @@ void SystemSettingContext::HandleGetProperty(const picojson::value& msg) {
     (msg.get("_type").get<double>());
   const char* reply_id = msg.get("_reply_id").to_str().c_str();
 
+  // FIXME(riju) : Use correct value when desktop version is implemented
   OnPropertyHandled(reply_id, "test.png", 0);
 }

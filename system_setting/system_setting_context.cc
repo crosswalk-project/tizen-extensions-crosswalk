@@ -42,10 +42,13 @@ void SystemSettingContext::HandleMessage(const char* message) {
     HandleSetProperty(v);
   else if (cmd == "GetProperty")
     HandleGetProperty(v);
+  else
+    std::cout << "ASSERT NOT REACHED. \n";
 }
 
 void SystemSettingContext::OnPropertyHandled(const char* reply_id,
-                                             const char* value, int ret) {
+                                             const char* value,
+                                             int ret) {
   picojson::value::object o;
   o["_reply_id"] = picojson::value(reply_id);
   if (value)
