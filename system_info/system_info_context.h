@@ -40,18 +40,6 @@ class SystemInfoContext {
                               picojson::value& output);
   void HandleStartListen(const picojson::value& input);
   void HandleStopListen(const picojson::value& input);
-  void GetDeviceOrientation(picojson::value& error,
-                            picojson::value& data);
-  void GetNetwork(picojson::value& error,
-                  picojson::value& data);
-  void GetWifiNetwork(picojson::value& error,
-                      picojson::value& data);
-  void GetCellularNetwork(picojson::value& error,
-                          picojson::value& data);
-  void GetSIM(picojson::value& error,
-              picojson::value& data);
-  void GetPeripheral(picojson::value& error,
-                     picojson::value& data);
 
   ContextAPI* api_;
   SysInfoBattery& battery_;
