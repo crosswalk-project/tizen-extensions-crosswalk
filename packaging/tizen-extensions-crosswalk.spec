@@ -57,6 +57,15 @@ mkdir -p %{buildroot}%{_datarootdir}/%{name}/examples/js
 install -p -m 644 examples/*.html %{buildroot}%{_datarootdir}/%{name}/examples
 install -p -m 644 examples/js/*.js %{buildroot}%{_datarootdir}/%{name}/examples/js
 
+# Demos
+mkdir -p %{buildroot}%{_datarootdir}/%{name}/demos/tizen
+mkdir -p %{buildroot}%{_datarootdir}/%{name}/demos/tizen/css
+mkdir -p %{buildroot}%{_datarootdir}/%{name}/demos/tizen/js
+
+install -p -m 644 demos/tizen/*.html %{buildroot}%{_datarootdir}/%{name}/demos/tizen
+install -p -m 644 demos/tizen/css/*.css %{buildroot}%{_datarootdir}/%{name}/demos/tizen/css
+install -p -m 644 demos/tizen/js/*.js %{buildroot}%{_datarootdir}/%{name}/demos/tizen/js
+
 %files
 # TODO(rakuco): This causes problems on 2.1 when creating the package.
 # %license LICENSE
@@ -64,3 +73,7 @@ install -p -m 644 examples/js/*.js %{buildroot}%{_datarootdir}/%{name}/examples/
 %{_libdir}/%{name}/libtizen*.so
 %{_datarootdir}/%{name}/examples/*.html
 %{_datarootdir}/%{name}/examples/js/*.js
+
+%{_datarootdir}/%{name}/demos/tizen/*.html
+%{_datarootdir}/%{name}/demos/tizen/css/*.css
+%{_datarootdir}/%{name}/demos/tizen/js/*.js
