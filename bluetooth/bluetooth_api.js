@@ -568,17 +568,17 @@ BluetoothDevice.prototype._clone = function() {
 
 BluetoothDevice.prototype._updateProperties = function(device) {
   if (device.hasOwnProperty("name"))
-    this.name = device.name;
+    _addConstProperty(this, "name", device.name);
   if (device.hasOwnProperty("address"))
-    this.address = device.address;
+    _addConstProperty(this, "address", device.address);
   if (device.hasOwnProperty("deviceClass"))
-    this.deviceClass = device.deviceClass;
+    _addConstProperty(this, "deviceClass", device.deviceClass);
   if (device.hasOwnProperty("isBonded"))
-    this.isBonded = device.isBonded;
+    _addConstProperty(this, "isBonded", device.isBonded);
   if (device.hasOwnProperty("isTrusted"))
-    this.isTrusted = device.isTrusted;
+    _addConstProperty(this, "isTrusted", device.isTrusted);
   if (device.hasOwnProperty("isConnected"))
-    this.isConnected = device.isConnected;
+    _addConstProperty(this, "isConnected", device.isConnected);
 
   if (device.hasOwnProperty("uuids")) {
     for (var i = 0; i < this.uuids.length; i++)
