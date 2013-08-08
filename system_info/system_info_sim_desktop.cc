@@ -9,5 +9,5 @@
 void SysInfoSim::Get(picojson::value& error,
                      picojson::value& data) {
   system_info::SetPicoJsonObjectValue(error, "message",
-      picojson::value("SIM is not support on desktop."));
+      picojson::value("SIM is not supported on desktop."));
 }

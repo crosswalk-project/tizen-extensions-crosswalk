@@ -9,10 +9,6 @@
 void SysInfoDeviceOrientation::Get(picojson::value& error,
                                    picojson::value& data) {
   // FIXME(halton): Add actual implementation
-  system_info::SetPicoJsonObjectValue(data, "status",
-      picojson::value("PORTRAIT_PRIMARY"));
-  system_info::SetPicoJsonObjectValue(data, "isAutoRotation",
-      picojson::value(false));
   system_info::SetPicoJsonObjectValue(error, "message",
-      picojson::value(""));
+      picojson::value("NOT IMPLEMENTED."));
 }
