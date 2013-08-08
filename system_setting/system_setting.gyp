@@ -13,9 +13,6 @@
         'system_setting_context_desktop.cc',
         'system_setting_context_mobile.cc',
       ],
-      'includes': [
-        '../common/pkg-config.gypi',
-      ],
       'conditions': [
         ['extension_host_os=="mobile"', {
           'variables': {
@@ -24,6 +21,9 @@
               'vconf',
             ]
           },
+          'includes': [
+            '../common/pkg-config.gypi',
+          ],
         }],
       ],
     },
