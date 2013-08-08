@@ -11,10 +11,7 @@ var blueApp = {};
  */
 blueApp.init = function() {
     $("#return-btn").click(function(event) {
-	// TODO use tizen.application whenever it's fully implemented
-        //var currentApp = tizen.application.getCurrentApplication();
-        //currentApp.exit();
-	window.close();
+        window.close();
     });
 
     blueApp.cleanDeviceList();
@@ -29,14 +26,14 @@ blueApp.init = function() {
 
     blueApp.bluetoothLoad();
 
-    $("#blueetooth-toggle").change(blueApp.adapterStatusToggle);
+    $("#bluetooth-toggle").change(blueApp.adapterStatusToggle);
 };
 
 /**
  * On power setting success callback.
  */
 blueApp.adapterPowerSuccessCb = function() {
-    var status = $("#blueetooth-toggle").val();
+    var status = $("#bluetooth-toggle").val();
 
     var noti = new tizen.StatusNotification("SIMPLE", "Bluetooth", {
         content : "Successfully powered " + status + " bluetooth adapter."
@@ -49,7 +46,7 @@ blueApp.adapterPowerSuccessCb = function() {
  * On power setting error callback.
  */
 blueApp.adapterPowerErrCb = function() {
-    var status = $("#blueetooth-toggle").val();
+    var status = $("#bluetooth-toggle").val();
 
     var noti = new tizen.StatusNotification("SIMPLE", "Bluetooth", {
         content : "Failed to power " + status + " bluetooth adapter."
@@ -63,19 +60,19 @@ blueApp.adapterPowerErrCb = function() {
  * Powers down the bluetooth device.
  */
 blueApp.adapterStatusToggle = function() {
-    var status = $("#blueetooth-toggle").val() == 'on';
+    var status = $("#bluetooth-toggle").val() == 'on';
 
     if (!status) {
         blueApp.cleanDeviceList();
         blueApp.adapter.stopDiscovery(function() {
             blueApp.adapter.setPowered(status, blueApp.adapterPowerSuccessCb,
-                    blueApp.adapterPowerErrCb);
+                                       blueApp.adapterPowerErrCb);
         });
-	blueApp.adapter = tizen.bluetooth.getDefaultAdapter();
+        blueApp.adapter = tizen.bluetooth.getDefaultAdapter();
     } else {
         blueApp.adapter.setPowered(status, blueApp.adapterPowerSuccessCb,
-                blueApp.adapterPowerErrCb);
-	blueApp.adapter = null;
+                                   blueApp.adapterPowerErrCb);
+        blueApp.adapter = null;
     }
 };
 
@@ -94,8 +91,8 @@ blueApp.scan = function() {
     if (!blueApp.adapter) return;
 
     blueApp.adapter.stopDiscovery(function() {
-	blueApp.cleanDeviceList();
-	blueApp.discoverDevices();
+        blueApp.cleanDeviceList();
+        blueApp.discoverDevices();
     });
 };
 
@@ -129,9 +126,9 @@ blueApp.addDevice = function(device) {
 
     $("#device-group").show();
     $("#device-group").append(
-            $(deviceItem).attr("class",
-                    "ui-li ui-li-static ui-btn-up-s ui-li-last").attr(
-                    "address", device.address));
+        $(deviceItem).attr("class",
+                           "ui-li ui-li-static ui-btn-up-s ui-li-last").attr(
+                               "address", device.address));
 };
 
 /**
@@ -139,7 +136,7 @@ blueApp.addDevice = function(device) {
  */
 blueApp.discoverDevicesCb = {
     onstarted: function() {
-            console.log("Discovery has started.");
+        console.log("Discovery has started.");
     },
     ondevicefound : blueApp.addDevice,
     ondevicedisappeared : function(address) {
@@ -176,10 +173,10 @@ blueApp.discoverDevices = function() {
  */
 blueApp.bluetoothLoad = function() {
     try {
-	blueApp.adapter = tizen.bluetooth.getDefaultAdapter();
-	$("#adapter-name").html(blueApp.adapter.name);
+        blueApp.adapter = tizen.bluetooth.getDefaultAdapter();
+        $("#adapter-name").html(blueApp.adapter.name);
     } catch(err) {
-	console.log("bluetooth is off");
+        console.log("bluetooth is off");
     }
 
     if (!blueApp.adapter || !blueApp.adapter.powered) return;
@@ -188,8 +185,8 @@ blueApp.bluetoothLoad = function() {
         $("#visibility-display").html("On");
     }
 
-    $("#blueetooth-toggle").val("on");
-    $("#blueetooth-toggle").slider('refresh');
+    $("#bluetooth-toggle").val("on");
+    $("#bluetooth-toggle").slider('refresh');
 
     blueApp.discoverDevices();
 };
@@ -208,7 +205,7 @@ blueApp.setRemainingTime = function() {
     timeOut = visibilityTime + visibilityTimeout;
     delta = timeOut - currTime;
     display = Math.floor(delta / 60).format() + ":"
-            + Math.floor(delta % 60).format();
+        + Math.floor(delta % 60).format();
 
     $("#visibility-display").html(display);
 
@@ -243,9 +240,9 @@ blueApp.visibilityErrorCb = function() {
  */
 blueApp.changedVisibility = function() {
     var timeout = parseInt($("input[type=radio][name=visibility]:checked")
-            .val(), 10);
+                           .val(), 10);
     var visibility = $("input[type=radio][name=visibility]:checked").attr(
-            "label");
+        "label");
     blueApp.toggleVisibility();
     $("#visibility-display").html(visibility);
     blueApp.visibilityTime = 0;
@@ -256,7 +253,7 @@ blueApp.changedVisibility = function() {
         blueApp.visibilityTimeout = timeout;
 
         blueApp.adapter.setVisible(true, blueApp.visibilitySuccessCb,
-                blueApp.visibilityErrorCb, timeout);
+                                   blueApp.visibilityErrorCb, timeout);
     } else if (timeout == 0)
         blueApp.adapter.setVisible(false);
     else
