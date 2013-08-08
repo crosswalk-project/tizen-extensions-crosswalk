@@ -6,8 +6,9 @@
 
 #include <locale.h>
 
-// FIXME(halton): CppLint - Streams are highly discouraged.
-#include <fstream>
+#include <stdlib.h>
+#include <stdio.h>
+
 #include <string>
 
 #include "common/picojson.h"
@@ -65,11 +66,16 @@ bool SysInfoLocale::UpdateLanguage() {
 bool SysInfoLocale::UpdateCountry() {
   std::string str;
 
-  std::ifstream in;
+  FILE* fp = fopen("/etc/timezone", "r");
   std::string info;
-  in.open("/etc/timezone");
-  getline(in, info);
-  in.close();
+  char* cinfo = NULL;
+  size_t length = 100;
+
+  getline(&cinfo, &length, fp);
+  info.assign(cinfo);
+  free(cinfo);
+  fclose(fp);
+
   int pos = info.find('/', 0);
   str.assign(info, pos + 1, info.length() - pos - 1);
 

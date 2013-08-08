@@ -4,11 +4,11 @@
 
 #include "system_info/system_info_build.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <sys/utsname.h>
 #include <unistd.h>
-// FIXME(halton): CppLint - Streams are highly discouraged.
-#include <fstream>
+
 #include <string>
 
 #include "common/picojson.h"
@@ -48,17 +48,21 @@ void SysInfoBuild::Get(picojson::value& error,
 }
 
 bool SysInfoBuild::UpdateHardware() {
-  std::ifstream in;
+  FILE* fp = fopen("/var/log/dmesg", "r");
 
-  in.open("/var/log/dmesg");
   int dmipos;
+  size_t length = 300;
+  char* cinfo = NULL;
   std::string info;
+
   do {
-    getline(in, info);
+    getline(&cinfo, &length, fp);
+    info.assign(cinfo);
     dmipos = info.find("] DMI: ", 0);
   } while (dmipos == std::string::npos);
   info.erase(0, dmipos + 7);
-  in.close();
+  free(cinfo);
+  fclose(fp);
 
   int head = 0;
   int tail = -1;
