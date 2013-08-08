@@ -18,6 +18,7 @@
         [ 'extension_host_os == "mobile"', {
           'variables': {
             'packages': [
+              'capi-system-info',
               'vconf',
             ]
           },

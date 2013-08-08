@@ -32,14 +32,21 @@ class SystemInfoContext {
   // ExtensionAdapter implementation.
   static const char name[];
   static const char* GetJavaScript();
-  void HandleMessage(const char*);
-  void HandleSyncMessage(const char*);
+  void HandleMessage(const char* message);
+  void HandleSyncMessage(const char* message);
 
  private:
   void HandleGetPropertyValue(const picojson::value& input,
                               picojson::value& output);
   void HandleStartListen(const picojson::value& input);
   void HandleStopListen(const picojson::value& input);
+  void HandleGetCapabilities();
+  inline void SetStringPropertyValue(picojson::object& o,
+                                     const char* prop,
+                                     const char* val) {
+    if (val)
+      o[prop] = picojson::value(val);
+  }
 
   ContextAPI* api_;
   SysInfoBattery& battery_;

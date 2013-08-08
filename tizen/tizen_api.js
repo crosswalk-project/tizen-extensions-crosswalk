@@ -16,7 +16,7 @@ var errors = [
   { type: "NO_DATA_ALLOWED_ERR", value: 6, name: "IndexSizeError", message: "" },
   { type: "NO_MODIFICATION_ALLOWED_ERR", value: 7, name: "IndexSizeError", message: "" },
   { type: "NOT_FOUND_ERR", value: 8, name: "IndexSizeError", message: "" },
-  { type: "NOT_SUPPORTED_ERR", value: 9, name: "IndexSizeError", message: "" },
+  { type: "NOT_SUPPORTED_ERR", value: 9, name: "NotSupportedError", message: "" },
   { type: "INUSE_ATTRIBUTE_ERR", value: 10, name: "IndexSizeError", message: "" },
   { type: "INVALID_STATE_ERR", value: 11, name: "IndexSizeError", message: "" },
   { type: "SYNTAX_ERR", value: 12, name: "IndexSizeError", message: "" },

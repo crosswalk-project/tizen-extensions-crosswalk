@@ -5,6 +5,10 @@
 #include "system_info/system_info_context.h"
 
 #include <stdlib.h>
+#if defined(TIZEN_MOBILE)
+#include <system_info.h>
+#endif
+
 #include <string>
 
 #include "common/picojson.h"
@@ -177,5 +181,265 @@ void SystemInfoContext::HandleMessage(const char* message) {
   }
 }
 
-void SystemInfoContext::HandleSyncMessage(const char*) {
+void SystemInfoContext::HandleSyncMessage(const char* message) {
+  picojson::value v;
+
+  std::string err;
+  picojson::parse(v, message, message + strlen(message), &err);
+  if (!err.empty()) {
+    std::cout << "Ignoring message.\n";
+    return;
+  }
+
+  std::string cmd = v.get("cmd").to_str();
+  if (cmd == "getCapabilities") {
+    HandleGetCapabilities();
+  } else {
+    std::cout << "Not supported sync api " << cmd << "().\n";
+  }
+}
+
+void SystemInfoContext::HandleGetCapabilities() {
+  picojson::value::object o;
+
+#if defined(TIZEN_MOBILE)
+  bool b;
+  int i;
+  char* s;
+
+  system_info_get_value_bool(SYSTEM_INFO_KEY_BLUETOOTH_SUPPORTED, &b);
+  o["bluetooth"] = picojson::value(b);
+
+  system_info_get_value_bool(SYSTEM_INFO_KEY_NFC_SUPPORTED, &b);
+  o["nfc"] = picojson::value(b);
+
+  system_info_get_value_bool(SYSTEM_INFO_KEY_NFC_RESERVED_PUSH_SUPPORTED, &b);
+  o["nfcReservedPush"] = picojson::value(b);
+
+  system_info_get_value_int(SYSTEM_INFO_KEY_MULTI_POINT_TOUCH_COUNT, &i);
+  o["multiTouchCount"] = picojson::value(static_cast<double>(i));
+
+  system_info_get_value_bool(SYSTEM_INFO_KEY_KEYBOARD_TYPE, &b);
+  o["inputKeyboard"] = picojson::value(b);
+
+  system_info_get_value_bool(SYSTEM_INFO_KEY_KEYBOARD_TYPE, &b);
+  o["inputKeyboardLayout"] = picojson::value(b);
+
+  system_info_get_value_bool(SYSTEM_INFO_KEY_WIFI_SUPPORTED, &b);
+  o["wifi"] = picojson::value(b);
+
+  system_info_get_value_bool(SYSTEM_INFO_KEY_WIFI_DIRECT_SUPPORTED, &b);
+  o["wifiDirect"] = picojson::value(b);
+
+  s = NULL;
+  system_info_get_value_string(SYSTEM_INFO_KEY_OPENGLES_VERSION, &s);
+  if (s && (strlen(s) != 0)) {
+    o["opengles"] = picojson::value(true);
+
+    if (strstr(s, "1.1"))
+      o["openglesVersion1_1"] = picojson::value(true);
+    else
+      o["openglesVersion1_1"] = picojson::value(false);
+
+    if (strstr(s, "2.0"))
+      o["openglesVersion2_0"] = picojson::value(true);
+    else
+      o["openglesVersion2_0"] = picojson::value(false);
+  } else {
+    o["opengles"] = picojson::value(false);
+    o["openglesVersion1_1"] = picojson::value(false);
+    o["openglesVersion2_0"] = picojson::value(false);
+  }
+
+  s = NULL;
+  system_info_get_value_string(SYSTEM_INFO_KEY_OPENGLES_TEXTURE_FORMAT, &s);
+  SetStringPropertyValue(o, "openglestextureFormat", s);
+
+  system_info_get_value_bool(SYSTEM_INFO_KEY_FMRADIO_SUPPORTED, &b);
+  o["fmRadio"] = picojson::value(b);
+
+  s = NULL;
+  system_info_get_value_string(SYSTEM_INFO_KEY_TIZEN_VERSION_NAME, &s);
+  SetStringPropertyValue(o, "platformVersion", s);
+
+  s = NULL;
+  system_info_get_value_string(SYSTEM_INFO_KEY_TIZEN_VERSION, &s);
+  SetStringPropertyValue(o, "webApiVersion", s);
+
+  // FIXME(halton): find which key reflect this prop
+  o["nativeApiVersion"] = picojson::value("Unknown");
+
+  s = NULL;
+  system_info_get_value_string(SYSTEM_INFO_KEY_PLATFORM_NAME, &s);
+  SetStringPropertyValue(o, "platformName", s);
+
+  system_info_get_value_int(SYSTEM_INFO_KEY_CAMERA_COUNT, &i);
+  o["camera"] = picojson::value(i > 0);
+
+  system_info_get_value_bool(SYSTEM_INFO_KEY_FRONT_CAMERA_SUPPORTED, &b);
+  o["cameraFront"] = picojson::value(b);
+
+  system_info_get_value_bool(SYSTEM_INFO_KEY_FRONT_CAMERA_FLASH_SUPPORTED, &b);
+  o["cameraFrontFlash"] = picojson::value(b);
+
+  system_info_get_value_bool(SYSTEM_INFO_KEY_BACK_CAMERA_SUPPORTED, &b);
+  o["cameraBack"] = picojson::value(b);
+
+  system_info_get_value_bool(SYSTEM_INFO_KEY_BACK_CAMERA_FLASH_SUPPORTED, &b);
+  o["cameraBackFlash"] = picojson::value(b);
+
+  bool b_gps;
+  system_info_get_value_bool(SYSTEM_INFO_KEY_GPS_SUPPORTED, &b_gps);
+  o["locationGps"] = picojson::value(b_gps);
+
+  system_info_get_value_bool(SYSTEM_INFO_KEY_WPS_SUPPORTED, &b);
+  o["locationWps"] = picojson::value(b);
+
+  o["location"] = picojson::value(b && b_gps);
+
+  system_info_get_value_bool(SYSTEM_INFO_KEY_MICROPHONE_SUPPORTED, &b);
+  o["microphone"] = picojson::value(b);
+
+  system_info_get_value_bool(SYSTEM_INFO_KEY_USB_HOST_SUPPORTED, &b);
+  o["usbHost"] = picojson::value(b);
+
+  system_info_get_value_bool(SYSTEM_INFO_KEY_USB_ACCESSORY_SUPPORTED, &b);
+  o["usbAccessory"] = picojson::value(b);
+
+  system_info_get_value_bool(SYSTEM_INFO_KEY_RCA_SUPPORTED, &b);
+  o["screenOutputRca"] = picojson::value(b);
+
+  system_info_get_value_bool(SYSTEM_INFO_KEY_HDMI_SUPPORTED, &b);
+  o["screenOutputHdmi"] = picojson::value(b);
+
+  s = NULL;
+  system_info_get_value_string(SYSTEM_INFO_KEY_CORE_CPU_ARCH, &s);
+  SetStringPropertyValue(o, "platformCoreCpuArch", s);
+
+  s = NULL;
+  system_info_get_value_string(SYSTEM_INFO_KEY_CORE_FPU_ARCH, &s);
+  SetStringPropertyValue(o, "platformCoreFpuArch", s);
+
+  system_info_get_value_bool(SYSTEM_INFO_KEY_SIP_VOIP_SUPPORTED, &b);
+  o["sipVoip"] = picojson::value(b);
+
+  s = NULL;
+  system_info_get_value_string(SYSTEM_INFO_KEY_DEVICE_UUID, &s);
+  SetStringPropertyValue(o, "duid", s);
+
+  system_info_get_value_bool(SYSTEM_INFO_KEY_SPEECH_RECOGNITION_SUPPORTED, &b);
+  o["speechRecognition"] = picojson::value(b);
+
+  // FIXME(halton): find which key reflect this prop
+  o["speechSynthesis"] = picojson::value(false);
+
+  // FIXME(halton): find which key reflect this prop
+  o["accelerometer"] = picojson::value(false);
+
+  // FIXME(halton): find which key reflect this prop
+  o["accelerometerWakeup"] = picojson::value(false);
+
+  system_info_get_value_bool(SYSTEM_INFO_KEY_BAROMETER_SENSOR_SUPPORTED, &b);
+  o["barometer"] = picojson::value(b);
+
+  // FIXME(halton): find which key reflect this prop
+  o["barometerWakeup"] = picojson::value(false);
+
+  // FIXME(halton): find which key reflect this prop
+  o["gyroscope"] = picojson::value(false);
+
+  // FIXME(halton): find which key reflect this prop
+  o["gyroscopeWakeup"] = picojson::value(false);
+
+  // FIXME(halton): find which key reflect this prop
+  o["magnetometer"] = picojson::value(false);
+
+  // FIXME(halton): find which key reflect this prop
+  o["magnetometerWakeup"] = picojson::value(false);
+
+  // FIXME(halton): find which key reflect this prop
+  o["photometer"] = picojson::value(false);
+
+  // FIXME(halton): find which key reflect this prop
+  o["photometerWakeup"] = picojson::value(false);
+
+  // FIXME(halton): find which key reflect this prop
+  o["proximity"] = picojson::value(false);
+
+  // FIXME(halton): find which key reflect this prop
+  o["proximityWakeup"] = picojson::value(false);
+
+  // FIXME(halton): find which key reflect this prop
+  o["tiltmeter"] = picojson::value(false);
+
+  // FIXME(halton): find which key reflect this prop
+  o["tiltmeterWakeup"] = picojson::value(false);
+
+  // FIXME(halton): find which key reflect this prop
+  o["dataEncryption"] = picojson::value(false);
+
+  // FIXME(halton): find which key reflect this prop
+  o["graphicsAcceleration"] = picojson::value(false);
+
+  // FIXME(halton): find which key reflect this prop
+  o["push"] = picojson::value(false);
+
+  // FIXME(halton): find which key reflect this prop
+  o["telephony"] = picojson::value(false);
+
+  // FIXME(halton): find which key reflect this prop
+  o["telephonyMms"] = picojson::value(false);
+
+  // FIXME(halton): find which key reflect this prop
+  o["telephonySms"] = picojson::value(false);
+
+  // FIXME(halton): find which key reflect this prop
+  o["screenSizeNormal"] = picojson::value(false);
+
+  int height;
+  int width;
+  system_info_get_value_int(SYSTEM_INFO_KEY_SCREEN_HEIGHT, &height);
+  system_info_get_value_int(SYSTEM_INFO_KEY_SCREEN_WIDTH, &width);
+  o["screenSize480_800"] = picojson::value(false);
+  o["screenSize720_1280"] = picojson::value(false);
+  if ((width == 480) && (height == 800)) {
+    o["screenSize480_800"] = picojson::value(true);
+  } else if ((width == 720) && (height == 1280)) {
+    o["screenSize720_1280"] = picojson::value(true);
+  }
+
+  // FIXME(halton): find which key reflect this prop
+  o["autoRotation"] = picojson::value(false);
+
+  // FIXME(halton): find which key reflect this prop
+  o["shellAppWidget"] = picojson::value(false);
+
+  // FIXME(halton): find which key reflect this prop
+  o["visionImageRecognition"] = picojson::value(false);
+
+  // FIXME(halton): find which key reflect this prop
+  o["visionQrcodeGeneration"] = picojson::value(false);
+
+  // FIXME(halton): find which key reflect this prop
+  o["visionQrcodeRecognition"] = picojson::value(false);
+
+  // FIXME(halton): find which key reflect this prop
+  o["visionFaceRecognition"] = picojson::value(false);
+
+  // FIXME(halton): find which key reflect this prop
+  o["secureElement"] = picojson::value(false);
+
+  // FIXME(halton): find which key reflect this prop
+  o["nativeOspCompatible"] = picojson::value(false);
+
+  // FIXME(halton): find which key reflect this prop
+  o["profile"] = picojson::value("MOBILE_WEB");
+
+  o["error"] = picojson::value("");
+#elif defined(GENERIC_DESKTOP)
+  o["error"] = picojson::value("getCapabilities is not supported on desktop.");
+#endif
+
+  picojson::value v(o);
+  api_->SetSyncReply(v.serialize().c_str());
 }
