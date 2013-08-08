@@ -9,15 +9,6 @@
 void SysInfoWifiNetwork::Get(picojson::value& error,
                              picojson::value& data) {
   // FIXME(halton): Add actual implementation
-  system_info::SetPicoJsonObjectValue(data, "status",
-      picojson::value("ON"));
-  system_info::SetPicoJsonObjectValue(data, "ssid",
-      picojson::value("test"));
-  system_info::SetPicoJsonObjectValue(data, "ipAddress",
-      picojson::value("192.168.11.5"));
-  system_info::SetPicoJsonObjectValue(data, "ipv6Address",
-      picojson::value("fe80::250:56ff:fec0:8"));
-  system_info::SetPicoJsonObjectValue(data, "signalStrength",
-      picojson::value(0.3));
-  system_info::SetPicoJsonObjectValue(error, "message", picojson::value(""));
+  system_info::SetPicoJsonObjectValue(error, "message",
+      picojson::value("NOT IMPLEMENTED."));
 }

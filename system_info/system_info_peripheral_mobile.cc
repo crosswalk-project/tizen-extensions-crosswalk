@@ -9,7 +9,6 @@
 void SysInfoPeripheral::Get(picojson::value& error,
                             picojson::value& data) {
   // FIXME(halton): Add actual implementation
-  system_info::SetPicoJsonObjectValue(data, "isVideoOutputOn",
-      picojson::value(true));
-  system_info::SetPicoJsonObjectValue(error, "message", picojson::value(""));
+  system_info::SetPicoJsonObjectValue(error, "message",
+      picojson::value("NOT IMPLEMENTED."));
 }

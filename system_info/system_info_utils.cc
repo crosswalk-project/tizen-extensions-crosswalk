@@ -44,8 +44,8 @@ std::string GetUdevProperty(struct udev_device* dev,
 
   attr_list_entry = udev_device_get_properties_list_entry(dev);
   attr_entry = udev_list_entry_get_by_name(attr_list_entry, attr.c_str());
-  if (0 == attr_entry)
-    return NULL;
+  if (!attr_entry)
+    return "";
 
   return std::string(udev_list_entry_get_value(attr_entry));
 }

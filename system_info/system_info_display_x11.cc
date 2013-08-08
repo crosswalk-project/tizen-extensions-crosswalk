@@ -7,7 +7,6 @@
 #include <stdio.h>
 
 #include <X11/Xlib.h>
-#include <X11/extensions/Xrandr.h>
 
 #include "common/picojson.h"
 #include "system_info/system_info_utils.h"

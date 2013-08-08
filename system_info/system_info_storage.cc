@@ -75,7 +75,7 @@ SysInfoStorage::GetDevPathFromMountPath(const std::string& mnt_path) {
   struct udev_list_entry *devices, *dev_list_entry;
 
   if (mnt_path.empty() || mnt_path[0] != '/' || mnt_path.size() <=1) {
-    return NULL;
+    return "";
   }
 
   enumerate = udev_enumerate_new(udev_);
@@ -95,7 +95,7 @@ SysInfoStorage::GetDevPathFromMountPath(const std::string& mnt_path) {
     if (dev_path.empty()) {
       udev_device_unref(dev);
       udev_enumerate_unref(enumerate);
-      return NULL;
+      return "";
     }
 
     dev_path = "/sys" + dev_path;
@@ -116,7 +116,7 @@ SysInfoStorage::GetDevPathFromMountPath(const std::string& mnt_path) {
   }
 
   udev_enumerate_unref(enumerate);
-  return NULL;
+  return "";
 }
 
 void SysInfoStorage::GetDetails(const std::string& mnt_fsname,

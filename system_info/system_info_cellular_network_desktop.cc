@@ -9,5 +9,5 @@
 void SysInfoCellularNetwork::Get(picojson::value& error,
                                  picojson::value& data) {
   system_info::SetPicoJsonObjectValue(error, "message",
-      picojson::value("Cellular Network is not support on desktop."));
+      picojson::value("Cellular Network is not supported on desktop."));
 }
