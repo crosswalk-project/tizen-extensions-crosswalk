@@ -1,0 +1,81 @@
+<h1>System Setting API Test</h1>
+<body>
+  <br>
+  <div id="dbg"></div>
+  <br>
+  <button id="button1">Click 1</button><br><br>
+  <button id="button2">Click 2</button><br><br>
+  <button id="button3">Click 3</button><br><br>
+  <button id="button4">Click 4</button><br><br>
+  <button id="button5">Click 5</button><br><br>
+  <button id="button6">Click 6</button><br><br>
+  <button id="button7">Click 7</button><br><br>
+  <button id="button8">Click 8</button><br><br>
+  <pre id="console"></pre>
+  <script src="js/js-test-pre.js"></script>
+</body>
+<script>
+  var api_system_setting = tizen.systemsetting;
+  var output = document.getElementById("output");
+
+  function dbgOut(msg) {
+    el = document.getElementById("dbg");
+    el.innerHTML = msg + "<br/>" + dbg.innerHTML;
+  }
+
+  function handle(button, text, callback) {
+    var b = document.getElementById(button);
+    b.innerText = text;
+    b.addEventListener("click", callback);
+  }
+
+  // Define the set error callback.
+  function errorCallback(error) {
+    dbgOut("Fail to setProperty" + error);
+  }
+
+  // Define the success callback
+  function successCallback() {
+    dbgOut("Success to setProperty");
+  }
+
+  // Define the get success callback
+  function getPropertySuccessCallback(value) {
+    dbgOut("Success to getProperty " + value);
+  }
+
+  handle("button1", "Set home screen", function () {
+    api_system_setting.setProperty("HOME_SCREEN",
+      "/opt/usr/media/Images/image1.jpg", successCallback, errorCallback);
+  });
+  handle("button2", "Set lock screen", function () {
+    api_system_setting.setProperty("LOCK_SCREEN",
+      "/opt/usr/media/Images/image16.jpg", successCallback, errorCallback);
+  });
+  handle("button3", "Set call ringtone", function () {
+    api_system_setting.setProperty("INCOMING_CALL",
+      "/opt/usr/share/settings/Ringtones/ringtone_sdk.mp3",
+      successCallback, errorCallback);
+  });
+  handle("button4", "Set email alert tone ", function () {
+    api_system_setting.setProperty("NOTIFICATION_EMAIL",
+      "/opt/usr/share/Alerts/General notification_sdk.wav",
+      successCallback, errorCallback);
+  });
+  handle("button5", "Get HOME_SCREEN", function () {
+    api_system_setting.getProperty("HOME_SCREEN", getPropertySuccessCallback,
+      errorCallback);
+  });
+  handle("button6", "Get LOCK_SCREEN", function () {
+    api_system_setting.getProperty("LOCK_SCREEN", getPropertySuccessCallback,
+      errorCallback);
+  });
+  handle("button7", "Get INCOMING_CALL", function () {
+    api_system_setting.getProperty("INCOMING_CALL",
+      getPropertySuccessCallback, errorCallback);
+  });
+  handle("button8", "Get NOTIFICATION_EMAIL", function () {
+    api_system_setting.getProperty("NOTIFICATION_EMAIL",
+      getPropertySuccessCallback, errorCallback);
+  });
+</script>

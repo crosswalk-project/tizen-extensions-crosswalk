@@ -9,6 +9,7 @@
         'notification/notification.gyp:*',
         'power/power.gyp:*',
         'system_info/system_info.gyp:*',
+        'system_setting/system_setting.gyp:*',
         'time/time.gyp:*',
         'tizen/tizen.gyp:*',
       ],
