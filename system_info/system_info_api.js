@@ -44,11 +44,19 @@ extension.setMessageListener(function(json) {
 });
 
 exports.getCapabilities = function() {
-  var msg = {
-    'cmd': 'getCapabilities',
-  };
-  // FIXME(halton): sync api is not supported on PostMessage
-  console.log('NOT_IMPLEMENTED(tizen.systeminfo.getCapabilities)');
+  var capbilities = JSON.parse(_sendSyncMessage({
+    "cmd": "getCapabilities",
+  }));
+  if (capbilities['error']) {
+    throw new tizen.WebAPIException(tizen.WebAPIException.NOT_SUPPORTED_ERR);
+  } else {
+    delete capbilities['error'];
+    return capbilities;
+  }
+}
+
+var _sendSyncMessage = function(msg) {
+  return extension.internal.sendSyncMessage(JSON.stringify(msg));
 };
 
 var _getPropertyValue = function(prop, callback) {

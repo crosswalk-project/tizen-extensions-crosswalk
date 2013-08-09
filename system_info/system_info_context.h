@@ -32,26 +32,21 @@ class SystemInfoContext {
   // ExtensionAdapter implementation.
   static const char name[];
   static const char* GetJavaScript();
-  void HandleMessage(const char*);
-  void HandleSyncMessage(const char*);
+  void HandleMessage(const char* message);
+  void HandleSyncMessage(const char* message);
 
  private:
   void HandleGetPropertyValue(const picojson::value& input,
                               picojson::value& output);
   void HandleStartListen(const picojson::value& input);
   void HandleStopListen(const picojson::value& input);
-  void GetDeviceOrientation(picojson::value& error,
-                            picojson::value& data);
-  void GetNetwork(picojson::value& error,
-                  picojson::value& data);
-  void GetWifiNetwork(picojson::value& error,
-                      picojson::value& data);
-  void GetCellularNetwork(picojson::value& error,
-                          picojson::value& data);
-  void GetSIM(picojson::value& error,
-              picojson::value& data);
-  void GetPeripheral(picojson::value& error,
-                     picojson::value& data);
+  void HandleGetCapabilities();
+  inline void SetStringPropertyValue(picojson::object& o,
+                                     const char* prop,
+                                     const char* val) {
+    if (val)
+      o[prop] = picojson::value(val);
+  }
 
   ContextAPI* api_;
   SysInfoBattery& battery_;
