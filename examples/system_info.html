@@ -3,6 +3,8 @@
 <body>
 <textarea cols=100 rows=20 id="output"></textarea>
 <br>
+<button id="capability_btn">GetCapabilities</button>
+<br>
 <button id="battery_btn">Battery</button>
 <button id="cpu_btn">CPU</button>
 <button id="storage_btn">Storage</button>
@@ -31,6 +33,21 @@ function onErrorCallback(error) {
   output.value += '\n An error occurred: ' + error.message + '\n';
   output.scrollTop = output.scrollHeight;
 }
+
+handle("capability_btn", function() {
+  try { 
+    var cap = tizen.systeminfo.getCapabilities();
+    output.value += '\n getCapabilities() returned.';
+    for (property in cap) {
+      output.value += '\n\t' + property + ': ' + cap[property];
+    }
+  }
+  catch (err) {
+    output.value += '\n getCapabilities() get exception:' + err.name;
+  }
+
+  output.scrollTop = output.scrollHeight;
+});
 
 handle("battery_btn", function() {
   var count = 0;
