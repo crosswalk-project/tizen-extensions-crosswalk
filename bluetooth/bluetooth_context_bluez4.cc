@@ -5,6 +5,10 @@
 #include "bluetooth/bluetooth_context.h"
 #include "common/picojson.h"
 
+#if defined(TIZEN_MOBILE)
+#include <bluetooth.h>
+#endif
+
 static void getPropertyValue(const char* key, GVariant* value,
     picojson::value::object& o) {
   if (!strcmp(key, "Class")) {
@@ -196,6 +200,10 @@ BluetoothContext::~BluetoothContext() {
   DeviceMap::iterator it;
   for (it = known_devices_.begin(); it != known_devices_.end(); ++it)
     g_variant_iter_free(it->second);
+
+#if defined(TIZEN_MOBILE)
+    bt_deinitialize();
+#endif
 }
 
 void BluetoothContext::PlatformInitialize() {
