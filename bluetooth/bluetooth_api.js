@@ -559,7 +559,7 @@ BluetoothDevice.prototype._clone = function() {
 
   var uuids_array = [];
   for (var i = 0; i < this.uuids.length; i++)
-    uuids_array[i] = this,uuids[i];
+    uuids_array[i] = this.uuids[i];
 
   _addConstProperty(clone, "uuids", uuids_array);
 
