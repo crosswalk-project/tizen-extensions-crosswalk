@@ -12,6 +12,7 @@
 #include <sstream>
 
 #include "common/extension_adapter.h"
+#include "common/utils.h"
 #include "web/download.h"
 
 namespace picojson {
@@ -27,7 +28,7 @@ class DownloadContext {
   static const char name[];
   static const char* GetJavaScript();
   void HandleMessage(const char* message);
-  void HandleSyncMessage(const char* message) {}
+  void HandleSyncMessage(const char* message);
 
  private:
   void HandleStart(const picojson::value& msg);
@@ -35,6 +36,9 @@ class DownloadContext {
   bool HandleGeneral(const picojson::value& msg,
                      FnType fn,
                      const char* fn_name);
+  void HandleGetState(const picojson::value& msg);
+  void HandleGetNetworkType(const picojson::value& msg);
+  void HandleGetMIMEType(const picojson::value& msg);
   struct DownloadArgs {
     std::string download_uid;
     DownloadContext* context;
@@ -59,10 +63,12 @@ class DownloadContext {
   ContextAPI* api_;
 
   struct DownloadItem {
+    std::string uid;
     std::string url;
     std::string destination;
     std::string filename;
-    std::string uid;
+    download_network_type_e networkType;
+    std::string httpHeader;
 
     int downloadID;
     char* file_type;
@@ -78,8 +84,7 @@ class DownloadContext {
     }
 
    private:
-    explicit DownloadItem(DownloadItem const&);
-    void operator= (DownloadItem const&);
+    DISALLOW_COPY_AND_ASSIGN(DownloadItem);
   };
   typedef std::tr1::shared_ptr<DownloadItem> DownloadItemRefPtr;
   typedef std::map<std::string, DownloadItemRefPtr> DownloadItemMap;
@@ -89,19 +94,14 @@ class DownloadContext {
   // TODO(hdq): This depends on filesystem api?
   std::string GetFullDestinationPath(const std::string destination) const;
 
-  // helpers
-  template <typename T>
-  static std::string ToString(T a) {
-    std::ostringstream ss;
-    ss << a;
-    return ss.str();
-  }
+  bool GetDownloadID(const picojson::value& msg,
+                     int& downloadID, DownloadArgs** args);
+  bool GetID(const picojson::value& msg,
+             std::string& uid, int& downloadID) const;
   std::string GetUID(int downloadID) const;
-  static const char* ConvertErrorToString(int error);  // download_error_e
 
  private:
-  explicit DownloadContext(DownloadContext const&);
-  void operator=(DownloadContext const&);
+  DISALLOW_COPY_AND_ASSIGN(DownloadContext);
 };
 
 #endif  // DOWNLOAD_DOWNLOAD_CONTEXT_H_

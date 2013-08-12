@@ -3,15 +3,19 @@
 // found in the LICENSE file.
 
 #include "download/download_context.h"
+#include "download/download_utils.h"
 
 #include "common/picojson.h"
+
+using download_utils::EnumToPChar;
+using download_utils::ToString;
 
 #define CHECK(x, args) do { \
   int retval = (x); \
   if (retval != DOWNLOAD_ERROR_NONE) { \
     fprintf(stderr, "Download error: %s returned %s at %s:%d \n", #x, \
-                    ConvertErrorToString(retval), __FILE__, __LINE__); \
-    OnFailedInfo(args, ToString(ConvertErrorToString(retval))); \
+                    EnumToPChar(retval), __FILE__, __LINE__); \
+    OnFailedInfo(args, ToString(EnumToPChar(retval))); \
     return; \
   } \
 } while (0)
@@ -20,8 +24,8 @@
   int retval = (x); \
   if (retval != DOWNLOAD_ERROR_NONE) { \
     fprintf(stderr, "Download error: %s returned %s at %s:%d \n", #x, \
-                    ConvertErrorToString(retval), __FILE__, __LINE__); \
-    OnFailedInfo(args, ToString(ConvertErrorToString(retval))); \
+                    EnumToPChar(retval), __FILE__, __LINE__); \
+    OnFailedInfo(args, ToString(EnumToPChar(retval))); \
     y; \
   } \
 } while (0)
@@ -51,61 +55,6 @@ const char* DownloadContext::GetJavaScript() {
   return kSource_download_api;
 }
 
-const char* DownloadContext::ConvertErrorToString(int error) {
-  switch (error) {
-  case DOWNLOAD_ERROR_NONE:
-    return "DOWNLOAD_ERROR_NONE";
-  case DOWNLOAD_ERROR_INVALID_PARAMETER:
-    return "DOWNLOAD_ERROR_INVALID_PARAMETER";
-  case DOWNLOAD_ERROR_OUT_OF_MEMORY:
-    return "DOWNLOAD_ERROR_OUT_OF_MEMORY";
-  case DOWNLOAD_ERROR_NETWORK_UNREACHABLE:
-    return "DOWNLOAD_ERROR_NETWORK_UNREACHABLE";
-  case DOWNLOAD_ERROR_CONNECTION_TIMED_OUT:
-    return "DOWNLOAD_ERROR_CONNECTION_TIMED_OUT";
-  case DOWNLOAD_ERROR_NO_SPACE:
-    return "DOWNLOAD_ERROR_NO_SPACE";
-  case DOWNLOAD_ERROR_FIELD_NOT_FOUND:
-    return "DOWNLOAD_ERROR_FIELD_NOT_FOUND";
-  case DOWNLOAD_ERROR_INVALID_STATE:
-    return "DOWNLOAD_ERROR_INVALID_STATE";
-  case DOWNLOAD_ERROR_CONNECTION_FAILED:
-    return "DOWNLOAD_ERROR_CONNECTION_FAILED";
-  case DOWNLOAD_ERROR_INVALID_URL:
-    return "DOWNLOAD_ERROR_INVALID_URL";
-  case DOWNLOAD_ERROR_INVALID_DESTINATION:
-    return "DOWNLOAD_ERROR_INVALID_DESTINATION";
-  case DOWNLOAD_ERROR_TOO_MANY_DOWNLOADS:
-    return "DOWNLOAD_ERROR_TOO_MANY_DOWNLOADS";
-  case DOWNLOAD_ERROR_QUEUE_FULL:
-    return "DOWNLOAD_ERROR_QUEUE_FULL";
-  case DOWNLOAD_ERROR_ALREADY_COMPLETED:
-    return "DOWNLOAD_ERROR_ALREADY_COMPLETED";
-  case DOWNLOAD_ERROR_FILE_ALREADY_EXISTS:
-    return "DOWNLOAD_ERROR_FILE_ALREADY_EXISTS";
-  case DOWNLOAD_ERROR_CANNOT_RESUME:
-    return "DOWNLOAD_ERROR_CANNOT_RESUME";
-  case DOWNLOAD_ERROR_TOO_MANY_REDIRECTS:
-    return "DOWNLOAD_ERROR_TOO_MANY_REDIRECTS";
-  case DOWNLOAD_ERROR_UNHANDLED_HTTP_CODE:
-    return "DOWNLOAD_ERROR_UNHANDLED_HTTP_CODE";
-  case DOWNLOAD_ERROR_REQUEST_TIMEOUT:
-    return "DOWNLOAD_ERROR_REQUEST_TIMEOUT";
-  case DOWNLOAD_ERROR_RESPONSE_TIMEOUT:
-    return "DOWNLOAD_ERROR_RESPONSE_TIMEOUT";
-  case DOWNLOAD_ERROR_SYSTEM_DOWN:
-    return "DOWNLOAD_ERROR_SYSTEM_DOWN";
-  case DOWNLOAD_ERROR_ID_NOT_FOUND:
-    return "DOWNLOAD_ERROR_ID_NOT_FOUND";
-  case DOWNLOAD_ERROR_NO_DATA:
-    return "DOWNLOAD_ERROR_NO_DATA";
-  case DOWNLOAD_ERROR_IO_ERROR:
-    return "DOWNLOAD_ERROR_IO_ERROR";
-  default:
-    return "DOWNLOAD_UNKNOWN_ERROR";
-  }
-}
-
 void DownloadContext::HandleMessage(const char* message) {
   picojson::value v;
 
@@ -125,7 +74,29 @@ void DownloadContext::HandleMessage(const char* message) {
     HandleGeneral(v, download_start, "HandleResume");
   else if (cmd == "DownloadCancel")
     HandleGeneral(v, download_cancel, "HandleCancel");
-  // TODO(hdq): add getstate
+  else if (cmd == "DownloadGetNetworkType")
+    HandleGetNetworkType(v);
+  else if (cmd == "DownloadGetMIMEType")
+    HandleGetMIMEType(v);
+  else
+    fprintf(stderr, "Not supported async command %s\n", cmd.c_str());
+}
+
+void DownloadContext::HandleSyncMessage(const char* message) {
+  picojson::value v;
+
+  std::string err;
+  picojson::parse(v, message, message + strlen(message), &err);
+  if (!err.empty()) {
+    fprintf(stderr, "Ignoring message.\n");
+    return;
+  }
+
+  std::string cmd = v.get("cmd").to_str();
+  if (cmd == "DownloadGetState")
+    HandleGetState(v);
+  else
+    fprintf(stderr, "Not supported sync command %s\n", cmd.c_str());
 }
 
 void DownloadContext::OnStateChanged(int download_id,
@@ -147,7 +118,7 @@ void DownloadContext::OnStateChanged(int download_id,
   case DOWNLOAD_STATE_FAILED: {
       download_error_e error;
       CHECK(download_get_error(download_id, &error), args);
-      args->context->OnFailedInfo(args, ToString(ConvertErrorToString(error)));
+      args->context->OnFailedInfo(args, ToString(EnumToPChar(error)));
     }
     break;
   default:
@@ -234,12 +205,21 @@ void DownloadContext::OnFailedInfo(void* user_param,
 void DownloadContext::HandleStart(const picojson::value& msg) {
   // Add to Downloads map
   DownloadItemRefPtr d(new DownloadItem);
-  d->url  = msg.get("url").to_str();
+  std::string uid = msg.get("uid").to_str();
+  d->uid = uid;
+
+  d->url = msg.get("url").to_str();
   d->destination = GetFullDestinationPath(msg.get("destination").to_str());
   std::string filename = msg.get("filename").to_str();
   d->filename = (filename == "null") ? std::string() : filename;
-  std::string uid = msg.get("uid").to_str();
-  d->uid = uid;
+
+  std::string network_type = msg.get("networkType").to_str();
+  if (network_type == "CELLULAR")
+    d->networkType = DOWNLOAD_NETWORK_DATA_NETWORK;
+  else if (network_type == "WIFI")
+    d->networkType = DOWNLOAD_NETWORK_WIFI;
+  else
+    d->networkType = DOWNLOAD_NETWORK_ALL;
 
   DownloadArgs* args = new DownloadArgs(uid, this);
   args_.push_back(args);
@@ -250,14 +230,24 @@ void DownloadContext::HandleStart(const picojson::value& msg) {
                                       static_cast<void* >(args)), args);
   CHECK(download_set_progress_cb(d->downloadID, OnProgressInfo,
                                  static_cast<void*>(args)), args);
+  CHECK(download_set_url(d->downloadID, d->url.c_str()), args);
   CHECK(download_set_destination(d->downloadID, d->destination.c_str()), args);
-
   if (!d->filename.empty()) {
     CHECK(download_set_file_name(d->downloadID, d->filename.c_str()), args);
   }
+  CHECK(download_set_network_type(d->downloadID, d->networkType), args);
+
+  if (msg.get("httpHeader").is<picojson::object>()) {
+    picojson::object obj = msg.get("httpHeader").get<picojson::object>();
+    for (picojson::object::const_iterator it = obj.begin();
+         it != obj.end(); ++it) {
+      CHECK(download_add_http_header_field(d->downloadID,
+            it->first.c_str(), it->second.to_str().c_str()), args);
+    }
+  }
+
   downloads_[uid] = d;  // FIXME if uid duplicate we will lose previous item
 
-  CHECK(download_set_url(d->downloadID, d->url.c_str()), args);
   CHECK(download_start(d->downloadID), args);
 }
 
@@ -265,16 +255,91 @@ template <typename FnType>
 bool DownloadContext::HandleGeneral(const picojson::value& msg,
                                     FnType fn,
                                     const char* fn_name) {
-  std::string uid = msg.get("uid").to_str();
-  if (uid == "null") {
-    fprintf(stderr, "%s - ERROR: Undefined download UID\n", fn_name);
+  int downloadID;
+  DownloadArgs* args;
+  if (!GetDownloadID(msg, downloadID, &args))
     return false;
+  CHECK_DO(fn(downloadID), args, return false);
+  return true;
+}
+
+void DownloadContext::HandleGetState(const picojson::value& msg) {
+  std::string uid;
+  int downloadID = -1;
+  std::string retStr("DOWNLOAD_ERROR_NONE");
+  download_state_e state;
+
+  if (!GetID(msg, uid, downloadID)) {
+    retStr = "DOWNLOAD_ERROR_ID_NOT_FOUND";
+  } else {
+    int ret = download_get_state(downloadID, &state);
+    if (ret != DOWNLOAD_ERROR_NONE)
+      retStr = EnumToPChar(ret);
   }
 
-  DownloadArgs* args = new DownloadArgs(uid, this);
-  args_.push_back(args);
-  int downloadID = downloads_[uid]->downloadID;
-  CHECK_DO(fn(downloadID), args, return false);
+  picojson::value::object o;
+  o["state"] = picojson::value(EnumToPChar(state));
+  o["error"] = picojson::value(retStr);
+  picojson::value v(o);
+  api_->SetSyncReply(v.serialize().c_str());
+}
+
+void DownloadContext::HandleGetNetworkType(const picojson::value& msg) {
+  int downloadID;
+  DownloadArgs* args;
+  if (!GetDownloadID(msg, downloadID, &args))
+    return;
+
+  download_network_type_e networkType;
+  CHECK(download_get_network_type(downloadID, &networkType), args);
+
+  picojson::value::object o;
+  o["cmd"] = picojson::value("DownloadReplyNetworkType");
+  o["uid"] = picojson::value(args->download_uid);
+  o["networkType"] = picojson::value(EnumToPChar(networkType));
+  picojson::value v(o);
+  args->context->api_->PostMessage(v.serialize().c_str());
+}
+
+void DownloadContext::HandleGetMIMEType(const picojson::value& msg) {
+  int downloadID;
+  DownloadArgs* args;
+  if (!GetDownloadID(msg, downloadID, &args))
+    return;
+
+  char* mimeType = 0;
+  CHECK(download_get_mime_type(downloadID, &mimeType), args);
+
+  picojson::value::object o;
+  o["cmd"] = picojson::value("DownloadReplyMIMEType");
+  o["uid"] = picojson::value(args->download_uid);
+  o["mimeType"] = picojson::value(mimeType);
+  picojson::value v(o);
+  args->context->api_->PostMessage(v.serialize().c_str());
+
+  if (mimeType)
+    free(mimeType);
+}
+
+bool DownloadContext::GetDownloadID(const picojson::value& msg,
+                                    int& downloadID, DownloadArgs** args) {
+  std::string uid;
+  if (!GetID(msg, uid, downloadID))
+    return false;
+  *args = new DownloadArgs(uid, this);
+  args_.push_back(*args);
+  return true;
+}
+
+bool DownloadContext::GetID(const picojson::value& msg,
+                            std::string& uid,
+                            int& downloadID) const {
+  uid = msg.get("uid").to_str();
+  if (uid == "null") {
+    fprintf(stderr, "ERROR: Undefined download UID\n");
+    return false;
+  }
+  downloadID = downloads_.find(uid)->second->downloadID;
   return true;
 }
 
