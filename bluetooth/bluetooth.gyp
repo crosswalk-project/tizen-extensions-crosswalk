@@ -31,6 +31,9 @@
             'defines': ['BLUEZ_4'],
           }
         ],
+        [ 'extension_host_os == "mobile"', {
+            'variables': { 'packages': ['capi-network-bluetooth'] },
+        }],
       ],
     },
   ],

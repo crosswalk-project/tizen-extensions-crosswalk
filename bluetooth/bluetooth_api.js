@@ -363,35 +363,7 @@ BluetoothAdapter.prototype.setName = function(name, successCallback, errorCallba
 };
 
 BluetoothAdapter.prototype.setPowered = function(state, successCallback, errorCallback) {
-  if (adapter.serviceNotAvailable(errorCallback))
-    return;
-
-  if (typeof state !== 'boolean'
-        || (successCallback && typeof successCallback !== 'function')
-        || (errorCallback && typeof errorCallback !== 'function')) {
-    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
-  }
-
-  var msg = {
-    'cmd': 'SetAdapterProperty',
-    'property': 'Powered',
-    'value': state
-  };
-
-  postMessage(msg, function(result) {
-    if (result.error != 0) {
-      if (errorCallback) {
-        var error = new tizen.WebAPIError(tizen.WebAPIException.INVALID_VALUES_ERR);
-        errorCallback(error);
-      }
-
-      throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
-      return;
-    }
-
-    if (successCallback)
-      successCallback();
-  });
+  throw new tizen.WebAPIException(tizen.WebAPIException.NOT_SUPPORTED_ERR);
 };
 
 BluetoothAdapter.prototype.setVisible = function(mode, successCallback, errorCallback, timeout) {
