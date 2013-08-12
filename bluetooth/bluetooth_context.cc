@@ -5,7 +5,29 @@
 #include "bluetooth/bluetooth_context.h"
 #include "common/picojson.h"
 
+#if defined(TIZEN_MOBILE)
+#include <bluetooth.h>
+#endif
+
 CXWalkExtension* xwalk_extension_init(int32_t api_version) {
+#if defined(TIZEN_MOBILE)
+  int init = bt_initialize();
+  if (init != BT_ERROR_NONE)
+    g_printerr("\n\nCouldn't initialize Bluetooth module.");
+  else {
+    bt_adapter_state_e bt_state = BT_ADAPTER_DISABLED;
+    bt_adapter_get_state(&bt_state);
+
+    // FIXME(jeez): As soon as we have fixed adapter.setPowered(true/false)
+    // we should stop calling bt_adapter_enable() at this point.
+    if (bt_state == BT_ADAPTER_DISABLED) {
+      int ret = bt_adapter_enable();
+      if (ret != BT_ERROR_NONE)
+        g_printerr("\n\nFailed to enable bluetooth adapter [%d].", ret);
+    }
+  }
+#endif
+
   return ExtensionAdapter<BluetoothContext>::Initialize();
 }
 
