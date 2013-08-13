@@ -61,6 +61,8 @@ void BluetoothContext::HandleMessage(const char* message) {
     HandleStopDiscovery(v);
   else if (cmd == "SetAdapterProperty")
     HandleSetAdapterProperty(v);
+  else if (cmd == "CreateBonding")
+    HandleCreateBonding(v);
 }
 
 void BluetoothContext::HandleSyncMessage(const char* message) {
