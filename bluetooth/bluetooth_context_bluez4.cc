@@ -191,6 +191,27 @@ void BluetoothContext::OnGotDefaultAdapterPath(GObject*, GAsyncResult* res) {
   g_free(path);
 }
 
+void BluetoothContext::OnAdapterCreateBonding(GObject*, GAsyncResult* res) {
+  GError* error = 0;
+  GVariant* result = g_dbus_proxy_call_finish(adapter_proxy_, res, &error);
+
+  picojson::value::object o;
+  o["cmd"] = picojson::value("");
+  o["reply_id"] = picojson::value(callbacks_map_["CreateBonding"]);
+  o["error"] = picojson::value(static_cast<double>(0));
+
+  if (!result) {
+    g_printerr("\n\nError on creating adapter bonding: %s\n", error->message);
+    g_error_free(error);
+
+    o["error"] = picojson::value(static_cast<double>(1));
+  }
+
+  PostMessage(picojson::value(o));
+  callbacks_map_.erase("CreateBonding");
+  g_variant_unref(result);
+}
+
 BluetoothContext::~BluetoothContext() {
   delete api_;
 
@@ -319,4 +340,14 @@ void BluetoothContext::HandleSetAdapterProperty(const picojson::value& msg) {
       g_variant_new("(sv)", property.c_str(), value),
       G_DBUS_CALL_FLAGS_NONE, 5000, NULL, OnAdapterPropertySetThunk,
       property_set_callback_data_);
+}
+
+void BluetoothContext::HandleCreateBonding(const picojson::value& msg) {
+  GError *error = 0;
+  std::string address = msg.get("address").to_str();
+  callbacks_map_["CreateBonding"] = msg.get("reply_id").to_str();
+
+  g_dbus_proxy_call(adapter_proxy_, "CreatePairedDevice",
+      g_variant_new ("(sos)", address.c_str(), "/", "KeyboardDisplay"),
+      G_DBUS_CALL_FLAGS_NONE, -1, NULL, OnAdapterCreateBondingThunk, this);
 }
