@@ -70,6 +70,7 @@ class BluetoothContext {
   void HandleStopDiscovery(const picojson::value& msg);
   picojson::value HandleGetDefaultAdapter(const picojson::value& msg);
   void HandleSetAdapterProperty(const picojson::value& msg);
+  void HandleCreateBonding(const picojson::value& msg);
 
   void PostMessage(picojson::value v);
   void SetSyncReply(picojson::value v);
@@ -105,6 +106,7 @@ class BluetoothContext {
 #elif defined(BLUEZ_4)
   G_CALLBACK_1(OnGotDefaultAdapterPath, GObject*, GAsyncResult*);
   G_CALLBACK_1(OnGotAdapterProperties, GObject*, GAsyncResult*);
+  G_CALLBACK_1(OnAdapterCreateBonding, GObject*, GAsyncResult*);
   G_CALLBACK_2(OnAdapterPropertySet, GObject*, GAsyncResult*);
 
   static void OnSignal(GDBusProxy* proxy, gchar* sender_name, gchar* signal,

@@ -475,7 +475,52 @@ BluetoothAdapter.prototype.getKnownDevices = function(deviceArraySuccessCallback
 };
 
 BluetoothAdapter.prototype.getDevice = function(address, deviceSuccessCallback, errorCallback) {};
-BluetoothAdapter.prototype.createBonding = function(address, deviceSuccessCallback, errorCallback) {};
+
+BluetoothAdapter.prototype.createBonding = function(address, successCallback, errorCallback) {
+  if (adapter.serviceNotAvailable(errorCallback))
+    return;
+
+  if (typeof address !== 'string'
+        || (successCallback && typeof successCallback !== 'function')
+        || (errorCallback && typeof errorCallback !== 'function')) {
+    if (errorCallback) {
+      var error = new tizen.WebAPIError(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+      errorCallback(error);
+    }
+  }
+
+  var msg = {
+    'cmd': 'CreateBonding',
+    'address': address
+  };
+
+  postMessage(msg, function(result) {
+    var known_devices = adapter.known_devices;
+    var cb_device;
+
+    if (result.error != 0) {
+      if (errorCallback) {
+        var error = new tizen.WebAPIError(tizen.WebAPIException.INVALID_VALUES_ERR);
+        errorCallback(error);
+      }
+
+      throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+      return;
+    }
+
+    if (successCallback) {
+      for (var i = 0; i < known_devices.length; i++) {
+        if (known_devices[i].address === address) {
+          cb_device = known_devices[i];
+          break;
+        }
+      }
+
+     successCallback(cb_device);
+   }
+  });
+};
+
 BluetoothAdapter.prototype.destroyBonding = function(address, deviceSuccessCallback, errorCallback) {};
 BluetoothAdapter.prototype.registerRFCOMMServiceByUUID = function(uuid, name, serviceSuccessCallback, errorCallback) {};
 

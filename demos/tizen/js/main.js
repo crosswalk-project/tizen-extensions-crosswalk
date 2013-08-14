@@ -16,6 +16,7 @@ blueApp.init = function() {
 
     blueApp.cleanDeviceList();
 
+    $("#paired-device-group").hide();
     $("#visibility-toggle").click(blueApp.toggleVisibility);
 
     $("input[type=radio][name=visibility]").change(function() {
@@ -80,8 +81,8 @@ blueApp.adapterStatusToggle = function() {
  * Clean the device list.
  */
 blueApp.cleanDeviceList = function() {
-    $("#device-group").hide();
-    $("#device-group").html('');
+    $("#available-device-list").hide();
+    $("#available-device-list").html('');
 };
 
 /**
@@ -96,10 +97,7 @@ blueApp.scan = function() {
     });
 };
 
-/**
- * Efectively add new devices to devices list.
- */
-blueApp.addDevice = function(device) {
+blueApp.newDeviceEntry = function(device, list) {
     var deviceStyle;
     var deviceClass = device.deviceClass;
     var deviceItem = "<li><div id='device-icon' ";
@@ -124,11 +122,29 @@ blueApp.addDevice = function(device) {
     deviceItem += device.name;
     deviceItem += "</li>";
 
-    $("#device-group").show();
-    $("#device-group").append(
-        $(deviceItem).attr("class",
-                           "ui-li ui-li-static ui-btn-up-s ui-li-last").attr(
-                               "address", device.address));
+    $(list + "-group").show();
+    $(list + "-list").show();
+    $(list + "-list").append(
+      $(deviceItem).attr("class",
+                         "ui-li ui-li-static ui-btn-up-s ui-li-last").attr(
+                           "address", device.address));
+}
+
+/**
+ * Efectively add new devices to devices list.
+ */
+blueApp.addDevice = function(device) {
+    blueApp.newDeviceEntry(device, "#available-device");
+
+    $("#available-device-list li[address='"+device.address+"']").click(function() {
+      var device_entry = $(this);
+      blueApp.adapter.createBonding($(device_entry).attr("address"), function(device) {
+        $(device_entry).remove();
+        blueApp.newDeviceEntry(device, "#paired-device");
+      }, function(e) {
+        console.log("error on creating bonding.");
+      });
+    });
 };
 
 /**
@@ -140,7 +156,7 @@ blueApp.discoverDevicesCb = {
     },
     ondevicefound : blueApp.addDevice,
     ondevicedisappeared : function(address) {
-        $("#device-group li").each(function() {
+        $("#available-device-list li").each(function() {
             if ($(this).attr("address") == address)
                 $(this).remove();
         });
