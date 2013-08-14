@@ -118,3 +118,10 @@ void PowerContext::HandleGetScreenBrightness() {
 void PowerContext::HandleSetScreenEnabled(const picojson::value& msg) {
   bool isEnabled = msg.get("value").get<bool>();
 }
+
+void PowerContext::HandleGetScreenState() {
+  picojson::value::object o;
+  o["state"] = picojson::value(static_cast<double>(PowerContext::SCREEN_NORMAL));
+  picojson::value v(o);
+  api_->SetSyncReply(v.serialize().c_str());
+}
