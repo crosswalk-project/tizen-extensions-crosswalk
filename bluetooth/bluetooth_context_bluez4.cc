@@ -279,6 +279,54 @@ void BluetoothContext::OnAdapterCreateBonding(GObject*, GAsyncResult* res) {
   g_variant_unref(result);
 }
 
+void BluetoothContext::OnAdapterDestroyBonding(GObject*, GAsyncResult* res) {
+  GError* error = 0;
+  GVariant* result = g_dbus_proxy_call_finish(adapter_proxy_, res, &error);
+
+  picojson::value::object o;
+  o["cmd"] = picojson::value("");
+  o["reply_id"] = picojson::value(callbacks_map_["DestroyBonding"]);
+  o["error"] = picojson::value(static_cast<double>(0));
+
+  if (!result) {
+    g_printerr("\n\nError on destroying adapter bonding: %s\n", error->message);
+    g_error_free(error);
+
+    o["error"] = picojson::value(static_cast<double>(2));
+  }
+
+  PostMessage(picojson::value(o));
+  callbacks_map_.erase("DestroyBonding");
+  g_variant_unref(result);
+}
+
+void BluetoothContext::OnFoundDevice(GObject*, GAsyncResult* res) {
+  picojson::value::object o;
+  char* object_path;
+  GError* error = 0;
+  GVariant* result = g_dbus_proxy_call_finish(adapter_proxy_, res, &error);
+
+  if (!result) {
+    g_printerr("\n\nError on destroying adapter bonding: %s\n", error->message);
+    g_error_free(error);
+
+    o["cmd"] = picojson::value("");
+    o["reply_id"] = picojson::value(callbacks_map_["DestroyBonding"]);
+    o["error"] = picojson::value(static_cast<double>(1));
+
+    PostMessage(picojson::value(o));
+    callbacks_map_.erase("DestroyBonding");
+    return;
+  }
+
+  g_variant_get(result, "(o)", &object_path);
+  g_dbus_proxy_call(adapter_proxy_, "RemoveDevice",
+      g_variant_new("(o)", object_path),
+      G_DBUS_CALL_FLAGS_NONE, -1, NULL, OnAdapterDestroyBondingThunk, this);
+
+  g_variant_unref(result);
+}
+
 BluetoothContext::~BluetoothContext() {
   delete api_;
 
@@ -410,6 +458,16 @@ void BluetoothContext::HandleCreateBonding(const picojson::value& msg) {
   g_dbus_proxy_call(adapter_proxy_, "CreatePairedDevice",
       g_variant_new ("(sos)", address.c_str(), "/", "KeyboardDisplay"),
       G_DBUS_CALL_FLAGS_NONE, -1, NULL, OnAdapterCreateBondingThunk, this);
+}
+
+void BluetoothContext::HandleDestroyBonding(const picojson::value& msg) {
+  GError* error = 0;
+  std::string address = msg.get("address").to_str();
+  callbacks_map_["DestroyBonding"] = msg.get("reply_id").to_str();
+
+  g_dbus_proxy_call(adapter_proxy_, "FindDevice",
+      g_variant_new("(s)", address.c_str()),
+      G_DBUS_CALL_FLAGS_NONE, -1, NULL, OnFoundDeviceThunk, this);
 }
 
 void BluetoothContext::OnDeviceProxyCreated(GObject* object, GAsyncResult* res) {
