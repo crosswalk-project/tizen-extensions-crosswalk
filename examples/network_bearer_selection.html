@@ -1,0 +1,95 @@
+<html>
+  <h1>Network Bearer Selection API</h1>
+  <h2>Cellular network status: <span id="CELLULAR">Updating...</span></h2>
+  <h2>Wireless network status: <span id="UNKNOWN">Updating...</span></h2>
+  <script>
+    var api = tizen.networkbearerselection;
+
+    function print(value) {
+      var text = document.getElementById("output")
+      text.value = text.value + '\n' + value;
+    };
+
+    function getNetworkType() {
+      var networkType = document.getElementById("networkType");
+      return networkType.options[networkType.selectedIndex].value;
+    }
+
+    function errorCb(error) {
+      print(error.name);
+    }
+
+    function requestRouteToHost() {
+      try {
+        var networkSuccessCb = {
+          onsuccess: function() {
+            print("requestRouteToHost success");
+          },
+          ondisconnected: function() {
+            print("requestRouteToHost disconnected");
+          },
+        };
+
+        api.requestRouteToHost(getNetworkType(), "tizen.org", networkSuccessCb, errorCb);
+      } catch (err) {
+        print(err.name);
+      }
+    };
+
+    function releaseRouteToHost() {
+      try {
+        var successCb = function() {
+          print("releaseRouteToHost success");
+        };
+
+        api.releaseRouteToHost(getNetworkType(), "tizen.org", successCb, errorCb);
+      } catch (err) {
+        print(err.name);
+      }
+    };
+
+    function isConnected(network_type) {
+      return document.getElementById(network_type).innerHTML == "Connected";
+    }
+
+    function setNetworkStatus(network_type, message) {
+      var status = document.getElementById(network_type)
+      status.innerHTML = message;
+    }
+
+    function updateNetworkSuccessCb(network_type) {
+      return {
+        onsuccess: function() { setNetworkStatus(network_type, "Connected"); },
+        ondisconnected: function() { setNetworkStatus(network_type, "Disconnected"); },
+      };
+    };
+
+    function updateNetworkErrorCb(network_type) {
+      return function() { setNetworkStatus(network_type, "Disconnected"); };
+    };
+
+    function updateNetworkStatus(network_type) {
+      if (isConnected(network_type))
+        return;
+
+      api.requestRouteToHost(network_type, "tizen.org",
+                             updateNetworkSuccessCb(network_type),
+                             updateNetworkErrorCb(network_type));
+    };
+
+    function poolNetworkStatus() {
+      updateNetworkStatus("CELLULAR");
+      updateNetworkStatus("UNKNOWN");
+    };
+  </script>
+  <body onload="setInterval(poolNetworkStatus, 5000);">
+    <textarea cols=20 rows=10 id="output"></textarea>
+    <br>
+    <select id="networkType">
+      <option value="CELLULAR">Cellular</option>
+      <option value="UNKNOWN">Unknown</option>
+    </select>
+    <button id="requestRouteToHost" onClick="requestRouteToHost()">Request Route</button>
+    <button id="releaseRouteToHost" onClick="releaseRouteToHost()">Release Route</button>
+  </body>
+</html>
