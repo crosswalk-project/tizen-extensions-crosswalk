@@ -20,6 +20,7 @@
             'packages': [
               'capi-network-connection',
               'capi-system-info',
+              'capi-system-runtime-info',
               'capi-telephony-sim',
               'vconf',
             ]
@@ -58,8 +59,9 @@
         'system_info_device_orientation_mobile.cc',
         'system_info_display.h',
         'system_info_display_x11.cc',
-        'system_info_locale.cc',
         'system_info_locale.h',
+        'system_info_locale_desktop.cc',
+        'system_info_locale_mobile.cc',
         'system_info_network.cc',
         'system_info_network.h',
         'system_info_network_desktop.cc',
