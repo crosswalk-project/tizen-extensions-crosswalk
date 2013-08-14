@@ -518,7 +518,6 @@ BluetoothAdapter.prototype.createBonding = function(address, successCallback, er
   };
 
   postMessage(msg, function(result) {
-    var known_devices = adapter.known_devices;
     var cb_device;
 
     if (result.error != 0) {
@@ -532,6 +531,7 @@ BluetoothAdapter.prototype.createBonding = function(address, successCallback, er
     }
 
     if (successCallback) {
+      var known_devices = adapter.known_devices;
       for (var i = 0; i < known_devices.length; i++) {
         if (known_devices[i].address === address) {
           cb_device = known_devices[i];
