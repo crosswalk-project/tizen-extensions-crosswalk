@@ -18,6 +18,7 @@
         [ 'extension_host_os == "mobile"', {
           'variables': {
             'packages': [
+              'capi-network-connection',
               'capi-system-info',
               'vconf',
             ]
@@ -71,6 +72,7 @@
         'system_info_storage.h',
         'system_info_utils.cc',
         'system_info_utils.h',
+        'system_info_wifi_network.cc',
         'system_info_wifi_network.h',
         'system_info_wifi_network_desktop.cc',
         'system_info_wifi_network_mobile.cc',
