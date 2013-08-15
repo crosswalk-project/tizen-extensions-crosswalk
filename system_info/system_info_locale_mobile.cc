@@ -4,10 +4,10 @@
 
 #include "system_info/system_info_locale.h"
 
+#include <stdlib.h>
 #if defined(TIZEN_MOBILE)
 #include <runtime_info.h>
 #endif
-#include <string>
 
 #include "common/picojson.h"
 #include "system_info/system_info_utils.h"
@@ -45,35 +45,29 @@ void SysInfoLocale::Get(picojson::value& error,
 }
 
 bool SysInfoLocale::UpdateLanguage() {
-  char* cptr = NULL;
-  std::string language_info;
+  char* language_info = NULL;
 
-  runtime_info_key_e key = RUNTIME_INFO_KEY_LANGUAGE;
-  runtime_info_get_value_string(key, &cptr);
-
-  language_info = cptr;
-  if (language_info.empty()) {
+  if (runtime_info_get_value_string(RUNTIME_INFO_KEY_LANGUAGE, &language_info)
+      != RUNTIME_INFO_ERROR_NONE)
     return false;
-  } else {
-    language_.assign(language_info);
-    return true;
-  }
+
+  language_ = language_info;
+  free(language_info);
+
+  return true;
 }
 
 bool SysInfoLocale::UpdateCountry() {
-  char* cptr = NULL;
-  std::string country_info;
+  char* country_info = NULL;
 
-  runtime_info_key_e key = RUNTIME_INFO_KEY_REGION;
-  runtime_info_get_value_string(key, &cptr);
-
-  country_info = cptr;
-  if (country_info.empty()) {
+  if (runtime_info_get_value_string(RUNTIME_INFO_KEY_REGION, &country_info)
+      != RUNTIME_INFO_ERROR_NONE)
     return false;
-  } else {
-    country_.assign(country_info);
-    return true;
-  }
+
+  country_  = country_info;
+  free(country_info);
+
+  return true;
 }
 
 gboolean SysInfoLocale::OnUpdateTimeout(gpointer user_data) {

@@ -57,7 +57,7 @@ bool SysInfoBuild::UpdateHardware() {
 
   do {
     getline(&cinfo, &length, fp);
-    info.assign(cinfo);
+    info = cinfo;
     dmipos = info.find("] DMI: ", 0);
   } while (dmipos == std::string::npos);
   info.erase(0, dmipos + 7);
@@ -74,7 +74,7 @@ bool SysInfoBuild::UpdateHardware() {
   if (str.empty()) {
     return false;
   } else {
-    manufacturer_.assign(str);
+    manufacturer_ = str;
   }
 
   // model
@@ -84,7 +84,7 @@ bool SysInfoBuild::UpdateHardware() {
   if (str.empty()) {
     return false;
   } else {
-    model_.assign(str);
+    model_ = str;
   }
 
   return true;

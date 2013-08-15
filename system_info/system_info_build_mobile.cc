@@ -4,7 +4,7 @@
 
 #include "system_info/system_info_build.h"
 
-#include <string>
+#include <stdlib.h>
 #if defined(TIZEN_MOBILE)
 #include <system_info.h>
 #endif
@@ -46,46 +46,36 @@ void SysInfoBuild::Get(picojson::value& error,
 }
 
 bool SysInfoBuild::UpdateHardware() {
-  char* cptr = NULL;
-  std::string hardware_info;
+  char* hardware_info = NULL;
 
-  system_info_key_e key = SYSTEM_INFO_KEY_MODEL;
-  system_info_get_value_string(key, &cptr);
-
-  hardware_info.assign(cptr);
-  if (hardware_info.empty()) {
+  if (system_info_get_value_string(SYSTEM_INFO_KEY_MODEL, &hardware_info)
+      != SYSTEM_INFO_ERROR_NONE)
     return false;
-  } else {
-    model_.assign(hardware_info);
-  }
 
-  cptr = NULL;
-  key = SYSTEM_INFO_KEY_MANUFACTURER;
-  system_info_get_value_string(key, &cptr);
+  model_ = hardware_info;
+  free(hardware_info);
 
-  hardware_info.assign(cptr);
-  if (hardware_info.empty()) {
+  if (system_info_get_value_string(SYSTEM_INFO_KEY_MANUFACTURER, &hardware_info)
+      != SYSTEM_INFO_ERROR_NONE)
     return false;
-  } else {
-    manufacturer_.assign(hardware_info);
-  }
+
+  manufacturer_ = hardware_info;
+  free(hardware_info);
+
   return true;
 }
 
 bool SysInfoBuild::UpdateOSBuild() {
-  char* cptr = NULL;
-  std::string build_info;
+  char* build_info = NULL;
 
-  system_info_key_e key = SYSTEM_INFO_KEY_BUILD_STRING;
-  system_info_get_value_string(key, &cptr);
-
-  build_info.assign(cptr);
-  if (build_info.empty()) {
+  if (system_info_get_value_string(SYSTEM_INFO_KEY_BUILD_STRING, &build_info)
+      != SYSTEM_INFO_ERROR_NONE)
     return false;
-  } else {
-    buildversion_.assign(build_info);
-    return true;
-  }
+
+  buildversion_ = build_info;
+  free(build_info);
+
+  return true;
 }
 
 gboolean SysInfoBuild::OnUpdateTimeout(gpointer user_data) {

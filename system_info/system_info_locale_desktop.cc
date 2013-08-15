@@ -58,7 +58,7 @@ bool SysInfoLocale::UpdateLanguage() {
   if (str.empty()) {
     return false;
   } else {
-    language_.assign(str);
+    language_ = str;
     return true;
   }
 }
@@ -72,7 +72,7 @@ bool SysInfoLocale::UpdateCountry() {
   size_t length = 100;
 
   getline(&cinfo, &length, fp);
-  info.assign(cinfo);
+  info = cinfo;
   free(cinfo);
   fclose(fp);
 
@@ -83,7 +83,7 @@ bool SysInfoLocale::UpdateCountry() {
   if (str.empty()) {
     return false;
   } else {
-    country_.assign(str);
+    country_ = str;
     return true;
   }
 }
