@@ -83,7 +83,9 @@ Adapter.prototype.addDevice = function(device, on_discovery) {
 
 Adapter.prototype.updateDevice = function(device) {
   var index = this.indexOfDevice(this.known_devices, device.address);
-  if (index != -1)
+  if (index == -1)
+    this.known_devices.push(device);
+  else
     this.known_devices[index]._updateProperties(device);
 };
 
