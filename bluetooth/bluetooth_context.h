@@ -31,11 +31,7 @@
                                                                                \
   void METHOD(std::string, ARG0);
 
-#if defined(BLUEZ_5)
 typedef std::map<std::string, GDBusProxy*> DeviceMap;
-#elif defined(BLUEZ_4)
-typedef std::map<std::string, GVariantIter*> DeviceMap;
-#endif
 
 namespace picojson {
 class value;

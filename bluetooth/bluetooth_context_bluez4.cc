@@ -220,7 +220,7 @@ BluetoothContext::~BluetoothContext() {
 
   DeviceMap::iterator it;
   for (it = known_devices_.begin(); it != known_devices_.end(); ++it)
-    g_variant_iter_free(it->second);
+    g_object_unref(it->second);
 
 #if defined(TIZEN_MOBILE)
     bt_deinitialize();
@@ -290,20 +290,13 @@ void BluetoothContext::DeviceFound(std::string address, GVariantIter* properties
   if (it == known_devices_.end()) { // Found on discovery.
     o["cmd"] = picojson::value("DeviceFound");
     o["found_on_discovery"] = picojson::value(true);
-
-    while (g_variant_iter_loop(properties, "{sv}", &key, &value))
-      getPropertyValue(key, value, o);
-
-    known_devices_[address] = properties;
   } else { // Updated during discovery.
     o["cmd"] = picojson::value("DeviceUpdated");
     o["found_on_discovery"] = picojson::value(false);
-
-    while (g_variant_iter_loop(properties, "{sv}", &key, &value))
-      getPropertyValue(key, value, o);
-
-    known_devices_[address] = properties;
   }
+
+  while (g_variant_iter_loop(properties, "{sv}", &key, &value))
+    getPropertyValue(key, value, o);
 
   picojson::value v(o);
   PostMessage(v);
