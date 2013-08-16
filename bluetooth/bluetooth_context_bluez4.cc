@@ -352,15 +352,9 @@ void BluetoothContext::DeviceFound(std::string address, GVariantIter* properties
   const gchar* key;
   GVariant* value;
   picojson::value::object o;
-  DeviceMap::iterator it = known_devices_.find(address);
 
-  if (it == known_devices_.end()) { // Found on discovery.
-    o["cmd"] = picojson::value("DeviceFound");
-    o["found_on_discovery"] = picojson::value(true);
-  } else { // Updated during discovery.
-    o["cmd"] = picojson::value("DeviceUpdated");
-    o["found_on_discovery"] = picojson::value(false);
-  }
+  o["cmd"] = picojson::value("DeviceFound");
+  o["found_on_discovery"] = picojson::value(true);
 
   while (g_variant_iter_loop(properties, "{sv}", &key, &value))
     getPropertyValue(key, value, o);
