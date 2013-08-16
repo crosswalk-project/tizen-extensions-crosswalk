@@ -23,8 +23,8 @@ class SysInfoSim {
   }
   ~SysInfoSim() { PlatformUninitialize(); }
   void Get(picojson::value& error, picojson::value& data);
-  void StartListen() { }
-  void StopListen() { }
+  void StartListening() { }
+  void StopListening() { }
 
   enum SystemInfoSimState {
     SYSTEM_INFO_SIM_ABSENT = 0,

@@ -283,6 +283,25 @@ handle("network_btn", function() {
 });
 
 handle("wifi_network_btn", function() {
+  var count = 0;
+  var id = tizen.systeminfo.addPropertyValueChangeListener(
+               "WIFI_NETWORK",
+               function(wifi) {
+                 output.value += '\n Property WIFI_NETWORK changed.';
+                 output.value += '\n\t status: ' + wifi.status;
+                 output.value += '\n\t ssid: ' + wifi.ssid;
+                 output.value += '\n\t ipAddress: ' + wifi.ipAddress;
+                 output.value += '\n\t ipv6Address: ' + wifi.ipv6Address;
+                 output.value += '\n\t signalStrength: ' + wifi.signalStrength;
+                 output.scrollTop = output.scrollHeight;
+                 count += 1;
+                 if (count == 3) {
+                   output.value += '\n Maximum listen times(3) reached. Remove listener with id = ' + id;
+                   output.scrollTop = output.scrollHeight;
+                   count = 0;
+                   tizen.systeminfo.removePropertyValueChangeListener(id);
+                 }
+              });
   tizen.systeminfo.getPropertyValue(
     "WIFI_NETWORK",
     function(wifi) {

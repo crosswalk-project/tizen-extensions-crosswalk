@@ -25,14 +25,14 @@ class SysInfoStorage {
   void Get(picojson::value& error, picojson::value& data);
 
   // Listerner support
-  inline void StartListen() {
+  inline void StartListening() {
     stopping_ = false;
     // FIXME(halton): Use udev D-Bus interface to monitor.
     g_timeout_add(system_info::default_timeout_interval,
                   SysInfoStorage::OnUpdateTimeout,
                   static_cast<gpointer>(this));
   }
-  inline void StopListen() { stopping_ = true; }
+  inline void StopListening() { stopping_ = true; }
 
  private:
   explicit SysInfoStorage(ContextAPI* api);
