@@ -601,6 +601,7 @@ BluetoothAdapter.prototype.registerRFCOMMServiceByUUID = function(uuid, name, se
 var _deviceClassMask = {
   "MINOR": 0x3F,
   "MAJOR": 0x1F,
+  "SERVICE": 0x7F9,
 };
 
 function BluetoothDevice(msg) {
@@ -635,6 +636,16 @@ function BluetoothDevice(msg) {
     }
   }
   _addConstProperty(this, "uuids", uuids_array);
+
+  var services = (msg.Class >> 13) & _deviceClassMask.SERVICE;
+  var services_array = [];
+
+  // 11 is the number of bits in _deviceClassMask.SERVICE
+  for (var i = 0; i < 11; i++)
+    if ((services & (1 << i)) !== 0)
+      services_array.push(1 << i);
+
+  _addConstProperty(this.deviceClass, "services", services_array);
 };
 
 BluetoothDevice.prototype.connectToServiceByUUID = function(uuid, socketSuccessCallback, errorCallback) {};
@@ -683,8 +694,13 @@ BluetoothSocket.prototype.readData = function() {/*return byte[]*/};
 BluetoothSocket.prototype.close = function() {/*return byte[]*/};
 
 function BluetoothClass() {};
-BluetoothClass.prototype.services = [];
-BluetoothClass.prototype.hasService = function(service) {/*return bool*/};
+BluetoothClass.prototype.hasService = function(service) {
+  for (var i = 0; i < this.services.length; i++)
+    if (this.services[i] === service)
+      return true;
+
+  return false;
+};
 
 function BluetoothServiceHandler() {};
 BluetoothServiceHandler.prototype.unregister = function(successCallback, errorCallback) {};
