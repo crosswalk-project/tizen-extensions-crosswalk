@@ -66,12 +66,17 @@ Adapter.prototype.indexOfDevice = function(devices, address) {
 };
 
 Adapter.prototype.addDevice = function(device, on_discovery) {
+  var new_device = false;
+
   if (on_discovery) {
     var index = this.indexOfDevice(this.found_devices, device.address);
-    if (index == -1)
+    if (index == -1) {
       this.found_devices.push(device);
-    else
+      new_device = true;
+    } else {
       this.found_devices[index] = device;
+      new_device = false;
+    }
   }
 
   var i = this.indexOfDevice(this.known_devices, device.address);
@@ -79,6 +84,8 @@ Adapter.prototype.addDevice = function(device, on_discovery) {
     this.known_devices.push(device);
   else
     this.known_devices[i] = device;
+
+  return new_device;
 };
 
 Adapter.prototype.updateDevice = function(device) {
@@ -105,12 +112,11 @@ var deepCopyDevices = function(devices) {
 
 var handleDeviceFound = function(msg) {
   var device = new BluetoothDevice(msg);
-
-  adapter.addDevice(device, msg.found_on_discovery);
+  var is_new = adapter.addDevice(device, msg.found_on_discovery);
 
   // FIXME(jeez): we are not returning a deep copy so we can keep
   // the devices up-to-date. We have to find a better way to handle this.
-  if (msg.found_on_discovery)
+  if (is_new && msg.found_on_discovery)
     adapter.discovery_callbacks.ondevicefound(device);
 };
 
