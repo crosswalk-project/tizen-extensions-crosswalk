@@ -128,23 +128,54 @@ blueApp.newDeviceEntry = function(device, list) {
       $(deviceItem).attr("class",
                          "ui-li ui-li-static ui-btn-up-s ui-li-last").attr(
                            "address", device.address));
+
+    return $(list + "-list li[address='"+device.address+"']");
 }
+
+blueApp.pairDevice = function() {
+    var deviceEntry = $(this);
+
+    blueApp.adapter.createBonding($(deviceEntry).attr("address"), function(device) {
+      $(deviceEntry).remove();
+      blueApp.newDeviceEntry(device, "#paired-device").click(blueApp.unpairDevice);
+    }, function(e) {
+      var noti = new tizen.StatusNotification("SIMPLE", "Bluetooth", {
+        content : "Failed pairing device."});
+      tizen.notification.post(noti);
+    });
+};
+
+blueApp.unpairDevice = function() {
+    var deviceEntry = $(this);
+    var address = $(this).attr("address");
+
+    blueApp.adapter.destroyBonding(address, function(device) {
+      $(deviceEntry).remove();
+      blueApp.newDeviceEntry(device, "#available-device").click(blueApp.pairDevice);
+
+      if (!$("#paired-device-list li").size())
+        $("#paired-device-group").hide();
+    }, function(e) {
+        var noti = new tizen.StatusNotification("SIMPLE", "Bluetooth", {
+            content : "Could not unpair bluetooth device."
+        });
+        tizen.notification.post(noti);
+    });
+};
 
 /**
  * Efectively add new devices to devices list.
  */
 blueApp.addDevice = function(device) {
-    blueApp.newDeviceEntry(device, "#available-device");
+    var clickCb = blueApp.pairDevice;
+    var deviceList = "#available-device";
 
-    $("#available-device-list li[address='"+device.address+"']").click(function() {
-      var device_entry = $(this);
-      blueApp.adapter.createBonding($(device_entry).attr("address"), function(device) {
-        $(device_entry).remove();
-        blueApp.newDeviceEntry(device, "#paired-device");
-      }, function(e) {
-        console.log("error on creating bonding.");
-      });
-    });
+    if (device.isBonded) {
+      deviceList = "#paired-device";
+      clickCb = blueApp.unpairDevice;
+    }
+
+    blueApp.newDeviceEntry(device, deviceList).click(clickCb);
 };
 
 /**
