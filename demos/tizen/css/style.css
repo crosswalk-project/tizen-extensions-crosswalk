@@ -7,7 +7,7 @@
     width: 80%;
 }
 
-#settings-group, #device-group, #visibility-group {
+#settings-group, #available-device-list, #paired-device-list, #visibility-group {
     background-color: #e6e3d8;
     border: 1px solid #c6c4be;
     -o-border-radius: 4px;
@@ -23,7 +23,7 @@
     display: none;
 }
 
-#settings-group li, #device-group li, #visibility-group li {
+#settings-group li, #available-device-group li, #paired-device-group li, #visibility-group li {
     background-color: transparent;
 }
 

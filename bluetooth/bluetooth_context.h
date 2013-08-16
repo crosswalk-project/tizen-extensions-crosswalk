@@ -67,6 +67,7 @@ class BluetoothContext {
   picojson::value HandleGetDefaultAdapter(const picojson::value& msg);
   void HandleSetAdapterProperty(const picojson::value& msg);
   void HandleCreateBonding(const picojson::value& msg);
+  void HandleDestroyBonding(const picojson::value& msg);
 
   void PostMessage(picojson::value v);
   void SetSyncReply(picojson::value v);
@@ -103,6 +104,8 @@ class BluetoothContext {
   G_CALLBACK_1(OnGotDefaultAdapterPath, GObject*, GAsyncResult*);
   G_CALLBACK_1(OnGotAdapterProperties, GObject*, GAsyncResult*);
   G_CALLBACK_1(OnAdapterCreateBonding, GObject*, GAsyncResult*);
+  G_CALLBACK_1(OnAdapterDestroyBonding, GObject*, GAsyncResult*);
+  G_CALLBACK_1(OnFoundDevice, GObject*, GAsyncResult*);
   G_CALLBACK_2(OnAdapterPropertySet, GObject*, GAsyncResult*);
   G_CALLBACK_1(OnDeviceProxyCreated, GObject*, GAsyncResult*);
   G_CALLBACK_1(OnGotDeviceProperties, GObject*, GAsyncResult*);
