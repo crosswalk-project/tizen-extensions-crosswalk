@@ -4,12 +4,10 @@
 
 #include "system_info/system_info_locale.h"
 
-#include <locale.h>
-
 #include <stdlib.h>
-#include <stdio.h>
-
-#include <string>
+#if defined(TIZEN_MOBILE)
+#include <runtime_info.h>
+#endif
 
 #include "common/picojson.h"
 #include "system_info/system_info_utils.h"
@@ -47,45 +45,39 @@ void SysInfoLocale::Get(picojson::value& error,
 }
 
 bool SysInfoLocale::UpdateLanguage() {
-  std::string str;
+  char* language_info = NULL;
 
-  setlocale(LC_ALL, "");
-  const struct lconv* const currentlocale = localeconv();
-  std::string info = setlocale(LC_ALL, NULL);
-  int pos = info.find('.', 0);
-  str.assign(info, 0, pos);
-
-  if (str.empty()) {
+  if (runtime_info_get_value_string(RUNTIME_INFO_KEY_LANGUAGE, &language_info)
+      != RUNTIME_INFO_ERROR_NONE)
     return false;
+
+  if (language_info) {
+    language_ = language_info;
+    free(language_info);
+    language_info = NULL;
   } else {
-    language_.assign(str);
-    return true;
+    language_ ="";
   }
+
+  return true;
 }
 
 bool SysInfoLocale::UpdateCountry() {
-  std::string str;
+  char* country_info = NULL;
 
-  FILE* fp = fopen("/etc/timezone", "r");
-  std::string info;
-  char* cinfo = NULL;
-  size_t length = 100;
-
-  getline(&cinfo, &length, fp);
-  info.assign(cinfo);
-  free(cinfo);
-  fclose(fp);
-
-  int pos = info.find('/', 0);
-  str.assign(info, pos + 1, info.length() - pos - 1);
-
-  // FIXME (halton): Use city to get real country
-  if (str.empty()) {
+  if (runtime_info_get_value_string(RUNTIME_INFO_KEY_REGION, &country_info)
+      != RUNTIME_INFO_ERROR_NONE)
     return false;
+
+  if (country_info) {
+    country_ = country_info;
+    free(country_info);
+    country_info = NULL;
   } else {
-    country_.assign(str);
-    return true;
+    country_ ="";
   }
+
+  return true;
 }
 
 gboolean SysInfoLocale::OnUpdateTimeout(gpointer user_data) {
@@ -122,4 +114,3 @@ gboolean SysInfoLocale::OnUpdateTimeout(gpointer user_data) {
 
   return TRUE;
 }
-
