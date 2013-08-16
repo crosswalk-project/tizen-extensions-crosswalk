@@ -52,15 +52,25 @@ bool SysInfoBuild::UpdateHardware() {
       != SYSTEM_INFO_ERROR_NONE)
     return false;
 
-  model_ = hardware_info;
-  free(hardware_info);
+  if (hardware_info) {
+    model_ = hardware_info;
+    free(hardware_info);
+    hardware_info = NULL;
+  } else {
+    model_ = "";
+  }
 
   if (system_info_get_value_string(SYSTEM_INFO_KEY_MANUFACTURER, &hardware_info)
       != SYSTEM_INFO_ERROR_NONE)
     return false;
 
-  manufacturer_ = hardware_info;
-  free(hardware_info);
+  if (hardware_info) {
+    manufacturer_ = hardware_info;
+    free(hardware_info);
+    hardware_info = NULL;
+  } else {
+    manufacturer_ = "";
+  }
 
   return true;
 }
@@ -72,8 +82,13 @@ bool SysInfoBuild::UpdateOSBuild() {
       != SYSTEM_INFO_ERROR_NONE)
     return false;
 
-  buildversion_ = build_info;
-  free(build_info);
+  if (build_info) {
+    buildversion_ = build_info;
+    free(build_info);
+    build_info = NULL;
+  } else {
+    buildversion_ = "";
+  }
 
   return true;
 }

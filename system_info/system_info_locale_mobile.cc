@@ -51,8 +51,13 @@ bool SysInfoLocale::UpdateLanguage() {
       != RUNTIME_INFO_ERROR_NONE)
     return false;
 
-  language_ = language_info;
-  free(language_info);
+  if (language_info) {
+    language_ = language_info;
+    free(language_info);
+    language_info = NULL;
+  } else {
+    language_ ="";
+  }
 
   return true;
 }
@@ -64,8 +69,13 @@ bool SysInfoLocale::UpdateCountry() {
       != RUNTIME_INFO_ERROR_NONE)
     return false;
 
-  country_  = country_info;
-  free(country_info);
+  if (country_info) {
+    country_ = country_info;
+    free(country_info);
+    country_info = NULL;
+  } else {
+    country_ ="";
+  }
 
   return true;
 }
