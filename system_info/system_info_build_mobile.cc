@@ -4,12 +4,10 @@
 
 #include "system_info/system_info_build.h"
 
-#include <stdio.h>
 #include <stdlib.h>
-#include <sys/utsname.h>
-#include <unistd.h>
-
-#include <string>
+#if defined(TIZEN_MOBILE)
+#include <system_info.h>
+#endif
 
 #include "common/picojson.h"
 #include "system_info/system_info_utils.h"
@@ -48,62 +46,51 @@ void SysInfoBuild::Get(picojson::value& error,
 }
 
 bool SysInfoBuild::UpdateHardware() {
-  FILE* fp = fopen("/var/log/dmesg", "r");
+  char* hardware_info = NULL;
 
-  int dmipos;
-  size_t length = 300;
-  char* cinfo = NULL;
-  std::string info;
-
-  do {
-    getline(&cinfo, &length, fp);
-    info.assign(cinfo);
-    dmipos = info.find("] DMI: ", 0);
-  } while (dmipos == std::string::npos);
-  info.erase(0, dmipos + 7);
-  free(cinfo);
-  fclose(fp);
-
-  int head = 0;
-  int tail = -1;
-  std::string str;
-
-  // manufacturer
-  tail = info.find(' ', 0);
-  str.assign(info, head, tail - head);
-  if (str.empty()) {
+  if (system_info_get_value_string(SYSTEM_INFO_KEY_MODEL, &hardware_info)
+      != SYSTEM_INFO_ERROR_NONE)
     return false;
+
+  if (hardware_info) {
+    model_ = hardware_info;
+    free(hardware_info);
+    hardware_info = NULL;
   } else {
-    manufacturer_.assign(str);
+    model_ = "";
   }
 
-  // model
-  head = tail + 1;
-  tail = info.find(',', 0);
-  str.assign(info, head, tail - head);
-  if (str.empty()) {
+  if (system_info_get_value_string(SYSTEM_INFO_KEY_MANUFACTURER, &hardware_info)
+      != SYSTEM_INFO_ERROR_NONE)
     return false;
+
+  if (hardware_info) {
+    manufacturer_ = hardware_info;
+    free(hardware_info);
+    hardware_info = NULL;
   } else {
-    model_.assign(str);
+    manufacturer_ = "";
   }
 
   return true;
 }
 
 bool SysInfoBuild::UpdateOSBuild() {
-  static struct utsname buf;
-  memset(&buf, 0, sizeof(struct utsname));
-  uname(&buf);
+  char* build_info = NULL;
 
-  std::string build_version = std::string(buf.sysname);
-  build_version += buf.release;
-
-  if (build_version.empty()) {
+  if (system_info_get_value_string(SYSTEM_INFO_KEY_BUILD_STRING, &build_info)
+      != SYSTEM_INFO_ERROR_NONE)
     return false;
+
+  if (build_info) {
+    buildversion_ = build_info;
+    free(build_info);
+    build_info = NULL;
   } else {
-    buildversion_ = build_version;
-    return true;
+    buildversion_ = "";
   }
+
+  return true;
 }
 
 gboolean SysInfoBuild::OnUpdateTimeout(gpointer user_data) {
