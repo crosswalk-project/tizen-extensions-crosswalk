@@ -19,6 +19,7 @@
           'variables': {
             'packages': [
               'capi-system-info',
+              'capi-telephony-sim',
               'vconf',
             ]
           },

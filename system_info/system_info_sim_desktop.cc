@@ -11,3 +11,6 @@ void SysInfoSim::Get(picojson::value& error,
   system_info::SetPicoJsonObjectValue(error, "message",
       picojson::value("SIM is not supported on desktop."));
 }
+
+void SysInfoSim::PlatformInitialize() { }
+void SysInfoSim::PlatformUninitialize() { }
