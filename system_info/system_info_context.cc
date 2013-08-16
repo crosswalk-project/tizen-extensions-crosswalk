@@ -100,23 +100,23 @@ void SystemInfoContext::HandleGetPropertyValue(const picojson::value& input,
   api_->PostMessage(result.c_str());
 }
 
-void SystemInfoContext::HandleStartListen(const picojson::value& input) {
+void SystemInfoContext::HandleStartListening(const picojson::value& input) {
   std::string prop = input.get("prop").to_str();
 
   if (prop == "BATTERY") {
-    battery_.StartListen();
+    battery_.StartListening();
   } else if (prop == "CPU") {
-    cpu_.StartListen();
+    cpu_.StartListening();
   } else if (prop == "STORAGE") {
-    storage_.StartListen();
+    storage_.StartListening();
   } else if (prop == "DISPLAY") {
-    display_.StartListen();
+    display_.StartListening();
   } else if (prop == "DEVICE_ORIENTATION ") {
-    device_orientation_.StartListen();
+    device_orientation_.StartListening();
   } else if (prop == "BUILD") {
-    build_.StartListen();
+    build_.StartListening();
   } else if (prop == "LOCALE") {
-    locale_.StartListen();
+    locale_.StartListening();
   } else if (prop == "NETWORK") {
     // FIXME(halton): Add NETWORK listener
   } else if (prop == "WIFI_NETWORK") {
@@ -130,33 +130,33 @@ void SystemInfoContext::HandleStartListen(const picojson::value& input) {
   }
 }
 
-void SystemInfoContext::HandleStopListen(const picojson::value& input) {
+void SystemInfoContext::HandleStopListening(const picojson::value& input) {
   std::string prop = input.get("prop").to_str();
 
   if (prop == "BATTERY") {
-    battery_.StopListen();
+    battery_.StopListening();
   } else if (prop == "CPU") {
-    cpu_.StopListen();
+    cpu_.StopListening();
   } else if (prop == "STORAGE") {
-    storage_.StopListen();
+    storage_.StopListening();
   } else if (prop == "DISPLAY") {
-    display_.StopListen();
+    display_.StopListening();
   } else if (prop == "DEVICE_ORIENTATION ") {
-    device_orientation_.StopListen();
+    device_orientation_.StopListening();
   } else if (prop == "BUILD") {
-    build_.StopListen();
+    build_.StopListening();
   } else if (prop == "LOCALE") {
-    locale_.StopListen();
+    locale_.StopListening();
   } else if (prop == "NETWORK") {
-    network_.StopListen();
+    network_.StopListening();
   } else if (prop == "WIFI_NETWORK") {
-    wifi_network_.StopListen();
+    wifi_network_.StopListening();
   } else if (prop == "CELLULAR_NETWORK") {
-    cellular_network_.StopListen();
+    cellular_network_.StopListening();
   } else if (prop == "SIM") {
-    sim_.StopListen();
+    sim_.StopListening();
   } else if (prop == "PERIPHERAL") {
-    peripheral_.StopListen();
+    peripheral_.StopListening();
   }
 }
 
@@ -175,9 +175,9 @@ void SystemInfoContext::HandleMessage(const char* message) {
     picojson::value output = picojson::value(picojson::object());
     HandleGetPropertyValue(input, output);
   } else if (cmd == "startListen") {
-    HandleStartListen(input);
+    HandleStartListening(input);
   } else if (cmd == "stopListen") {
-    HandleStopListen(input);
+    HandleStopListening(input);
   }
 }
 

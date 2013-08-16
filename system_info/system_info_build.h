@@ -21,13 +21,13 @@ class SysInfoBuild {
   }
   ~SysInfoBuild();
   void Get(picojson::value& error, picojson::value& data);
-  inline void StartListen() {
+  inline void StartListening() {
     stopping_ = false;
     g_timeout_add(system_info::default_timeout_interval,
                   SysInfoBuild::OnUpdateTimeout,
                   static_cast<gpointer>(this));
   }
-  inline void StopListen() { stopping_ = true; }
+  inline void StopListening() { stopping_ = true; }
 
  private:
   explicit SysInfoBuild(ContextAPI* api);
