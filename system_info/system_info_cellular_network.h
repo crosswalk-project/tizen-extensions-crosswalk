@@ -18,8 +18,8 @@ class SysInfoCellularNetwork {
   }
   ~SysInfoCellularNetwork() { }
   void Get(picojson::value& error, picojson::value& data);
-  void StartListen() { }
-  void StopListen() { }
+  void StartListening() { }
+  void StopListening() { }
 
  private:
   explicit SysInfoCellularNetwork(ContextAPI* api) {

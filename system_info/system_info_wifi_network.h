@@ -36,7 +36,7 @@ class SysInfoWifiNetwork {
   }
   ~SysInfoWifiNetwork();
   void Get(picojson::value& error, picojson::value& data);
-  inline void StartListen() {
+  inline void StartListening() {
 #if defined(TIZEN_MOBILE)
     stopping_ = false;
     g_timeout_add(system_info::default_timeout_interval,
@@ -44,7 +44,7 @@ class SysInfoWifiNetwork {
                   static_cast<gpointer>(this));
 #endif
   }
-  inline void StopListen() {
+  inline void StopListening() {
 #if defined(TIZEN_MOBILE)
     stopping_ = true;
 #endif

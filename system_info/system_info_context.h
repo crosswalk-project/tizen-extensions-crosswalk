@@ -38,8 +38,8 @@ class SystemInfoContext {
  private:
   void HandleGetPropertyValue(const picojson::value& input,
                               picojson::value& output);
-  void HandleStartListen(const picojson::value& input);
-  void HandleStopListen(const picojson::value& input);
+  void HandleStartListening(const picojson::value& input);
+  void HandleStopListening(const picojson::value& input);
   void HandleGetCapabilities();
   inline void SetStringPropertyValue(picojson::object& o,
                                      const char* prop,

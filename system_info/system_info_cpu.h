@@ -23,13 +23,13 @@ class SysInfoCpu {
   void Get(picojson::value& error, picojson::value& data);
 
   // Listerner support
-  inline void StartListen() {
+  inline void StartListening() {
     stopping_ = false;
     g_timeout_add(system_info::default_timeout_interval,
                   SysInfoCpu::OnUpdateTimeout,
                   static_cast<gpointer>(this));
   }
-  inline void StopListen() { stopping_ = true; }
+  inline void StopListening() { stopping_ = true; }
 
  private:
   explicit SysInfoCpu(ContextAPI* api)

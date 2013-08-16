@@ -21,14 +21,14 @@ class SysInfoBattery {
   }
   ~SysInfoBattery();
   void Get(picojson::value& error, picojson::value& data);
-  inline void StartListen() {
+  inline void StartListening() {
     // FIXME(halton): Use udev D-Bus interface to monitor.
     g_timeout_add(system_info::default_timeout_interval,
                   SysInfoBattery::OnUpdateTimeout,
                   static_cast<gpointer>(this));
     stopping_ = false;
   }
-  inline void StopListen() { stopping_ = true; }
+  inline void StopListening() { stopping_ = true; }
 
  private:
   explicit SysInfoBattery(ContextAPI* api);
