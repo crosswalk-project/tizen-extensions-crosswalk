@@ -83,7 +83,9 @@ Adapter.prototype.addDevice = function(device, on_discovery) {
 
 Adapter.prototype.updateDevice = function(device) {
   var index = this.indexOfDevice(this.known_devices, device.address);
-  if (index != -1)
+  if (index == -1)
+    this.known_devices.push(device);
+  else
     this.known_devices[index]._updateProperties(device);
 };
 
@@ -474,7 +476,28 @@ BluetoothAdapter.prototype.getKnownDevices = function(deviceArraySuccessCallback
   deviceArraySuccessCallback(adapter.known_devices);
 };
 
-BluetoothAdapter.prototype.getDevice = function(address, deviceSuccessCallback, errorCallback) {};
+BluetoothAdapter.prototype.getDevice = function(address, deviceSuccessCallback, errorCallback) {
+  if (adapter.serviceNotAvailable(errorCallback))
+    return;
+
+  if ((deviceSuccessCallback && typeof deviceSuccessCallback !== 'function') ||
+      (errorCallback && typeof errorCallback !== 'function')) {
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+  }
+
+  if (typeof address !== 'string') {
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+  }
+
+  var index = adapter.indexOfDevice(adapter.known_devices, address)
+  if (index == -1) {
+    var error = new tizen.WebAPIError(tizen.WebAPIException.NOT_FOUND_ERR)
+    errorCallback(error)
+    return;
+  }
+
+  deviceSuccessCallback(adapter.known_devices[index])
+};
 
 BluetoothAdapter.prototype.createBonding = function(address, successCallback, errorCallback) {
   if (adapter.serviceNotAvailable(errorCallback))

@@ -31,11 +31,7 @@
                                                                                \
   void METHOD(std::string, ARG0);
 
-#if defined(BLUEZ_5)
 typedef std::map<std::string, GDBusProxy*> DeviceMap;
-#elif defined(BLUEZ_4)
-typedef std::map<std::string, GVariantIter*> DeviceMap;
-#endif
 
 namespace picojson {
 class value;
@@ -108,14 +104,21 @@ class BluetoothContext {
   G_CALLBACK_1(OnGotAdapterProperties, GObject*, GAsyncResult*);
   G_CALLBACK_1(OnAdapterCreateBonding, GObject*, GAsyncResult*);
   G_CALLBACK_2(OnAdapterPropertySet, GObject*, GAsyncResult*);
+  G_CALLBACK_1(OnDeviceProxyCreated, GObject*, GAsyncResult*);
+  G_CALLBACK_1(OnGotDeviceProperties, GObject*, GAsyncResult*);
 
   static void OnSignal(GDBusProxy* proxy, gchar* sender_name, gchar* signal,
+      GVariant* parameters, gpointer user_data);
+
+  static void OnDeviceSignal(GDBusProxy* proxy, gchar* sender_name, gchar* signal,
       GVariant* parameters, gpointer user_data);
 
   void DeviceFound(std::string address, GVariantIter* properties);
 
   GDBusProxy* manager_proxy_;
   std::map<std::string, std::string> callbacks_map_;
+  std::map<std::string, std::string> object_path_address_map_;
+
 #endif
 };
 

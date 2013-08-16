@@ -43,15 +43,24 @@ void BluetoothContext::OnSignal(GDBusProxy* proxy, gchar* sender, gchar* signal,
 
     g_variant_get(parameters, "(sv)", &name, &value);
 
-    // FIXME(jeez): Handle 'Devices' property.
-    if (strcmp(name, "Devices")) {
-      if (g_variant_is_of_type(value, G_VARIANT_TYPE_STRING)) {
-        handler->adapter_info_[name] = std::string(g_variant_get_string(value,
-            NULL));
-      } else {
-        handler->adapter_info_[name] = g_variant_print(value, false);
+    if (!strcmp(name, "Devices")) {
+      char* path;
+      GVariantIter iter;
+
+      g_variant_get(value, "ao", &iter);
+
+      while (g_variant_iter_loop(&iter, "o", &path)) {
+        g_dbus_proxy_new_for_bus(G_BUS_TYPE_SYSTEM, G_DBUS_PROXY_FLAGS_NONE,
+                                 NULL,
+                                 /* GDBusInterfaceInfo */
+                                 "org.bluez", path, "org.bluez.Device",
+                                 NULL,
+                                 /* GCancellable */
+                                 OnDeviceProxyCreatedThunk, data);
       }
 
+      g_variant_iter_free(&iter);
+    } else {
       picojson::value::object property_updated;
       property_updated["cmd"] = picojson::value("AdapterUpdated");
       property_updated[name] = picojson::value(handler->adapter_info_[name]);
@@ -78,6 +87,43 @@ void BluetoothContext::OnSignal(GDBusProxy* proxy, gchar* sender, gchar* signal,
   }
 }
 
+void BluetoothContext::OnDeviceSignal(GDBusProxy* proxy, gchar* sender, gchar* signal,
+      GVariant* parameters, gpointer data) {
+  BluetoothContext* handler = reinterpret_cast<BluetoothContext*>(data);
+  const char* iface = g_dbus_proxy_get_interface_name(proxy);
+
+  // We only want org.bluez.Device signals.
+  if (strcmp(iface, "org.bluez.Device"))
+    return;
+
+  // More specifically, PropertyChanged ones.
+  if (strcmp(signal, "PropertyChanged"))
+    return;
+
+  const char* path = g_dbus_proxy_get_object_path(proxy);
+
+  std::map<std::string, std::string>::iterator it =
+      handler->object_path_address_map_.find(path);
+  if (it == handler->object_path_address_map_.end())
+    return;
+
+  const char *address = it->second.c_str();
+
+  const gchar* key;
+  GVariant* value;
+  picojson::value::object o;
+
+  o["cmd"] = picojson::value("DeviceUpdated");
+  o["found_on_discovery"] = picojson::value(false);
+  o["Address"] = picojson::value(address);
+
+  g_variant_get(parameters, "(sv)", &key, &value);
+
+  getPropertyValue(key, value, o);
+
+  handler->PostMessage(picojson::value(o));
+}
+
 void BluetoothContext::OnGotAdapterProperties(GObject*, GAsyncResult* res) {
   GError* error = 0;
   GVariant* result = g_dbus_proxy_call_finish(adapter_proxy_, res, &error);
@@ -94,7 +140,28 @@ void BluetoothContext::OnGotAdapterProperties(GObject*, GAsyncResult* res) {
   g_variant_get(result, "(a{sv})", &it);
 
   while (g_variant_iter_loop(it, "{sv}", &key, &value)) {
-    if (strcmp(key, "Devices")) { // FIXME(jeez): Handle 'Devices' property.
+    if (!strcmp(key, "Devices")) {
+      char* path;
+      GVariantIter *iter;
+
+      g_variant_get(value, "ao", &iter);
+
+      while (g_variant_iter_loop(iter, "o", &path)) {
+        DeviceMap::iterator it = known_devices_.find(path);
+        if (it != known_devices_.end())
+          continue;
+
+        g_dbus_proxy_new_for_bus(G_BUS_TYPE_SYSTEM, G_DBUS_PROXY_FLAGS_NONE,
+                                 NULL,
+                                 /* GDBusInterfaceInfo */
+                                 "org.bluez", path, "org.bluez.Device",
+                                 NULL,
+                                 /* GCancellable */
+                                 OnDeviceProxyCreatedThunk, this);
+      }
+
+      g_variant_iter_free(iter);
+    } else {
       if (g_variant_is_of_type(value, G_VARIANT_TYPE_STRING))
         adapter_info_[key] = std::string(g_variant_get_string(value, NULL));
       else
@@ -220,7 +287,7 @@ BluetoothContext::~BluetoothContext() {
 
   DeviceMap::iterator it;
   for (it = known_devices_.begin(); it != known_devices_.end(); ++it)
-    g_variant_iter_free(it->second);
+    g_object_unref(it->second);
 
 #if defined(TIZEN_MOBILE)
     bt_deinitialize();
@@ -290,20 +357,13 @@ void BluetoothContext::DeviceFound(std::string address, GVariantIter* properties
   if (it == known_devices_.end()) { // Found on discovery.
     o["cmd"] = picojson::value("DeviceFound");
     o["found_on_discovery"] = picojson::value(true);
-
-    while (g_variant_iter_loop(properties, "{sv}", &key, &value))
-      getPropertyValue(key, value, o);
-
-    known_devices_[address] = properties;
   } else { // Updated during discovery.
     o["cmd"] = picojson::value("DeviceUpdated");
     o["found_on_discovery"] = picojson::value(false);
-
-    while (g_variant_iter_loop(properties, "{sv}", &key, &value))
-      getPropertyValue(key, value, o);
-
-    known_devices_[address] = properties;
   }
+
+  while (g_variant_iter_loop(properties, "{sv}", &key, &value))
+    getPropertyValue(key, value, o);
 
   picojson::value v(o);
   PostMessage(v);
@@ -350,4 +410,62 @@ void BluetoothContext::HandleCreateBonding(const picojson::value& msg) {
   g_dbus_proxy_call(adapter_proxy_, "CreatePairedDevice",
       g_variant_new ("(sos)", address.c_str(), "/", "KeyboardDisplay"),
       G_DBUS_CALL_FLAGS_NONE, -1, NULL, OnAdapterCreateBondingThunk, this);
+}
+
+void BluetoothContext::OnDeviceProxyCreated(GObject* object, GAsyncResult* res) {
+  GDBusProxy* device_proxy;
+  GError* error = 0;
+
+  device_proxy = g_dbus_proxy_new_for_bus_finish(res, &error);
+  if (!device_proxy) {
+    g_printerr("\n\n## device_proxy creation error: %s\n", error->message);
+    g_error_free(error);
+    return;
+  }
+
+  const char* path = g_dbus_proxy_get_object_path(device_proxy);
+  known_devices_[path] = device_proxy;
+
+  g_dbus_proxy_call(device_proxy, "GetProperties", NULL,
+    G_DBUS_CALL_FLAGS_NONE, 5000, NULL, OnGotDevicePropertiesThunk, this);
+
+  g_signal_connect(device_proxy, "g-signal",
+    G_CALLBACK(BluetoothContext::OnDeviceSignal), this);
+}
+
+void BluetoothContext::OnGotDeviceProperties(GObject* object, GAsyncResult* res) {
+  GError* error = 0;
+  GDBusProxy *device_proxy = reinterpret_cast<GDBusProxy*>(object);
+  GVariant* result = g_dbus_proxy_call_finish(device_proxy, res, &error);
+
+  if (!result) {
+    g_printerr("\n\nError OnGotDeviceProperties: %s\n", error->message);
+    g_error_free(error);
+    return;
+  }
+
+  const gchar* key;
+  GVariant* value;
+  GVariantIter* it;
+  picojson::value::object o;
+
+  o["cmd"] = picojson::value("DeviceUpdated");
+  o["found_on_discovery"] = picojson::value(false);
+
+  g_variant_get(result, "(a{sv})", &it);
+
+  while (g_variant_iter_loop(it, "{sv}", &key, &value)) {
+    if (!strcmp(key, "Address")) {
+      const char* address = g_variant_get_string(value, NULL);
+      const char* path = g_dbus_proxy_get_object_path(device_proxy);
+
+      object_path_address_map_[path] = address;
+    }
+
+    getPropertyValue(key, value, o);
+
+  }
+
+  picojson::value v(o);
+  PostMessage(v);
 }
