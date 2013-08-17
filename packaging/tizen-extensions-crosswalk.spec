@@ -96,10 +96,12 @@ install -p -m 644 examples/js/*.js %{buildroot}%{_datarootdir}/%{name}/examples/
 mkdir -p %{buildroot}%{_datarootdir}/%{name}/demos/tizen
 mkdir -p %{buildroot}%{_datarootdir}/%{name}/demos/tizen/css
 mkdir -p %{buildroot}%{_datarootdir}/%{name}/demos/tizen/js
+mkdir -p %{buildroot}%{_datarootdir}/%{name}/demos/tizen/images
 
 install -p -m 644 demos/tizen/*.html %{buildroot}%{_datarootdir}/%{name}/demos/tizen
 install -p -m 644 demos/tizen/css/*.css %{buildroot}%{_datarootdir}/%{name}/demos/tizen/css
 install -p -m 644 demos/tizen/js/*.js %{buildroot}%{_datarootdir}/%{name}/demos/tizen/js
+install -p -m 644 demos/tizen/images/*.png %{buildroot}%{_datarootdir}/%{name}/demos/tizen/images
 
 # register to the package manager
 install -m 644 -D %{_examples_package}.xml %{buildroot}%{_manifestdir}/%{_examples_package}.xml
@@ -120,6 +122,7 @@ install -p -D %{name}.png %{buildroot}%{_desktop_icondir}/%{_bluetooth_demo_pack
 %{_datarootdir}/%{name}/demos/tizen/*.html
 %{_datarootdir}/%{name}/demos/tizen/css/*.css
 %{_datarootdir}/%{name}/demos/tizen/js/*.js
+%{_datarootdir}/%{name}/demos/tizen/images/*.png
 
 %files -n %{_examples_package}
 %{_bindir}/%{_examples_package}

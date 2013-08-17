@@ -40,11 +40,11 @@
 }
 
 .visibility-on {
-    background-image: url(../images/list_expand_closed_arrow.png);
+    background-image: url(file:///usr/share/tizen-web-ui-fw/0.2/themes/tizen-white/images/controls/button/00_button_expand_opened.png);
 }
 
 .visibility-off {
-    background-image: url(../images/list_expand_opened_arrow.png);
+    background-image: url(file:///usr/share/tizen-web-ui-fw/0.2/themes/tizen-white/images/controls/button/00_button_expand_closed.png);
 }
 
 #visibility-toggle-icon {
@@ -58,13 +58,13 @@
 }
 
 #return-btn {
-    width: 20px;
-    height: 20px;
+    width: 40px;
+    height: 40px;
     margin-top: 10px;
     margin-right: 20px;
     background-image: url(file:///usr/share/tizen-web-ui-fw/0.2/themes/tizen-white/images/page/00_icon_Back.png);
     background-position: 0px, 0px;
-    background-size: 20px, 20px;
+    background-size: 40px, 40px;
 }
 
 .device-icon-computer {
