@@ -4,15 +4,15 @@
   },
 
   'cflags': [
-    '>!@(pkg-config --cflags >@(packages))'
+    '>!@(if [ -n ">@(packages)" ]; then pkg-config --cflags >@(packages); fi)'
   ],
 
   'link_settings': {
     'ldflags': [
-      '>!@(pkg-config --libs-only-L --libs-only-other >@(packages))',
+      '>!@(if [ -n ">@(packages)" ]; then pkg-config --libs-only-L --libs-only-other >@(packages); fi)',
     ],
     'libraries': [
-      '>!@(pkg-config --libs-only-l >@(packages))',
+      '>!@(if [ -n ">@(packages)" ]; then pkg-config --libs-only-l >@(packages); fi)',
     ],
   },
 }

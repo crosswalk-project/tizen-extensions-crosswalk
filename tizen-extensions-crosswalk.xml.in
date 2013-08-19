@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns="http://tizen.org/ns/packages" package="@PACKAGE_NAME@" version="@PACKAGE_VERSION@" install-location="internal-only">
+  <label>@PACKAGE_LABEL@</label>
+  <author email="cameo-dev@linux.intel.com" href="www.intel.com">XWalkDev</author>
+  <description>@PACKAGE_LABEL@</description>
+  <ui-application appid="@APP_ID@" exec="@PACKAGE_EXEC@" nodisplay="false" multiple="false" type="capp" taskmanage="true">
+    <label>@PACKAGE_LABEL@</label>
+    <icon>@PACKAGE_NAME@.png</icon>
+  </ui-application>
+</manifest>
