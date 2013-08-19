@@ -15,6 +15,9 @@
       ],
       'conditions': [
         ['extension_host_os=="mobile"', {
+          'includes': [
+            '../common/pkg-config.gypi',
+          ],
           'variables': {
             'packages': [
               'capi-appfw-application',
@@ -22,9 +25,6 @@
             ]
           },
         }],
-      ],
-      'includes': [
-        '../common/pkg-config.gypi',
       ],
     },
   ],

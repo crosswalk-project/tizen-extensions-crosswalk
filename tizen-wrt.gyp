@@ -16,7 +16,13 @@
         'system_setting/system_setting.gyp:*',
         'time/time.gyp:*',
         'tizen/tizen.gyp:*',
-        'download/download.gyp:*',
+      ],
+      'conditions': [
+        [ 'extension_host_os == "mobile"', {
+          'sources': [
+            'download/download.gyp:*',
+          ],
+        }],
       ],
     },
     {
