@@ -11,6 +11,12 @@
 
 #include <list>
 
+#include <sys/types.h>
+#include <sys/socket.h>
+
+#include <bluetooth/bluetooth.h>
+#include <bluetooth/rfcomm.h>
+
 namespace {
 
 static std::list<GCancellable*> cancellables;
@@ -24,6 +30,61 @@ static GCancellable* new_cancellable() {
 }
 
 } // namespace
+
+#define RFCOMM_RECORD "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>	\
+<record>								\
+  <attribute id=\"0x0001\">						\
+    <sequence>								\
+      <uuid value=\"%s\"/>						\
+    </sequence>								\
+  </attribute>								\
+									\
+  <attribute id=\"0x0004\">						\
+    <sequence>								\
+      <sequence>							\
+        <uuid value=\"0x0100\"/>					\
+      </sequence>							\
+      <sequence>							\
+        <uuid value=\"0x0003\"/>					\
+        <uint8 value=\"%u\" name=\"channel\"/>				\
+      </sequence>							\
+    </sequence>								\
+  </attribute>								\
+									\
+  <attribute id=\"0x0100\">						\
+    <text value=\"%s\" name=\"name\"/>					\
+  </attribute>								\
+</record>"
+
+// Returns an fd listening on 'channel' RFCOMM Channel
+static int rfcomm_listen(uint8_t *channel) {
+  int sk = socket(AF_BLUETOOTH, SOCK_STREAM, BTPROTO_RFCOMM);
+  if (sk < 0)
+    return -1;
+
+  struct sockaddr_rc laddr;
+  // All zeros means BDADDR_ANY and any channel.
+  memset(&laddr, 0, sizeof(laddr));
+
+  if (bind(sk, (struct sockaddr *) &laddr, sizeof(laddr)) < 0) {
+    close(sk);
+    return -1;
+  }
+
+  listen(sk, 10);
+
+  socklen_t alen = sizeof(laddr);
+  if (getsockname(sk, (struct sockaddr *) &laddr, &alen) < 0) {
+    close(sk);
+    return -1;
+  }
+
+  // Returns the channel as we let the stack allocate it.
+  if (channel)
+	  *channel = laddr.rc_channel;
+
+  return sk;
+}
 
 static void getPropertyValue(const char* key, GVariant* value,
     picojson::value::object& o) {
@@ -248,6 +309,16 @@ void BluetoothContext::OnAdapterProxyCreated(GObject*, GAsyncResult* res) {
     G_CALLBACK(BluetoothContext::OnSignal), this);
 }
 
+void BluetoothContext::OnServiceProxyCreated(GObject*, GAsyncResult* res) {
+  GError* error = 0;
+  service_proxy_ = g_dbus_proxy_new_for_bus_finish(res, &error);
+
+  if (!service_proxy_) {
+    g_printerr("\n\n## adapter_proxy_ creation error: %s\n", error->message);
+    g_error_free(error);
+  }
+}
+
 void BluetoothContext::OnManagerCreated(GObject*, GAsyncResult* res) {
   GError* err = 0;
   manager_proxy_ = g_dbus_proxy_new_for_bus_finish(res, &err);
@@ -285,6 +356,16 @@ void BluetoothContext::OnGotDefaultAdapterPath(GObject*, GAsyncResult* res) {
       all_pending_, /* GCancellable */
       OnAdapterProxyCreatedThunk,
       CancellableWrap(all_pending_, this));
+
+  g_dbus_proxy_new_for_bus(G_BUS_TYPE_SYSTEM,
+      G_DBUS_PROXY_FLAGS_NONE,
+      NULL, /* GDBusInterfaceInfo */
+      "org.bluez",
+      path,
+      "org.bluez.Service",
+      NULL, /* GCancellable */
+      OnServiceProxyCreatedThunk,
+      this);
 
   g_variant_unref(result);
   g_free(path);
@@ -386,6 +467,8 @@ BluetoothContext::~BluetoothContext() {
 void BluetoothContext::PlatformInitialize() {
   adapter_proxy_ = 0;
   manager_proxy_ = 0;
+
+  pending_listen_socket_ = -1;
 
   is_js_context_initialized_ = false;
 
@@ -492,6 +575,65 @@ void BluetoothContext::HandleDestroyBonding(const picojson::value& msg) {
                     g_variant_new("(s)", address.c_str()),
                     G_DBUS_CALL_FLAGS_NONE, -1, all_pending_, OnFoundDeviceThunk,
                     CancellableWrap(all_pending_, this));
+}
+
+void BluetoothContext::OnServiceAddRecord(GObject* object, GAsyncResult* res) {
+  GError* error = 0;
+  picojson::value::object o;
+  GVariant* result = g_dbus_proxy_call_finish(service_proxy_, res, &error);
+
+  o["cmd"] = picojson::value("");
+  o["reply_id"] = picojson::value(callbacks_map_["RFCOMMListen"]);
+
+  if (!result) {
+    o["error"] = picojson::value(static_cast<double>(1));
+
+    close(pending_listen_socket_);
+
+    pending_listen_socket_ = -1;
+
+    g_printerr("\n\nError OnServiceAddRecord: %s\n", error->message);
+    g_error_free(error);
+  } else {
+    uint32_t handle = g_variant_get_uint32(result);
+    int sk = pending_listen_socket_;
+    pending_listen_socket_ = -1;
+
+    // FIXME(vcgomes): Add an watch for the socket
+
+    o["error"] = picojson::value(static_cast<double>(1));
+    o["socket_fd"] = picojson::value(static_cast<double>(sk));
+    o["sdp_Handle"] = picojson::value(static_cast<double>(handle));
+  }
+
+  callbacks_map_.erase("RFCOMMListen");
+  g_variant_unref(result);
+
+  PostMessage(picojson::value(o));
+}
+
+void BluetoothContext::HandleRFCOMMListen(const picojson::value& msg) {
+  std::string name = msg.get("name").to_str();
+  std::string uuid = msg.get("uuid").to_str();
+  uint8_t channel = 0;
+  int sk;
+
+  // FIXME(vcgomes): Error handling
+  if (pending_listen_socket_ >= 0)
+    return;
+
+  sk = rfcomm_listen(&channel);
+  if (sk < 0)
+    return;
+
+  callbacks_map_["RFCOMMListen"] = msg.get("reply_id").to_str();
+
+  pending_listen_socket_ = sk;
+
+  char *record = g_strdup_printf(RFCOMM_RECORD, uuid.c_str(), channel, name.c_str());
+
+  g_dbus_proxy_call(service_proxy_, "AddRecord", g_variant_new("(s)", record),
+                    G_DBUS_CALL_FLAGS_NONE, -1, NULL, OnServiceAddRecordThunk, this);
 }
 
 void BluetoothContext::OnDeviceProxyCreated(GObject* object, GAsyncResult* res) {
