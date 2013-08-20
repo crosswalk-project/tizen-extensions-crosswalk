@@ -12,6 +12,7 @@
         'download_context.h',
         'download_context_desktop.cc',
         'download_context_mobile.cc',
+        'download_utils.h',
       ],
       'conditions': [
         ['extension_host_os=="mobile"', {

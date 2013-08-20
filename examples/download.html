@@ -7,6 +7,7 @@
   </style>
   <span contenteditable="true" id="download1"></span><br>
   <span contenteditable="true" id="download2"></span><br>
+  <span contenteditable="true" id="download_http_header"></span><br>
   <textarea cols=80 rows=20 id="output"></textarea><br>
   <button id="bnstart1">Click 1</button>
   <button id="bnstart2">Click 2</button><br>
@@ -15,7 +16,14 @@
   <button id="b1cancel">Click 1</button>
   <button id="b2cancel">Click 2</button><br>
   <button id="bnstate1">Click 1</button>
-  <button id="bnstate2">Click 2</button>
+  <button id="bnstate2">Click 2</button><br>
+  <button id="bnnetworktype1">Click 1</button>
+  <button id="bnnetworktype2">Click 2</button><br>
+  <button id="bnmimetype1">Click 1</button>
+  <button id="bnmimetype2">Click 2</button><br>
+  <button id="bngetrequest1">Click</button>
+  <button id="bngetrequest2">Click</button><br>
+  <button id="bnhttpheader">Click</button><br>
 </body>
 
 <script>
@@ -34,6 +42,8 @@ var listener = {
       document.getElementById("download1").innerHTML = "Download1 received " + receivedSize + "/" + totalSize + " bytes"
     else if (urls[id] == url2)
       document.getElementById("download2").innerHTML = "Download2 received " + receivedSize + "/" + totalSize + " bytes"
+    else if (urls[id] == url_httpheader)
+      document.getElementById("download_http_header").innerHTML = "Download (Test for HTTP header) received " + receivedSize + "/" + totalSize + " bytes"
     else
       output.value += "> listener::onprogress - unexpected call: id " + id + ", size " + receivedSize + "/" + totalSize + "\n";
   },
@@ -58,7 +68,9 @@ var listener = {
 var url1 = "http://ipv4.download.thinkbroadband.com/200MB.zip";
 // Test https downloading
 var url2 = "https://developer.tizen.org/sites/all/themes/tizen_theme/logo.png";
-var urls = { "1" : url1, "2" : url2 }
+// Test downloading with specific HTTP header
+var url_httpheader = "http://download.tizen.org/tools/README.txt";
+var urls = { "1" : url1, "2" : url2, "3" : url_httpheader }
 
 var r1, id1, r2, id2;
 var paused1=false;
@@ -94,6 +106,7 @@ handle("button1", "Pause Download1", function() {
 
 handle("bnstart2", "Start Download2", function() {
   r2 = new tizen.DownloadRequest(url2, "Images"); // Test saving to specific folder
+
   id2 = tizen.download.start(r2, listener);
   urls[id2] = url2;
   output.value += "> asked to start download "+url2+" to Images folder\n";
@@ -147,7 +160,11 @@ handle("bnstate1", "GetState of Download1", function() {
   }
 
   output.value += "> asked to get state of download1, id:" + id1 + "\n";
-  output.value += "> return: " + tizen.download.getState(id1) + "\n";
+  try {
+    output.value += "> return: " + tizen.download.getState(id1) + "\n";
+  } catch (err) {
+    output.value += "> received exception: " + err.name + "\n";
+  }
 });
 
 handle("bnstate2", "GetState of Download2", function() {
@@ -156,8 +173,95 @@ handle("bnstate2", "GetState of Download2", function() {
     return;
   }
 
-  output.value += "> asked to get state of download2, id:" + id2 + "\n";
-  output.value += "> return: " + tizen.download.getState(id2) + "\n";
+  output.value += "> asked to get state of download1, id:" + id2 + "\n";
+  try {
+    output.value += "> return: " + tizen.download.getState(id2) + "\n";
+  } catch (err) {
+    output.value += "> received exception: " + err.name + "\n";
+  }
 });
+
+var networkTypeCallback = function(networkType) {
+  output.value += "> received networkType: " + networkType + "\n";
+}
+
+handle("bnnetworktype1", "GetNetworkType of Download1", function() {
+  if (typeof id2 == "undefined") {
+    output.value += "> Download1 is not started yet.\n";
+    return;
+  }
+
+  output.value += "> asked to get network type of download1, id:" + id1 + "\n";
+  tizen.download.getNetworkType(id1, networkTypeCallback);
+});
+
+handle("bnnetworktype2", "GetNetworkType of Download2", function() {
+  if (typeof id2 == "undefined") {
+    output.value += "> Download2 is not started yet.\n";
+    return;
+  }
+
+  output.value += "> asked to get network type of download2, id:" + id2 + "\n";
+  tizen.download.getNetworkType(id2, networkTypeCallback);
+});
+
+var mimeCallback = function(mimeType) {
+  output.value += "> received mimeType: " + mimeType + "\n";
+}
+
+handle("bnmimetype1", "GetMIMEType of Download1", function() {
+  if (typeof id1 == "undefined") {
+    output.value += "> Download1 is not started yet.\n";
+    return;
+  }
+
+  output.value += "> asked to get MIME type of download1, id:" + id1 + "\n";
+  tizen.download.getMIMEType(id1, mimeCallback);
+});
+
+handle("bnmimetype2", "GetMIMEType of Download2", function() {
+  if (typeof id2 == "undefined") {
+    output.value += "> Download2 is not started yet.\n";
+    return;
+  }
+
+  output.value += "> asked to get MIME type of download2, id:" + id2 + "\n";
+  tizen.download.getMIMEType(id2, mimeCallback);
+});
+
+handle("bngetrequest1", "Get download request 1", function() {
+  if (typeof id1 == "undefined") {
+    output.value += "> Download1 is not started yet.\n";
+    return;
+  }
+
+  output.value += "> asked to get download request 1, id:" + id1 + "\n";
+  output.value += "> returned request's url is: "+tizen.download.getDownloadRequest(id1).url + "\n";
+});
+
+handle("bngetrequest2", "Get download request 2", function() {
+  if (typeof id2 == "undefined") {
+    output.value += "> Download2 is not started yet.\n";
+    return;
+  }
+
+  output.value += "> asked to get download request 2, id:" + id2 + "\n";
+  output.value += "> returned request's url is: "+tizen.download.getDownloadRequest(id2).url + "\n";
+});
+
+handle("bnhttpheader", "Start Download with specific HTTP header", function() {
+  var req = new tizen.DownloadRequest(url_httpheader); // Test http header
+  req.httpHeader["Pragma"] = "no-cache";
+  req.httpHeader["Cookie"] = "version=1; Skin=new";
+  req.httpHeader["X-Agent"] = "Tizen Sample App";
+
+  output.value += "> asked to start download " + url_httpheader + " with http headers:\n";
+  for (var key in req.httpHeader) {
+    output.value += ">   " + key + ": " + req.httpHeader[key] + "\n";
+  }
+  var id_httpheader = tizen.download.start(req, listener);
+  urls[id_httpheader] = url_httpheader;
+});
+
 
 </script>
