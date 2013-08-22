@@ -56,6 +56,35 @@ static GCancellable* new_cancellable() {
   </attribute>								\
 </record>"
 
+static uint32_t rfcomm_get_channel(int fd) {
+  struct sockaddr_rc laddr;
+  socklen_t alen = sizeof(laddr);
+
+  memset(&laddr, 0, alen);
+
+  if (getsockname(fd, (struct sockaddr *) &laddr, &alen) < 0)
+    return 0;
+
+  return laddr.rc_channel;
+}
+
+static int rfcomm_get_peer(int fd, char* address) {
+  if (!address)
+    return -1;
+
+  struct sockaddr_rc raddr;
+  socklen_t alen = sizeof(raddr);
+
+  memset(&raddr, 0, alen);
+
+  if (getpeername(fd, (struct sockaddr *) &raddr, &alen) < 0)
+    return -1;
+
+  ba2str(&raddr.rc_bdaddr, address);
+
+  return 0;
+}
+
 // Returns an fd listening on 'channel' RFCOMM Channel
 static int rfcomm_listen(uint8_t *channel) {
   int sk = socket(AF_BLUETOOTH, SOCK_STREAM, BTPROTO_RFCOMM);
@@ -65,6 +94,7 @@ static int rfcomm_listen(uint8_t *channel) {
   struct sockaddr_rc laddr;
   // All zeros means BDADDR_ANY and any channel.
   memset(&laddr, 0, sizeof(laddr));
+  laddr.rc_family = AF_BLUETOOTH;
 
   if (bind(sk, (struct sockaddr *) &laddr, sizeof(laddr)) < 0) {
     close(sk);
@@ -73,15 +103,8 @@ static int rfcomm_listen(uint8_t *channel) {
 
   listen(sk, 10);
 
-  socklen_t alen = sizeof(laddr);
-  if (getsockname(sk, (struct sockaddr *) &laddr, &alen) < 0) {
-    close(sk);
-    return -1;
-  }
-
-  // Returns the channel as we let the stack allocate it.
   if (channel)
-	  *channel = laddr.rc_channel;
+    *channel = rfcomm_get_channel(sk);
 
   return sk;
 }
@@ -470,6 +493,8 @@ void BluetoothContext::PlatformInitialize() {
 
   pending_listen_socket_ = -1;
 
+  rfcomm_listener_ = g_socket_listener_new();
+
   is_js_context_initialized_ = false;
 
   all_pending_ = new_cancellable();
@@ -577,6 +602,32 @@ void BluetoothContext::HandleDestroyBonding(const picojson::value& msg) {
                     CancellableWrap(all_pending_, this));
 }
 
+void BluetoothContext::OnListenerAccept(GObject* object, GAsyncResult* res) {
+  GError* error = 0;
+  GSocket *socket = g_socket_listener_accept_socket_finish(rfcomm_listener_, res,
+                                                           NULL, &error);
+  if (!socket) {
+    g_printerr("\n\nlistener_accept_socket_finish failed %s\n", error->message);
+    return;
+  }
+
+  int fd = g_socket_get_fd(socket);
+  uint32_t channel = rfcomm_get_channel(fd);
+  char address[18]; // "XX:XX:XX:XX:XX:XX"
+  picojson::value::object o;
+
+  rfcomm_get_peer(fd, address);
+
+  o["cmd"] = picojson::value("RFCOMMSocketAccept");
+  o["channel"] = picojson::value(static_cast<double>(channel));
+  o["socket_fd"] = picojson::value(static_cast<double>(fd));
+  o["peer"] = picojson::value(address);
+
+  PostMessage(picojson::value(o));
+
+  // FIXME(vcgomes): Add a watch for data.
+}
+
 void BluetoothContext::OnServiceAddRecord(GObject* object, GAsyncResult* res) {
   GError* error = 0;
   picojson::value::object o;
@@ -595,15 +646,24 @@ void BluetoothContext::OnServiceAddRecord(GObject* object, GAsyncResult* res) {
     g_printerr("\n\nError OnServiceAddRecord: %s\n", error->message);
     g_error_free(error);
   } else {
-    uint32_t handle = g_variant_get_uint32(result);
+    uint32_t handle;
     int sk = pending_listen_socket_;
     pending_listen_socket_ = -1;
 
-    // FIXME(vcgomes): Add an watch for the socket
+    GSocket *socket = g_socket_new_from_fd(sk, NULL);
+    g_socket_set_blocking(socket, false);
 
-    o["error"] = picojson::value(static_cast<double>(1));
-    o["socket_fd"] = picojson::value(static_cast<double>(sk));
-    o["sdp_Handle"] = picojson::value(static_cast<double>(handle));
+    g_socket_listener_add_socket(rfcomm_listener_, socket, NULL, NULL);
+
+    g_socket_listener_accept_async(rfcomm_listener_, NULL,
+                                   OnListenerAcceptThunk, this);
+
+    g_variant_get(result, "(u)", &handle);
+
+    o["error"] = picojson::value(static_cast<double>(0));
+    o["server_fd"] = picojson::value(static_cast<double>(sk));
+    o["sdp_handle"] = picojson::value(static_cast<double>(handle));
+    o["channel"] = picojson::value(static_cast<double>(rfcomm_get_channel(sk)));
   }
 
   callbacks_map_.erase("RFCOMMListen");
