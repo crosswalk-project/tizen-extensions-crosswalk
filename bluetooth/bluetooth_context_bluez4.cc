@@ -602,6 +602,35 @@ void BluetoothContext::HandleDestroyBonding(const picojson::value& msg) {
                     CancellableWrap(all_pending_, this));
 }
 
+gboolean BluetoothContext::OnSocketHasData(GSocket* client, GIOCondition cond,
+                                              gpointer user_data) {
+
+  if (cond & G_IO_ERR || cond & G_IO_HUP) {
+    // FIXME(vcgomes): Notify that the socket has closed
+    return false;
+  }
+
+  BluetoothContext* handler = reinterpret_cast<BluetoothContext*>(user_data);
+
+  int fd = g_socket_get_fd(client);
+  gchar buf[512];
+  gssize len;
+
+  len = g_socket_receive(client, buf, sizeof(buf), NULL, NULL);
+  if (len < 0)
+    return false;
+
+  picojson::value::object o;
+
+  o["cmd"] = picojson::value("SocketHasData");
+  o["socket_fd"] = picojson::value(static_cast<double>(fd));
+  o["data"] = picojson::value(buf, len);
+
+  handler->PostMessage(picojson::value(o));
+
+  return true;
+}
+
 void BluetoothContext::OnListenerAccept(GObject* object, GAsyncResult* res) {
   GError* error = 0;
   GSocket *socket = g_socket_listener_accept_socket_finish(rfcomm_listener_, res,
@@ -625,7 +654,12 @@ void BluetoothContext::OnListenerAccept(GObject* object, GAsyncResult* res) {
 
   PostMessage(picojson::value(o));
 
-  // FIXME(vcgomes): Add a watch for data.
+  GSource *source = g_socket_create_source(socket, G_IO_IN, NULL);
+
+  g_source_set_callback(source, (GSourceFunc) BluetoothContext::OnSocketHasData,
+                        this, NULL);
+  g_source_attach(source, NULL);
+  g_source_unref(source);
 }
 
 void BluetoothContext::OnServiceAddRecord(GObject* object, GAsyncResult* res) {

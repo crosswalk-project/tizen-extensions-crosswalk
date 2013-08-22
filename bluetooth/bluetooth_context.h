@@ -161,6 +161,9 @@ class BluetoothContext {
 
   void DeviceFound(std::string address, GVariantIter* properties);
 
+  static gboolean OnSocketHasData(GSocket* client, GIOCondition cond,
+                              gpointer user_data);
+
   GDBusProxy* manager_proxy_;
   std::map<std::string, std::string> callbacks_map_;
   std::map<std::string, std::string> object_path_address_map_;
