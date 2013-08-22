@@ -28,6 +28,8 @@ extension.setMessageListener(function(json) {
     handleAdapterUpdated(msg);
   else if (msg.cmd == 'RFCOMMSocketAccept')
     handleRFCOMMSocketAccept(msg);
+  else if (msg.cmd == "SocketHasData")
+    handleSocketHasData(msg);
   else { // Then we are dealing with postMessage return.
     var reply_id = msg.reply_id;
     var callback = _callbacks[reply_id];
@@ -191,6 +193,21 @@ var handleRFCOMMSocketAccept = function(msg) {
     }
   }
 };
+
+var handleSocketHasData = function(msg) {
+  for (var i in adapter.sockets) {
+    var socket = adapter.sockets[i];
+    if (socket.socket_fd === msg.socket_fd) {
+      socket.data = msg.data;
+
+      if (socket.onmessage && typeof socket.onmessage == 'function')
+        socket.onmessage();
+
+      socket.data = [];
+      return;
+    }
+  }
+}
 
 var defaultAdapter = new BluetoothAdapter();
 
@@ -775,7 +792,11 @@ Object.defineProperty(BluetoothSocket, 'BluetoothSocketState', {
 
 
 BluetoothSocket.prototype.writeData = function(data) {/*return ulong*/};
-BluetoothSocket.prototype.readData = function() {/*return byte[]*/};
+
+BluetoothSocket.prototype.readData = function() {
+  return this.data;
+};
+
 BluetoothSocket.prototype.close = function() {/*return byte[]*/};
 
 function BluetoothClass() {}
