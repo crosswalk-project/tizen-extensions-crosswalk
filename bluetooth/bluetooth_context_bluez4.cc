@@ -604,23 +604,25 @@ void BluetoothContext::HandleDestroyBonding(const picojson::value& msg) {
 
 gboolean BluetoothContext::OnSocketHasData(GSocket* client, GIOCondition cond,
                                               gpointer user_data) {
+  BluetoothContext* handler = reinterpret_cast<BluetoothContext*>(user_data);
+  int fd = g_socket_get_fd(client);
+  picojson::value::object o;
 
   if (cond & G_IO_ERR || cond & G_IO_HUP) {
-    // FIXME(vcgomes): Notify that the socket has closed
+    o["cmd"] = picojson::value("SocketClosed");
+    o["socket_fd"] = picojson::value(static_cast<double>(fd));
+
+    handler->PostMessage(picojson::value(o));
+
     return false;
   }
 
-  BluetoothContext* handler = reinterpret_cast<BluetoothContext*>(user_data);
-
-  int fd = g_socket_get_fd(client);
   gchar buf[512];
   gssize len;
 
   len = g_socket_receive(client, buf, sizeof(buf), NULL, NULL);
   if (len < 0)
     return false;
-
-  picojson::value::object o;
 
   o["cmd"] = picojson::value("SocketHasData");
   o["socket_fd"] = picojson::value(static_cast<double>(fd));
