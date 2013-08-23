@@ -691,6 +691,8 @@ void BluetoothContext::OnServiceAddRecord(GObject* object, GAsyncResult* res) {
     GSocket *socket = g_socket_new_from_fd(sk, NULL);
     g_socket_set_blocking(socket, false);
 
+    servers_.push_back(socket);
+
     g_socket_listener_add_socket(rfcomm_listener_, socket, NULL, NULL);
 
     g_socket_listener_accept_async(rfcomm_listener_, NULL,
@@ -814,4 +816,69 @@ picojson::value BluetoothContext::HandleSocketWriteData(const picojson::value& m
   o["size"] = picojson::value(static_cast<double>(len));
 
   SetSyncReply(picojson::value(o));
+}
+
+void BluetoothContext::HandleCloseSocket(const picojson::value& msg) {
+  int fd = static_cast<int>(msg.get("socket_fd").get<double>());
+  std::vector<GSocket*>::iterator it = sockets_.begin();
+
+  for (; it != sockets_.end(); ++it) {
+    GSocket *socket = *it;
+
+    if (g_socket_get_fd(socket) == fd) {
+      g_socket_close(socket, NULL);
+      break;
+    }
+  }
+
+  picojson::value::object o;
+  o["cmd"] = picojson::value("");
+  o["reply_id"] = msg.get("reply_id");
+  o["error"] = picojson::value(static_cast<double>(0));
+
+  picojson::value v(o);
+  PostMessage(v);
+}
+
+void BluetoothContext::OnServiceRemoveRecord(GObject* object, GAsyncResult* res) {
+  GError* error = 0;
+  GVariant* result = g_dbus_proxy_call_finish(service_proxy_, res, &error);
+  picojson::value::object o;
+
+  if (!result) {
+    o["error"] = picojson::value(static_cast<double>(1));
+  } else {
+    o["error"] = picojson::value(static_cast<double>(0));
+    g_variant_unref(result);
+  }
+
+  o["cmd"] = picojson::value("");
+  o["reply_id"] = picojson::value(callbacks_map_["UnregisterServer"]);
+
+  callbacks_map_.erase("UnregisterServer");
+
+  PostMessage(picojson::value(o));
+}
+
+void BluetoothContext::HandleUnregisterServer(const picojson::value& msg) {
+  int fd = static_cast<int>(msg.get("server_fd").get<double>());
+  uint32_t handle = static_cast<uint32_t>(msg.get("sdp_handle").get<double>());
+  std::vector<GSocket*>::iterator it = servers_.begin();
+
+  for (; it != servers_.end(); ++it) {
+    GSocket *socket = *it;
+
+    if (g_socket_get_fd(socket) == fd) {
+      g_socket_close(socket, NULL);
+      break;
+    }
+  }
+
+  callbacks_map_["UnregisterServer"] = msg.get("reply_id").to_str();
+
+  g_dbus_proxy_call(service_proxy_, "RemoveRecord",
+                    g_variant_new("(u)", handle),
+                    G_DBUS_CALL_FLAGS_NONE, -1, all_pending_,
+                    OnServiceRemoveRecordThunk,
+                    CancellableWrap(all_pending_, this));
 }

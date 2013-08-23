@@ -104,6 +104,8 @@ class BluetoothContext {
   void HandleDestroyBonding(const picojson::value& msg);
   void HandleRFCOMMListen(const picojson::value& msg);
   picojson::value HandleSocketWriteData(const picojson::value& msg);
+  void HandleCloseSocket(const picojson::value& msg);
+  void HandleUnregisterServer(const picojson::value& msg);
 
   void PostMessage(picojson::value v);
   void SetSyncReply(picojson::value v);
@@ -153,6 +155,7 @@ class BluetoothContext {
   G_CALLBACK_CANCELLABLE_1(OnServiceProxyCreated, GObject*, GAsyncResult*);
   G_CALLBACK_CANCELLABLE_1(OnServiceAddRecord, GObject*, GAsyncResult*);
   G_CALLBACK_1(OnListenerAccept, GObject*, GAsyncResult*);
+  G_CALLBACK_CANCELLABLE_1(OnServiceRemoveRecord, GObject*, GAsyncResult*);
 
   static void OnSignal(GDBusProxy* proxy, gchar* sender_name, gchar* signal,
       GVariant* parameters, gpointer user_data);
@@ -173,6 +176,7 @@ class BluetoothContext {
   int pending_listen_socket_;
 
   std::vector<GSocket*> sockets_;
+  std::vector<GSocket*> servers_;
 
   GSocketListener *rfcomm_listener_;
 
