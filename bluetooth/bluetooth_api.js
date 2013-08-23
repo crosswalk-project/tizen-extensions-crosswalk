@@ -30,6 +30,8 @@ extension.setMessageListener(function(json) {
     handleRFCOMMSocketAccept(msg);
   else if (msg.cmd == "SocketHasData")
     handleSocketHasData(msg);
+  else if (msg.cmd == "SocketClosed")
+    handleSocketClosed(msg);
   else { // Then we are dealing with postMessage return.
     var reply_id = msg.reply_id;
     var callback = _callbacks[reply_id];
@@ -204,6 +206,19 @@ var handleSocketHasData = function(msg) {
         socket.onmessage();
 
       socket.data = [];
+      return;
+    }
+  }
+}
+
+var handleSocketClosed = function(msg) {
+  for (var i in adapter.sockets) {
+    var socket = adapter.sockets[i];
+    if (socket.socket_fd === msg.socket_fd) {
+      if (socket.onclose && typeof socket.onmessage == 'function')
+        socket.onclose();
+
+      _addConstProperty(socket, "isConnected", false);
       return;
     }
   }
