@@ -640,6 +640,8 @@ void BluetoothContext::OnListenerAccept(GObject* object, GAsyncResult* res) {
     return;
   }
 
+  sockets_.push_back(socket);
+
   int fd = g_socket_get_fd(socket);
   uint32_t channel = rfcomm_get_channel(fd);
   char address[18]; // "XX:XX:XX:XX:XX:XX"
@@ -788,4 +790,26 @@ void BluetoothContext::OnGotDeviceProperties(GObject* object, GAsyncResult* res)
 
   picojson::value v(o);
   PostMessage(v);
+}
+
+picojson::value BluetoothContext::HandleSocketWriteData(const picojson::value& msg) {
+  int fd = static_cast<int>(msg.get("socket_fd").get<double>());
+  std::vector<GSocket*>::iterator it = sockets_.begin();
+  gssize len = 0;
+
+  for (; it != sockets_.end(); ++it) {
+    GSocket *socket = *it;
+
+    if (g_socket_get_fd(socket) == fd) {
+      std::string data = msg.get("data").to_str();
+
+      len = g_socket_send(socket, data.c_str(), data.length(), NULL, NULL);
+      break;
+    }
+  }
+
+  picojson::value::object o;
+  o["size"] = picojson::value(static_cast<double>(len));
+
+  SetSyncReply(picojson::value(o));
 }

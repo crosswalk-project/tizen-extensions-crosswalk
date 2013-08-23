@@ -103,6 +103,7 @@ class BluetoothContext {
   void HandleCreateBonding(const picojson::value& msg);
   void HandleDestroyBonding(const picojson::value& msg);
   void HandleRFCOMMListen(const picojson::value& msg);
+  picojson::value HandleSocketWriteData(const picojson::value& msg);
 
   void PostMessage(picojson::value v);
   void SetSyncReply(picojson::value v);
@@ -170,6 +171,8 @@ class BluetoothContext {
 
   GDBusProxy* service_proxy_;
   int pending_listen_socket_;
+
+  std::vector<GSocket*> sockets_;
 
   GSocketListener *rfcomm_listener_;
 
