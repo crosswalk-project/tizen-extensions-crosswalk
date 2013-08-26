@@ -1,0 +1,108 @@
+<h2>Tizen-WRT Text Editor</h2>
+
+<body>
+
+<input type="text" size=50 id="path">
+<button id="save" onclick="load()">Load</button>
+<button id="save" onclick="save()">Save</button>
+<button id="save" onclick="del()">Delete</button>
+<br>
+
+<h1 id="filename">Untitled</h1>
+<h2 id="lastmodified">Last modified: now</h2>
+<h2 id="size">Size: unknown</h2>
+
+<hr>
+
+<textarea cols=50 rows=20 id="editor"></textarea>
+
+<script>
+
+var editor = document.getElementById('editor');
+
+function updateStatusInfo(file) {
+   document.title = document.getElementById("filename").innerText = file.fullPath;
+   document.getElementById("lastmodified").innerText = 'Last modified: ' + file.modified;
+   document.getElementById("size").innerText = 'Size: ' + file.fileSize + 'bytes';
+}
+
+function load() {
+   var path = document.getElementById("path").value;
+   if (path == '') {
+      console.log('Type a file path and try again');
+      return;
+   }
+   try {
+      var file = new tizen.filesystem.File(path);
+      file.readAsText(function(contents) {
+         editor.value = contents;
+
+         updateStatusInfo(this);
+      }.bind(file),
+      function(error) {
+         console.log(error);
+      });
+   } catch (e) {
+      console.log(e);
+   }
+}
+
+function save() {
+   var path = document.getElementById("path").value;
+   if (path == '') {
+      console.log('Type a file path and try again');
+      return;
+   }
+   try {
+      var file = new tizen.filesystem.File(path);
+      file.openStream('w',
+         function(stream) {
+            stream.write(editor.value);
+            stream.close();
+
+            updateStatusInfo(this);
+         }.bind(file),
+         function(error) {
+            if (this.readOnly) {
+               console.log('File is read-only');
+               return;
+            }
+            if (this.isDirectory) {
+               console.log('Path is a directory');
+               return;
+            }
+            if (!this.isFile) {
+               console.log('Path is not a regular file');
+               return;
+            }
+            console.log('Error while opening file for writing: ' +
+               error);
+         }.bind(file));
+   } catch (e) {
+      console.log(e);
+   }
+}
+
+function del() {
+   var path = document.getElementById("path").value;
+   if (path == '') {
+      console.log('Type a file path and try again');
+      return;
+   }
+   try {
+      var file = new tizen.filesystem.File(path);
+      file.deleteFile('',
+      	function() {
+      	   console.log('Deleted ' + this + ' with success');
+      	}.bind(this.filePath),
+      	function(error) {
+      	   console.log('Error while deleting: ' + JSON.strinfigy(error));
+      	});
+   } catch (e) {
+      console.log(e);
+   }
+
+}
+
+</script>
+
