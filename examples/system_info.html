@@ -317,6 +317,24 @@ handle("wifi_network_btn", function() {
 });
 
 handle("cellular_network_btn", function() {
+  var id = tizen.systeminfo.addPropertyValueChangeListener(
+               "CELLULAR_NETWORK",
+               function(cellular) {
+                 output.value += '\n Property CELLULAR_NETWORK changed.';
+                 output.value += '\n\t status: ' + cellular.status;
+                 output.value += '\n\t apn: ' + cellular.apn;
+                 output.value += '\n\t ipAddress: ' + cellular.ipAddress;
+                 output.value += '\n\t ipv6Address: ' + cellular.ipv6Address;
+                 output.value += '\n\t mcc: ' + cellular.mcc;
+                 output.value += '\n\t mnc: ' + cellular.mnc;
+                 output.value += '\n\t cellId: ' + cellular.cellId;
+                 output.value += '\n\t lac: ' + cellular.lac;
+                 output.value += '\n\t isRoaming: ' + cellular.isRoaming;
+                 output.value += '\n\t isFlightMode: ' + cellular.isFlightMode;
+                 output.value += '\n\t imei: ' + cellular.imei;
+                 output.scrollTop = output.scrollHeight;
+              });
+
   tizen.systeminfo.getPropertyValue(
     "CELLULAR_NETWORK",
     function(cellular) {
@@ -338,6 +356,21 @@ handle("cellular_network_btn", function() {
 });
 
 handle("sim_btn", function() {
+  var id = tizen.systeminfo.addPropertyValueChangeListener(
+               "SIM",
+               function(sim) {
+                 output.value += '\n Property SIM changed.';
+                 output.value += '\n\t state: ' + sim.state;
+                 output.value += '\n\t operatorName: ' + sim.operatorName;
+                 output.value += '\n\t msisdn: ' + sim.msisdn;
+                 output.value += '\n\t iccid: ' + sim.iccid;
+                 output.value += '\n\t mcc: ' + sim.mcc;
+                 output.value += '\n\t mnc: ' + sim.mnc;
+                 output.value += '\n\t msin: ' + sim.msin;
+                 output.value += '\n\t spn: ' + sim.spn;
+                 output.scrollTop = output.scrollHeight;
+              });
+
   tizen.systeminfo.getPropertyValue(
     "SIM",
     function(sim) {
