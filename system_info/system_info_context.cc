@@ -69,7 +69,7 @@ void SystemInfoContext::HandleGetPropertyValue(const picojson::value& input,
     storage_.Get(error, data);
   } else if (prop == "DISPLAY") {
     display_.Get(error, data);
-  } else if (prop == "DEVICE_ORIENTATION ") {
+  } else if (prop == "DEVICE_ORIENTATION") {
     device_orientation_.Get(error, data);
   } else if (prop == "BUILD") {
     build_.Get(error, data);
@@ -111,7 +111,7 @@ void SystemInfoContext::HandleStartListening(const picojson::value& input) {
     storage_.StartListening();
   } else if (prop == "DISPLAY") {
     display_.StartListening();
-  } else if (prop == "DEVICE_ORIENTATION ") {
+  } else if (prop == "DEVICE_ORIENTATION") {
     device_orientation_.StartListening();
   } else if (prop == "BUILD") {
     build_.StartListening();
@@ -141,7 +141,7 @@ void SystemInfoContext::HandleStopListening(const picojson::value& input) {
     storage_.StopListening();
   } else if (prop == "DISPLAY") {
     display_.StopListening();
-  } else if (prop == "DEVICE_ORIENTATION ") {
+  } else if (prop == "DEVICE_ORIENTATION") {
     device_orientation_.StopListening();
   } else if (prop == "BUILD") {
     build_.StopListening();

@@ -187,8 +187,16 @@ handle("display_btn", function() {
 });
 
 handle("device_orientation_btn", function() {
+  var id = tizen.systeminfo.addPropertyValueChangeListener(
+               "DEVICE_ORIENTATION",
+               function(orientation) {
+                 output.value += '\n Property DEVICE_ORIENTATION changed.';
+                 output.value += '\n\t status: ' + orientation.status;
+                 output.value += '\n\t isAutoRotation: ' + orientation.isAutoRotation;
+                 output.scrollTop = output.scrollHeight;
+              });
   tizen.systeminfo.getPropertyValue(
-    "DEVICE_ORIENTATION ",
+    "DEVICE_ORIENTATION",
     function(orientation) {
       output.value += '\n Get property DEVICE_ORIENTATION returned.';
       output.value += '\n\t status: ' + orientation.status;

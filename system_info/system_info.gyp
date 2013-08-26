@@ -18,6 +18,7 @@
         [ 'extension_host_os == "mobile"', {
           'variables': {
             'packages': [
+              'appcore-common',
               'capi-network-connection',
               'capi-system-info',
               'capi-system-runtime-info',
