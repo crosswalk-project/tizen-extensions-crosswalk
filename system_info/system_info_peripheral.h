@@ -4,12 +4,7 @@
 
 #ifndef SYSTEM_INFO_SYSTEM_INFO_PERIPHERAL_H_
 #define SYSTEM_INFO_SYSTEM_INFO_PERIPHERAL_H_
-#if defined(GENERIC_DESKTOP)
 
-#elif defined(TIZEN_MOBILE)
-#include <vconf.h>
-#include <tizen.h>
-#endif
 #include "common/extension_adapter.h"
 #include "common/picojson.h"
 #include "common/utils.h"
