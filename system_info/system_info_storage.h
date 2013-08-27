@@ -6,7 +6,9 @@
 #define SYSTEM_INFO_SYSTEM_INFO_STORAGE_H_
 
 #include <glib.h>
+#if defined(GENERIC_DESKTOP)
 #include <libudev.h>
+#endif
 #include <string>
 
 #include "common/extension_adapter.h"
@@ -21,10 +23,7 @@ class SysInfoStorage {
     return instance;
   }
   ~SysInfoStorage();
-  // Get support
   void Get(picojson::value& error, picojson::value& data);
-
-  // Listerner support
   inline void StartListening() {
     stopping_ = false;
     // FIXME(halton): Use udev D-Bus interface to monitor.
@@ -37,18 +36,24 @@ class SysInfoStorage {
  private:
   explicit SysInfoStorage(ContextAPI* api);
   bool Update(picojson::value& error);
+  static gboolean OnUpdateTimeout(gpointer user_data);
+
+  bool stopping_;
+  ContextAPI* api_;
+  picojson::value units_;
+
+#if defined(GENERIC_DESKTOP)
   void GetDetails(const std::string& mnt_fsname,
                   const std::string& mnt_dir,
                   picojson::value& error,
                   picojson::value& unit);
-  static gboolean OnUpdateTimeout(gpointer user_data);
   std::string GetDevPathFromMountPath(const std::string& mnt_path);
 
-  ContextAPI* api_;
   struct udev* udev_;
-
-  bool stopping_;
-  picojson::value units_;
+#elif defined(TIZEN_MOBILE)
+  bool GetInternal(picojson::value& error, picojson::value& unit);
+  bool GetMMC(picojson::value& error, picojson::value& unit);
+#endif
 
   DISALLOW_COPY_AND_ASSIGN(SysInfoStorage);
 };
