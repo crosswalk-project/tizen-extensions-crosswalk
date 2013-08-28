@@ -18,6 +18,7 @@ Source4:    %{_examples_package}
 Source1001: %{name}.manifest
 
 BuildRequires: python
+BuildRequires: pkgconfig(appcore-common)
 BuildRequires: pkgconfig(capi-appfw-application)
 BuildRequires: pkgconfig(capi-network-bluetooth)
 BuildRequires: pkgconfig(capi-network-connection)
