@@ -11,3 +11,5 @@ void SysInfoPeripheral::Get(picojson::value& error,
   system_info::SetPicoJsonObjectValue(error, "message",
       picojson::value("Peripheral is not supported on desktop."));
 }
+
+void SysInfoPeripheral::PlatformInitialize() { }
