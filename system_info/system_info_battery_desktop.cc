@@ -24,6 +24,14 @@ SysInfoBattery::~SysInfoBattery() {
     udev_unref(udev_);
 }
 
+void SysInfoBattery::StartListening() {
+  // FIXME(halton): Use udev D-Bus interface to monitor.
+  g_timeout_add(system_info::default_timeout_interval,
+                SysInfoBattery::OnUpdateTimeout,
+                static_cast<gpointer>(this));
+  stopping_ = false;
+}
+
 void SysInfoBattery::Get(picojson::value& error,
                          picojson::value& data) {
   if (!Update(error)) {
@@ -90,7 +98,7 @@ gboolean SysInfoBattery::OnUpdateTimeout(gpointer user_data) {
 
   double old_level = instance->level_;
   double old_charging = instance->charging_;
-  picojson::value error = picojson::value(picojson::object());;
+  picojson::value error = picojson::value(picojson::object());
   if (!instance->Update(error)) {
     // Fail to update, wait for next round
     return TRUE;
@@ -98,7 +106,7 @@ gboolean SysInfoBattery::OnUpdateTimeout(gpointer user_data) {
 
   if ((old_level != instance->level_) ||
       (old_charging != instance->charging_)) {
-    picojson::value output = picojson::value(picojson::object());;
+    picojson::value output = picojson::value(picojson::object());
     picojson::value data = picojson::value(picojson::object());
 
     instance->SetData(data);
