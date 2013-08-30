@@ -14,7 +14,8 @@ NetworkBearerSelectionContext::NetworkBearerSelectionContext(ContextAPI* api)
     : api_(api) {
 }
 
-const char NetworkBearerSelectionContext::name[] = "tizen.networkbearerselection";
+const char NetworkBearerSelectionContext::name[] =
+    "tizen.networkbearerselection";
 
 const char* NetworkBearerSelectionContext::GetJavaScript() {
   return kSource_network_bearer_selection_api;
