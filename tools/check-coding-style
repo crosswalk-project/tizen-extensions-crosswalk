@@ -21,7 +21,6 @@ cpplint.py --filter=$FILTERS $(find \
                                ! -path './bluetooth/*' \
                                ! -path './download/*' \
                                ! -path './network_bearer_selection/*' \
-                               ! -path './notification/*' \
                                ! -path './power/*' \
                                ! -path './system_info/*' \
                                ! -path './system_setting/*' \
