@@ -82,6 +82,31 @@
                 '<@(_outputs)',
               ],
             },
+            {
+              'variables': {
+                'generate_args': [
+                  '_system_info_demo_package',
+                  'crosswalk-system-info-demo',
+                  '/usr/bin/tizen-extensions-crosswalk-system-info-demo',
+                  'Crosswalk System Info Demo',
+                ],
+              },
+              'action_name': 'system_info_demo',
+              'inputs': [
+                'tools/generate_manifest.py',
+                'packaging/tizen-extensions-crosswalk.spec',
+                'tizen-extensions-crosswalk.xml.in',
+              ],
+              'outputs': [
+                'tizen-extensions-crosswalk-system-info-demo.xml',
+              ],
+              'action': [
+                'python',
+                '<@(_inputs)',
+                '<@(generate_args)',
+                '<@(_outputs)',
+              ],
+            },
           ],
         }],
       ],

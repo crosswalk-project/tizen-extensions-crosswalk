@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="user-scalable=0, width=device-width, initial-scale=1, maximum-scale=1"/>
+    <meta name="copyright" content="© 2013 Intel" />
+    <title>System Info Demo Desktop</title>
+    <link href="css/system_info_desktop.css" rel="stylesheet"/>
+    <script language="javascript" src="js/jquery.min.js"></script>
+    <script language="javascript" src="js/jquery.ascensor.min.js"></script>
+    <script language="javascript" src="js/flotr2.min.js"></script>
+  </head>
+  <body>
+		<div id="main" class="main">
+			<div class="navigation">
+        <div class="title center">
+          <h3>System Info</h3>
+          <h2>Desktop</h2>
+        </div>
+        <div class="masonry center">
+          <ul class="nav-ul">
+            <li class="nav1"><a>HOME</a></li>
+            <li class="nav2"><a class="ascensorLink ascensorLink1">DISPLAY</a></li>
+            <li class="nav3"><a class="ascensorLink ascensorLink2">BUI&amp;LOC</a></li>
+            <li class="nav6"><a class="ascensorLink ascensorLink5">CPUSTAT</a></li>
+            <li class="nav5"><a class="ascensorLink ascensorLink4">STORAGE</a></li>
+            <li class="nav4"><a class="ascensorLink ascensorLink3">NETSTAT</a></li>
+          </ul>
+        </div>
+      </div>
+			<div class="display">
+        <div class="title center">
+          <h3 class="ascensorLink ascensorLink0">HOME</h3>
+          <h2>Display Status</h2>
+        </div>
+        <div class="display_status" id="display_status">
+          <div class="display_physical" id="display_physical">
+            <p class="center">PHYSICAL</p>
+            <div class="display_screen" id="display_screen">
+              <p class="center">SCREEN</p>
+            </div>
+          </div>
+        </div>
+      </div>
+			<div class="buildlocale">
+        <div class="title center">
+          <h3 class="ascensorLink ascensorLink0">HOME</h3>
+          <h2>Build &amp; Locale Status</h2>
+        </div>
+        <div class="build" id="build">
+          <div class="build-wrapper">
+            <div class="builds">BUILD</div>
+          </div>
+        </div>
+        <div class="locale" id="locale">
+          <div class="locale-wrapper">
+            <div class="locales">LOCALE</div>
+          </div>
+        </div>
+      </div>
+			<div class="network">
+        <div class="title center">
+          <h3 class="ascensorLink ascensorLink0">HOME</h3>
+          <h2>Network Status</h2>
+        </div>
+        <div class="bubble">
+          <div class="rectangle">
+            <h2 id="network_type"></h2>
+          </div>
+          <div class="info" id="wifi_network_info">
+          </div>
+        </div>
+      </div>
+			<div class="storage">
+        <div class="title center">
+          <h3 class="ascensorLink ascensorLink0">HOME</h3>
+          <h2>Storage Status</h2>
+        </div>
+        <div class="storage_container" id="storage_container"></div>
+      </div>
+			<div class="cpu">
+        <div class="title center">
+          <h3 class="ascensorLink ascensorLink0">HOME</h3>
+          <h2>CPU Status</h2>
+        </div>
+        <div class="cpu_container" id="cpu_container"></div>
+      </div>
+		</div>
+    <a class="nav-left ascensorLinkPrev">&lArr;</a>
+    <a class="nav-right ascensorLinkNext">&rArr;</a>
+    <script language="javascript" src="js/system_info.js"></script>
+    <script language="javascript" src="js/system_info_desktop.js"></script>
+  </body>
+</html>
