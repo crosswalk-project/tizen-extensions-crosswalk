@@ -19,7 +19,7 @@ void SysInfoDeviceOrientation::Get(picojson::value& error,
 }
 
 void SysInfoDeviceOrientation::SetStatus() {
-  unsigned long event;
+  unsigned long event;  // NOLINT
 
   int r = sf_check_rotation(&event);
   if (r < 0) {

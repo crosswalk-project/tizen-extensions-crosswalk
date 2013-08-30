@@ -229,7 +229,7 @@ void SysInfoCellularNetwork::UpdateFlightMode(int flight_mode) {
   SetIpAddress();
   SetMcc();
   SetMnc();
-  SetLac();  
+  SetLac();
   SendUpdate();
 }
 

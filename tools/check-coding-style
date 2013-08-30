@@ -8,11 +8,13 @@ if [ ! `which cpplint.py` ]; then
    exit 1
 fi
 
-FILTERS="-readability/streams"
+# FIXME(cmarcelo): the exception 'runtime/references' is for system_info/, we
+# need to verify whether is really necessary or should be fixed.
+FILTERS="-readability/streams,-runtime/references"
 
 # TODO(cmarcelo): Skipping directories so we can enable style
 # gradually, since it wasn't enforced before.
-cpplint.py --filter=$FILTERS $(find \
+cpplint.py --filter="$FILTERS" $(find \
                                ! -path './out*' ! -path './.git*' \
                                ! -path './demos' ! -path './examples' \
                                ! -path './packaging' \
@@ -20,6 +22,4 @@ cpplint.py --filter=$FILTERS $(find \
                                ! -name 'picojson.*' \
                                ! -path './bluetooth/*' \
                                ! -path './download/*' \
-                               ! -path './system_info/*' \
-                               ! -path './system_setting/*' \
                                \( -name '*.h' -o -name '*.cc' \) )
