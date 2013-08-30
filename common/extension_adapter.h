@@ -2,11 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef EXTENSION_ADAPTER_H_
-#define EXTENSION_ADAPTER_H_
+#ifndef COMMON_EXTENSION_ADAPTER_H_
+#define COMMON_EXTENSION_ADAPTER_H_
 
 #include <cstdlib>
-#include "xwalk_extension_public.h"
+#include "xwalk_extension_public.h" // NOLINT
 
 class ContextAPI {
  public:
@@ -107,4 +107,4 @@ void ExtensionAdapter<T>::ContextDestroy(CXWalkExtensionContext* context) {
     return ExtensionAdapter<NAME>::Initialize();                \
   }
 
-#endif  // EXTENSION_ADAPTER_H_
+#endif  // COMMON_EXTENSION_ADAPTER_H_

@@ -19,7 +19,6 @@ cpplint.py --filter=$FILTERS $(find \
                                ! -name 'xwalk_extension_public.h' \
                                ! -name 'picojson.*' \
                                ! -path './bluetooth/*' \
-                               ! -path './common/*' \
                                ! -path './download/*' \
                                ! -path './network_bearer_selection/*' \
                                ! -path './notification/*' \
