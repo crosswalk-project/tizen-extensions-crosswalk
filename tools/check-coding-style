@@ -22,5 +22,4 @@ cpplint.py --filter=$FILTERS $(find \
                                ! -path './download/*' \
                                ! -path './system_info/*' \
                                ! -path './system_setting/*' \
-                               ! -path './tizen/*' \
                                \( -name '*.h' -o -name '*.cc' \) )
