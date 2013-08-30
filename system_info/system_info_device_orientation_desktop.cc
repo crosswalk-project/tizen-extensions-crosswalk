@@ -12,4 +12,4 @@ void SysInfoDeviceOrientation::Get(picojson::value& error,
       picojson::value("Device Orientation is not supported on desktop."));
 }
 
-void PlatformInitialize() { }
+void SysInfoDeviceOrientation::PlatformInitialize() { }
