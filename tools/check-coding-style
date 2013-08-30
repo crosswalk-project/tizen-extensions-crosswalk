@@ -23,6 +23,5 @@ cpplint.py --filter=$FILTERS $(find \
                                ! -path './network_bearer_selection/*' \
                                ! -path './system_info/*' \
                                ! -path './system_setting/*' \
-                               ! -path './time/*' \
                                ! -path './tizen/*' \
                                \( -name '*.h' -o -name '*.cc' \) )
