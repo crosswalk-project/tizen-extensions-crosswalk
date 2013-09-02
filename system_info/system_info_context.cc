@@ -126,7 +126,7 @@ void SystemInfoContext::HandleStartListening(const picojson::value& input) {
   } else if (prop == "SIM") {
     // FIXME(halton): Add SIM listener
   } else if (prop == "PERIPHERAL") {
-    // FIXME(halton): Add PERIPHERAL listener
+    peripheral_.StartListening();
   }
 }
 

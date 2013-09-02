@@ -4,7 +4,6 @@
 
 #include "system_info/system_info_battery.h"
 
-#include <vconf.h>
 #include <string>
 
 #include "common/picojson.h"
@@ -15,6 +14,11 @@ SysInfoBattery::SysInfoBattery(ContextAPI* api)
       charging_(false),
       stopping_(false) {
   api_ = api;
+
+  vconf_notify_key_changed(VCONFKEY_SYSMAN_BATTERY_CAPACITY,
+      (vconf_callback_fn)OnLevelChanged, this);
+  vconf_notify_key_changed(VCONFKEY_SYSMAN_BATTERY_CHARGE_NOW,
+      (vconf_callback_fn)OnIsChargingChanged, this);
 }
 
 SysInfoBattery::~SysInfoBattery() {
@@ -22,7 +26,14 @@ SysInfoBattery::~SysInfoBattery() {
 
 void SysInfoBattery::Get(picojson::value& error,
                          picojson::value& data) {
-  if (!Update(error)) {
+  int level = 0;
+  int charging = 0;
+
+  if (vconf_get_int(VCONFKEY_SYSMAN_BATTERY_CAPACITY, &level) == 0 &&
+      vconf_get_int(VCONFKEY_SYSMAN_BATTERY_CHARGE_NOW, &charging) == 0) {
+    charging_ = (charging == 0) ? false : true;
+    level_ = static_cast<double>(level)/100;
+  } else {
     system_info::SetPicoJsonObjectValue(error, "message",
         picojson::value("Battery not found."));
     return;
@@ -33,54 +44,22 @@ void SysInfoBattery::Get(picojson::value& error,
 }
 
 bool SysInfoBattery::Update(picojson::value& error) {
-  int level_info = 0;
-  int charging_info = 0;
+  picojson::value output = picojson::value(picojson::object());
+  picojson::value data = picojson::value(picojson::object());
 
-  if (vconf_get_int(VCONFKEY_SYSMAN_BATTERY_CAPACITY, &level_info) != 0)
-    return false;
+  SetData(data);
+  system_info::SetPicoJsonObjectValue(output, "cmd",
+      picojson::value("SystemInfoPropertyValueChanged"));
+  system_info::SetPicoJsonObjectValue(output, "prop",
+      picojson::value("BATTERY"));
+  system_info::SetPicoJsonObjectValue(output, "data", data);
 
-  level_ = static_cast<double>(level_info)/100;
-
-  if (vconf_get_int(VCONFKEY_SYSMAN_BATTERY_CHARGE_NOW, &charging_info) != 0)
-    return false;
-
-  charging_ = (charging_info == 0) ? false : true;
-
+  std::string result = output.serialize();
+  api_->PostMessage(result.c_str());
   return true;
 }
 
 gboolean SysInfoBattery::OnUpdateTimeout(gpointer user_data) {
-  SysInfoBattery* instance = static_cast<SysInfoBattery*>(user_data);
-
-  if (instance->stopping_) {
-    instance->stopping_ = false;
-    return FALSE;
-  }
-
-  double old_level = instance->level_;
-  double old_charging = instance->charging_;
-  picojson::value error = picojson::value(picojson::object());
-  if (!instance->Update(error)) {
-    // Fail to update, wait for next round
-    return TRUE;
-  }
-
-  if ((old_level != instance->level_) ||
-      (old_charging != instance->charging_)) {
-    picojson::value output = picojson::value(picojson::object());
-    picojson::value data = picojson::value(picojson::object());
-
-    instance->SetData(data);
-    system_info::SetPicoJsonObjectValue(output, "cmd",
-        picojson::value("SystemInfoPropertyValueChanged"));
-    system_info::SetPicoJsonObjectValue(output, "prop",
-        picojson::value("BATTERY"));
-    system_info::SetPicoJsonObjectValue(output, "data", data);
-
-    std::string result = output.serialize();
-    instance->api_->PostMessage(result.c_str());
-  }
-
   return TRUE;
 }
 
@@ -90,3 +69,37 @@ void SysInfoBattery::SetData(picojson::value& data) {
   system_info::SetPicoJsonObjectValue(data, "isCharging",
       picojson::value(charging_));
 }
+
+void SysInfoBattery::UpdateLevel(double level) {
+  if (level_ == level)
+    return;
+
+  level_ = level;
+  picojson::value error = picojson::value(picojson::object());
+  Update(error);
+}
+
+void SysInfoBattery::UpdateCharging(bool charging) {
+  if (charging_ == charging)
+    return;
+
+  charging_ = charging;
+  picojson::value error = picojson::value(picojson::object());
+  Update(error);
+}
+
+void SysInfoBattery::OnLevelChanged(keynode_t* node, void* user_data) {
+  double level = static_cast<double>(vconf_keynode_get_int(node)/100);
+  SysInfoBattery* battery = static_cast<SysInfoBattery*>(user_data);
+
+  battery->UpdateLevel(level);
+}
+
+void SysInfoBattery::OnIsChargingChanged(keynode_t* node, void* user_data) {
+  bool charging = vconf_keynode_get_bool(node);
+  SysInfoBattery* battery = static_cast<SysInfoBattery*>(user_data);
+
+  battery->UpdateCharging(charging);
+}
+
+void SysInfoBattery::StartListening() { }

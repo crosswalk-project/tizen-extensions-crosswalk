@@ -8,6 +8,11 @@
 #include <glib.h>
 #include <libudev.h>
 
+#if defined(TIZEN_MOBILE)
+#include <vconf.h>
+#include <vconf-keys.h>
+#endif
+
 #include "common/extension_adapter.h"
 #include "common/picojson.h"
 #include "common/utils.h"
@@ -21,13 +26,7 @@ class SysInfoBattery {
   }
   ~SysInfoBattery();
   void Get(picojson::value& error, picojson::value& data);
-  inline void StartListening() {
-    // FIXME(halton): Use udev D-Bus interface to monitor.
-    g_timeout_add(system_info::default_timeout_interval,
-                  SysInfoBattery::OnUpdateTimeout,
-                  static_cast<gpointer>(this));
-    stopping_ = false;
-  }
+  void StartListening();
   inline void StopListening() { stopping_ = true; }
 
  private:
@@ -36,6 +35,13 @@ class SysInfoBattery {
   static gboolean OnUpdateTimeout(gpointer user_data);
   bool Update(picojson::value& error);
   void SetData(picojson::value& data);
+
+#if defined(TIZEN_MOBILE)
+  void UpdateLevel(double level);
+  void UpdateCharging(bool charging);
+  static void OnLevelChanged(keynode_t* node, void* user_data);
+  static void OnIsChargingChanged(keynode_t* node, void* user_data);
+#endif
 
   ContextAPI* api_;
   struct udev* udev_;
