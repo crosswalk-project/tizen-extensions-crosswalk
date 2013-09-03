@@ -15,6 +15,14 @@ var postMessage = function(msg, callback) {
   extension.postMessage(JSON.stringify(msg));
 };
 
+var _checkThreshold = function(value, highThreshold, lowThreshold) {
+  if ((highThreshold && (highThreshold >= 0) && (value >= highThreshold)) ||
+      (lowThreshold && (lowThreshold >= 0) && (value <= lowThreshold)))
+    return true;
+
+  return false;
+}
+
 extension.setMessageListener(function(json) {
   var msg = JSON.parse(json);
 
@@ -23,7 +31,52 @@ extension.setMessageListener(function(json) {
     if (msg.prop && (0 !== msg.prop.length)) {
       for (var id in _listeners) {
         if (_listeners[id]["prop"] === msg.prop) {
-          // FIXME(halton): Here is ignoring option, should be added later
+          var option = _listeners[id]["option"];
+          if (option) {
+            var currentTime = (new Date()).valueOf();
+            var timeout = parseFloat(option["timeout"]);
+            var highThreshold = parseFloat(option["highThreshold"]);
+            var lowThreshold = parseFloat(option["lowThreshold"]);
+            var timeStamp = parseFloat(_listeners[id]["timestamp"]);
+            if (timeout && (currentTime - timeStamp) > timeout) {
+              delete _listeners[id];
+              if (!_hasListener(msg.prop)) {
+                var message = {
+                  'cmd': 'stopListening',
+                  'prop': msg.prop,
+                };
+                extension.postMessage(JSON.stringify(message));
+                return;
+              }
+              continue;
+            }
+            switch(msg.prop) {
+              case "BATTERY":
+                if (_checkThreshold(msg.data.level, highThreshold, lowThreshold))
+                  _listeners[id]["callback"](msg.data);
+                break;
+              case "CPU":
+                if (_checkThreshold(msg.data.load, highThreshold, lowThreshold))
+                  _listeners[id]["callback"](msg.data);
+                break;
+              case "DISPLAY":
+                if (_checkThreshold(msg.data.brightness, highThreshold, lowThreshold))
+                  _listeners[id]["callback"](msg.data);
+                break;
+              case "STORAGE":
+              case "DEVICE_ORIENTATION":
+              case "BUILD":
+              case "LOCALE":
+              case "NETWORK":
+              case "WIFI_NETWORK":
+              case "CELLULAR_NETWORK":
+              case "SIM":
+              case "PERIPHERAL":
+                _listeners[id]["callback"](msg.data);
+            }
+            _listeners[id]["timestamp"] = currentTime;
+            continue;
+          }
           _listeners[id]["callback"](msg.data);
         }
       }
@@ -101,21 +154,23 @@ exports.addPropertyValueChangeListener = function(prop, successCallback, option)
   if (typeof successCallback !== 'function')
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
 
-  if (option && (typeof listener !== 'object'))
+  if (option && (typeof option !== 'object'))
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
 
   if (!_hasListener(prop)) {
     var msg = {
-      'cmd': 'startListen',
+      'cmd': 'startListening',
       'prop': prop,
     };
     extension.postMessage(JSON.stringify(msg));
   }
 
+  var timeStamp = (new Date()).valueOf();
   var listener = {
     "prop": prop,
     "callback": successCallback,
     "option": option,
+    "timestamp": timeStamp,
   };
 
   var listener_id = _next_listener_id;
@@ -131,7 +186,7 @@ exports.removePropertyValueChangeListener = function(listenerId) {
   delete _listeners[listenerId];
   if (!_hasListener(prop)) {
     var msg = {
-      'cmd': 'stopListen',
+      'cmd': 'stopListening',
       'prop': prop,
     };
     extension.postMessage(JSON.stringify(msg));
