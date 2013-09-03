@@ -12,8 +12,8 @@
 
 namespace system_info {
 
-// The default timeout interval is set to 3s to match the top update interval.
-const int default_timeout_interval = 3000;
+// The default timeout interval is set to 1s to match the top update interval.
+const int default_timeout_interval = 1000;
 
 int ReadOneByte(const char* path);
 // Free the returned value after using.

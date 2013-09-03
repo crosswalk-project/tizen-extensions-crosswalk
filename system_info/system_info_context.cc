@@ -174,9 +174,9 @@ void SystemInfoContext::HandleMessage(const char* message) {
   if (cmd == "getPropertyValue") {
     picojson::value output = picojson::value(picojson::object());
     HandleGetPropertyValue(input, output);
-  } else if (cmd == "startListen") {
+  } else if (cmd == "startListening") {
     HandleStartListening(input);
-  } else if (cmd == "stopListen") {
+  } else if (cmd == "stopListening") {
     HandleStopListening(input);
   }
 }
