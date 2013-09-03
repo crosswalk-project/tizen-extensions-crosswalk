@@ -78,7 +78,9 @@ void BluetoothContext::HandleSyncMessage(const char* message) {
     return;
   }
 
-  SetSyncReply(v);
+  std::string cmd = v.get("cmd").to_str();
+  if (cmd == "GetDefaultAdapter")
+    HandleGetDefaultAdapter(v);
 }
 
 void BluetoothContext::HandleDiscoverDevices(const picojson::value& msg) {
@@ -148,6 +150,26 @@ void BluetoothContext::FlushPendingMessages() {
   }
 }
 
+void BluetoothContext::AdapterInfoToValue(picojson::value::object& o) {
+  o["cmd"] = picojson::value("");
+
+  if (adapter_info_.empty()) {
+    o["error"] = picojson::value(static_cast<double>(1));
+    return;
+  }
+
+  o["name"] = picojson::value(adapter_info_["Name"]);
+  o["address"] = picojson::value(adapter_info_["Address"]);
+
+  bool powered = (adapter_info_["Powered"] == "true") ? true : false;
+  o["powered"] = picojson::value(powered);
+
+  bool visible = (adapter_info_["Discoverable"] == "true") ? true : false;
+  o["visible"] = picojson::value(visible);
+
+  o["error"] = picojson::value(static_cast<double>(0));
+}
+
 void BluetoothContext::PostMessage(picojson::value v) {
   // If the JavaScript 'context' hasn't been initialized yet (i.e. the C++
   // backend was loaded and it is already executing but
@@ -166,9 +188,7 @@ void BluetoothContext::PostMessage(picojson::value v) {
 }
 
 void BluetoothContext::SetSyncReply(picojson::value v) {
-  std::string cmd = v.get("cmd").to_str();
-  if (cmd == "GetDefaultAdapter")
-    api_->SetSyncReply(HandleGetDefaultAdapter(v).serialize().c_str());
+  api_->SetSyncReply(v.serialize().c_str());
 
   FlushPendingMessages();
 }
