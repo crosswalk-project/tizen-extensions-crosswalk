@@ -76,9 +76,16 @@ void SysInfoPeripheral::OnHDMIChanged(keynode_t* node, void* user_data) {
   peripheral->SetHDMI(hdmi);
 }
 
-void SysInfoPeripheral::PlatformInitialize() {
+void SysInfoPeripheral::StartListening() {
   vconf_notify_key_changed(VCONFKEY_MIRACAST_WFD_SOURCE_STATUS,
       (vconf_callback_fn)OnWFDChanged, this);
   vconf_notify_key_changed(VCONFKEY_SYSMAN_HDMI,
       (vconf_callback_fn)OnHDMIChanged, this);
+}
+
+void SysInfoPeripheral::StopListening() {
+  vconf_ignore_key_changed(VCONFKEY_MIRACAST_WFD_SOURCE_STATUS,
+      (vconf_callback_fn)OnWFDChanged);
+  vconf_ignore_key_changed(VCONFKEY_SYSMAN_HDMI,
+      (vconf_callback_fn)OnHDMIChanged);
 }

@@ -118,13 +118,13 @@ void SystemInfoContext::HandleStartListening(const picojson::value& input) {
   } else if (prop == "LOCALE") {
     locale_.StartListening();
   } else if (prop == "NETWORK") {
-    // FIXME(halton): Add NETWORK listener
+    network_.StartListening();
   } else if (prop == "WIFI_NETWORK") {
-    // FIXME(halton): Add WIFI_NETWORK listener
+    wifi_network_.StartListening();
   } else if (prop == "CELLULAR_NETWORK") {
-    // FIXME(halton): Add CELLULAR_NETWORK listener
+    cellular_network_.StartListening();
   } else if (prop == "SIM") {
-    // FIXME(halton): Add SIM listener
+    sim_.StartListening();
   } else if (prop == "PERIPHERAL") {
     peripheral_.StartListening();
   }

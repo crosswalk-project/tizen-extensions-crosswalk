@@ -33,17 +33,14 @@ class SysInfoDeviceOrientation {
   }
   ~SysInfoDeviceOrientation() { }
   void Get(picojson::value& error, picojson::value& data);
-  void StartListening() { }
-  void StopListening() { }
+  void StartListening();
+  void StopListening();
 
  private:
   explicit SysInfoDeviceOrientation(ContextAPI* api)
     :status_(UNKNOWN) {
     api_ = api;
-    PlatformInitialize();
   }
-
-  void PlatformInitialize();
 
 #if defined(TIZEN_MOBILE)
   void SetStatus();
@@ -62,6 +59,7 @@ class SysInfoDeviceOrientation {
   ContextAPI* api_;
   SystemInfoDeviceOrientationStatus status_;
   bool isAutoRotation_;
+  int sensorHandle_;
 
   DISALLOW_COPY_AND_ASSIGN(SysInfoDeviceOrientation);
 };
