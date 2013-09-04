@@ -229,7 +229,7 @@ void SysInfoCellularNetwork::UpdateFlightMode(int flight_mode) {
   SetIpAddress();
   SetMcc();
   SetMnc();
-  SetLac();  
+  SetLac();
   SendUpdate();
 }
 
@@ -285,7 +285,7 @@ void SysInfoCellularNetwork::OnFlightModeChanged(keynode_t* node,
   cellular->UpdateFlightMode(flight_mode);
 }
 
-void SysInfoCellularNetwork::PlatformInitialize() {
+void SysInfoCellularNetwork::StartListening() {
   vconf_notify_key_changed(VCONFKEY_3G_ENABLE,
       (vconf_callback_fn)OnCellStatusChanged, this);
 
@@ -296,11 +296,30 @@ void SysInfoCellularNetwork::PlatformInitialize() {
       (vconf_callback_fn)OnCellIdChanged, this);
 
   vconf_notify_key_changed(VCONFKEY_TELEPHONY_LAC,
-      (vconf_callback_fn)OnCellIdChanged, this);
+      (vconf_callback_fn)OnLacChanged, this);
 
   vconf_notify_key_changed(VCONFKEY_TELEPHONY_SVC_ROAM,
       (vconf_callback_fn)OnRoamingStateChanged, this);
 
   vconf_notify_key_changed(VCONFKEY_TELEPHONY_FLIGHT_MODE,
       (vconf_callback_fn)OnFlightModeChanged, this);
+}
+
+void SysInfoCellularNetwork::StopListening() {
+  vconf_ignore_key_changed(VCONFKEY_3G_ENABLE,
+      (vconf_callback_fn)OnCellStatusChanged);
+
+  vconf_ignore_key_changed(VCONFKEY_NETWORK_IP, (vconf_callback_fn)OnIpChanged);
+
+  vconf_ignore_key_changed(VCONFKEY_TELEPHONY_CELLID,
+      (vconf_callback_fn)OnCellIdChanged);
+
+  vconf_ignore_key_changed(VCONFKEY_TELEPHONY_LAC,
+      (vconf_callback_fn)OnLacChanged);
+
+  vconf_ignore_key_changed(VCONFKEY_TELEPHONY_SVC_ROAM,
+      (vconf_callback_fn)OnRoamingStateChanged);
+
+  vconf_ignore_key_changed(VCONFKEY_TELEPHONY_FLIGHT_MODE,
+      (vconf_callback_fn)OnFlightModeChanged);
 }

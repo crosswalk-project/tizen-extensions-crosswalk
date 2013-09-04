@@ -14,11 +14,6 @@ SysInfoBattery::SysInfoBattery(ContextAPI* api)
       charging_(false),
       stopping_(false) {
   api_ = api;
-
-  vconf_notify_key_changed(VCONFKEY_SYSMAN_BATTERY_CAPACITY,
-      (vconf_callback_fn)OnLevelChanged, this);
-  vconf_notify_key_changed(VCONFKEY_SYSMAN_BATTERY_CHARGE_NOW,
-      (vconf_callback_fn)OnIsChargingChanged, this);
 }
 
 SysInfoBattery::~SysInfoBattery() {
@@ -102,4 +97,16 @@ void SysInfoBattery::OnIsChargingChanged(keynode_t* node, void* user_data) {
   battery->UpdateCharging(charging);
 }
 
-void SysInfoBattery::StartListening() { }
+void SysInfoBattery::StartListening() {
+  vconf_notify_key_changed(VCONFKEY_SYSMAN_BATTERY_CAPACITY,
+      (vconf_callback_fn)OnLevelChanged, this);
+  vconf_notify_key_changed(VCONFKEY_SYSMAN_BATTERY_CHARGE_NOW,
+      (vconf_callback_fn)OnIsChargingChanged, this);
+}
+
+void SysInfoBattery::StopListening() {
+  vconf_ignore_key_changed(VCONFKEY_SYSMAN_BATTERY_CAPACITY,
+      (vconf_callback_fn)OnLevelChanged);
+  vconf_ignore_key_changed(VCONFKEY_SYSMAN_BATTERY_CHARGE_NOW,
+      (vconf_callback_fn)OnIsChargingChanged);
+}

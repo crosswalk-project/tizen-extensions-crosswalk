@@ -23,16 +23,13 @@ class SysInfoPeripheral {
   }
   ~SysInfoPeripheral() { }
   void Get(picojson::value& error, picojson::value& data);
-  void StartListening() { }
-  void StopListening() { }
+  void StartListening();
+  void StopListening();
 
  private:
   explicit SysInfoPeripheral(ContextAPI* api) {
     api_ = api;
-    PlatformInitialize();
   }
-
-  void PlatformInitialize();
 
 #if defined(TIZEN_MOBILE)
   void SetWFD(int wfd);

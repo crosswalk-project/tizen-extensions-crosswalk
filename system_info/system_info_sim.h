@@ -21,10 +21,10 @@ class SysInfoSim {
     static SysInfoSim instance(api);
     return instance;
   }
-  ~SysInfoSim() { PlatformUninitialize(); }
+  ~SysInfoSim() { }
   void Get(picojson::value& error, picojson::value& data);
-  void StartListening() { }
-  void StopListening() { }
+  void StartListening();
+  void StopListening();
 
   enum SystemInfoSimState {
     SYSTEM_INFO_SIM_ABSENT = 0,
@@ -46,15 +46,12 @@ class SysInfoSim {
   explicit SysInfoSim(ContextAPI* api)
     : state_(SYSTEM_INFO_SIM_UNKNOWN) {
     api_ = api;
-    PlatformInitialize();
   }
 
 #if defined(TIZEN_MOBILE)
   std::string ToSimStateString(SystemInfoSimState state);
   SystemInfoSimState Get_systeminfo_sim_state(sim_state_e state);
 #endif
-  void PlatformInitialize();
-  void PlatformUninitialize();
 
   ContextAPI* api_;
   SystemInfoSimState state_;
