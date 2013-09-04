@@ -83,7 +83,7 @@ handle("cpu_btn", function() {
   var id = tizen.systeminfo.addPropertyValueChangeListener(
                "CPU",
                function(cpu) {
-                 output.value += '\n Property CPU changed.';
+                 output.value += '\n Property CPU changed with no option.';
                  output.value += '\n\t load : ' + parseFloat(cpu.load) * 100 + '%';
                  output.scrollTop = output.scrollHeight;
                  count += 1;
@@ -94,6 +94,45 @@ handle("cpu_btn", function() {
                    tizen.systeminfo.removePropertyValueChangeListener(id);
                  }
               });
+  var id1 = tizen.systeminfo.addPropertyValueChangeListener(
+               "CPU",
+               function(cpu) {
+                 output.value += '\n Property CPU changed with highThreshold 0.2.';
+                 output.value += '\n\t load : ' + parseFloat(cpu.load) * 100 + '%';
+                 output.scrollTop = output.scrollHeight;
+                 output.scrollTop = output.scrollHeight;
+                 },
+               {'highThreshold':0.2});
+
+  var id2 = tizen.systeminfo.addPropertyValueChangeListener(
+               "CPU",
+               function(cpu) {
+                 output.value += '\n Property CPU changed with lowThreshold 1.0.';
+                 output.value += '\n\t load : ' + parseFloat(cpu.load) * 100 + '%';
+                 output.scrollTop = output.scrollHeight;
+                 output.scrollTop = output.scrollHeight;
+                 },
+               {'lowThreshold':1.0});
+
+  var id3 = tizen.systeminfo.addPropertyValueChangeListener(
+               "CPU",
+               function(cpu) {
+                 output.value += '\n Property CPU changed with highThreshold 1.00, lowThreshold 1.10.';
+                 output.value += '\n\t load : ' + parseFloat(cpu.load) * 100 + '%';
+                 output.scrollTop = output.scrollHeight;
+                 output.scrollTop = output.scrollHeight;
+                 },
+               {'highThreshold':1.00, 'lowThreshold':1.10});
+
+  var id4 = tizen.systeminfo.addPropertyValueChangeListener(
+               "CPU",
+               function(cpu) {
+                 output.value += '\n Property CPU changed with timeout:6 seconds';
+                 output.value += '\n\t load : ' + parseFloat(cpu.load) * 100 + '%';
+                 output.scrollTop = output.scrollHeight;
+                 output.scrollTop = output.scrollHeight;
+                 },
+               {'timeout':6000});
 
   tizen.systeminfo.getPropertyValue(
     "CPU",
