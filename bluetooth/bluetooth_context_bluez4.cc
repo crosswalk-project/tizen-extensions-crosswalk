@@ -272,11 +272,12 @@ void BluetoothContext::OnAdapterCreateBonding(GObject*, GAsyncResult* res) {
     g_error_free(error);
 
     o["error"] = picojson::value(static_cast<double>(1));
+  } else {
+    g_variant_unref(result);
   }
 
   PostMessage(picojson::value(o));
   callbacks_map_.erase("CreateBonding");
-  g_variant_unref(result);
 }
 
 void BluetoothContext::OnAdapterDestroyBonding(GObject*, GAsyncResult* res) {
@@ -293,11 +294,12 @@ void BluetoothContext::OnAdapterDestroyBonding(GObject*, GAsyncResult* res) {
     g_error_free(error);
 
     o["error"] = picojson::value(static_cast<double>(2));
+  } else {
+    g_variant_unref(result);
   }
 
   PostMessage(picojson::value(o));
   callbacks_map_.erase("DestroyBonding");
-  g_variant_unref(result);
 }
 
 void BluetoothContext::OnFoundDevice(GObject*, GAsyncResult* res) {
