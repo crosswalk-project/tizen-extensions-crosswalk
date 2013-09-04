@@ -167,11 +167,11 @@ std::string SysInfoSim::ToSimStateString(SystemInfoSimState state) {
   return ret;
 }
 
-void SysInfoSim::PlatformInitialize() {
+void SysInfoSim::StartListening() {
   sim_set_state_changed_cb(OnSimStateChanged, this);
 }
 
-void SysInfoSim::PlatformUninitialize() {
+void SysInfoSim::StopListening() {
   sim_unset_state_changed_cb();
 }
 

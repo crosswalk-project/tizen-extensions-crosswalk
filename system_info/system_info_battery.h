@@ -27,7 +27,7 @@ class SysInfoBattery {
   ~SysInfoBattery();
   void Get(picojson::value& error, picojson::value& data);
   void StartListening();
-  inline void StopListening() { stopping_ = true; }
+  void StopListening();
 
  private:
   explicit SysInfoBattery(ContextAPI* api);

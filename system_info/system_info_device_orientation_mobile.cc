@@ -137,24 +137,33 @@ void SysInfoDeviceOrientation::OnAutoRotationChanged(keynode_t* node,
   orientation->SendUpdate();
 }
 
-void SysInfoDeviceOrientation::PlatformInitialize() {
+void SysInfoDeviceOrientation::StartListening() {
   vconf_notify_key_changed(VCONFKEY_SETAPPL_AUTO_ROTATE_SCREEN_BOOL,
       (vconf_callback_fn)OnAutoRotationChanged, this);
 
-  int handle = sf_connect(ACCELEROMETER_SENSOR);
-  if (handle < 0)
+  sensorHandle_ = sf_connect(ACCELEROMETER_SENSOR);
+  if (sensorHandle_ < 0)
     return;
 
-  int r = sf_register_event(handle, ACCELEROMETER_EVENT_ROTATION_CHECK,
+  int r = sf_register_event(sensorHandle_, ACCELEROMETER_EVENT_ROTATION_CHECK,
                             NULL, OnDeviceOrientationChanged, this);
   if (r < 0) {
-    sf_disconnect(handle);
+    sf_disconnect(sensorHandle_);
     return;
   }
 
-  r = sf_start(handle, 0);
+  r = sf_start(sensorHandle_, 0);
   if (r < 0) {
-    sf_unregister_event(handle, ACCELEROMETER_EVENT_ROTATION_CHECK);
-    sf_disconnect(handle);
+    sf_unregister_event(sensorHandle_, ACCELEROMETER_EVENT_ROTATION_CHECK);
+    sf_disconnect(sensorHandle_);
   }
+}
+
+void SysInfoDeviceOrientation::StopListening() {
+  vconf_ignore_key_changed(VCONFKEY_SETAPPL_AUTO_ROTATE_SCREEN_BOOL,
+      (vconf_callback_fn)OnAutoRotationChanged);
+
+  sf_unregister_event(sensorHandle_, ACCELEROMETER_EVENT_ROTATION_CHECK);
+  sf_stop(sensorHandle_);
+  sf_disconnect(sensorHandle_);
 }

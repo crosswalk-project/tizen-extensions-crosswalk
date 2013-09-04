@@ -26,16 +26,13 @@ class SysInfoCellularNetwork {
   }
   ~SysInfoCellularNetwork() { }
   void Get(picojson::value& error, picojson::value& data);
-  void StartListening() { }
-  void StopListening() { }
+  void StartListening();
+  void StopListening();
 
  private:
   explicit SysInfoCellularNetwork(ContextAPI* api) {
     api_ = api;
-    PlatformInitialize();
   }
-
-  void PlatformInitialize();
 
 #if defined(TIZEN_MOBILE)
   void SendUpdate();

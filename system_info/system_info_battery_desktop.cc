@@ -32,6 +32,10 @@ void SysInfoBattery::StartListening() {
   stopping_ = false;
 }
 
+void SysInfoBattery::StopListening() {
+  stopping_ = true;
+}
+
 void SysInfoBattery::Get(picojson::value& error,
                          picojson::value& data) {
   if (!Update(error)) {

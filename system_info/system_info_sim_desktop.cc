@@ -12,5 +12,5 @@ void SysInfoSim::Get(picojson::value& error,
       picojson::value("SIM is not supported on desktop."));
 }
 
-void SysInfoSim::PlatformInitialize() { }
-void SysInfoSim::PlatformUninitialize() { }
+void SysInfoSim::StartListening() { }
+void SysInfoSim::StopListening() { }
