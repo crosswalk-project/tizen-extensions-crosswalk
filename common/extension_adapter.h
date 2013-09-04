@@ -6,105 +6,97 @@
 #define COMMON_EXTENSION_ADAPTER_H_
 
 #include <cstdlib>
-#include "xwalk_extension_public.h" // NOLINT
+#include <map>
+#include "common/XW_Extension.h"
+#include "common/XW_Extension_SyncMessage.h"
+
+namespace internal {
+
+int32_t InitializeExtension(XW_Extension extension,
+                         XW_GetInterface get_interface,
+                         const char* name,
+                         const char* api,
+                         XW_CreatedInstanceCallback created,
+                         XW_DestroyedInstanceCallback destroyed,
+                         XW_HandleMessageCallback handle_message,
+                         XW_HandleSyncMessageCallback handle_sync_message);
+
+void PostMessage(XW_Instance instance, const char* message);
+void SetSyncReply(XW_Instance instance, const char* reply);
+
+}  // namespace internal
 
 class ContextAPI {
  public:
-  explicit ContextAPI(CXWalkExtensionContext* context) : context_(context) {}
-  void PostMessage(const char* message) {
-    xwalk_extension_context_post_message(context_, message);
-  }
+  explicit ContextAPI(XW_Instance instance) : instance_(instance) {}
 
-  void SetSyncReply(const char* message) {
-    xwalk_extension_context_set_sync_reply(context_, message);
+  void PostMessage(const char* message) {
+    internal::PostMessage(instance_, message);
+  }
+  void SetSyncReply(const char* reply) {
+    internal::SetSyncReply(instance_, reply);
   }
 
  private:
-  CXWalkExtensionContext* context_;
+  XW_Instance instance_;
 };
 
 template <class T>
 class ExtensionAdapter {
  public:
-  static CXWalkExtension* Initialize();
+  static int32_t Initialize(XW_Extension extension,
+                            XW_GetInterface get_interface);
 
  private:
-  struct Context {
-    CXWalkExtensionContext context;
-    T* cpp_context;
-  };
+  static void DidCreateInstance(XW_Instance instance);
+  static void DidDestroyInstance(XW_Instance instance);
 
-  static const char* GetJavaScript(CXWalkExtension* extension);
-  static void Shutdown(CXWalkExtension* extension);
-  static CXWalkExtensionContext* ContextCreate(CXWalkExtension* extension);
-  static void ContextHandleMessage(CXWalkExtensionContext* context,
-                                   const char* message);
-  static void ContextHandleSyncMessage(CXWalkExtensionContext* context,
-                                   const char* message);
-  static void ContextDestroy(CXWalkExtensionContext* context);
+  static void HandleMessage(XW_Instance instance, const char* message);
+  static void HandleSyncMessage(XW_Instance instance, const char* message);
+
+  typedef std::map<XW_Instance, T*> InstanceMap;
+  static InstanceMap g_instances;
 };
 
 template <class T>
-CXWalkExtension* ExtensionAdapter<T>::Initialize() {
-  CXWalkExtension* xwalk_extension =
-      static_cast<CXWalkExtension*>(calloc(1, sizeof(CXWalkExtension)));
-  xwalk_extension->name = T::name;
-  xwalk_extension->api_version = 1;
-  xwalk_extension->get_javascript = GetJavaScript;
-  xwalk_extension->shutdown = Shutdown;
-  xwalk_extension->context_create = ContextCreate;
-  return xwalk_extension;
+typename ExtensionAdapter<T>::InstanceMap ExtensionAdapter<T>::g_instances;
+
+template <class T>
+int32_t ExtensionAdapter<T>::Initialize(XW_Extension extension,
+                                        XW_GetInterface get_interface) {
+  return internal::InitializeExtension(
+      extension, get_interface, T::name, T::GetJavaScript(),
+      DidCreateInstance, DidDestroyInstance, HandleMessage, HandleSyncMessage);
 }
 
 template <class T>
-const char* ExtensionAdapter<T>::GetJavaScript(CXWalkExtension* extension) {
-  return T::GetJavaScript();
+void ExtensionAdapter<T>::DidCreateInstance(XW_Instance instance) {
+  g_instances[instance] = new T(new ContextAPI(instance));
 }
 
 template <class T>
-void ExtensionAdapter<T>::Shutdown(CXWalkExtension* extension) {
-  free(extension);
+void ExtensionAdapter<T>::DidDestroyInstance(XW_Instance instance) {
+  delete g_instances[instance];
+  g_instances.erase(instance);
 }
 
 template <class T>
-CXWalkExtensionContext* ExtensionAdapter<T>::ContextCreate(
-    CXWalkExtension* extension) {
-  Context* adapter = static_cast<Context*>(calloc(1, sizeof(Context)));
-  if (!adapter)
-    return NULL;
-
-  adapter->context.destroy = ContextDestroy;
-  adapter->context.handle_message = ContextHandleMessage;
-  adapter->context.handle_sync_message = ContextHandleSyncMessage;
-  adapter->cpp_context = new T(new ContextAPI(&adapter->context));
-
-  return reinterpret_cast<CXWalkExtensionContext*>(adapter);
+void ExtensionAdapter<T>::HandleMessage(XW_Instance instance,
+                                        const char* message) {
+  g_instances[instance]->HandleMessage(message);
 }
+
 
 template <class T>
-void ExtensionAdapter<T>::ContextHandleSyncMessage(
-    CXWalkExtensionContext* context, const char* message) {
-  Context* adapter = reinterpret_cast<Context*>(context);
-  adapter->cpp_context->HandleSyncMessage(message);
+void ExtensionAdapter<T>::HandleSyncMessage(XW_Instance instance,
+                                            const char* message) {
+  g_instances[instance]->HandleSyncMessage(message);
 }
 
-template <class T>
-void ExtensionAdapter<T>::ContextHandleMessage(
-    CXWalkExtensionContext* context, const char* message) {
-  Context* adapter = reinterpret_cast<Context*>(context);
-  adapter->cpp_context->HandleMessage(message);
-}
-
-template <class T>
-void ExtensionAdapter<T>::ContextDestroy(CXWalkExtensionContext* context) {
-  Context* adapter = reinterpret_cast<Context*>(context);
-  delete adapter->cpp_context;
-  free(adapter);
-}
-
-#define DEFINE_XWALK_EXTENSION(NAME)                            \
-  CXWalkExtension* xwalk_extension_init(int32_t api_version) {  \
-    return ExtensionAdapter<NAME>::Initialize();                \
+#define DEFINE_XWALK_EXTENSION(NAME)                                    \
+  int32_t XW_Initialize(XW_Extension extension,                         \
+                        XW_GetInterface get_interface) {                \
+    return ExtensionAdapter<NAME>::Initialize(extension, get_interface); \
   }
 
 #endif  // COMMON_EXTENSION_ADAPTER_H_

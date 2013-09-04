@@ -7,6 +7,8 @@
 
 #include "common/picojson.h"
 
+DEFINE_XWALK_EXTENSION(DownloadContext);
+
 using download_utils::EnumToPChar;
 using download_utils::ToString;
 
@@ -29,10 +31,6 @@ using download_utils::ToString;
     y; \
   } \
 } while (0)
-
-CXWalkExtension* xwalk_extension_init(int32_t api_version) {
-  return ExtensionAdapter<DownloadContext>::Initialize();
-}
 
 DownloadContext::DownloadContext(ContextAPI* api)
     : api_(api) {

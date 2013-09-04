@@ -5,9 +5,7 @@
 #include "power/power_context.h"
 #include "common/picojson.h"
 
-CXWalkExtension* xwalk_extension_init(int32_t api_version) {
-  return ExtensionAdapter<PowerContext>::Initialize();
-}
+DEFINE_XWALK_EXTENSION(PowerContext);
 
 PowerContext::PowerContext(ContextAPI* api)
   : api_(api) {
