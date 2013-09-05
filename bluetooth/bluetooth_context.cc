@@ -87,14 +87,16 @@ void BluetoothContext::HandleDiscoverDevices(const picojson::value& msg) {
   discover_callback_id_ = msg.get("reply_id").to_str();
   if (adapter_proxy_)
     g_dbus_proxy_call(adapter_proxy_, "StartDiscovery", NULL,
-        G_DBUS_CALL_FLAGS_NONE, 20000, NULL, OnDiscoveryStartedThunk, this);
+                      G_DBUS_CALL_FLAGS_NONE, 20000, NULL, OnDiscoveryStartedThunk,
+                      CancellableWrap(all_pending_, this));
 }
 
 void BluetoothContext::HandleStopDiscovery(const picojson::value& msg) {
   stop_discovery_callback_id_ = msg.get("reply_id").to_str();
   if (adapter_proxy_)
     g_dbus_proxy_call(adapter_proxy_, "StopDiscovery", NULL,
-        G_DBUS_CALL_FLAGS_NONE, 20000, NULL, OnDiscoveryStoppedThunk, this);
+                      G_DBUS_CALL_FLAGS_NONE, 20000, NULL, OnDiscoveryStoppedThunk,
+                      CancellableWrap(all_pending_, this));
 }
 
 void BluetoothContext::OnDiscoveryStarted(GObject*, GAsyncResult* res) {

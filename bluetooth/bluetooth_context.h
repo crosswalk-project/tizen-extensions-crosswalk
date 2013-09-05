@@ -20,10 +20,27 @@
                                                                                \
   void METHOD(SENDER, ARG0);
 
-#define G_CALLBACK_2(METHOD, SENDER, ARG0)                                     \
+#define G_CALLBACK_CANCELLABLE_1(METHOD, SENDER, ARG0)                                      \
+  static void METHOD ## Thunk(SENDER sender, ARG0 res, gpointer userdata) {                 \
+    ContextCancellable* context = reinterpret_cast<ContextCancellable*>(userdata);          \
+    if (context->cancellable && g_cancellable_is_cancelled(context->cancellable))           \
+      goto done;                                                                            \
+    reinterpret_cast<BluetoothContext*>(context->userdata)->METHOD(sender, res);            \
+  done:                                                                                     \
+    delete context;                                                                         \
+  }                                                                                         \
+                                                                                            \
+  void METHOD(SENDER, ARG0);
+
+#define G_CALLBACK_CANCELLABLE_2(METHOD, SENDER, ARG0)                         \
   static void METHOD ## Thunk(SENDER sender, ARG0 res, gpointer userdata) {    \
     OnAdapterPropertySetData* callback_data =                                  \
         reinterpret_cast<OnAdapterPropertySetData*>(userdata);                 \
+    if (callback_data->cancellable &&                                          \
+        g_cancellable_is_cancelled(callback_data->cancellable)) {              \
+      delete callback_data;                                                    \
+      return;                                                                  \
+    }                                                                          \
     std::string property = callback_data->property;                            \
     reinterpret_cast<BluetoothContext*>(callback_data->bt_context)->METHOD(property,\
         res);                                                                  \
@@ -40,9 +57,24 @@ class value;
 }
 
 typedef struct OnAdapterPropertySetData_ {
+  GCancellable* cancellable;
   std::string property;
   void* bt_context;
 } OnAdapterPropertySetData;
+
+typedef struct ContextCancellable_ {
+  GCancellable* cancellable;
+  void* userdata;
+} ContextCancellable;
+
+static ContextCancellable* CancellableWrap(GCancellable *cancellable, void* userdata) {
+  ContextCancellable* context = new ContextCancellable();
+
+  context->cancellable = cancellable;
+  context->userdata = userdata;
+
+  return context;
+}
 
 
 class BluetoothContext {
@@ -59,10 +91,10 @@ class BluetoothContext {
  private:
   void PlatformInitialize();
 
-  G_CALLBACK_1(OnAdapterProxyCreated, GObject*, GAsyncResult*);
-  G_CALLBACK_1(OnDiscoveryStarted, GObject*, GAsyncResult*);
-  G_CALLBACK_1(OnDiscoveryStopped, GObject*, GAsyncResult*);
-  G_CALLBACK_1(OnManagerCreated, GObject*, GAsyncResult*);
+  G_CALLBACK_CANCELLABLE_1(OnAdapterProxyCreated, GObject*, GAsyncResult*);
+  G_CALLBACK_CANCELLABLE_1(OnDiscoveryStarted, GObject*, GAsyncResult*);
+  G_CALLBACK_CANCELLABLE_1(OnDiscoveryStopped, GObject*, GAsyncResult*);
+  G_CALLBACK_CANCELLABLE_1(OnManagerCreated, GObject*, GAsyncResult*);
 
   void HandleDiscoverDevices(const picojson::value& msg);
   void HandleStopDiscovery(const picojson::value& msg);
@@ -90,6 +122,7 @@ class BluetoothContext {
   bool is_js_context_initialized_;
 
   std::string default_adapter_reply_id_;
+  GCancellable *all_pending_;
 
 #if defined(BLUEZ_5)
   G_CALLBACK_1(OnDBusObjectAdded, GDBusObjectManager*, GDBusObject*);
@@ -107,14 +140,14 @@ class BluetoothContext {
 
   GDBusObjectManager* object_manager_;
 #elif defined(BLUEZ_4)
-  G_CALLBACK_1(OnGotDefaultAdapterPath, GObject*, GAsyncResult*);
-  G_CALLBACK_1(OnGotAdapterProperties, GObject*, GAsyncResult*);
-  G_CALLBACK_1(OnAdapterCreateBonding, GObject*, GAsyncResult*);
-  G_CALLBACK_1(OnAdapterDestroyBonding, GObject*, GAsyncResult*);
-  G_CALLBACK_1(OnFoundDevice, GObject*, GAsyncResult*);
-  G_CALLBACK_2(OnAdapterPropertySet, GObject*, GAsyncResult*);
-  G_CALLBACK_1(OnDeviceProxyCreated, GObject*, GAsyncResult*);
-  G_CALLBACK_1(OnGotDeviceProperties, GObject*, GAsyncResult*);
+  G_CALLBACK_CANCELLABLE_1(OnGotDefaultAdapterPath, GObject*, GAsyncResult*);
+  G_CALLBACK_CANCELLABLE_1(OnGotAdapterProperties, GObject*, GAsyncResult*);
+  G_CALLBACK_CANCELLABLE_1(OnAdapterCreateBonding, GObject*, GAsyncResult*);
+  G_CALLBACK_CANCELLABLE_1(OnAdapterDestroyBonding, GObject*, GAsyncResult*);
+  G_CALLBACK_CANCELLABLE_1(OnFoundDevice, GObject*, GAsyncResult*);
+  G_CALLBACK_CANCELLABLE_2(OnAdapterPropertySet, GObject*, GAsyncResult*);
+  G_CALLBACK_CANCELLABLE_1(OnDeviceProxyCreated, GObject*, GAsyncResult*);
+  G_CALLBACK_CANCELLABLE_1(OnGotDeviceProperties, GObject*, GAsyncResult*);
 
   static void OnSignal(GDBusProxy* proxy, gchar* sender_name, gchar* signal,
       GVariant* parameters, gpointer user_data);
