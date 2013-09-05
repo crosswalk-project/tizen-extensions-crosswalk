@@ -45,11 +45,11 @@ void BluetoothContext::OnSignal(GDBusProxy* proxy, gchar* sender, gchar* signal,
 
     if (!strcmp(name, "Devices")) {
       char* path;
-      GVariantIter iter;
+      GVariantIter *iter;
 
       g_variant_get(value, "ao", &iter);
 
-      while (g_variant_iter_loop(&iter, "o", &path)) {
+      while (g_variant_iter_loop(iter, "o", &path)) {
         g_dbus_proxy_new_for_bus(G_BUS_TYPE_SYSTEM, G_DBUS_PROXY_FLAGS_NONE,
                                  NULL,
                                  /* GDBusInterfaceInfo */
@@ -59,7 +59,7 @@ void BluetoothContext::OnSignal(GDBusProxy* proxy, gchar* sender, gchar* signal,
                                  OnDeviceProxyCreatedThunk, data);
       }
 
-      g_variant_iter_free(&iter);
+      g_variant_iter_free(iter);
     } else {
       picojson::value::object property_updated;
       property_updated["cmd"] = picojson::value("AdapterUpdated");
@@ -272,11 +272,12 @@ void BluetoothContext::OnAdapterCreateBonding(GObject*, GAsyncResult* res) {
     g_error_free(error);
 
     o["error"] = picojson::value(static_cast<double>(1));
+  } else {
+    g_variant_unref(result);
   }
 
   PostMessage(picojson::value(o));
   callbacks_map_.erase("CreateBonding");
-  g_variant_unref(result);
 }
 
 void BluetoothContext::OnAdapterDestroyBonding(GObject*, GAsyncResult* res) {
@@ -293,11 +294,12 @@ void BluetoothContext::OnAdapterDestroyBonding(GObject*, GAsyncResult* res) {
     g_error_free(error);
 
     o["error"] = picojson::value(static_cast<double>(2));
+  } else {
+    g_variant_unref(result);
   }
 
   PostMessage(picojson::value(o));
   callbacks_map_.erase("DestroyBonding");
-  g_variant_unref(result);
 }
 
 void BluetoothContext::OnFoundDevice(GObject*, GAsyncResult* res) {
