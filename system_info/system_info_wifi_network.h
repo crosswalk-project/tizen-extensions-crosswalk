@@ -29,11 +29,7 @@
 
 class SysInfoWifiNetwork {
  public:
-  static SysInfoWifiNetwork& GetSysInfoWifiNetwork(
-      ContextAPI* api) {
-    static SysInfoWifiNetwork instance(api);
-    return instance;
-  }
+  explicit SysInfoWifiNetwork(ContextAPI* api);
   ~SysInfoWifiNetwork();
   void Get(picojson::value& error, picojson::value& data);
   inline void StartListening() {
@@ -51,7 +47,6 @@ class SysInfoWifiNetwork {
   }
 
  private:
-  explicit SysInfoWifiNetwork(ContextAPI* api);
   void PlatformInitialize();
 
   bool Update(picojson::value& error);

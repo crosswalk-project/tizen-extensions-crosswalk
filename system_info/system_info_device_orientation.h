@@ -26,10 +26,9 @@ enum SystemInfoDeviceOrientationStatus {
 
 class SysInfoDeviceOrientation {
  public:
-  static SysInfoDeviceOrientation& GetSysInfoDeviceOrientation(
-      ContextAPI* api) {
-    static SysInfoDeviceOrientation instance(api);
-    return instance;
+  explicit SysInfoDeviceOrientation(ContextAPI* api)
+    :status_(UNKNOWN) {
+    api_ = api;
   }
   ~SysInfoDeviceOrientation() { }
   void Get(picojson::value& error, picojson::value& data);
@@ -37,11 +36,6 @@ class SysInfoDeviceOrientation {
   void StopListening();
 
  private:
-  explicit SysInfoDeviceOrientation(ContextAPI* api)
-    :status_(UNKNOWN) {
-    api_ = api;
-  }
-
 #if defined(TIZEN_MOBILE)
   void SetStatus();
   bool SetAutoRotation();

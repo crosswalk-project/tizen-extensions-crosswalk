@@ -20,18 +20,13 @@
 
 class SysInfoBattery {
  public:
-  static SysInfoBattery& GetSysInfoBattery(ContextAPI* api) {
-    static SysInfoBattery instance(api);
-    return instance;
-  }
+  explicit SysInfoBattery(ContextAPI* api);
   ~SysInfoBattery();
   void Get(picojson::value& error, picojson::value& data);
   void StartListening();
   void StopListening();
 
  private:
-  explicit SysInfoBattery(ContextAPI* api);
-
   static gboolean OnUpdateTimeout(gpointer user_data);
   bool Update(picojson::value& error);
   void SetData(picojson::value& data);

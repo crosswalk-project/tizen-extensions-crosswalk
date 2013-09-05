@@ -16,10 +16,9 @@
 
 class SysInfoSim {
  public:
-  static SysInfoSim& GetSysInfoSim(
-      ContextAPI* api) {
-    static SysInfoSim instance(api);
-    return instance;
+  explicit SysInfoSim(ContextAPI* api)
+    : state_(SYSTEM_INFO_SIM_UNKNOWN) {
+    api_ = api;
   }
   ~SysInfoSim() { }
   void Get(picojson::value& error, picojson::value& data);
@@ -43,11 +42,6 @@ class SysInfoSim {
 #endif
 
  private:
-  explicit SysInfoSim(ContextAPI* api)
-    : state_(SYSTEM_INFO_SIM_UNKNOWN) {
-    api_ = api;
-  }
-
 #if defined(TIZEN_MOBILE)
   std::string ToSimStateString(SystemInfoSimState state);
   SystemInfoSimState Get_systeminfo_sim_state(sim_state_e state);

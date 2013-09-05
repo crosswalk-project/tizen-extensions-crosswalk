@@ -39,11 +39,7 @@ enum SystemInfoNetworkType {
 
 class SysInfoNetwork {
  public:
-  static SysInfoNetwork& GetSysInfoNetwork(
-      ContextAPI* api) {
-    static SysInfoNetwork instance(api);
-    return instance;
-  }
+  explicit SysInfoNetwork(ContextAPI* api);
   ~SysInfoNetwork();
   void Get(picojson::value& error, picojson::value& data);
   inline void StartListening() {
@@ -61,7 +57,6 @@ class SysInfoNetwork {
 }
 
  private:
-  explicit SysInfoNetwork(ContextAPI* api);
   void PlatformInitialize();
 
   bool Update(picojson::value& error);

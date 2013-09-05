@@ -14,10 +14,7 @@
 
 class SysInfoDisplay {
  public:
-  static SysInfoDisplay& GetSysInfoDisplay(ContextAPI* api) {
-    static SysInfoDisplay d(api);
-    return d;
-  }
+  explicit SysInfoDisplay(ContextAPI* api);
   ~SysInfoDisplay() { }
   // Get support
   void Get(picojson::value& error, picojson::value& data);
@@ -32,8 +29,6 @@ class SysInfoDisplay {
   void StopListening() { stopping_ = true; }
 
  private:
-  explicit SysInfoDisplay(ContextAPI* api);
-
   static gboolean OnUpdateTimeout(gpointer user_data);
   bool UpdateSize();
   bool UpdateBrightness();

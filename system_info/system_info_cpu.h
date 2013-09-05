@@ -14,9 +14,10 @@
 
 class SysInfoCpu {
  public:
-  static SysInfoCpu& GetSysInfoCpu(ContextAPI* api) {
-    static SysInfoCpu instance(api);
-    return instance;
+  explicit SysInfoCpu(ContextAPI* api)
+      : load_(0.0),
+        stopping_(false) {
+    api_ = api;
   }
   ~SysInfoCpu() { }
   // Get support
@@ -32,12 +33,6 @@ class SysInfoCpu {
   inline void StopListening() { stopping_ = true; }
 
  private:
-  explicit SysInfoCpu(ContextAPI* api)
-      : load_(0.0),
-        stopping_(false) {
-    api_ = api;
-  }
-
   static gboolean OnUpdateTimeout(gpointer user_data);
   bool UpdateLoad();
 

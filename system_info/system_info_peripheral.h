@@ -16,10 +16,8 @@
 
 class SysInfoPeripheral {
  public:
-  static SysInfoPeripheral& GetSysInfoPeripheral(
-      ContextAPI* api) {
-    static SysInfoPeripheral instance(api);
-    return instance;
+  explicit SysInfoPeripheral(ContextAPI* api) {
+    api_ = api;
   }
   ~SysInfoPeripheral() { }
   void Get(picojson::value& error, picojson::value& data);
@@ -27,10 +25,6 @@ class SysInfoPeripheral {
   void StopListening();
 
  private:
-  explicit SysInfoPeripheral(ContextAPI* api) {
-    api_ = api;
-  }
-
 #if defined(TIZEN_MOBILE)
   void SetWFD(int wfd);
   void SetHDMI(int hdmi);

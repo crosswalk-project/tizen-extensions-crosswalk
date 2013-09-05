@@ -15,10 +15,7 @@
 
 class SysInfoBuild {
  public:
-  static SysInfoBuild& GetSysInfoBuild(ContextAPI* api) {
-    static SysInfoBuild instance(api);
-    return instance;
-  }
+  explicit SysInfoBuild(ContextAPI* api);
   ~SysInfoBuild();
   void Get(picojson::value& error, picojson::value& data);
   inline void StartListening() {
@@ -30,7 +27,6 @@ class SysInfoBuild {
   inline void StopListening() { stopping_ = true; }
 
  private:
-  explicit SysInfoBuild(ContextAPI* api);
   bool UpdateHardware();
   bool UpdateOSBuild();
   static gboolean OnUpdateTimeout(gpointer user_data);

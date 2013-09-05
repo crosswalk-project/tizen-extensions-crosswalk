@@ -15,10 +15,7 @@
 
 class SysInfoLocale {
  public:
-  static SysInfoLocale& GetSysInfoLocale(ContextAPI* api) {
-    static SysInfoLocale instance(api);
-    return instance;
-  }
+  explicit SysInfoLocale(ContextAPI* api);
   ~SysInfoLocale();
   void Get(picojson::value& error, picojson::value& data);
   inline void StartListening() {
@@ -30,7 +27,6 @@ class SysInfoLocale {
   inline void StopListening() { stopping_ = true; }
 
  private:
-  explicit SysInfoLocale(ContextAPI* api);
   bool UpdateLanguage();
   bool UpdateCountry();
   static gboolean OnUpdateTimeout(gpointer user_data);

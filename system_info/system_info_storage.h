@@ -18,10 +18,7 @@
 
 class SysInfoStorage {
  public:
-  static SysInfoStorage& GetSysInfoStorage(ContextAPI* api) {
-    static SysInfoStorage instance(api);
-    return instance;
-  }
+  explicit SysInfoStorage(ContextAPI* api);
   ~SysInfoStorage();
   void Get(picojson::value& error, picojson::value& data);
   inline void StartListening() {
@@ -34,7 +31,6 @@ class SysInfoStorage {
   inline void StopListening() { stopping_ = true; }
 
  private:
-  explicit SysInfoStorage(ContextAPI* api);
   bool Update(picojson::value& error);
   static gboolean OnUpdateTimeout(gpointer user_data);
 
