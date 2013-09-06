@@ -19,7 +19,7 @@
       ],
       'conditions': [
         [ 'extension_host_os == "mobile"', {
-          'sources': [
+          'dependencies': [
             'download/download.gyp:*',
           ],
         }],
