@@ -16,10 +16,14 @@
 
 class SysInfoPeripheral {
  public:
-  explicit SysInfoPeripheral(ContextAPI* api) {
+  explicit SysInfoPeripheral(ContextAPI* api)
+    :isRegister_(false) {
     api_ = api;
   }
-  ~SysInfoPeripheral() { }
+  ~SysInfoPeripheral() {
+    if (isRegister_)
+      StopListening();
+}
   void Get(picojson::value& error, picojson::value& data);
   void StartListening();
   void StopListening();
@@ -40,6 +44,7 @@ class SysInfoPeripheral {
   bool is_video_output_;
   int wfd_;
   int hdmi_;
+  bool isRegister_;
 
   DISALLOW_COPY_AND_ASSIGN(SysInfoPeripheral);
 };

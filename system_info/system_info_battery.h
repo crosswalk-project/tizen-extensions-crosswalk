@@ -43,6 +43,7 @@ class SysInfoBattery {
   double level_;
   bool charging_;
   bool stopping_;
+  bool isRegister_;
 
   DISALLOW_COPY_AND_ASSIGN(SysInfoBattery);
 };

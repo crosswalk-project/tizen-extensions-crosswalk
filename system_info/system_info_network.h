@@ -44,15 +44,16 @@ class SysInfoNetwork {
   void Get(picojson::value& error, picojson::value& data);
   inline void StartListening() {
 #if defined(TIZEN_MOBILE)
-    stopping_ = false;
-    g_timeout_add(system_info::default_timeout_interval,
-                  SysInfoNetwork::OnUpdateTimeout,
-                  static_cast<gpointer>(this));
+    timeout_cb_id_ = g_timeout_add(system_info::default_timeout_interval,
+                                   SysInfoNetwork::OnUpdateTimeout,
+                                   static_cast<gpointer>(this));
 #endif
   }
   inline void StopListening() {
 #if defined(TIZEN_MOBILE)
-    stopping_ = true;
+    if (timeout_cb_id_ > 0) {
+      g_source_remove(timeout_cb_id_);
+    }
 #endif
 }
 
@@ -88,7 +89,7 @@ class SysInfoNetwork {
   guint device_type_;
 #elif defined(TIZEN_MOBILE)
   static gboolean OnUpdateTimeout(gpointer user_data);
-  bool stopping_;
+  int timeout_cb_id_;
 #endif
 
   DISALLOW_COPY_AND_ASSIGN(SysInfoNetwork);

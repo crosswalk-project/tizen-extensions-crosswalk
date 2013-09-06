@@ -24,11 +24,6 @@ void SysInfoCpu::Get(picojson::value& error,
 gboolean SysInfoCpu::OnUpdateTimeout(gpointer user_data) {
   SysInfoCpu* instance = static_cast<SysInfoCpu*>(user_data);
 
-  if (instance->stopping_) {
-    instance->stopping_ = false;
-    return FALSE;
-  }
-
   double old_load = instance->load_;
   instance->UpdateLoad();
   if (old_load != instance->load_) {

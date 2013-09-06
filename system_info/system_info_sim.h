@@ -17,10 +17,14 @@
 class SysInfoSim {
  public:
   explicit SysInfoSim(ContextAPI* api)
-    : state_(SYSTEM_INFO_SIM_UNKNOWN) {
+    : state_(SYSTEM_INFO_SIM_UNKNOWN),
+      isRegister_(false) {
     api_ = api;
   }
-  ~SysInfoSim() { }
+  ~SysInfoSim() {
+    if (isRegister_)
+      StopListening();
+}
   void Get(picojson::value& error, picojson::value& data);
   void StartListening();
   void StopListening();
@@ -56,6 +60,7 @@ class SysInfoSim {
   std::string mnc_;
   std::string msin_;
   std::string spn_;
+  bool isRegister_;
 
   DISALLOW_COPY_AND_ASSIGN(SysInfoSim);
 };

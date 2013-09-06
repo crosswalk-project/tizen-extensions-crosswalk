@@ -27,10 +27,16 @@ enum SystemInfoDeviceOrientationStatus {
 class SysInfoDeviceOrientation {
  public:
   explicit SysInfoDeviceOrientation(ContextAPI* api)
-    :status_(UNKNOWN) {
+    :status_(UNKNOWN),
+     sensorHandle_(0),
+     isRegister_(false) {
     api_ = api;
   }
-  ~SysInfoDeviceOrientation() { }
+  ~SysInfoDeviceOrientation() {
+  if (isRegister_) {
+    StopListening();
+  }
+}
   void Get(picojson::value& error, picojson::value& data);
   void StartListening();
   void StopListening();
@@ -54,6 +60,7 @@ class SysInfoDeviceOrientation {
   SystemInfoDeviceOrientationStatus status_;
   bool isAutoRotation_;
   int sensorHandle_;
+  bool isRegister_;
 
   DISALLOW_COPY_AND_ASSIGN(SysInfoDeviceOrientation);
 };

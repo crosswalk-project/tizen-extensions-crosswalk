@@ -11,11 +11,12 @@
 const char* WIFI_STATE = "memory/wifi/state";
 
 SysInfoWifiNetwork::~SysInfoWifiNetwork() {
+    if (timeout_cb_id_ > 0) {
+      g_source_remove(timeout_cb_id_);
+    }
 }
 
-void SysInfoWifiNetwork::PlatformInitialize() {
-  stopping_ = false;
-}
+void SysInfoWifiNetwork::PlatformInitialize() { }
 
 bool SysInfoWifiNetwork::Update(picojson::value& error) {
   connection_h connect = NULL;
@@ -113,10 +114,6 @@ void SysInfoWifiNetwork::SetData(picojson::value& data) {
 
 gboolean SysInfoWifiNetwork::OnUpdateTimeout(gpointer user_data) {
   SysInfoWifiNetwork* instance = static_cast<SysInfoWifiNetwork*>(user_data);
-  if (instance->stopping_) {
-    instance->stopping_ = false;
-    return FALSE;
-  }
 
   double signal_strength = instance->signal_strength_;
   std::string status = instance->status_;

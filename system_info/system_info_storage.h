@@ -22,19 +22,21 @@ class SysInfoStorage {
   ~SysInfoStorage();
   void Get(picojson::value& error, picojson::value& data);
   inline void StartListening() {
-    stopping_ = false;
     // FIXME(halton): Use udev D-Bus interface to monitor.
-    g_timeout_add(system_info::default_timeout_interval,
-                  SysInfoStorage::OnUpdateTimeout,
-                  static_cast<gpointer>(this));
+    timeout_cb_id_ = g_timeout_add(system_info::default_timeout_interval,
+                                   SysInfoStorage::OnUpdateTimeout,
+                                   static_cast<gpointer>(this));
   }
-  inline void StopListening() { stopping_ = true; }
+  inline void StopListening() {
+    if (timeout_cb_id_ > 0)
+      g_source_remove(timeout_cb_id_);
+}
 
  private:
   bool Update(picojson::value& error);
   static gboolean OnUpdateTimeout(gpointer user_data);
 
-  bool stopping_;
+  int timeout_cb_id_;
   ContextAPI* api_;
   picojson::value units_;
 

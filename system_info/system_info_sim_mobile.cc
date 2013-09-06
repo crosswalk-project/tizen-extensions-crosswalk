@@ -169,10 +169,12 @@ std::string SysInfoSim::ToSimStateString(SystemInfoSimState state) {
 
 void SysInfoSim::StartListening() {
   sim_set_state_changed_cb(OnSimStateChanged, this);
+  isRegister_ = true;
 }
 
 void SysInfoSim::StopListening() {
   sim_unset_state_changed_cb();
+  isRegister_ = false;
 }
 
 SysInfoSim::SystemInfoSimState SysInfoSim::Get_systeminfo_sim_state

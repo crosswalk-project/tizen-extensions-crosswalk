@@ -19,12 +19,14 @@ class SysInfoLocale {
   ~SysInfoLocale();
   void Get(picojson::value& error, picojson::value& data);
   inline void StartListening() {
-    stopping_ = false;
-    g_timeout_add(system_info::default_timeout_interval,
-                  SysInfoLocale::OnUpdateTimeout,
-                  static_cast<gpointer>(this));
+    timeout_cb_id_ = g_timeout_add(system_info::default_timeout_interval,
+                                   SysInfoLocale::OnUpdateTimeout,
+                                   static_cast<gpointer>(this));
   }
-  inline void StopListening() { stopping_ = true; }
+  inline void StopListening() {
+    if (timeout_cb_id_ > 0)
+      g_source_remove(timeout_cb_id_);
+}
 
  private:
   bool UpdateLanguage();
@@ -34,7 +36,7 @@ class SysInfoLocale {
   ContextAPI* api_;
   std::string language_;
   std::string country_;
-  bool stopping_;
+  int timeout_cb_id_;
 
   DISALLOW_COPY_AND_ASSIGN(SysInfoLocale);
 };

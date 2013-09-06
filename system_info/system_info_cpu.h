@@ -16,21 +16,26 @@ class SysInfoCpu {
  public:
   explicit SysInfoCpu(ContextAPI* api)
       : load_(0.0),
-        stopping_(false) {
+        timeout_cb_id_(0) {
     api_ = api;
   }
-  ~SysInfoCpu() { }
+  ~SysInfoCpu() {
+    if (timeout_cb_id_ > 0)
+      g_source_remove(timeout_cb_id_);
+}
   // Get support
   void Get(picojson::value& error, picojson::value& data);
 
   // Listerner support
   inline void StartListening() {
-    stopping_ = false;
-    g_timeout_add(system_info::default_timeout_interval,
-                  SysInfoCpu::OnUpdateTimeout,
-                  static_cast<gpointer>(this));
+    timeout_cb_id_ = g_timeout_add(system_info::default_timeout_interval,
+                                   SysInfoCpu::OnUpdateTimeout,
+                                   static_cast<gpointer>(this));
   }
-  inline void StopListening() { stopping_ = true; }
+  inline void StopListening() {
+    if (timeout_cb_id_ > 0)
+      g_source_remove(timeout_cb_id_);
+}
 
  private:
   static gboolean OnUpdateTimeout(gpointer user_data);
@@ -38,7 +43,7 @@ class SysInfoCpu {
 
   ContextAPI* api_;
   double load_;
-  double stopping_;
+  int timeout_cb_id_;
 
   DISALLOW_COPY_AND_ASSIGN(SysInfoCpu);
 };

@@ -7,11 +7,11 @@
 #include <vconf.h>
 
 SysInfoNetwork::~SysInfoNetwork() {
+    if (timeout_cb_id_ > 0)
+      g_source_remove(timeout_cb_id_);
 }
 
-void SysInfoNetwork::PlatformInitialize() {
-  stopping_ = false;
-}
+void SysInfoNetwork::PlatformInitialize() { }
 
 bool SysInfoNetwork::Update(picojson::value& error) {
   int service_type = 0;
@@ -47,10 +47,6 @@ bool SysInfoNetwork::Update(picojson::value& error) {
 
 gboolean SysInfoNetwork::OnUpdateTimeout(gpointer user_data) {
   SysInfoNetwork* instance = static_cast<SysInfoNetwork*>(user_data);
-  if (instance->stopping_) {
-    instance->stopping_ = false;
-    return FALSE;
-  }
 
   SystemInfoNetworkType old_type = instance->type_;
   picojson::value error = picojson::value(picojson::object());;

@@ -19,10 +19,14 @@
 
 class SysInfoCellularNetwork {
  public:
-  explicit SysInfoCellularNetwork(ContextAPI* api) {
+  explicit SysInfoCellularNetwork(ContextAPI* api)
+    :isRegister_(false) {
     api_ = api;
   }
-  ~SysInfoCellularNetwork() { }
+  ~SysInfoCellularNetwork() {
+  if (isRegister_)
+    StopListening();
+}
   void Get(picojson::value& error, picojson::value& data);
   void StartListening();
   void StopListening();
@@ -69,6 +73,7 @@ class SysInfoCellularNetwork {
   bool isRoaming_;
   bool isFlightMode_;
   std::string imei_;
+  bool isRegister_;
 
   DISALLOW_COPY_AND_ASSIGN(SysInfoCellularNetwork);
 };
