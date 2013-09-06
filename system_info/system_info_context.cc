@@ -260,10 +260,12 @@ void SystemInfoContext::HandleGetCapabilities() {
     o["openglesVersion1_1"] = picojson::value(false);
     o["openglesVersion2_0"] = picojson::value(false);
   }
+  free(s);
 
   s = NULL;
   system_info_get_value_string(SYSTEM_INFO_KEY_OPENGLES_TEXTURE_FORMAT, &s);
   SetStringPropertyValue(o, "openglestextureFormat", s);
+  free(s);
 
   system_info_get_value_bool(SYSTEM_INFO_KEY_FMRADIO_SUPPORTED, &b);
   o["fmRadio"] = picojson::value(b);
@@ -271,10 +273,12 @@ void SystemInfoContext::HandleGetCapabilities() {
   s = NULL;
   system_info_get_value_string(SYSTEM_INFO_KEY_TIZEN_VERSION_NAME, &s);
   SetStringPropertyValue(o, "platformVersion", s);
+  free(s);
 
   s = NULL;
   system_info_get_value_string(SYSTEM_INFO_KEY_TIZEN_VERSION, &s);
   SetStringPropertyValue(o, "webApiVersion", s);
+  free(s);
 
   // FIXME(halton): find which key reflect this prop
   o["nativeApiVersion"] = picojson::value("Unknown");
@@ -282,6 +286,7 @@ void SystemInfoContext::HandleGetCapabilities() {
   s = NULL;
   system_info_get_value_string(SYSTEM_INFO_KEY_PLATFORM_NAME, &s);
   SetStringPropertyValue(o, "platformName", s);
+  free(s);
 
   system_info_get_value_int(SYSTEM_INFO_KEY_CAMERA_COUNT, &i);
   o["camera"] = picojson::value(i > 0);
@@ -325,10 +330,12 @@ void SystemInfoContext::HandleGetCapabilities() {
   s = NULL;
   system_info_get_value_string(SYSTEM_INFO_KEY_CORE_CPU_ARCH, &s);
   SetStringPropertyValue(o, "platformCoreCpuArch", s);
+  free(s);
 
   s = NULL;
   system_info_get_value_string(SYSTEM_INFO_KEY_CORE_FPU_ARCH, &s);
   SetStringPropertyValue(o, "platformCoreFpuArch", s);
+  free(s);
 
   system_info_get_value_bool(SYSTEM_INFO_KEY_SIP_VOIP_SUPPORTED, &b);
   o["sipVoip"] = picojson::value(b);
@@ -336,6 +343,7 @@ void SystemInfoContext::HandleGetCapabilities() {
   s = NULL;
   system_info_get_value_string(SYSTEM_INFO_KEY_DEVICE_UUID, &s);
   SetStringPropertyValue(o, "duid", s);
+  free(s);
 
   system_info_get_value_bool(SYSTEM_INFO_KEY_SPEECH_RECOGNITION_SUPPORTED, &b);
   o["speechRecognition"] = picojson::value(b);
