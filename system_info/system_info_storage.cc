@@ -23,11 +23,6 @@ void SysInfoStorage::Get(picojson::value& error,
 gboolean SysInfoStorage::OnUpdateTimeout(gpointer user_data) {
   SysInfoStorage* instance = static_cast<SysInfoStorage*>(user_data);
 
-  if (instance->stopping_) {
-    instance->stopping_ = false;
-    return FALSE;
-  }
-
   // Can't to take a reference (&), just copy.
   picojson::array old_units_arr = instance->units_.get<picojson::array>();
   picojson::value error = picojson::value(picojson::object());

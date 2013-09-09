@@ -81,6 +81,7 @@ void SysInfoPeripheral::StartListening() {
       (vconf_callback_fn)OnWFDChanged, this);
   vconf_notify_key_changed(VCONFKEY_SYSMAN_HDMI,
       (vconf_callback_fn)OnHDMIChanged, this);
+  isRegister_ = true;
 }
 
 void SysInfoPeripheral::StopListening() {
@@ -88,4 +89,5 @@ void SysInfoPeripheral::StopListening() {
       (vconf_callback_fn)OnWFDChanged);
   vconf_ignore_key_changed(VCONFKEY_SYSMAN_HDMI,
       (vconf_callback_fn)OnHDMIChanged);
+  isRegister_ = false;
 }

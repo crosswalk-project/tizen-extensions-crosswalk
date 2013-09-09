@@ -29,29 +29,25 @@
 
 class SysInfoWifiNetwork {
  public:
-  static SysInfoWifiNetwork& GetSysInfoWifiNetwork(
-      ContextAPI* api) {
-    static SysInfoWifiNetwork instance(api);
-    return instance;
-  }
+  explicit SysInfoWifiNetwork(ContextAPI* api);
   ~SysInfoWifiNetwork();
   void Get(picojson::value& error, picojson::value& data);
   inline void StartListening() {
 #if defined(TIZEN_MOBILE)
-    stopping_ = false;
-    g_timeout_add(system_info::default_timeout_interval,
-                  SysInfoWifiNetwork::OnUpdateTimeout,
-                  static_cast<gpointer>(this));
+    timeout_cb_id_ = g_timeout_add(system_info::default_timeout_interval,
+                                   SysInfoWifiNetwork::OnUpdateTimeout,
+                                   static_cast<gpointer>(this));
 #endif
   }
   inline void StopListening() {
 #if defined(TIZEN_MOBILE)
-    stopping_ = true;
+    if (timeout_cb_id_ > 0) {
+      g_source_remove(timeout_cb_id_);
+    }
 #endif
   }
 
  private:
-  explicit SysInfoWifiNetwork(ContextAPI* api);
   void PlatformInitialize();
 
   bool Update(picojson::value& error);
@@ -101,7 +97,7 @@ class SysInfoWifiNetwork {
   unsigned int ip_address_desktop_;
 #elif defined(TIZEN_MOBILE)
   static gboolean OnUpdateTimeout(gpointer user_data);
-  bool stopping_;
+  int timeout_cb_id_;
 #endif
 
   DISALLOW_COPY_AND_ASSIGN(SysInfoWifiNetwork);

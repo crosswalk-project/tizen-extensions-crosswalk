@@ -12,11 +12,14 @@
 SysInfoBattery::SysInfoBattery(ContextAPI* api)
     : level_(0.0),
       charging_(false),
-      stopping_(false) {
+      stopping_(false),
+      isRegister_(false) {
   api_ = api;
 }
 
 SysInfoBattery::~SysInfoBattery() {
+  if (isRegister_)
+    StopListening();
 }
 
 void SysInfoBattery::Get(picojson::value& error,
@@ -102,6 +105,7 @@ void SysInfoBattery::StartListening() {
       (vconf_callback_fn)OnLevelChanged, this);
   vconf_notify_key_changed(VCONFKEY_SYSMAN_BATTERY_CHARGE_NOW,
       (vconf_callback_fn)OnIsChargingChanged, this);
+  isRegister_ = true;
 }
 
 void SysInfoBattery::StopListening() {
@@ -109,4 +113,5 @@ void SysInfoBattery::StopListening() {
       (vconf_callback_fn)OnLevelChanged);
   vconf_ignore_key_changed(VCONFKEY_SYSMAN_BATTERY_CHARGE_NOW,
       (vconf_callback_fn)OnIsChargingChanged);
+  isRegister_ = false;
 }

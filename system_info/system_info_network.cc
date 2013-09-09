@@ -7,7 +7,8 @@
 #include "system_info/system_info_utils.h"
 
 SysInfoNetwork::SysInfoNetwork(ContextAPI* api)
-    : type_(SYSTEM_INFO_NETWORK_UNKNOWN) {
+    : type_(SYSTEM_INFO_NETWORK_UNKNOWN),
+      timeout_cb_id_(0) {
   api_ = api;
   PlatformInitialize();
 }

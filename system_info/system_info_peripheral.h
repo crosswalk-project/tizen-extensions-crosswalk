@@ -16,21 +16,19 @@
 
 class SysInfoPeripheral {
  public:
-  static SysInfoPeripheral& GetSysInfoPeripheral(
-      ContextAPI* api) {
-    static SysInfoPeripheral instance(api);
-    return instance;
+  explicit SysInfoPeripheral(ContextAPI* api)
+    :isRegister_(false) {
+    api_ = api;
   }
-  ~SysInfoPeripheral() { }
+  ~SysInfoPeripheral() {
+    if (isRegister_)
+      StopListening();
+}
   void Get(picojson::value& error, picojson::value& data);
   void StartListening();
   void StopListening();
 
  private:
-  explicit SysInfoPeripheral(ContextAPI* api) {
-    api_ = api;
-  }
-
 #if defined(TIZEN_MOBILE)
   void SetWFD(int wfd);
   void SetHDMI(int hdmi);
@@ -46,6 +44,7 @@ class SysInfoPeripheral {
   bool is_video_output_;
   int wfd_;
   int hdmi_;
+  bool isRegister_;
 
   DISALLOW_COPY_AND_ASSIGN(SysInfoPeripheral);
 };

@@ -13,11 +13,13 @@
 #include "system_info/system_info_utils.h"
 
 SysInfoBuild::SysInfoBuild(ContextAPI* api)
-    : stopping_(false) {
+    : timeout_cb_id_(0) {
   api_ = api;
 }
 
 SysInfoBuild::~SysInfoBuild() {
+    if (timeout_cb_id_ > 0)
+      g_source_remove(timeout_cb_id_);
 }
 
 void SysInfoBuild::Get(picojson::value& error,
@@ -95,11 +97,6 @@ bool SysInfoBuild::UpdateOSBuild() {
 
 gboolean SysInfoBuild::OnUpdateTimeout(gpointer user_data) {
   SysInfoBuild* instance = static_cast<SysInfoBuild*>(user_data);
-
-  if (instance->stopping_) {
-    instance->stopping_ = false;
-    return FALSE;
-  }
 
   std::string oldmodel_ = instance->model_;
   std::string oldmanufacturer_ = instance->manufacturer_;
