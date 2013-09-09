@@ -303,6 +303,7 @@ void SysInfoCellularNetwork::StartListening() {
 
   vconf_notify_key_changed(VCONFKEY_TELEPHONY_FLIGHT_MODE,
       (vconf_callback_fn)OnFlightModeChanged, this);
+  isRegister_ = true;
 }
 
 void SysInfoCellularNetwork::StopListening() {
@@ -322,4 +323,5 @@ void SysInfoCellularNetwork::StopListening() {
 
   vconf_ignore_key_changed(VCONFKEY_TELEPHONY_FLIGHT_MODE,
       (vconf_callback_fn)OnFlightModeChanged);
+  isRegister_ = false;
 }

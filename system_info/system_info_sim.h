@@ -16,12 +16,15 @@
 
 class SysInfoSim {
  public:
-  static SysInfoSim& GetSysInfoSim(
-      ContextAPI* api) {
-    static SysInfoSim instance(api);
-    return instance;
+  explicit SysInfoSim(ContextAPI* api)
+    : state_(SYSTEM_INFO_SIM_UNKNOWN),
+      isRegister_(false) {
+    api_ = api;
   }
-  ~SysInfoSim() { }
+  ~SysInfoSim() {
+    if (isRegister_)
+      StopListening();
+}
   void Get(picojson::value& error, picojson::value& data);
   void StartListening();
   void StopListening();
@@ -43,11 +46,6 @@ class SysInfoSim {
 #endif
 
  private:
-  explicit SysInfoSim(ContextAPI* api)
-    : state_(SYSTEM_INFO_SIM_UNKNOWN) {
-    api_ = api;
-  }
-
 #if defined(TIZEN_MOBILE)
   std::string ToSimStateString(SystemInfoSimState state);
   SystemInfoSimState Get_systeminfo_sim_state(sim_state_e state);
@@ -62,6 +60,7 @@ class SysInfoSim {
   std::string mnc_;
   std::string msin_;
   std::string spn_;
+  bool isRegister_;
 
   DISALLOW_COPY_AND_ASSIGN(SysInfoSim);
 };

@@ -18,12 +18,14 @@ const char* sStorageSDCardPath = "/opt/storage/sdcard";
 }  // namespace
 
 SysInfoStorage::SysInfoStorage(ContextAPI* api)
-    : stopping_(false) {
+    : timeout_cb_id_(0) {
   api_ = api;
   units_ = picojson::value(picojson::array(0));
 }
 
 SysInfoStorage::~SysInfoStorage() {
+    if (timeout_cb_id_ > 0)
+      g_source_remove(timeout_cb_id_);
 }
 
 bool SysInfoStorage::Update(picojson::value& error) {

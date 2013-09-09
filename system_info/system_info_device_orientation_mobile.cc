@@ -157,6 +157,8 @@ void SysInfoDeviceOrientation::StartListening() {
     sf_unregister_event(sensorHandle_, ACCELEROMETER_EVENT_ROTATION_CHECK);
     sf_disconnect(sensorHandle_);
   }
+
+  isRegister_ = true;
 }
 
 void SysInfoDeviceOrientation::StopListening() {
@@ -166,4 +168,5 @@ void SysInfoDeviceOrientation::StopListening() {
   sf_unregister_event(sensorHandle_, ACCELEROMETER_EVENT_ROTATION_CHECK);
   sf_stop(sensorHandle_);
   sf_disconnect(sensorHandle_);
+  isRegister_ = false;
 }

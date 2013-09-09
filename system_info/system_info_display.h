@@ -14,26 +14,26 @@
 
 class SysInfoDisplay {
  public:
-  static SysInfoDisplay& GetSysInfoDisplay(ContextAPI* api) {
-    static SysInfoDisplay d(api);
-    return d;
-  }
-  ~SysInfoDisplay() { }
+  explicit SysInfoDisplay(ContextAPI* api);
+  ~SysInfoDisplay() {
+    if (timeout_cb_id_ > 0)
+      g_source_remove(timeout_cb_id_);
+}
   // Get support
   void Get(picojson::value& error, picojson::value& data);
   // Listerner support
   inline void StartListening() {
-    stopping_ = false;
     // FIXME(halton): Use Xlib event or D-Bus interface to monitor.
-    g_timeout_add(system_info::default_timeout_interval,
-                  SysInfoDisplay::OnUpdateTimeout,
-                  static_cast<gpointer>(this));
+    timeout_cb_id_ = g_timeout_add(system_info::default_timeout_interval,
+                                   SysInfoDisplay::OnUpdateTimeout,
+                                   static_cast<gpointer>(this));
   }
-  void StopListening() { stopping_ = true; }
+  void StopListening() {
+    if (timeout_cb_id_ > 0)
+      g_source_remove(timeout_cb_id_);
+}
 
  private:
-  explicit SysInfoDisplay(ContextAPI* api);
-
   static gboolean OnUpdateTimeout(gpointer user_data);
   bool UpdateSize();
   bool UpdateBrightness();
@@ -45,7 +45,7 @@ class SysInfoDisplay {
   double physical_width_;
   double physical_height_;
   double brightness_;
-  double stopping_;
+  int timeout_cb_id_;
 
   DISALLOW_COPY_AND_ASSIGN(SysInfoDisplay);
 };

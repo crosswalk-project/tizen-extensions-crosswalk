@@ -25,7 +25,7 @@ SysInfoDisplay::SysInfoDisplay(ContextAPI* api)
       physical_width_(0.0),
       physical_height_(0.0),
       brightness_(0.0),
-      stopping_(false) {
+      timeout_cb_id_(0) {
   api_ = api;
 }
 
@@ -90,11 +90,6 @@ bool SysInfoDisplay::UpdateBrightness() {
 
 gboolean SysInfoDisplay::OnUpdateTimeout(gpointer user_data) {
   SysInfoDisplay* instance = static_cast<SysInfoDisplay*>(user_data);
-
-  if (instance->stopping_) {
-    instance->stopping_ = false;
-    return FALSE;
-  }
 
   double old_brightness = instance->brightness_;
   if (!instance->UpdateBrightness()) {
