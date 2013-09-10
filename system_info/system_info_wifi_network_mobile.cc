@@ -16,7 +16,9 @@ SysInfoWifiNetwork::~SysInfoWifiNetwork() {
     }
 }
 
-void SysInfoWifiNetwork::PlatformInitialize() { }
+void SysInfoWifiNetwork::PlatformInitialize() {
+  timeout_cb_id_ = 0;
+}
 
 bool SysInfoWifiNetwork::Update(picojson::value& error) {
   connection_h connect = NULL;

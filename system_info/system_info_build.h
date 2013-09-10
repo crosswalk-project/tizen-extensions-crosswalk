@@ -26,7 +26,7 @@ class SysInfoBuild {
   inline void StopListening() {
     if (timeout_cb_id_ > 0)
       g_source_remove(timeout_cb_id_);
-}
+  }
 
  private:
   bool UpdateHardware();
@@ -37,6 +37,9 @@ class SysInfoBuild {
   std::string model_;
   std::string manufacturer_;
   std::string buildversion_;
+#if defined(GENERIC_DESKTOP)
+  bool stopping_;
+#endif
   int timeout_cb_id_;
 
   DISALLOW_COPY_AND_ASSIGN(SysInfoBuild);
