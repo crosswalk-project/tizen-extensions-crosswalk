@@ -37,6 +37,7 @@ class SysInfoCellularNetwork {
   void SetData(picojson::value& data);
 
   void SetCellStatus();
+  void SetAPN();
   void SetIpAddress();
   void SetMcc();
   void SetMnc();

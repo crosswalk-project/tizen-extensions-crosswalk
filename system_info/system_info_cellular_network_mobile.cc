@@ -4,6 +4,7 @@
 
 #include "system_info/system_info_cellular_network.h"
 
+#include <net_connection.h>
 #include <system_info.h>
 
 #include "system_info/system_info_utils.h"
@@ -17,6 +18,36 @@ void SysInfoCellularNetwork::SetCellStatus() {
   }
 
   status_ = cell_status == 1 ? "ON" : "OFF";
+}
+
+void SysInfoCellularNetwork::SetAPN() {
+  connection_h connectionHandle = NULL;
+  if (connection_create(&connectionHandle) != CONNECTION_ERROR_NONE) {
+    return;
+  }
+
+  int ret_val;
+  connection_profile_h profileHandle = NULL;
+  if (status_ == "ON") {
+    ret_val = connection_get_current_profile(connectionHandle, &profileHandle);
+  } else {
+    ret_val = connection_get_default_cellular_service_profile(connectionHandle,
+        CONNECTION_CELLULAR_SERVICE_TYPE_INTERNET, &profileHandle);
+  }
+
+  if (ret_val != CONNECTION_ERROR_NONE)
+    return;
+
+  char* apn = NULL;
+  if (connection_profile_get_cellular_apn(profileHandle, &apn) !=
+      CONNECTION_ERROR_NONE)
+    return;
+
+  apn_ = std::string(apn);
+  free(apn);
+
+  connection_profile_destroy(profileHandle);
+  connection_destroy(connectionHandle);
 }
 
 void SysInfoCellularNetwork::SetIpAddress() {
@@ -108,6 +139,7 @@ void SysInfoCellularNetwork::SetImei() {
 void SysInfoCellularNetwork::Get(picojson::value& error,
                                  picojson::value& data) {
   SetCellStatus();
+  SetAPN();
   SetIpAddress();
   SetMcc();
   SetMnc();
@@ -123,9 +155,8 @@ void SysInfoCellularNetwork::Get(picojson::value& error,
 void SysInfoCellularNetwork::SetData(picojson::value& data) {
   system_info::SetPicoJsonObjectValue(data, "status",
         picojson::value(status_));
-  // FIXME(jiajia): find whick key reflects this prop
   system_info::SetPicoJsonObjectValue(data, "apn",
-        picojson::value("Unknown"));
+        picojson::value(apn_));
   system_info::SetPicoJsonObjectValue(data, "ipAddress",
         picojson::value(ipAddress_));
   // FIXME(jiajia): not supported
@@ -175,6 +206,7 @@ void SysInfoCellularNetwork::UpdateCellStatus(int status) {
     return;
 
   status_ = new_status;
+  SetAPN();
   SetIpAddress();
   SetIsRoaming();
   SendUpdate();
@@ -195,6 +227,7 @@ void SysInfoCellularNetwork::UpdateCellId(int cell_id) {
 
   cellId_ = cell_id;
   SetCellStatus();
+  SetAPN();
   SetIpAddress();
   SetMcc();
   SetMnc();
@@ -226,6 +259,7 @@ void SysInfoCellularNetwork::UpdateFlightMode(int flight_mode) {
 
   isFlightMode_ = (flight_mode == 1);
   SetCellStatus();
+  SetAPN();
   SetIpAddress();
   SetMcc();
   SetMnc();
