@@ -15,6 +15,22 @@ var postMessage = function(msg, callback) {
   extension.postMessage(JSON.stringify(msg));
 };
 
+function _addConstProperty(obj, propertyKey, propertyValue) {
+  Object.defineProperty(obj, propertyKey, {
+    configurable: false,
+    writable: false,
+    value: propertyValue
+  });
+}
+
+function _createConstClone(obj) {
+  var const_obj = {};
+  for (var key in obj) {
+    _addConstProperty(data, key, obj[key]);
+  }
+  return const_obj;
+}
+
 var _checkThreshold = function(value, highThreshold, lowThreshold) {
   if ((highThreshold && (highThreshold >= 0) && (value >= highThreshold)) ||
       (lowThreshold && (lowThreshold >= 0) && (value <= lowThreshold)))
@@ -53,15 +69,15 @@ extension.setMessageListener(function(json) {
             switch(msg.prop) {
               case "BATTERY":
                 if (_checkThreshold(msg.data.level, highThreshold, lowThreshold))
-                  _listeners[id]["callback"](msg.data);
+                  _listeners[id]["callback"](_createConstClone(msg.data));
                 break;
               case "CPU":
                 if (_checkThreshold(msg.data.load, highThreshold, lowThreshold))
-                  _listeners[id]["callback"](msg.data);
+                  _listeners[id]["callback"](_createConstClone(msg.data));
                 break;
               case "DISPLAY":
                 if (_checkThreshold(msg.data.brightness, highThreshold, lowThreshold))
-                  _listeners[id]["callback"](msg.data);
+                  _listeners[id]["callback"](_createConstClone(msg.data));
                 break;
               case "STORAGE":
               case "DEVICE_ORIENTATION":
@@ -72,12 +88,12 @@ extension.setMessageListener(function(json) {
               case "CELLULAR_NETWORK":
               case "SIM":
               case "PERIPHERAL":
-                _listeners[id]["callback"](msg.data);
+                _listeners[id]["callback"](_createConstClone(msg.data));
             }
             _listeners[id]["timestamp"] = currentTime;
             continue;
           }
-          _listeners[id]["callback"](msg.data);
+          _listeners[id]["callback"](_createConstClone(msg.data));
         }
       }
     }
@@ -104,7 +120,7 @@ exports.getCapabilities = function() {
     throw new tizen.WebAPIException(tizen.WebAPIException.NOT_SUPPORTED_ERR);
   } else {
     delete capbilities['error'];
-    return capbilities;
+    return _createConstClone(capbilities);
   }
 }
 
@@ -128,7 +144,7 @@ exports.getPropertyValue = function(prop, successCallback, errorCallback) {
   }
   _getPropertyValue(prop, function(error, data) {
     if (!error) {
-      successCallback(data);
+      successCallback(_createConstClone(data));
     } else if (errorCallback) {
       errorCallback(error);
     }

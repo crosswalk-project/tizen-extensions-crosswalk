@@ -38,8 +38,9 @@ handle("capability_btn", function() {
   try { 
     var cap = tizen.systeminfo.getCapabilities();
     output.value += '\n getCapabilities() returned.';
-    for (property in cap) {
-      output.value += '\n\t' + property + ': ' + cap[property];
+    var property = Object.getOwnPropertyNames(cap);
+    for (var i = 0; i < property.length; i++) {
+      output.value += '\n\t' + property[i] + ': ' + cap[property[i]];
     }
   }
   catch (err) {
@@ -151,7 +152,7 @@ handle("storage_btn", function() {
                function(storage) {
                  output.value += '\n Get property STORAGE returned.';
                  output.value += '\n\t There are ' + storage.units.length + ' storage units.\n';
-                 for (i=0; i< storage.units.length; i++) {
+                 for (var i = 0; i < storage.units.length; i++) {
                    output.value += '\n\t storage[' + i + ']:';
                    output.value += '\n\t\t type: ' + storage.units[i].type;
                    output.value += '\n\t\t capacity: ' + storage.units[i].capacity + ' bytes';
@@ -173,7 +174,7 @@ handle("storage_btn", function() {
     function(storage) {
       output.value += '\n Get property STORAGE returned.';
       output.value += '\n\t There are ' + storage.units.length + ' storage units.\n';
-      for (i=0; i< storage.units.length; i++) {
+      for (var i = 0; i < storage.units.length; i++) {
         output.value += '\n\t storage[' + i + ']:';
         output.value += '\n\t\t type: ' + storage.units[i].type;
         output.value += '\n\t\t capacity: ' + storage.units[i].capacity + ' bytes';
