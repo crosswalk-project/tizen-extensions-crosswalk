@@ -11,8 +11,7 @@ SysInfoWifiNetwork::SysInfoWifiNetwork(ContextAPI* api)
       ssid_(""),
       ip_address_(""),
       ipv6_address_(""),
-      signal_strength_(0.0),
-      timeout_cb_id_(0) {
+      signal_strength_(0.0) {
   api_ = api;
   PlatformInitialize();
 }
