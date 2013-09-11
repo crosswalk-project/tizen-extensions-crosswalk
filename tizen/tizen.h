@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef TIZEN_H_
-#define TIZEN_H_
+#ifndef TIZEN_TIZEN_H_
+#define TIZEN_TIZEN_H_
 
 // WARNING! This list should be in sync with the equivalent list
 // located at tizen_api.js. Remember to update tizen_api.js if you
@@ -48,4 +48,4 @@ enum WebApiAPIErrors {
   SERVICE_NOT_AVAILABLE_ERR = 103,
 };
 
-#endif  // TIZEN_H_
+#endif  // TIZEN_TIZEN_H_

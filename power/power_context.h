@@ -2,16 +2,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef POWER_CONTEXT_H_
-#define POWER_CONTEXT_H_
-
-#include "common/extension_adapter.h"
-#include <map>
-#include <string>
+#ifndef POWER_POWER_CONTEXT_H_
+#define POWER_POWER_CONTEXT_H_
 
 #if defined(GENERIC_DESKTOP)
 #include <gio/gio.h>
 #endif
+
+#include <map>
+#include <string>
+#include "common/extension_adapter.h"
 
 namespace picojson {
 class value;
@@ -19,7 +19,7 @@ class value;
 
 class PowerContext {
  public:
-  PowerContext(ContextAPI* api);
+  explicit PowerContext(ContextAPI* api);
   ~PowerContext();
 
   void PlatformInitialize();
@@ -49,7 +49,7 @@ class PowerContext {
 
   void OnScreenStateChanged(ResourceState state);
 
-private:
+ private:
   void HandleRequest(const picojson::value& msg);
   void HandleRelease(const picojson::value& msg);
   void HandleSetScreenBrightness(const picojson::value& msg);
@@ -60,9 +60,10 @@ private:
   ContextAPI* api_;
 
 #if defined(GENERIC_DESKTOP)
-  friend void OnScreenProxyCreatedThunk(GObject* source, GAsyncResult*, gpointer);
+  friend void OnScreenProxyCreatedThunk(GObject* source, GAsyncResult*,
+                                        gpointer);
   GDBusProxy* screen_proxy_;
 #endif
 };
 
-#endif  // POWER_CONTEXT_H_
+#endif  // POWER_POWER_CONTEXT_H_

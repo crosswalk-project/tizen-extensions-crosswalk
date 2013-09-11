@@ -1,0 +1,25 @@
+#!/bin/bash
+# Copyright (c) 2013 Intel Corporation. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+if [ ! `which cpplint.py` ]; then
+   echo -e "\nPlease make sure cpplint.py is in your PATH. It is part of depot_tools inside Chromium repository."
+   exit 1
+fi
+
+# FIXME(cmarcelo): the exception 'runtime/references' is for system_info/, we
+# need to verify whether is really necessary or should be fixed.
+FILTERS="-readability/streams,-runtime/references"
+
+# TODO(cmarcelo): Skipping directories so we can enable style
+# gradually, since it wasn't enforced before.
+cpplint.py --filter="$FILTERS" $(find \
+                               ! -path './out*' ! -path './.git*' \
+                               ! -path './demos' ! -path './examples' \
+                               ! -path './packaging' \
+                               ! -name 'xwalk_extension_public.h' \
+                               ! -name 'picojson.*' \
+                               ! -path './bluetooth/*' \
+                               ! -path './download/*' \
+                               \( -name '*.h' -o -name '*.cc' \) )

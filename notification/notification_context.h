@@ -5,13 +5,13 @@
 #ifndef NOTIFICATION_NOTIFICATION_CONTEXT_H_
 #define NOTIFICATION_NOTIFICATION_CONTEXT_H_
 
-#include "common/extension_adapter.h"
-#include <map>
-#include <string>
-
 #if defined(GENERIC_DESKTOP)
 #include <libnotify/notify.h>
 #endif
+
+#include <map>
+#include <string>
+#include "common/extension_adapter.h"
 
 #if defined(TIZEN_MOBILE)
 #include "notification/mobile/notification_manager.h"

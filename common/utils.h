@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 #ifndef COMMON_UTILS_H_
-#define COMMON_UTILS_H_ 
+#define COMMON_UTILS_H_
 
 // Put this in the private: declarations for a class to be uncopyable.
 #define DISALLOW_COPY(TypeName) \

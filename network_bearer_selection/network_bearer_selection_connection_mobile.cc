@@ -4,8 +4,9 @@
 
 #include "network_bearer_selection/network_bearer_selection_connection_mobile.h"
 
-#include <map>
 #include <stdlib.h>
+#include <map>
+#include <string>
 #include <vector>
 #include "network_bearer_selection/network_bearer_selection_request.h"
 
@@ -147,7 +148,7 @@ connection_profile_h NetworkBearerSelectionConnection::GetProfileForNetworkType(
   // type to the wireless. Looks to me that it should have its own category,
   // although the spec doesn't say anything about it.
   connection_profile_type_e expected_profile_type;
-  switch(network_type) {
+  switch (network_type) {
     case CELLULAR:
       expected_profile_type = CONNECTION_PROFILE_TYPE_CELLULAR;
       break;

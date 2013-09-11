@@ -3,13 +3,13 @@
 // found in the LICENSE file.
 
 #include "power/power_context.h"
-#include "common/picojson.h"
 
-#include <glib.h>
-#include <power.h>
-#include <pmapi.h>
 #include <device.h>
+#include <glib.h>
+#include <pmapi.h>
+#include <power.h>
 #include <vconf.h>
+#include "common/picojson.h"
 
 static void OnPlatformStateChanged(power_state_e state, void *user_data);
 
@@ -21,22 +21,23 @@ void PowerContext::PlatformInitialize() {
 void PowerContext::PlatformUninitialize() {
 }
 
-PowerContext::ResourceType getResourceType(const picojson::value& msg, bool* error) {
+PowerContext::ResourceType getResourceType(const picojson::value& msg,
+                                           bool* error) {
     int type = msg.get("resource").get<double>();
     if (type < 0 || type >= PowerContext::ResourceTypeValueCount)
         *error = true;
     return static_cast<PowerContext::ResourceType>(type);
 }
 
-PowerContext::ResourceState getResourceState(const picojson::value& msg, bool* error) {
+PowerContext::ResourceState getResourceState(const picojson::value& msg,
+                                             bool* error) {
     int state = msg.get("state").get<double>();
     if (state < 0 || state >= PowerContext::ResourceStateValueCount)
         *error = true;
     return static_cast<PowerContext::ResourceState>(state);
 }
 
-static PowerContext::ResourceState toResourceState(power_state_e pstate)
-{
+static PowerContext::ResourceState toResourceState(power_state_e pstate) {
     switch (pstate) {
     case POWER_STATE_NORMAL:
       return PowerContext::SCREEN_NORMAL;
@@ -122,8 +123,7 @@ void PowerContext::HandleRelease(const picojson::value& msg) {
 // FIXME : This callback can be removed when extensions are moved to
 // their own process. For now it is needed for vconf to function correctly.
 // This callback actually make sure that the code is run in the main thread.
-static gboolean set_brightness_callback(gpointer data)
-{
+static gboolean set_brightness_callback(gpointer data) {
   double* brightness = static_cast<double*>(data);
   if (*brightness < 0) {
     // Resource brightness.
@@ -148,7 +148,8 @@ static gboolean set_brightness_callback(gpointer data)
 void PowerContext::HandleSetScreenBrightness(const picojson::value& msg) {
   double* requested_brightness = new double[1];
   *requested_brightness = msg.get("value").get<double>();
-  g_timeout_add(0, set_brightness_callback, static_cast<gpointer>(requested_brightness));
+  g_timeout_add(0, set_brightness_callback,
+                static_cast<gpointer>(requested_brightness));
 }
 
 void PowerContext::HandleGetScreenState() {
@@ -160,13 +161,13 @@ void PowerContext::HandleGetScreenState() {
 }
 
 void PowerContext::HandleGetScreenBrightness() {
-  // FIXME : This need to be called from the main thread, when extensions are moved to
-  // their own process the code should work.
+  // FIXME : This need to be called from the main thread, when extensions are
+  // moved to their own process the code should work.
   int platformBrightness;
   vconf_get_int(VCONFKEY_SETAPPL_LCD_BRIGHTNESS, &platformBrightness);
   double brightness = platformBrightness / 100.0;
   char brightnessAsString[32];
-  snprintf(brightnessAsString, 32, "%g", brightness);
+  snprintf(brightnessAsString, sizeof(brightnessAsString), "%g", brightness);
   api_->SetSyncReply(brightnessAsString);
 }
 

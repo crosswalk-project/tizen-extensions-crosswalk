@@ -2,12 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef NOTIFICATION_NOTIFICATION_MOBILE_NOTIFICATION_MANAGER_H_
-#define NOTIFICATION_NOTIFICATION_MOBILE_NOTIFICATION_MANAGER_H_
+#ifndef NOTIFICATION_MOBILE_NOTIFICATION_MANAGER_H_
+#define NOTIFICATION_MOBILE_NOTIFICATION_MANAGER_H_
 
-#include <map>
 #include <notification.h>
 #include <pthread.h>
+#include <map>
 #include <string>
 
 class NotificationClient {
@@ -83,4 +83,4 @@ class NotificationManager {
   pthread_mutex_t mutex_;
 };
 
-#endif  // NOTIFICATION_NOTIFICATION_MOBILE_NOTIFICATION_MANAGER_H_
+#endif  // NOTIFICATION_MOBILE_NOTIFICATION_MANAGER_H_
