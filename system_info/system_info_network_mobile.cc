@@ -11,7 +11,9 @@ SysInfoNetwork::~SysInfoNetwork() {
       g_source_remove(timeout_cb_id_);
 }
 
-void SysInfoNetwork::PlatformInitialize() { }
+void SysInfoNetwork::PlatformInitialize() {
+  timeout_cb_id_ = 0;
+}
 
 bool SysInfoNetwork::Update(picojson::value& error) {
   int service_type = 0;

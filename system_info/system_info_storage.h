@@ -46,6 +46,7 @@ class SysInfoStorage {
                   picojson::value& error,
                   picojson::value& unit);
   std::string GetDevPathFromMountPath(const std::string& mnt_path);
+  bool stopping_;
 
   struct udev* udev_;
 #elif defined(TIZEN_MOBILE)

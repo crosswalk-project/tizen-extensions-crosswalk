@@ -36,6 +36,9 @@ class SysInfoLocale {
   ContextAPI* api_;
   std::string language_;
   std::string country_;
+#if defined(GENERIC_DESKTOP)
+  bool stopping_;
+#endif
   int timeout_cb_id_;
 
   DISALLOW_COPY_AND_ASSIGN(SysInfoLocale);
