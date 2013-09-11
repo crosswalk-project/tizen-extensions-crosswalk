@@ -26,7 +26,7 @@ function _addConstProperty(obj, propertyKey, propertyValue) {
 function _createConstClone(obj) {
   var const_obj = {};
   for (var key in obj) {
-    _addConstProperty(data, key, obj[key]);
+    _addConstProperty(const_obj, key, obj[key]);
   }
   return const_obj;
 }
