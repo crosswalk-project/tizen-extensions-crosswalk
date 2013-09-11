@@ -8,9 +8,7 @@
 #include "common/extension_adapter.h"
 #include "common/picojson.h"
 
-CXWalkExtension* xwalk_extension_init(int32_t api_version) {
-  return ExtensionAdapter<NetworkBearerSelectionContextDesktop>::Initialize();
-}
+DEFINE_XWALK_EXTENSION(NetworkBearerSelectionContextDesktop);
 
 NetworkBearerSelectionContextDesktop::NetworkBearerSelectionContextDesktop(
     ContextAPI* api) : NetworkBearerSelectionContext(api) {

@@ -4,9 +4,7 @@
 
 #include "tizen/tizen_context.h"
 
-CXWalkExtension* xwalk_extension_init(int32_t api_version) {
-  return ExtensionAdapter<TizenContext>::Initialize();
-}
+DEFINE_XWALK_EXTENSION(TizenContext);
 
 TizenContext::TizenContext(ContextAPI* api) : api_(api) {}
 

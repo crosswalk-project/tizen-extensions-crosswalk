@@ -5,9 +5,10 @@
 #include "notification/notification_context.h"
 #include "common/picojson.h"
 
-CXWalkExtension* xwalk_extension_init(int32_t api_version) {
+int32_t XW_Initialize(XW_Extension extension, XW_GetInterface get_interface) {
   NotificationContext::PlatformInitialize();
-  return ExtensionAdapter<NotificationContext>::Initialize();
+  return ExtensionAdapter<NotificationContext>::Initialize(extension,
+                                                           get_interface);
 }
 
 const char NotificationContext::name[] = "tizen.notification";
