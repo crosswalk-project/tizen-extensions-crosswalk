@@ -5,4 +5,4 @@ if [ ! -f /usr/bin/xwalk ]; then
    exit 1
 fi
 
-exec /usr/bin/xwalk --allow-external-extensions-for-remote-sources --fullscreen --external-extensions-path=/usr/lib/tizen-extensions-crosswalk "$@"
+exec /usr/bin/xwalk --allow-external-extensions-for-remote-sources --external-extensions-path=/usr/lib/tizen-extensions-crosswalk "$@"
