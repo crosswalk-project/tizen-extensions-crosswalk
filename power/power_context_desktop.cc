@@ -3,10 +3,10 @@
 // found in the LICENSE file.
 
 #include "power/power_context.h"
-#include "common/picojson.h"
 
 #include <iostream>
 #include <fstream>
+#include "common/picojson.h"
 
 #define DEVICE "/sys/class/backlight/acpi_video0"
 
@@ -34,14 +34,15 @@ static void writeInt(const char* pathname, int value) {
     return;
 
   char buf[4];
-  snprintf(buf, 4, "%d", value);
+  snprintf(buf, sizeof(buf), "%d", value);
 
   file.seekp(0, std::ios::beg);
   file.write(buf, 4);
   file.close();
 }
 
-void OnScreenProxyCreatedThunk(GObject* source, GAsyncResult* res, gpointer data) {
+void OnScreenProxyCreatedThunk(GObject* source, GAsyncResult* res,
+                               gpointer data) {
   PowerContext* context = static_cast<PowerContext*>(data);
   // Returns 0 in case of failure.
   context->screen_proxy_ = g_dbus_proxy_new_for_bus_finish(res, /* error */ 0);
@@ -68,7 +69,8 @@ void PowerContext::PlatformUninitialize() {
 
 void PowerContext::HandleRequest(const picojson::value& msg) {
   std::string resource = msg.get("resource").to_str();
-  ResourceState state = static_cast<ResourceState>(msg.get("state").get<double>());
+  ResourceState state = static_cast<ResourceState>(
+      msg.get("state").get<double>());
 
   switch (state) {
     case SCREEN_OFF:
@@ -110,7 +112,8 @@ void PowerContext::HandleGetScreenBrightness() {
 
   double value = readInt(DEVICE "/brightness");
   if (kMaxBrightness > 0 && value >= 0)
-    snprintf(brightnessAsString, 32, "%g", value / kMaxBrightness);
+    snprintf(brightnessAsString, sizeof(brightnessAsString),
+             "%g", value / kMaxBrightness);
 
   api_->SetSyncReply(brightnessAsString);
 }
@@ -121,7 +124,8 @@ void PowerContext::HandleSetScreenEnabled(const picojson::value& msg) {
 
 void PowerContext::HandleGetScreenState() {
   picojson::value::object o;
-  o["state"] = picojson::value(static_cast<double>(PowerContext::SCREEN_NORMAL));
+  o["state"] = picojson::value(
+      static_cast<double>(PowerContext::SCREEN_NORMAL));
   picojson::value v(o);
   api_->SetSyncReply(v.serialize().c_str());
 }

@@ -9,7 +9,7 @@
 
 class TimeContext {
  public:
-  TimeContext(ContextAPI *) {}
+  explicit TimeContext(ContextAPI* context_api) {}
 
   // ExtensionAdapter implementation.
   static const char name[];

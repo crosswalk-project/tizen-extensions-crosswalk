@@ -17,10 +17,10 @@ class NetworkBearerSelectionRequest {
   void Disconnected();
   void Failure();
 
-  std::string cmd() const { return cmd_; };
-  std::string domain_name() const { return domain_name_; };
-  NetworkType network_type() const { return network_type_; };
-  std::string reply_id() const { return reply_id_; };
+  std::string cmd() const { return cmd_; }
+  std::string domain_name() const { return domain_name_; }
+  NetworkType network_type() const { return network_type_; }
+  std::string reply_id() const { return reply_id_; }
 
   void set_cmd(const std::string& cmd);
   void set_domain_name(const std::string& domain_name);

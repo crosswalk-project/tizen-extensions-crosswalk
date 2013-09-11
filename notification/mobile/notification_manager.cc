@@ -1,8 +1,12 @@
+// Copyright (c) 2013 Intel Corporation. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
 #include "notification/mobile/notification_manager.h"
 
 // Utility to lock a mutex and unlock it in the end of the scope.
 struct AutoLock {
-  AutoLock(pthread_mutex_t* m) : m_(m) { pthread_mutex_lock(m_); }
+  explicit AutoLock(pthread_mutex_t* m) : m_(m) { pthread_mutex_lock(m_); }
   ~AutoLock() { pthread_mutex_unlock(m_); }
  private:
   pthread_mutex_t* m_;

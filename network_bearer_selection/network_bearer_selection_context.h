@@ -19,7 +19,7 @@ enum NetworkType {
 class NetworkBearerSelectionContext {
  public:
   explicit NetworkBearerSelectionContext(ContextAPI* api);
-  virtual ~NetworkBearerSelectionContext() {};
+  virtual ~NetworkBearerSelectionContext() {}
 
   // ExtensionAdapter implementation.
   static const char name[];

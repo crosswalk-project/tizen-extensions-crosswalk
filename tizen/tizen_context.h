@@ -9,7 +9,7 @@
 
 class TizenContext {
  public:
-  TizenContext(ContextAPI *);
+  explicit TizenContext(ContextAPI* context_api);
   ~TizenContext();
 
   // ExtensionAdapter implementation.
