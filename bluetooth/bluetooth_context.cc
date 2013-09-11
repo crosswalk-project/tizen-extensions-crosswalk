@@ -9,7 +9,7 @@
 #include <bluetooth.h>
 #endif
 
-CXWalkExtension* xwalk_extension_init(int32_t api_version) {
+int32_t XW_Initialize(XW_Extension extension, XW_GetInterface get_interface) {
 #if defined(TIZEN_MOBILE)
   int init = bt_initialize();
   if (init != BT_ERROR_NONE)
@@ -28,7 +28,8 @@ CXWalkExtension* xwalk_extension_init(int32_t api_version) {
   }
 #endif
 
-  return ExtensionAdapter<BluetoothContext>::Initialize();
+  return ExtensionAdapter<BluetoothContext>::Initialize(extension,
+                                                        get_interface);
 }
 
 BluetoothContext::BluetoothContext(ContextAPI* api)

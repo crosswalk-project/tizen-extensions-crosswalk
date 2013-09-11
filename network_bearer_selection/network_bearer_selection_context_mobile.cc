@@ -8,9 +8,7 @@
 #include "network_bearer_selection/network_bearer_selection_request.h"
 #include "network_bearer_selection/network_bearer_selection_connection_mobile.h"
 
-CXWalkExtension* xwalk_extension_init(int32_t api_version) {
-  return ExtensionAdapter<NetworkBearerSelectionContextMobile>::Initialize();
-}
+DEFINE_XWALK_EXTENSION(NetworkBearerSelectionContextMobile);
 
 NetworkBearerSelectionContextMobile::NetworkBearerSelectionContextMobile(
     ContextAPI* api) : NetworkBearerSelectionContext(api) {

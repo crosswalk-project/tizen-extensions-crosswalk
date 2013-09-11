@@ -7,9 +7,7 @@
 #include <string>
 #include "common/picojson.h"
 
-CXWalkExtension* xwalk_extension_init(int32_t api_version) {
-  return ExtensionAdapter<SystemSettingContext>::Initialize();
-}
+DEFINE_XWALK_EXTENSION(SystemSettingContext);
 
 SystemSettingContext::SystemSettingContext(ContextAPI* api)
     : api_(api) {}

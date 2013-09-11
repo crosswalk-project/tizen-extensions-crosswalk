@@ -14,9 +14,7 @@
 #include "common/picojson.h"
 #include "system_info/system_info_utils.h"
 
-CXWalkExtension* xwalk_extension_init(int32_t api_version) {
-  return ExtensionAdapter<SystemInfoContext>::Initialize();
-}
+DEFINE_XWALK_EXTENSION(SystemInfoContext);
 
 SystemInfoContext::SystemInfoContext(ContextAPI* api)
     : api_(api),
