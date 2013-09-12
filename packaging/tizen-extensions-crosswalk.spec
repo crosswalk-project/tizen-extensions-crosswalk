@@ -2,6 +2,7 @@
 %define _desktop_icondir /opt/share/icons/default/small
 %define _bluetooth_demo_package tizen-extensions-crosswalk-bluetooth-demo
 %define _examples_package tizen-extensions-crosswalk-examples
+%define _system_info_demo_package tizen-extensions-crosswalk-system-info-demo
 
 Name:       tizen-extensions-crosswalk
 Version:    0.3
@@ -15,6 +16,7 @@ Source1:    %{name}
 Source2:    %{name}.png
 Source3:    %{_bluetooth_demo_package}
 Source4:    %{_examples_package}
+Source5:    %{_system_info_demo_package}
 Source1001: %{name}.manifest
 
 BuildRequires: python
@@ -58,6 +60,14 @@ Requires:      %{name}
 %description  -n %{_examples_package}
 Tizen Web APIs examples using Crosswalk.
 
+%package -n %{_system_info_demo_package}
+Summary: Tizen Web APIs using Crosswalk system info demo
+Group: Development/Libraries
+Requires:      %{name}
+
+%description  -n %{_system_info_demo_package}
+Tizen Web APIs system info demo implementation using Crosswalk.
+
 %prep
 %setup -q
 
@@ -65,6 +75,7 @@ cp %{SOURCE1001} .
 cp %{SOURCE2} .
 cp %{SOURCE3} .
 cp %{SOURCE4} .
+cp %{SOURCE5} .
 
 %build
 
@@ -82,6 +93,7 @@ make %{?_smp_mflags}
 install -m 755 -D %{SOURCE1} %{buildroot}%{_bindir}/%{name}
 install -m 755 -D %{SOURCE3} %{buildroot}%{_bindir}/%{_bluetooth_demo_package}
 install -m 755 -D %{SOURCE4} %{buildroot}%{_bindir}/%{_examples_package}
+install -m 755 -D %{SOURCE5} %{buildroot}%{_bindir}/%{_system_info_demo_package}
 
 # Extensions.
 mkdir -p %{buildroot}%{_libdir}/%{name}
@@ -104,11 +116,24 @@ install -p -m 644 demos/tizen/css/*.css %{buildroot}%{_datarootdir}/%{name}/demo
 install -p -m 644 demos/tizen/js/*.js %{buildroot}%{_datarootdir}/%{name}/demos/tizen/js
 install -p -m 644 demos/tizen/images/*.png %{buildroot}%{_datarootdir}/%{name}/demos/tizen/images
 
+# Demos - System Info
+mkdir -p %{buildroot}%{_datarootdir}/%{name}/demos/system_info
+mkdir -p %{buildroot}%{_datarootdir}/%{name}/demos/system_info/css
+mkdir -p %{buildroot}%{_datarootdir}/%{name}/demos/system_info/js
+mkdir -p %{buildroot}%{_datarootdir}/%{name}/demos/system_info/images
+
+install -p -m 644 demos/system_info/*.html %{buildroot}%{_datarootdir}/%{name}/demos/system_info
+install -p -m 644 demos/system_info/css/*.css %{buildroot}%{_datarootdir}/%{name}/demos/system_info/css
+install -p -m 644 demos/system_info/js/*.js %{buildroot}%{_datarootdir}/%{name}/demos/system_info/js
+install -p -m 644 demos/system_info/images/*.png %{buildroot}%{_datarootdir}/%{name}/demos/system_info/images
+
 # register to the package manager
 install -m 644 -D %{_examples_package}.xml %{buildroot}%{_manifestdir}/%{_examples_package}.xml
 install -m 644 -D %{_bluetooth_demo_package}.xml %{buildroot}%{_manifestdir}/%{_bluetooth_demo_package}.xml
+install -m 644 -D %{_system_info_demo_package}.xml %{buildroot}%{_manifestdir}/%{_system_info_demo_package}.xml
 install -p -D %{name}.png %{buildroot}%{_desktop_icondir}/%{_examples_package}.png
 install -p -D %{name}.png %{buildroot}%{_desktop_icondir}/%{_bluetooth_demo_package}.png
+install -p -D %{name}.png %{buildroot}%{_desktop_icondir}/%{_system_info_demo_package}.png
 
 %files
 # TODO(rakuco): This causes problems on 2.1 when creating the package.
@@ -131,3 +156,12 @@ install -p -D %{name}.png %{buildroot}%{_desktop_icondir}/%{_bluetooth_demo_pack
 %{_desktop_icondir}/%{_examples_package}.png
 %{_datarootdir}/%{name}/examples/*.html
 %{_datarootdir}/%{name}/examples/js/*.js
+
+%files -n %{_system_info_demo_package}
+%{_bindir}/%{_system_info_demo_package}
+%{_manifestdir}/%{_system_info_demo_package}.xml
+%{_desktop_icondir}/%{_system_info_demo_package}.png
+%{_datarootdir}/%{name}/demos/system_info/*.html
+%{_datarootdir}/%{name}/demos/system_info/css/*.css
+%{_datarootdir}/%{name}/demos/system_info/js/*.js
+%{_datarootdir}/%{name}/demos/system_info/images/*.png
