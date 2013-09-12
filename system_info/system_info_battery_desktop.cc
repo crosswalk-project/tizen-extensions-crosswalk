@@ -14,7 +14,7 @@
 SysInfoBattery::SysInfoBattery(ContextAPI* api)
     : level_(0.0),
       charging_(false),
-      stopping_(false) {
+      timeout_cb_id_(0) {
   api_ = api;
   udev_ = udev_new();
 }
@@ -26,14 +26,14 @@ SysInfoBattery::~SysInfoBattery() {
 
 void SysInfoBattery::StartListening() {
   // FIXME(halton): Use udev D-Bus interface to monitor.
-  g_timeout_add(system_info::default_timeout_interval,
+  timeout_cb_id_ = g_timeout_add(system_info::default_timeout_interval,
                 SysInfoBattery::OnUpdateTimeout,
                 static_cast<gpointer>(this));
-  stopping_ = false;
 }
 
 void SysInfoBattery::StopListening() {
-  stopping_ = true;
+  if (timeout_cb_id_ > 0)
+    g_source_remove(timeout_cb_id_);
 }
 
 void SysInfoBattery::Get(picojson::value& error,
@@ -94,11 +94,6 @@ bool SysInfoBattery::Update(picojson::value& error) {
 
 gboolean SysInfoBattery::OnUpdateTimeout(gpointer user_data) {
   SysInfoBattery* instance = static_cast<SysInfoBattery*>(user_data);
-
-  if (instance->stopping_) {
-    instance->stopping_ = false;
-    return FALSE;
-  }
 
   double old_level = instance->level_;
   double old_charging = instance->charging_;

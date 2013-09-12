@@ -15,7 +15,7 @@
 #include "system_info/system_info_utils.h"
 
 SysInfoLocale::SysInfoLocale(ContextAPI* api)
-    : stopping_(false) {
+    : timeout_cb_id_(0) {
   api_ = api;
 }
 
@@ -90,11 +90,6 @@ bool SysInfoLocale::UpdateCountry() {
 
 gboolean SysInfoLocale::OnUpdateTimeout(gpointer user_data) {
   SysInfoLocale* instance = static_cast<SysInfoLocale*>(user_data);
-
-  if (instance->stopping_) {
-    instance->stopping_ = false;
-    return FALSE;
-  }
 
   std::string oldlanguage_ = instance->language_;
   std::string oldcountry_ = instance->country_;
