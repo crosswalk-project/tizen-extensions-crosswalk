@@ -221,7 +221,7 @@ tizen.TZDate = (function() {
       },
       addDuration: function(duration) {
         var date = new TZDate(date_.getFullYear(), date_.getMonth(),
-              date_.getDay(), date_.getHours(), date_.getMinutes(),
+              date_.getDate(), date_.getHours(), date_.getMinutes(),
               date_.getSeconds(), date_.getMilliseconds(), timezone_);
         date.setMilliseconds(duration.getMilliseconds() +
               date.getMilliseconds());

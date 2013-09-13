@@ -49,8 +49,8 @@ shouldBe("day_after_tomorrow.equalsTo(tomorrow_plus_one_day)", "true");
 shouldBe("day_after_tomorrow.earlierThan(tomorrow_plus_one_day)", "false");
 shouldBe("day_after_tomorrow.laterThan(tomorrow_plus_one_day)", "false");
 
-shouldBe("tomorrow.laterThan(now)", "false");
-shouldBe("tomorrow.earlierThan(now)", "true");
+shouldBe("tomorrow.laterThan(now)", "true");
+shouldBe("tomorrow.earlierThan(now)", "false");
 shouldBe("tomorrow.equalsTo(now)", "false");
 
 shouldBe("yesterday.equalsTo(now)", "false");
