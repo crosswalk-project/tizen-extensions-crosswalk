@@ -38,25 +38,25 @@ class SysInfoCellularNetwork {
   void SetCellStatus();
   void SetAPN();
   void SetIpAddress();
-  void SetMcc();
-  void SetMnc();
+  void SetMCC();
+  void SetMNC();
   void SetCellId();
-  void SetLac();
+  void SetLAC();
   void SetIsRoaming();
   void SetFlightMode();
-  void SetImei();
+  void SetIMEI();
 
   void UpdateCellStatus(int status);
   void UpdateIpAddress(char* ip);
   void UpdateCellId(int cell_id);
-  void UpdateLacChanged(int lac);
+  void UpdateLAC(int lac);
   void UpdateRoamingState(int is_roaming);
   void UpdateFlightMode(int flight_mode);
 
   static void OnCellStatusChanged(keynode_t* node, void* user_data);
   static void OnIpChanged(keynode_t* node, void* user_data);
   static void OnCellIdChanged(keynode_t* node, void* user_data);
-  static void OnLacChanged(keynode_t* node, void* user_data);
+  static void OnLocationAreaCodeChanged(keynode_t* node, void* user_data);
   static void OnRoamingStateChanged(keynode_t* node, void* user_data);
   static void OnFlightModeChanged(keynode_t* node, void* user_data);
 #endif
