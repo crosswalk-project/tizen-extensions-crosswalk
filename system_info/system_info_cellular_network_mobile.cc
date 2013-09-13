@@ -4,6 +4,7 @@
 
 #include "system_info/system_info_cellular_network.h"
 
+#include <net_connection.h>
 #include <system_info.h>
 
 #include "system_info/system_info_utils.h"
@@ -19,6 +20,36 @@ void SysInfoCellularNetwork::SetCellStatus() {
   status_ = cell_status == 1 ? "ON" : "OFF";
 }
 
+void SysInfoCellularNetwork::SetAPN() {
+  connection_h connectionHandle = NULL;
+  if (connection_create(&connectionHandle) != CONNECTION_ERROR_NONE) {
+    return;
+  }
+
+  int ret_val;
+  connection_profile_h profileHandle = NULL;
+  if (status_ == "ON") {
+    ret_val = connection_get_current_profile(connectionHandle, &profileHandle);
+  } else {
+    ret_val = connection_get_default_cellular_service_profile(connectionHandle,
+        CONNECTION_CELLULAR_SERVICE_TYPE_INTERNET, &profileHandle);
+  }
+
+  if (ret_val != CONNECTION_ERROR_NONE)
+    return;
+
+  char* apn = NULL;
+  if (connection_profile_get_cellular_apn(profileHandle, &apn) !=
+      CONNECTION_ERROR_NONE)
+    return;
+
+  apn_ = std::string(apn);
+  free(apn);
+
+  connection_profile_destroy(profileHandle);
+  connection_destroy(connectionHandle);
+}
+
 void SysInfoCellularNetwork::SetIpAddress() {
   char* address = vconf_get_str(VCONFKEY_NETWORK_IP);
   if (address == NULL) {
@@ -30,37 +61,25 @@ void SysInfoCellularNetwork::SetIpAddress() {
   free(address);
 }
 
-void SysInfoCellularNetwork::SetMcc() {
+void SysInfoCellularNetwork::SetMCC() {
   int plmn_int = 0;
 
   if (vconf_get_int(VCONFKEY_TELEPHONY_PLMN, &plmn_int) != 0) {
-    mcc_ = "";
+    mcc_ = 0;
     return;
   }
 
-  std::stringstream ss;
-  ss << plmn_int;
-  std::string s = ss.str();
-  if (s.size() < 3)
-    mcc_ = s;
-  else
-    mcc_.assign(s, 0, 3);
+  mcc_ = plmn_int / 100;
 }
 
-void SysInfoCellularNetwork::SetMnc() {
+void SysInfoCellularNetwork::SetMNC() {
   int plmn_int = 0;
   if (vconf_get_int(VCONFKEY_TELEPHONY_PLMN, &plmn_int) != 0) {
-    mnc_ = "";
+    mnc_ = 0;
     return;
   }
 
-  std::stringstream ss;
-  ss << plmn_int;
-  std::string s = ss.str();
-  if (s.size() < 4)
-    mnc_ = "0";
-  else
-    mnc_.assign(s, 3, 3);
+  mnc_ = plmn_int % 100;
 }
 
 void SysInfoCellularNetwork::SetCellId() {
@@ -68,7 +87,7 @@ void SysInfoCellularNetwork::SetCellId() {
     cellId_ = -1;
 }
 
-void SysInfoCellularNetwork::SetLac() {
+void SysInfoCellularNetwork::SetLAC() {
   if (vconf_get_int(VCONFKEY_TELEPHONY_LAC, &lac_) != 0)
     lac_ = -1;
 }
@@ -93,7 +112,7 @@ void SysInfoCellularNetwork::SetFlightMode() {
   isFlightMode_ = (is_flight_mode == 1);
 }
 
-void SysInfoCellularNetwork::SetImei() {
+void SysInfoCellularNetwork::SetIMEI() {
   char* imei = NULL;
   if (system_info_get_value_string(SYSTEM_INFO_KEY_MOBILE_DEVICE_ID, &imei) !=
       SYSTEM_INFO_ERROR_NONE) {
@@ -108,14 +127,15 @@ void SysInfoCellularNetwork::SetImei() {
 void SysInfoCellularNetwork::Get(picojson::value& error,
                                  picojson::value& data) {
   SetCellStatus();
+  SetAPN();
   SetIpAddress();
-  SetMcc();
-  SetMnc();
+  SetMCC();
+  SetMNC();
   SetCellId();
-  SetLac();
+  SetLAC();
   SetIsRoaming();
   SetFlightMode();
-  SetImei();
+  SetIMEI();
   SetData(data);
   system_info::SetPicoJsonObjectValue(error, "message", picojson::value(""));
 }
@@ -123,18 +143,17 @@ void SysInfoCellularNetwork::Get(picojson::value& error,
 void SysInfoCellularNetwork::SetData(picojson::value& data) {
   system_info::SetPicoJsonObjectValue(data, "status",
         picojson::value(status_));
-  // FIXME(jiajia): find whick key reflects this prop
   system_info::SetPicoJsonObjectValue(data, "apn",
-        picojson::value("Unknown"));
+        picojson::value(apn_));
   system_info::SetPicoJsonObjectValue(data, "ipAddress",
         picojson::value(ipAddress_));
   // FIXME(jiajia): not supported
   system_info::SetPicoJsonObjectValue(data, "ipv6Address",
         picojson::value("NOT SUPPORTTED"));
   system_info::SetPicoJsonObjectValue(data, "mcc",
-        picojson::value(mcc_));
+        picojson::value(static_cast<double>(mcc_)));
   system_info::SetPicoJsonObjectValue(data, "mnc",
-        picojson::value(mnc_));
+        picojson::value(static_cast<double>(mnc_)));
   system_info::SetPicoJsonObjectValue(data, "cellId",
         picojson::value(static_cast<double>(cellId_)));
   system_info::SetPicoJsonObjectValue(data, "lac",
@@ -175,6 +194,7 @@ void SysInfoCellularNetwork::UpdateCellStatus(int status) {
     return;
 
   status_ = new_status;
+  SetAPN();
   SetIpAddress();
   SetIsRoaming();
   SendUpdate();
@@ -195,16 +215,17 @@ void SysInfoCellularNetwork::UpdateCellId(int cell_id) {
 
   cellId_ = cell_id;
   SetCellStatus();
+  SetAPN();
   SetIpAddress();
-  SetMcc();
-  SetMnc();
-  SetLac();
+  SetMCC();
+  SetMNC();
+  SetLAC();
   SetIsRoaming();
   SetFlightMode();
   SendUpdate();
 }
 
-void SysInfoCellularNetwork::UpdateLacChanged(int lac) {
+void SysInfoCellularNetwork::UpdateLAC(int lac) {
   if (lac_ == lac)
     return;
 
@@ -226,10 +247,11 @@ void SysInfoCellularNetwork::UpdateFlightMode(int flight_mode) {
 
   isFlightMode_ = (flight_mode == 1);
   SetCellStatus();
+  SetAPN();
   SetIpAddress();
-  SetMcc();
-  SetMnc();
-  SetLac();
+  SetMCC();
+  SetMNC();
+  SetLAC();
   SendUpdate();
 }
 
@@ -259,12 +281,13 @@ void SysInfoCellularNetwork::OnCellIdChanged(keynode_t* node, void* user_data) {
   cellular->UpdateCellId(cell_id);
 }
 
-void SysInfoCellularNetwork::OnLacChanged(keynode_t* node, void* user_data) {
+void SysInfoCellularNetwork::OnLocationAreaCodeChanged(keynode_t* node,
+                                                       void* user_data) {
   int lac = vconf_keynode_get_int(node);
   SysInfoCellularNetwork* cellular =
       static_cast<SysInfoCellularNetwork*>(user_data);
 
-  cellular->UpdateLacChanged(lac);
+  cellular->UpdateLAC(lac);
 }
 
 void SysInfoCellularNetwork::OnRoamingStateChanged(keynode_t* node,
@@ -296,7 +319,7 @@ void SysInfoCellularNetwork::StartListening() {
       (vconf_callback_fn)OnCellIdChanged, this);
 
   vconf_notify_key_changed(VCONFKEY_TELEPHONY_LAC,
-      (vconf_callback_fn)OnLacChanged, this);
+      (vconf_callback_fn)OnLocationAreaCodeChanged, this);
 
   vconf_notify_key_changed(VCONFKEY_TELEPHONY_SVC_ROAM,
       (vconf_callback_fn)OnRoamingStateChanged, this);
@@ -316,7 +339,7 @@ void SysInfoCellularNetwork::StopListening() {
       (vconf_callback_fn)OnCellIdChanged);
 
   vconf_ignore_key_changed(VCONFKEY_TELEPHONY_LAC,
-      (vconf_callback_fn)OnLacChanged);
+      (vconf_callback_fn)OnLocationAreaCodeChanged);
 
   vconf_ignore_key_changed(VCONFKEY_TELEPHONY_SVC_ROAM,
       (vconf_callback_fn)OnRoamingStateChanged);
