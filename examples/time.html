@@ -11,17 +11,17 @@ debug('tizen.time.getAvailableTimezones: ' + tizen.time.getAvailableTimezones())
 debug('tizen.time.getDateFormat: ' + tizen.time.getDateFormat());
 debug('tizen.time.getTimeFormat: ' + tizen.time.getTimeFormat());
 
-shouldBe("tizen.time.isLeapYear(2013)", "false");
-shouldBe("tizen.time.isLeapYear(2014)", "false");
-shouldBe("tizen.time.isLeapYear(2015)", "false");
-shouldBe("tizen.time.isLeapYear(2016)", "true");
-shouldBe("tizen.time.isLeapYear(2017)", "false");
-shouldBe("tizen.time.isLeapYear(2018)", "false");
-shouldBe("tizen.time.isLeapYear(2019)", "false");
-shouldBe("tizen.time.isLeapYear(2020)", "true");
-shouldBe("tizen.time.isLeapYear(2021)", "false");
-shouldBe("tizen.time.isLeapYear(2022)", "false");
-shouldBe("tizen.time.isLeapYear(2023)", "false");
+shouldBeFalse("tizen.time.isLeapYear(2013)");
+shouldBeFalse("tizen.time.isLeapYear(2014)");
+shouldBeFalse("tizen.time.isLeapYear(2015)");
+shouldBeTrue("tizen.time.isLeapYear(2016)");
+shouldBeFalse("tizen.time.isLeapYear(2017)");
+shouldBeFalse("tizen.time.isLeapYear(2018)");
+shouldBeFalse("tizen.time.isLeapYear(2019)");
+shouldBeTrue("tizen.time.isLeapYear(2020)");
+shouldBeFalse("tizen.time.isLeapYear(2021)");
+shouldBeFalse("tizen.time.isLeapYear(2022)");
+shouldBeFalse("tizen.time.isLeapYear(2023)");
 
 var now = tizen.time.getCurrentDateTime();
 debug('Now = ' + now);
@@ -45,17 +45,17 @@ debug('Day after tomorrow = ' + day_after_tomorrow);
 var tomorrow_plus_one_day = tomorrow.addDuration(one_day);
 debug('Tomorrow plus one day = ' + tomorrow_plus_one_day);
 
-shouldBe("day_after_tomorrow.equalsTo(tomorrow_plus_one_day)", "true");
-shouldBe("day_after_tomorrow.earlierThan(tomorrow_plus_one_day)", "false");
-shouldBe("day_after_tomorrow.laterThan(tomorrow_plus_one_day)", "false");
+shouldBeTrue("day_after_tomorrow.equalsTo(tomorrow_plus_one_day)");
+shouldBeFalse("day_after_tomorrow.earlierThan(tomorrow_plus_one_day)");
+shouldBeFalse("day_after_tomorrow.laterThan(tomorrow_plus_one_day)");
 
-shouldBe("tomorrow.laterThan(now)", "true");
-shouldBe("tomorrow.earlierThan(now)", "false");
-shouldBe("tomorrow.equalsTo(now)", "false");
+shouldBeTrue("tomorrow.laterThan(now)");
+shouldBeFalse("tomorrow.earlierThan(now)");
+shouldBeFalse("tomorrow.equalsTo(now)");
 
-shouldBe("yesterday.equalsTo(now)", "false");
-shouldBe("now.earlierThan(yesterday)", "false");
-shouldBe("now.laterThan(yesterday)", "true");
+shouldBeFalse("yesterday.equalsTo(now)");
+shouldBeFalse("now.earlierThan(yesterday)");
+shouldBeTrue("now.laterThan(yesterday)");
 
 </script>
 <script src="js/js-test-post.js"></script>
