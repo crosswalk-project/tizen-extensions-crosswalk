@@ -14,6 +14,7 @@
 <button id="button7">Click 7</button>
 </body>
 
+<script src="js/js-test-pre.js"></script>
 <script>
 
 var output = document.getElementById("output");
@@ -43,7 +44,7 @@ handle("button5", "Get n", function() {
     });
 
 handle("button3", "Post a string", function() {
-        tizen.notification.post("caio");
+        shouldThrow("tizen.notification.post('string')", "new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR)");
     });
 
 handle("button4", "Get active notifications", function() {
