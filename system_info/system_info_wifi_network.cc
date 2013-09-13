@@ -6,16 +6,6 @@
 
 #include "system_info/system_info_utils.h"
 
-SysInfoWifiNetwork::SysInfoWifiNetwork(ContextAPI* api)
-    : status_("OFF"),
-      ssid_(""),
-      ip_address_(""),
-      ipv6_address_(""),
-      signal_strength_(0.0) {
-  api_ = api;
-  PlatformInitialize();
-}
-
 void SysInfoWifiNetwork::Get(picojson::value& error,
                              picojson::value& data) {
   if (!Update(error)) {

@@ -8,7 +8,7 @@
 #if defined(GENERIC_DESKTOP)
 #include <gio/gio.h>
 #elif defined(TIZEN_MOBILE)
-#include <glib.h>
+#include <net_connection.h>
 #endif
 #include <string>
 
@@ -32,20 +32,8 @@ class SysInfoWifiNetwork {
   explicit SysInfoWifiNetwork(ContextAPI* api);
   ~SysInfoWifiNetwork();
   void Get(picojson::value& error, picojson::value& data);
-  inline void StartListening() {
-#if defined(TIZEN_MOBILE)
-    timeout_cb_id_ = g_timeout_add(system_info::default_timeout_interval,
-                                   SysInfoWifiNetwork::OnUpdateTimeout,
-                                   static_cast<gpointer>(this));
-#endif
-  }
-  inline void StopListening() {
-#if defined(TIZEN_MOBILE)
-    if (timeout_cb_id_ > 0) {
-      g_source_remove(timeout_cb_id_);
-    }
-#endif
-  }
+  void StartListening();
+  void StopListening();
 
  private:
   void PlatformInitialize();
@@ -79,7 +67,7 @@ class SysInfoWifiNetwork {
   void UpdateIPAddress(GVariant* value);
   void UpdateIPv6Address(GVariant* value);
   void UpdateSignalStrength(GVariant* value);
-  void UpdateSsid(GVariant* value);
+  void UpdateSSID(GVariant* value);
   void UpdateStatus(guint new_device_type);
 
   static void OnAccessPointSignal(GDBusProxy* proxy, gchar* sender,
@@ -93,11 +81,21 @@ class SysInfoWifiNetwork {
   std::string active_access_point_;
   std::string active_connection_;
   std::string active_device_;
-  std::string ip6_config_;
+  std::string ipv6_config_;
   unsigned int ip_address_desktop_;
 #elif defined(TIZEN_MOBILE)
-  static gboolean OnUpdateTimeout(gpointer user_data);
-  int timeout_cb_id_;
+  bool GetIPv4Address();
+  bool GetIPv6Address();
+  bool GetSignalStrength();
+  bool GetSSID();
+  bool GetType();
+  static void OnIPChanged(const char* ipv4_addr, const char* ipv6_addr,
+      void* user_data);
+  static void OnTypeChanged(connection_type_e type, void* user_data);
+
+  bool is_registered_;
+  connection_h connection_handle_;
+  connection_profile_h connection_profile_handle_;
 #endif
 
   DISALLOW_COPY_AND_ASSIGN(SysInfoWifiNetwork);
