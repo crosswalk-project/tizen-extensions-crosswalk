@@ -72,7 +72,7 @@ exports.WebAPIException = function (code, message, name) {
 }
 
 for (var value in errors)
-  Object.defineProperty(tizen.WebAPIException, errors[value].type, { value: value });
+  Object.defineProperty(tizen.WebAPIException, errors[value].type, { value: parseInt(value) });
 
 exports.WebAPIError = function (code, message, name) {
   var _code, _message, _name;
