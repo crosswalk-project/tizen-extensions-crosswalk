@@ -65,33 +65,21 @@ void SysInfoCellularNetwork::SetMcc() {
   int plmn_int = 0;
 
   if (vconf_get_int(VCONFKEY_TELEPHONY_PLMN, &plmn_int) != 0) {
-    mcc_ = "";
+    mcc_ = 0;
     return;
   }
 
-  std::stringstream ss;
-  ss << plmn_int;
-  std::string s = ss.str();
-  if (s.size() < 3)
-    mcc_ = s;
-  else
-    mcc_.assign(s, 0, 3);
+  mcc_ = plmn_int / 100;
 }
 
 void SysInfoCellularNetwork::SetMnc() {
   int plmn_int = 0;
   if (vconf_get_int(VCONFKEY_TELEPHONY_PLMN, &plmn_int) != 0) {
-    mnc_ = "";
+    mnc_ = 0;
     return;
   }
 
-  std::stringstream ss;
-  ss << plmn_int;
-  std::string s = ss.str();
-  if (s.size() < 4)
-    mnc_ = "0";
-  else
-    mnc_.assign(s, 3, 3);
+  mnc_ = plmn_int % 100;
 }
 
 void SysInfoCellularNetwork::SetCellId() {
@@ -163,9 +151,9 @@ void SysInfoCellularNetwork::SetData(picojson::value& data) {
   system_info::SetPicoJsonObjectValue(data, "ipv6Address",
         picojson::value("NOT SUPPORTTED"));
   system_info::SetPicoJsonObjectValue(data, "mcc",
-        picojson::value(mcc_));
+        picojson::value(static_cast<double>(mcc_)));
   system_info::SetPicoJsonObjectValue(data, "mnc",
-        picojson::value(mnc_));
+        picojson::value(static_cast<double>(mnc_)));
   system_info::SetPicoJsonObjectValue(data, "cellId",
         picojson::value(static_cast<double>(cellId_)));
   system_info::SetPicoJsonObjectValue(data, "lac",

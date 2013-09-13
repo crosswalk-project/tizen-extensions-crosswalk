@@ -10,7 +10,6 @@
 #include <vconf.h>
 #endif
 
-#include <sstream>
 #include <string>
 
 #include "common/extension_adapter.h"
@@ -67,8 +66,8 @@ class SysInfoCellularNetwork {
   std::string apn_;
   std::string ipAddress_;
   std::string ipv6Address_;
-  std::string mcc_;
-  std::string mnc_;
+  int mcc_;
+  int mnc_;
   int cellId_;
   int lac_;
   bool isRoaming_;
