@@ -32,10 +32,10 @@ shouldBe("tizen.WebAPIException.TIMEOUT_ERR", "23");
 shouldBe("tizen.WebAPIException.INVALID_NODE_TYPE_ERR", "24");
 shouldBe("tizen.WebAPIException.DATA_CLONE_ERR", "25");
 
-shouldBe("tizen.WebAPIException.INVALID_VALUES_ERR", "0");
-shouldBe("tizen.WebAPIException.IO_ERR", "0");
-shouldBe("tizen.WebAPIException.PERMISSION_DENIED_ERR", "0");
-shouldBe("tizen.WebAPIException.SERVICE_NOT_AVAILABLE_ERR", "0");
+shouldBe("tizen.WebAPIException.INVALID_VALUES_ERR", "100");
+shouldBe("tizen.WebAPIException.IO_ERR", "101");
+shouldBe("tizen.WebAPIException.PERMISSION_DENIED_ERR", "102");
+shouldBe("tizen.WebAPIException.SERVICE_NOT_AVAILABLE_ERR", "103");
 
 shouldThrow("throwWebAPIException()", "new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR)");
 shouldThrow("throwWebAPIError()", "new tizen.WebAPIError(tizen.WebAPIException.TYPE_MISMATCH_ERR)")
