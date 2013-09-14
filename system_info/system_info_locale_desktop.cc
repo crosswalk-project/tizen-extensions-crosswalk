@@ -22,10 +22,22 @@ SysInfoLocale::SysInfoLocale(ContextAPI* api)
 SysInfoLocale::~SysInfoLocale() {
 }
 
+
+void SysInfoLocale::StartListening() {
+  timeout_cb_id_ = g_timeout_add(system_info::default_timeout_interval,
+                                 SysInfoLocale::OnUpdateTimeout,
+                                 static_cast<gpointer>(this));
+}
+
+void SysInfoLocale::StopListening() {
+  if (timeout_cb_id_ > 0)
+    g_source_remove(timeout_cb_id_);
+}
+
 void SysInfoLocale::Get(picojson::value& error,
                        picojson::value& data) {
   // language
-  if (!UpdateLanguage()) {
+  if (!GetLanguage()) {
     system_info::SetPicoJsonObjectValue(error, "message",
         picojson::value("Get language failed."));
     return;
@@ -34,7 +46,7 @@ void SysInfoLocale::Get(picojson::value& error,
       picojson::value(language_));
 
   // timezone
-  if (!UpdateCountry()) {
+  if (!GetCountry()) {
     system_info::SetPicoJsonObjectValue(error, "message",
         picojson::value("Get timezone failed."));
     return;
@@ -46,7 +58,7 @@ void SysInfoLocale::Get(picojson::value& error,
       picojson::value(""));
 }
 
-bool SysInfoLocale::UpdateLanguage() {
+bool SysInfoLocale::GetLanguage() {
   std::string str;
 
   setlocale(LC_ALL, "");
@@ -63,7 +75,7 @@ bool SysInfoLocale::UpdateLanguage() {
   }
 }
 
-bool SysInfoLocale::UpdateCountry() {
+bool SysInfoLocale::GetCountry() {
   std::string str;
 
   FILE* fp = fopen("/etc/timezone", "r");
@@ -93,8 +105,8 @@ gboolean SysInfoLocale::OnUpdateTimeout(gpointer user_data) {
 
   std::string oldlanguage_ = instance->language_;
   std::string oldcountry_ = instance->country_;
-  instance->UpdateLanguage();
-  instance->UpdateCountry();
+  instance->GetLanguage();
+  instance->GetCountry();
 
   if (oldlanguage_ != instance->language_ ||
       oldcountry_ != instance->country_) {
