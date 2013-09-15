@@ -31,7 +31,7 @@ class SysInfoWifiNetwork {
  public:
   explicit SysInfoWifiNetwork(ContextAPI* api);
   ~SysInfoWifiNetwork();
-  void Get(picojson::value& error, picojson::value& data);
+  void Get(picojson::value& error, picojson::value& data); //NOLINT
   inline void StartListening() {
 #if defined(TIZEN_MOBILE)
     timeout_cb_id_ = g_timeout_add(system_info::default_timeout_interval,
@@ -50,9 +50,9 @@ class SysInfoWifiNetwork {
  private:
   void PlatformInitialize();
 
-  bool Update(picojson::value& error);
+  bool Update(picojson::value& error); //NOLINT
   void SendUpdate();
-  void SetData(picojson::value& data);
+  void SetData(picojson::value& data); //NOLINT
 
   ContextAPI* api_;
   double signal_strength_;

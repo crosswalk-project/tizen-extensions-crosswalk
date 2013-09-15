@@ -7,7 +7,7 @@
 #include "common/picojson.h"
 #include "system_info/system_info_utils.h"
 
-void SysInfoStorage::Get(picojson::value& error,
+void SysInfoStorage::Get(picojson::value& error, //NOLINT
                          picojson::value& data) {
   if (!Update(error)) {
     if (error.get("message").to_str().empty())

@@ -41,7 +41,7 @@ class SysInfoNetwork {
  public:
   explicit SysInfoNetwork(ContextAPI* api);
   ~SysInfoNetwork();
-  void Get(picojson::value& error, picojson::value& data);
+  void Get(picojson::value& error, picojson::value& data); //NOLINT
   inline void StartListening() {
 #if defined(TIZEN_MOBILE)
     timeout_cb_id_ = g_timeout_add(system_info::default_timeout_interval,
@@ -60,8 +60,8 @@ class SysInfoNetwork {
  private:
   void PlatformInitialize();
 
-  bool Update(picojson::value& error);
-  void SetData(picojson::value& data);
+  bool Update(picojson::value& error); //NOLINT
+  void SetData(picojson::value& data); //NOLINT
   std::string ToNetworkTypeString(SystemInfoNetworkType type);
 
   ContextAPI* api_;

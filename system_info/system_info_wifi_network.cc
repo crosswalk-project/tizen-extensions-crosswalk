@@ -16,7 +16,7 @@ SysInfoWifiNetwork::SysInfoWifiNetwork(ContextAPI* api)
   PlatformInitialize();
 }
 
-void SysInfoWifiNetwork::Get(picojson::value& error,
+void SysInfoWifiNetwork::Get(picojson::value& error, //NOLINT
                              picojson::value& data) {
   if (!Update(error)) {
     if (error.get("message").to_str().empty())

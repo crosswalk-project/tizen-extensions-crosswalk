@@ -6,7 +6,7 @@
 
 #include "system_info/system_info_utils.h"
 
-void SysInfoPeripheral::Get(picojson::value& error,
+void SysInfoPeripheral::Get(picojson::value& error, //NOLINT
                             picojson::value& data) {
   system_info::SetPicoJsonObjectValue(error, "message",
       picojson::value("Peripheral is not supported on desktop."));

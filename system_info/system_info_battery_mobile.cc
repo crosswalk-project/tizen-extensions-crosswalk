@@ -21,7 +21,7 @@ SysInfoBattery::~SysInfoBattery() {
     StopListening();
 }
 
-void SysInfoBattery::Get(picojson::value& error,
+void SysInfoBattery::Get(picojson::value& error, //NOLINT
                          picojson::value& data) {
   int level = 0;
   int charging = 0;
@@ -40,7 +40,7 @@ void SysInfoBattery::Get(picojson::value& error,
   system_info::SetPicoJsonObjectValue(error, "message", picojson::value(""));
 }
 
-bool SysInfoBattery::Update(picojson::value& error) {
+bool SysInfoBattery::Update(picojson::value& error) { //NOLINT
   picojson::value output = picojson::value(picojson::object());
   picojson::value data = picojson::value(picojson::object());
 
@@ -56,7 +56,7 @@ bool SysInfoBattery::Update(picojson::value& error) {
   return true;
 }
 
-void SysInfoBattery::SetData(picojson::value& data) {
+void SysInfoBattery::SetData(picojson::value& data) { //NOLINT
   system_info::SetPicoJsonObjectValue(data, "level",
       picojson::value(level_));
   system_info::SetPicoJsonObjectValue(data, "isCharging",

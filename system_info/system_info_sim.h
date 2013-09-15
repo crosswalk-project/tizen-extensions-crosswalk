@@ -25,7 +25,7 @@ class SysInfoSim {
     if (isRegister_)
       StopListening();
 }
-  void Get(picojson::value& error, picojson::value& data);
+  void Get(picojson::value& error, picojson::value& data); //NOLINT
   void StartListening();
   void StopListening();
 

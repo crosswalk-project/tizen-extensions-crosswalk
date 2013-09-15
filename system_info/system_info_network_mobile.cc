@@ -15,7 +15,7 @@ void SysInfoNetwork::PlatformInitialize() {
   timeout_cb_id_ = 0;
 }
 
-bool SysInfoNetwork::Update(picojson::value& error) {
+bool SysInfoNetwork::Update(picojson::value& error) { //NOLINT
   int service_type = 0;
   if (vconf_get_int(VCONFKEY_TELEPHONY_SVCTYPE, &service_type)) {
     return false;

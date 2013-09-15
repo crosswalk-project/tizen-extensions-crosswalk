@@ -20,7 +20,7 @@ void SysInfoWifiNetwork::PlatformInitialize() {
   timeout_cb_id_ = 0;
 }
 
-bool SysInfoWifiNetwork::Update(picojson::value& error) {
+bool SysInfoWifiNetwork::Update(picojson::value& error) { //NOLINT
   connection_h connect = NULL;
   if (connection_create(&connect) != CONNECTION_ERROR_NONE) {
     if (error.get("message").to_str().empty())
@@ -101,7 +101,7 @@ bool SysInfoWifiNetwork::Update(picojson::value& error) {
   return true;
 }
 
-void SysInfoWifiNetwork::SetData(picojson::value& data) {
+void SysInfoWifiNetwork::SetData(picojson::value& data) { //NOLINT
   system_info::SetPicoJsonObjectValue(data, "status",
       picojson::value(status_));
   system_info::SetPicoJsonObjectValue(data, "ssid",

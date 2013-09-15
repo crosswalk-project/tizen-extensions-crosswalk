@@ -20,7 +20,7 @@ class SysInfoDisplay {
       g_source_remove(timeout_cb_id_);
 }
   // Get support
-  void Get(picojson::value& error, picojson::value& data);
+  void Get(picojson::value& error, picojson::value& data); //NOLINT
   // Listerner support
   inline void StartListening() {
     // FIXME(halton): Use Xlib event or D-Bus interface to monitor.
@@ -37,7 +37,7 @@ class SysInfoDisplay {
   static gboolean OnUpdateTimeout(gpointer user_data);
   bool UpdateSize();
   bool UpdateBrightness();
-  void SetData(picojson::value& data);
+  void SetData(picojson::value& data); //NOLINT
 
   ContextAPI* api_;
   int resolution_width_;

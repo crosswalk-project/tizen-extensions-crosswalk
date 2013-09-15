@@ -28,7 +28,7 @@ SysInfoStorage::~SysInfoStorage() {
       g_source_remove(timeout_cb_id_);
 }
 
-bool SysInfoStorage::Update(picojson::value& error) {
+bool SysInfoStorage::Update(picojson::value& error) { //NOLINT
   picojson::array& units_arr = units_.get<picojson::array>();
   units_arr.clear();
 
@@ -44,7 +44,7 @@ bool SysInfoStorage::Update(picojson::value& error) {
   return true;
 }
 
-bool SysInfoStorage::GetInternal(picojson::value& error,
+bool SysInfoStorage::GetInternal(picojson::value& error, //NOLINT
                                  picojson::value& unit) {
   struct statfs fs;
   if (statfs(sStorageInternalPath, &fs) < 0) {
@@ -73,7 +73,7 @@ bool SysInfoStorage::GetInternal(picojson::value& error,
   return true;
 }
 
-bool SysInfoStorage::GetMMC(picojson::value& error, picojson::value& unit) {
+bool SysInfoStorage::GetMMC(picojson::value& error, picojson::value& unit) { //NOLINT
   int sdcard_state;
   if ((vconf_get_int(VCONFKEY_SYSMAN_MMC_STATUS, &sdcard_state) != 0) ||
       (sdcard_state != VCONFKEY_SYSMAN_MMC_MOUNTED)) {

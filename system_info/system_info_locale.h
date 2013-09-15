@@ -22,7 +22,7 @@ class SysInfoLocale {
  public:
   explicit SysInfoLocale(ContextAPI* api);
   ~SysInfoLocale();
-  void Get(picojson::value& error, picojson::value& data);
+  void Get(picojson::value& error, picojson::value& data); //NOLINT
   void StartListening();
   void StopListening();
 

@@ -22,13 +22,13 @@ class SysInfoBattery {
  public:
   explicit SysInfoBattery(ContextAPI* api);
   ~SysInfoBattery();
-  void Get(picojson::value& error, picojson::value& data);
+  void Get(picojson::value& error, picojson::value& data); //NOLINT
   void StartListening();
   void StopListening();
 
  private:
-  bool Update(picojson::value& error);
-  void SetData(picojson::value& data);
+  bool Update(picojson::value& error); //NOLINT
+  void SetData(picojson::value& data); //NOLINT
 
 #if defined(GENERIC_DESKTOP)
   static gboolean OnUpdateTimeout(gpointer user_data);

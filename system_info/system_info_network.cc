@@ -12,7 +12,7 @@ SysInfoNetwork::SysInfoNetwork(ContextAPI* api)
   PlatformInitialize();
 }
 
-void SysInfoNetwork::Get(picojson::value& error,
+void SysInfoNetwork::Get(picojson::value& error, //NOLINT
                          picojson::value& data) {
   if (!Update(error)) {
     if (error.get("message").to_str().empty())
@@ -58,7 +58,7 @@ SysInfoNetwork::ToNetworkTypeString(SystemInfoNetworkType type) {
   return ret;
 }
 
-void SysInfoNetwork::SetData(picojson::value& data) {
+void SysInfoNetwork::SetData(picojson::value& data) { //NOLINT
   system_info::SetPicoJsonObjectValue(data, "networkType",
       picojson::value(ToNetworkTypeString(type_)));
 }

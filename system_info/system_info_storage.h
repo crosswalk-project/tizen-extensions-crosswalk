@@ -20,7 +20,7 @@ class SysInfoStorage {
  public:
   explicit SysInfoStorage(ContextAPI* api);
   ~SysInfoStorage();
-  void Get(picojson::value& error, picojson::value& data);
+  void Get(picojson::value& error, picojson::value& data); //NOLINT
   inline void StartListening() {
     // FIXME(halton): Use udev D-Bus interface to monitor.
     timeout_cb_id_ = g_timeout_add(system_info::default_timeout_interval,
@@ -33,7 +33,7 @@ class SysInfoStorage {
 }
 
  private:
-  bool Update(picojson::value& error);
+  bool Update(picojson::value& error); //NOLINT
   static gboolean OnUpdateTimeout(gpointer user_data);
 
   int timeout_cb_id_;
@@ -50,8 +50,8 @@ class SysInfoStorage {
 
   struct udev* udev_;
 #elif defined(TIZEN_MOBILE)
-  bool GetInternal(picojson::value& error, picojson::value& unit);
-  bool GetMMC(picojson::value& error, picojson::value& unit);
+  bool GetInternal(picojson::value& error, picojson::value& unit); //NOLINT
+  bool GetMMC(picojson::value& error, picojson::value& unit); //NOLINT
 #endif
 
   DISALLOW_COPY_AND_ASSIGN(SysInfoStorage);

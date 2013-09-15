@@ -9,7 +9,7 @@
 
 #include "system_info/system_info_utils.h"
 
-void SysInfoCpu::Get(picojson::value& error,
+void SysInfoCpu::Get(picojson::value& error, //NOLINT
                      picojson::value& data) {
   if (!UpdateLoad()) {
     system_info::SetPicoJsonObjectValue(error, "message",

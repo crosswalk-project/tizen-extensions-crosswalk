@@ -61,7 +61,7 @@ void SysInfoLocale::OnCountryChanged(keynode_t* node, void* user_data) {
   free(country);
 }
 
-void SysInfoLocale::Get(picojson::value& error,
+void SysInfoLocale::Get(picojson::value& error, //NOLINT
                        picojson::value& data) {
   // language
   if (!GetLanguage()) {

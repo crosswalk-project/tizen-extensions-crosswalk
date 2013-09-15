@@ -41,7 +41,7 @@ class SystemInfoContext {
   void HandleStartListening(const picojson::value& input);
   void HandleStopListening(const picojson::value& input);
   void HandleGetCapabilities();
-  inline void SetStringPropertyValue(picojson::object& o,
+  inline void SetStringPropertyValue(picojson::object& o, //NOLINT
                                      const char* prop,
                                      const char* val) {
     if (val)

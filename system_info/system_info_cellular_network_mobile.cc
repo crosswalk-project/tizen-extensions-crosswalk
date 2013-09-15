@@ -124,7 +124,7 @@ void SysInfoCellularNetwork::SetIMEI() {
   free(imei);
 }
 
-void SysInfoCellularNetwork::Get(picojson::value& error,
+void SysInfoCellularNetwork::Get(picojson::value& error, //NOLINT
                                  picojson::value& data) {
   SetCellStatus();
   SetAPN();
@@ -140,7 +140,7 @@ void SysInfoCellularNetwork::Get(picojson::value& error,
   system_info::SetPicoJsonObjectValue(error, "message", picojson::value(""));
 }
 
-void SysInfoCellularNetwork::SetData(picojson::value& data) {
+void SysInfoCellularNetwork::SetData(picojson::value& data) { //NOLINT
   system_info::SetPicoJsonObjectValue(data, "status",
         picojson::value(status_));
   system_info::SetPicoJsonObjectValue(data, "apn",

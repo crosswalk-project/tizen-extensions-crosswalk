@@ -22,7 +22,7 @@ SysInfoBuild::SysInfoBuild(ContextAPI* api)
 SysInfoBuild::~SysInfoBuild() {
 }
 
-void SysInfoBuild::Get(picojson::value& error,
+void SysInfoBuild::Get(picojson::value& error, //NOLINT
                        picojson::value& data) {
   // model and manufacturer
   if (!UpdateHardware()) {
