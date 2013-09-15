@@ -5,27 +5,66 @@
 #include "system_info/system_info_locale.h"
 
 #include <stdlib.h>
-#if defined(TIZEN_MOBILE)
-#include <runtime_info.h>
-#endif
 
 #include "common/picojson.h"
 #include "system_info/system_info_utils.h"
 
 SysInfoLocale::SysInfoLocale(ContextAPI* api)
-    : timeout_cb_id_(0) {
+    : is_registered_(false) {
   api_ = api;
 }
 
 SysInfoLocale::~SysInfoLocale() {
-    if (timeout_cb_id_ > 0)
-      g_source_remove(timeout_cb_id_);
+  if (is_registered_)
+    StopListening();
+}
+
+void SysInfoLocale::StartListening() {
+  vconf_notify_key_changed(VCONFKEY_REGIONFORMAT,
+      static_cast<vconf_callback_fn>(OnCountryChanged), this);
+  vconf_notify_key_changed(VCONFKEY_LANGSET,
+      static_cast<vconf_callback_fn>(OnLanguageChanged), this);
+
+  is_registered_ = true;
+}
+
+void SysInfoLocale::StopListening() {
+  vconf_ignore_key_changed(VCONFKEY_REGIONFORMAT,
+      static_cast<vconf_callback_fn>(OnCountryChanged));
+  vconf_ignore_key_changed(VCONFKEY_LANGSET,
+      static_cast<vconf_callback_fn>(OnLanguageChanged));
+
+  is_registered_ = false;
+}
+
+void SysInfoLocale::OnLanguageChanged(keynode_t* node, void* user_data) {
+  char* language = vconf_keynode_get_str(node);
+  SysInfoLocale* locale = static_cast<SysInfoLocale*>(user_data);
+
+  if (language != locale->language_) {
+    locale->language_ = std::string(language);
+    locale->Update();
+  }
+
+  free(language);
+}
+
+void SysInfoLocale::OnCountryChanged(keynode_t* node, void* user_data) {
+  char* country = vconf_keynode_get_str(node);
+  SysInfoLocale* locale = static_cast<SysInfoLocale*>(user_data);
+
+  if (country != locale->country_) {
+    locale->country_ = std::string(country);
+    locale->Update();
+  }
+
+  free(country);
 }
 
 void SysInfoLocale::Get(picojson::value& error,
                        picojson::value& data) {
   // language
-  if (!UpdateLanguage()) {
+  if (!GetLanguage()) {
     system_info::SetPicoJsonObjectValue(error, "message",
         picojson::value("Get language failed."));
     return;
@@ -34,7 +73,7 @@ void SysInfoLocale::Get(picojson::value& error,
       picojson::value(language_));
 
   // timezone
-  if (!UpdateCountry()) {
+  if (!GetCountry()) {
     system_info::SetPicoJsonObjectValue(error, "message",
         picojson::value("Get timezone failed."));
     return;
@@ -46,68 +85,45 @@ void SysInfoLocale::Get(picojson::value& error,
       picojson::value(""));
 }
 
-bool SysInfoLocale::UpdateLanguage() {
-  char* language_info = NULL;
+void SysInfoLocale::Update() {
+  picojson::value output = picojson::value(picojson::object());
+  picojson::value data = picojson::value(picojson::object());
 
-  if (runtime_info_get_value_string(RUNTIME_INFO_KEY_LANGUAGE, &language_info)
-      != RUNTIME_INFO_ERROR_NONE)
+
+  system_info::SetPicoJsonObjectValue(data, "language",
+      picojson::value(language_));
+  system_info::SetPicoJsonObjectValue(data, "country",
+      picojson::value(country_));
+
+  system_info::SetPicoJsonObjectValue(output, "cmd",
+      picojson::value("SystemInfoPropertyValueChanged"));
+  system_info::SetPicoJsonObjectValue(output, "prop",
+      picojson::value("LOCALE"));
+  system_info::SetPicoJsonObjectValue(output, "data", data);
+
+  std::string result = output.serialize();
+  api_->PostMessage(result.c_str());
+}
+
+bool SysInfoLocale::GetLanguage() {
+  char* language_info = vconf_get_str(VCONFKEY_LANGSET);
+  if (!language_info)
     return false;
 
-  if (language_info) {
-    language_ = language_info;
-    free(language_info);
-    language_info = NULL;
-  } else {
-    language_ ="";
-  }
+  language_ = std::string(language_info);
+  free(language_info);
 
   return true;
 }
 
-bool SysInfoLocale::UpdateCountry() {
-  char* country_info = NULL;
+bool SysInfoLocale::GetCountry() {
+  char* country_info = vconf_get_str(VCONFKEY_REGIONFORMAT);
 
-  if (runtime_info_get_value_string(RUNTIME_INFO_KEY_REGION, &country_info)
-      != RUNTIME_INFO_ERROR_NONE)
+  if (!country_info)
     return false;
 
-  if (country_info) {
-    country_ = country_info;
-    free(country_info);
-    country_info = NULL;
-  } else {
-    country_ ="";
-  }
+  country_ = std::string(country_info);
+  free(country_info);
 
   return true;
-}
-
-gboolean SysInfoLocale::OnUpdateTimeout(gpointer user_data) {
-  SysInfoLocale* instance = static_cast<SysInfoLocale*>(user_data);
-
-  std::string oldlanguage_ = instance->language_;
-  std::string oldcountry_ = instance->country_;
-  instance->UpdateLanguage();
-  instance->UpdateCountry();
-
-  if (oldlanguage_ != instance->language_ ||
-      oldcountry_ != instance->country_) {
-    picojson::value output = picojson::value(picojson::object());
-    picojson::value data = picojson::value(picojson::object());
-
-    system_info::SetPicoJsonObjectValue(data, "language",
-        picojson::value(instance->language_));
-    system_info::SetPicoJsonObjectValue(data, "country",
-        picojson::value(instance->country_));
-    system_info::SetPicoJsonObjectValue(output, "cmd",
-        picojson::value("SystemInfoPropertyValueChanged"));
-    system_info::SetPicoJsonObjectValue(output, "prop",
-        picojson::value("LOCALE"));
-    system_info::SetPicoJsonObjectValue(output, "data", data);
-
-    std::string result = output.serialize();
-    instance->api_->PostMessage(result.c_str());
-  }
-
-  return TRUE;
 }

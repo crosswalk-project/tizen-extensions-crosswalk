@@ -27,23 +27,26 @@ class SysInfoBattery {
   void StopListening();
 
  private:
-  static gboolean OnUpdateTimeout(gpointer user_data);
   bool Update(picojson::value& error);
   void SetData(picojson::value& data);
 
-#if defined(TIZEN_MOBILE)
+#if defined(GENERIC_DESKTOP)
+  static gboolean OnUpdateTimeout(gpointer user_data);
+
+  int timeout_cb_id_;
+#elif defined(TIZEN_MOBILE)
   void UpdateLevel(double level);
   void UpdateCharging(bool charging);
   static void OnLevelChanged(keynode_t* node, void* user_data);
   static void OnIsChargingChanged(keynode_t* node, void* user_data);
+
+  bool is_registered_;
 #endif
 
   ContextAPI* api_;
   struct udev* udev_;
   double level_;
   bool charging_;
-  bool stopping_;
-  bool isRegister_;
 
   DISALLOW_COPY_AND_ASSIGN(SysInfoBattery);
 };
