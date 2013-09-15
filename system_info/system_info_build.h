@@ -17,7 +17,7 @@ class SysInfoBuild {
  public:
   explicit SysInfoBuild(ContextAPI* api);
   ~SysInfoBuild();
-  void Get(picojson::value& error, picojson::value& data);
+  void Get(picojson::value& error, picojson::value& data); //NOLINT
   inline void StartListening() {
     timeout_cb_id_ = g_timeout_add(system_info::default_timeout_interval,
                                    SysInfoBuild::OnUpdateTimeout,

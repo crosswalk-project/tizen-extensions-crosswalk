@@ -22,7 +22,7 @@ SysInfoBuild::~SysInfoBuild() {
       g_source_remove(timeout_cb_id_);
 }
 
-void SysInfoBuild::Get(picojson::value& error,
+void SysInfoBuild::Get(picojson::value& error, //NOLINT
                        picojson::value& data) {
   // model and manufacturer
   if (!UpdateHardware()) {

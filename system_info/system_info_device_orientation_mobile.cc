@@ -6,7 +6,7 @@
 
 #include "system_info/system_info_utils.h"
 
-void SysInfoDeviceOrientation::Get(picojson::value& error,
+void SysInfoDeviceOrientation::Get(picojson::value& error, //NOLINT
                                    picojson::value& data) {
   SetStatus();
   if (!SetAutoRotation()) {
@@ -39,7 +39,7 @@ bool SysInfoDeviceOrientation::SetAutoRotation() {
   return true;
 }
 
-void SysInfoDeviceOrientation::SetData(picojson::value& data) {
+void SysInfoDeviceOrientation::SetData(picojson::value& data) { //NOLINT
   system_info::SetPicoJsonObjectValue(data, "status",
       picojson::value(ToOrientationStatusString(status_)));
   system_info::SetPicoJsonObjectValue(data, "isAutoRotation",

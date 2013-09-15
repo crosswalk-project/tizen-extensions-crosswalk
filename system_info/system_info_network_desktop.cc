@@ -100,7 +100,7 @@ void SysInfoNetwork::OnDevicesCreated(GObject*, GAsyncResult* res) {
   UpdateDeviceType(value);
 }
 
-bool SysInfoNetwork::Update(picojson::value& error) {
+bool SysInfoNetwork::Update(picojson::value& error) { //NOLINT
   // type_ will be updated by NM signals
   return true;
 }

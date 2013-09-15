@@ -6,7 +6,7 @@
 
 #include "system_info/system_info_utils.h"
 
-void SysInfoSim::Get(picojson::value& error,
+void SysInfoSim::Get(picojson::value& error, //NOLINT
                      picojson::value& data) {
   char* s = NULL;
 

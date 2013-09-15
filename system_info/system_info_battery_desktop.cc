@@ -36,7 +36,7 @@ void SysInfoBattery::StopListening() {
     g_source_remove(timeout_cb_id_);
 }
 
-void SysInfoBattery::Get(picojson::value& error,
+void SysInfoBattery::Get(picojson::value& error, //NOLINT
                          picojson::value& data) {
   if (!Update(error)) {
     system_info::SetPicoJsonObjectValue(error, "message",
@@ -48,7 +48,7 @@ void SysInfoBattery::Get(picojson::value& error,
   system_info::SetPicoJsonObjectValue(error, "message", picojson::value(""));
 }
 
-bool SysInfoBattery::Update(picojson::value& error) {
+bool SysInfoBattery::Update(picojson::value& error) { //NOLINT
   bool found;
   struct udev_enumerate *enumerate;
   struct udev_list_entry *devices, *dev_list_entry;
@@ -122,7 +122,7 @@ gboolean SysInfoBattery::OnUpdateTimeout(gpointer user_data) {
   return TRUE;
 }
 
-void SysInfoBattery::SetData(picojson::value& data) {
+void SysInfoBattery::SetData(picojson::value& data) { //NOLINT
   system_info::SetPicoJsonObjectValue(data, "level",
       picojson::value(level_));
   system_info::SetPicoJsonObjectValue(data, "isCharging",

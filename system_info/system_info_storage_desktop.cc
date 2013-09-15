@@ -29,7 +29,7 @@ SysInfoStorage::~SysInfoStorage() {
     udev_unref(udev_);
 }
 
-bool SysInfoStorage::Update(picojson::value& error) {
+bool SysInfoStorage::Update(picojson::value& error) { //NOLINT
   picojson::array& units_arr = units_.get<picojson::array>();
   units_arr.clear();
 

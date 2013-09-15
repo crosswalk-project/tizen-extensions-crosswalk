@@ -24,7 +24,7 @@ class SysInfoCpu {
       g_source_remove(timeout_cb_id_);
 }
   // Get support
-  void Get(picojson::value& error, picojson::value& data);
+  void Get(picojson::value& error, picojson::value& data); //NOLINT
 
   // Listerner support
   inline void StartListening() {

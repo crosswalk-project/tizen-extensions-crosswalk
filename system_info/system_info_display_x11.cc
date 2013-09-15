@@ -29,7 +29,7 @@ SysInfoDisplay::SysInfoDisplay(ContextAPI* api)
   api_ = api;
 }
 
-void SysInfoDisplay::Get(picojson::value& error,
+void SysInfoDisplay::Get(picojson::value& error, //NOLINT
                          picojson::value& data) {
   if (!UpdateSize()) {
     system_info::SetPicoJsonObjectValue(error, "message",
@@ -128,7 +128,7 @@ gboolean SysInfoDisplay::OnUpdateTimeout(gpointer user_data) {
   return TRUE;
 }
 
-void SysInfoDisplay::SetData(picojson::value& data) {
+void SysInfoDisplay::SetData(picojson::value& data) { //NOLINT
   system_info::SetPicoJsonObjectValue(data, "brightness",
       picojson::value(brightness_));
 

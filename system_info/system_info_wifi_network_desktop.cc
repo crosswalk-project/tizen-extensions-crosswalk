@@ -32,7 +32,7 @@ void SysInfoWifiNetwork::PlatformInitialize() {
 SysInfoWifiNetwork::~SysInfoWifiNetwork() {
 }
 
-void SysInfoWifiNetwork::SetData(picojson::value& data) {
+void SysInfoWifiNetwork::SetData(picojson::value& data) { //NOLINT
   system_info::SetPicoJsonObjectValue(data, "status",
       picojson::value(status_));
   system_info::SetPicoJsonObjectValue(data, "ssid",
@@ -45,7 +45,7 @@ void SysInfoWifiNetwork::SetData(picojson::value& data) {
       picojson::value(signal_strength_));
 }
 
-bool SysInfoWifiNetwork::Update(picojson::value& error) {
+bool SysInfoWifiNetwork::Update(picojson::value& error) { //NOLINT
   // The type_ will be updated by NM signals.
   return true;
 }

@@ -26,14 +26,14 @@ class SysInfoCellularNetwork {
   if (isRegister_)
     StopListening();
 }
-  void Get(picojson::value& error, picojson::value& data);
+  void Get(picojson::value& error, picojson::value& data); //NOLINT
   void StartListening();
   void StopListening();
 
  private:
 #if defined(TIZEN_MOBILE)
   void SendUpdate();
-  void SetData(picojson::value& data);
+  void SetData(picojson::value& data); //NOLINT
 
   void SetCellStatus();
   void SetAPN();

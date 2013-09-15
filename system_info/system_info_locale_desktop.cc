@@ -34,7 +34,7 @@ void SysInfoLocale::StopListening() {
     g_source_remove(timeout_cb_id_);
 }
 
-void SysInfoLocale::Get(picojson::value& error,
+void SysInfoLocale::Get(picojson::value& error, //NOLINT
                        picojson::value& data) {
   // language
   if (!GetLanguage()) {

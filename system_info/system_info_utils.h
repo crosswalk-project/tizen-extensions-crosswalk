@@ -20,7 +20,7 @@ int ReadOneByte(const char* path);
 char* ReadOneLine(const char* path);
 std::string GetUdevProperty(struct udev_device* dev,
                               const std::string& attr);
-void SetPicoJsonObjectValue(picojson::value& obj,
+void SetPicoJsonObjectValue(picojson::value& obj, //NOLINT
                             const char* prop,
                             const picojson::value& val);
 

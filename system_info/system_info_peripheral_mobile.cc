@@ -6,7 +6,7 @@
 
 #include "system_info/system_info_utils.h"
 
-void SysInfoPeripheral::Get(picojson::value& error,
+void SysInfoPeripheral::Get(picojson::value& error, //NOLINT
                             picojson::value& data) {
   if (vconf_get_int(VCONFKEY_MIRACAST_WFD_SOURCE_STATUS, &wfd_) != 0) {
     system_info::SetPicoJsonObjectValue(error, "message",
@@ -24,7 +24,7 @@ void SysInfoPeripheral::Get(picojson::value& error,
   system_info::SetPicoJsonObjectValue(error, "message", picojson::value(""));
 }
 
-void SysInfoPeripheral::SendData(picojson::value& data) {
+void SysInfoPeripheral::SendData(picojson::value& data) { //NOLINT
   is_video_output_ = (wfd_ == VCONFKEY_MIRACAST_WFD_SOURCE_ON) ||
                      (hdmi_ == VCONFKEY_SYSMAN_HDMI_CONNECTED);
   system_info::SetPicoJsonObjectValue(data, "isVideoOutputOn",

@@ -24,7 +24,7 @@ class SysInfoPeripheral {
     if (isRegister_)
       StopListening();
 }
-  void Get(picojson::value& error, picojson::value& data);
+  void Get(picojson::value& error, picojson::value& data); //NOLINT
   void StartListening();
   void StopListening();
 
@@ -34,7 +34,7 @@ class SysInfoPeripheral {
   void SetHDMI(int hdmi);
 
   void UpdateIsVideoOutputOn();
-  void SendData(picojson::value& data);
+  void SendData(picojson::value& data); //NOLINT
 
   static void OnWFDChanged(keynode_t* node, void* user_data);
   static void OnHDMIChanged(keynode_t* node, void* user_data);

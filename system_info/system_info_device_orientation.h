@@ -37,7 +37,7 @@ class SysInfoDeviceOrientation {
     StopListening();
   }
 }
-  void Get(picojson::value& error, picojson::value& data);
+  void Get(picojson::value& error, picojson::value& data); //NOLINT
   void StartListening();
   void StopListening();
 
@@ -46,7 +46,7 @@ class SysInfoDeviceOrientation {
   void SetStatus();
   bool SetAutoRotation();
   void SendUpdate();
-  void SetData(picojson::value& data);
+  void SetData(picojson::value& data); //NOLINT
   std::string ToOrientationStatusString
       (SystemInfoDeviceOrientationStatus status);
   enum SystemInfoDeviceOrientationStatus EventToStatus(int event_data);
