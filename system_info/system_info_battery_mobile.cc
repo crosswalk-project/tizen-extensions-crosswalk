@@ -12,13 +12,12 @@
 SysInfoBattery::SysInfoBattery(ContextAPI* api)
     : level_(0.0),
       charging_(false),
-      stopping_(false),
-      isRegister_(false) {
+      is_registered_(false) {
   api_ = api;
 }
 
 SysInfoBattery::~SysInfoBattery() {
-  if (isRegister_)
+  if (is_registered_)
     StopListening();
 }
 
@@ -55,10 +54,6 @@ bool SysInfoBattery::Update(picojson::value& error) {
   std::string result = output.serialize();
   api_->PostMessage(result.c_str());
   return true;
-}
-
-gboolean SysInfoBattery::OnUpdateTimeout(gpointer user_data) {
-  return TRUE;
 }
 
 void SysInfoBattery::SetData(picojson::value& data) {
@@ -105,7 +100,7 @@ void SysInfoBattery::StartListening() {
       (vconf_callback_fn)OnLevelChanged, this);
   vconf_notify_key_changed(VCONFKEY_SYSMAN_BATTERY_CHARGE_NOW,
       (vconf_callback_fn)OnIsChargingChanged, this);
-  isRegister_ = true;
+  is_registered_ = true;
 }
 
 void SysInfoBattery::StopListening() {
@@ -113,5 +108,5 @@ void SysInfoBattery::StopListening() {
       (vconf_callback_fn)OnLevelChanged);
   vconf_ignore_key_changed(VCONFKEY_SYSMAN_BATTERY_CHARGE_NOW,
       (vconf_callback_fn)OnIsChargingChanged);
-  isRegister_ = false;
+  is_registered_ = false;
 }

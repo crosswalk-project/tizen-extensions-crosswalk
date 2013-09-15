@@ -5,6 +5,11 @@
 #ifndef SYSTEM_INFO_SYSTEM_INFO_LOCALE_H_
 #define SYSTEM_INFO_SYSTEM_INFO_LOCALE_H_
 
+#if defined(TIZEN_MOBILE)
+#include <vconf.h>
+#include <vconf-keys.h>
+#endif
+
 #include <glib.h>
 #include <string>
 
@@ -18,28 +23,28 @@ class SysInfoLocale {
   explicit SysInfoLocale(ContextAPI* api);
   ~SysInfoLocale();
   void Get(picojson::value& error, picojson::value& data);
-  inline void StartListening() {
-    timeout_cb_id_ = g_timeout_add(system_info::default_timeout_interval,
-                                   SysInfoLocale::OnUpdateTimeout,
-                                   static_cast<gpointer>(this));
-  }
-  inline void StopListening() {
-    if (timeout_cb_id_ > 0)
-      g_source_remove(timeout_cb_id_);
-}
+  void StartListening();
+  void StopListening();
 
  private:
-  bool UpdateLanguage();
-  bool UpdateCountry();
-  static gboolean OnUpdateTimeout(gpointer user_data);
+  bool GetLanguage();
+  bool GetCountry();
 
   ContextAPI* api_;
   std::string language_;
   std::string country_;
+
 #if defined(GENERIC_DESKTOP)
-  bool stopping_;
-#endif
+  static gboolean OnUpdateTimeout(gpointer user_data);
+
   int timeout_cb_id_;
+#elif defined(TIZEN_MOBILE)
+  static void OnCountryChanged(keynode_t* node, void* user_data);
+  static void OnLanguageChanged(keynode_t* node, void* user_data);
+  void Update();
+
+  bool is_registered_;
+#endif
 
   DISALLOW_COPY_AND_ASSIGN(SysInfoLocale);
 };
