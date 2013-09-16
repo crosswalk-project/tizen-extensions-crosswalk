@@ -122,6 +122,9 @@ tizen.TZDate = (function() {
       getFullYear: function() {
         return date_.getFullYear();
       },
+      setFullYear: function(year) {
+        date_.setFullYear(year);
+      },
       getHours: function() {
         return date_.getHours();
       },
@@ -139,6 +142,12 @@ tizen.TZDate = (function() {
       },
       setMonth: function(month) {
         date_.setMonth(month);
+      },
+      getMinutes: function() {
+        return date_.getMinutes();
+      },
+      setMinutes: function(minutes) {
+        date_.setMinutes(minutes);
       },
       getSeconds: function() {
         return date_.getSeconds();
