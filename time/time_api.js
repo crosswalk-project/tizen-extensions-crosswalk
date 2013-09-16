@@ -203,6 +203,9 @@ tizen.TZDate = (function() {
       setUTCSeconds: function(secs) {
         date_.setUTCSeconds(secs);
       },
+      getTime: function() {
+        return date_.getTime();
+      },
       getTimezone: function() {
         return timezone_;
       },
@@ -216,17 +219,17 @@ tizen.TZDate = (function() {
         return toTimezone('GMT')
       },
       difference: function(other) {
-        return new TimeDuration(this.secondsFromUTC() - other.secondsFromUTC(),
-              'MSEC');
+        return new tizen.TimeDuration(this.getTime() -
+                                      other.getTime(), 'MSEC');
       },
       equalsTo: function(other) {
-        return this.secondsFromUTC() == other.secondsFromUTC();
+        return this.getTime() == other.getTime();
       },
       earlierThan: function(other) {
-        return this.secondsFromUTC() < other.secondsFromUTC();
+        return this.getTime() < other.getTime();
       },
       laterThan: function(other) {
-        return this.secondsFromUTC() > other.secondsFromUTC();
+        return this.getTime() > other.getTime();
       },
       addDuration: function(duration) {
         var date = new TZDate(date_.getFullYear(), date_.getMonth(),
@@ -262,7 +265,7 @@ tizen.TZDate = (function() {
         return 'GMT+' + hoursToUTC;
       },
       secondsFromUTC: function() {
-        return date_.getTime() / 1000.0;
+        return date_.getTimezoneOffset() * 60;
       },
       isDST: function() {
         return false;
