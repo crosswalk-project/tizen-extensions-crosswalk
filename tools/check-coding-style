@@ -8,6 +8,11 @@ if [ ! `which cpplint.py` ]; then
    exit 1
 fi
 
+# Store current dir and change to repository root dir.
+OLD_PWD=$PWD
+SELF_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd $SELF_DIR/..
+
 # FIXME(cmarcelo): the exception 'runtime/references' is for system_info/, we
 # need to verify whether is really necessary or should be fixed.
 FILTERS="-readability/streams,-runtime/references"
@@ -24,3 +29,8 @@ cpplint.py --filter="$FILTERS" $(find \
                                ! -path './bluetooth/*' \
                                ! -path './download/*' \
                                \( -name '*.h' -o -name '*.cc' \) )
+
+# Return to previous dir and return the code returned by cpplint.py
+RET_VAL=$?
+cd $OLD_PWD
+exit $RET_VAL
