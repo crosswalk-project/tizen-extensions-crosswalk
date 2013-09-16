@@ -6,6 +6,7 @@ var _callbacks = {};
 var _next_reply_id = 0;
 var _listeners = {};
 var _next_listener_id = 0;
+var props_array = ['BATTERY', 'CPU', 'STORAGE', 'DISPLAY', 'DEVICE_ORIENTATION', 'BUILD', 'LOCALE', 'NETWORK', 'WIFI_NETWORK', 'CELLULAR_NETWORK', 'SIM', 'PERIPHERAL'];
 
 var postMessage = function(msg, callback) {
   var reply_id = _next_reply_id;
@@ -152,9 +153,15 @@ var _getPropertyValue = function(prop, callback) {
 };
 
 exports.getPropertyValue = function(prop, successCallback, errorCallback) {
-  if (!successCallback) {
-    return;
-  }
+  if (typeof prop !== 'string' || props_array.indexOf(prop) < 0)
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+
+  if (typeof successCallback !== 'function')
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+
+  if (arguments.length == 3 && errorCallback != 'null' && (typeof errorCallback !== 'function'))
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+
   _getPropertyValue(prop, function(error, data) {
     if (!error) {
       successCallback(_createConstClone(data));
@@ -177,13 +184,13 @@ var _hasListener = function(prop) {
 }
 
 exports.addPropertyValueChangeListener = function(prop, successCallback, option) {
-  if (typeof prop !== 'string')
+  if (typeof prop !== 'string' || props_array.indexOf(prop) < 0)
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
 
   if (typeof successCallback !== 'function')
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
 
-  if (option && (typeof option !== 'object'))
+  if (arguments.length ==3 && option != 'null' && (typeof option !== 'object'))
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
 
   if (!_hasListener(prop)) {
@@ -210,6 +217,9 @@ exports.addPropertyValueChangeListener = function(prop, successCallback, option)
 }
 
 exports.removePropertyValueChangeListener = function(listenerId) {
+  if (typeof listenerId !== 'number')
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+
   var prop = _listeners[listenerId]["prop"];
 
   delete _listeners[listenerId];
