@@ -81,8 +81,8 @@ void SysInfoBattery::UpdateCharging(bool charging) {
   Update(error);
 }
 
-void SysInfoBattery::OnLevelChanged(keynode_t* node, void* user_data) {
-  double level = static_cast<double>(vconf_keynode_get_int(node)/100);
+void SysInfoBattery::OnLevelChanged(keynode_t* node, void* user_data) { 
+  double level = static_cast<double>(vconf_keynode_get_int(node))/100;
   SysInfoBattery* battery = static_cast<SysInfoBattery*>(user_data);
 
   battery->UpdateLevel(level);

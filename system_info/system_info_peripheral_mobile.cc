@@ -10,7 +10,7 @@ void SysInfoPeripheral::Get(picojson::value& error,
                             picojson::value& data) {
   if (vconf_get_int(VCONFKEY_MIRACAST_WFD_SOURCE_STATUS, &wfd_) != 0) {
     system_info::SetPicoJsonObjectValue(error, "message",
-        picojson::value("Get wireless display Status failed."));
+        picojson::value("Get wireless display status failed."));
     return;
   }
 
