@@ -6,132 +6,108 @@
 
 void SysInfoSim::Get(picojson::value& error,
                      picojson::value& data) {
-  char* s = NULL;
-
-  if (sim_get_icc_id(&s) != SIM_ERROR_NONE) {
+  if (!QuerySIMStatus() ||
+      !QuerySIM(sim_get_cphs_operator_name, operatorName_) ||
+      !QuerySIM(sim_get_subscriber_number, msisdn_) ||
+      !QuerySIM(sim_get_icc_id, iccid_) ||
+      !QuerySIM(sim_get_mcc, mcc_) ||
+      !QuerySIM(sim_get_mnc, mnc_) ||
+      !QuerySIM(sim_get_msin, msin_) ||
+      !QuerySIM(sim_get_spn, spn_)) {
     system_info::SetPicoJsonObjectValue(error, "message",
-        picojson::value("Get iccid failed."));
+        picojson::value("Get SIM data failed."));
     return;
   }
-  if (s) {
-    iccid_ = s;
-    free(s);
-    system_info::SetPicoJsonObjectValue(data, "iccid",
-        picojson::value(iccid_));
-  } else {
-    system_info::SetPicoJsonObjectValue(data, "iccid",
-        picojson::value(""));
-  }
 
-  s = NULL;
-  if (sim_get_mcc(&s) != SIM_ERROR_NONE) {
-    system_info::SetPicoJsonObjectValue(error, "message",
-        picojson::value("Get mcc failed."));
-    return;
-  }
-  if (s) {
-    mcc_ = s;
-    free(s);
-    system_info::SetPicoJsonObjectValue(data, "mcc",
-        picojson::value(mcc_));
-  } else {
-    system_info::SetPicoJsonObjectValue(data, "mcc",
-        picojson::value(""));
-  }
+  SetJsonValues(data);
+  system_info::SetPicoJsonObjectValue(error, "message", picojson::value(""));
+}
 
-  s = NULL;
-  if (sim_get_mnc(&s) != SIM_ERROR_NONE) {
-    system_info::SetPicoJsonObjectValue(error, "message",
-        picojson::value("Get mnc failed."));
-    return;
-  }
-  if (s) {
-    mnc_ = s;
-    free(s);
-    system_info::SetPicoJsonObjectValue(data, "mnc",
-        picojson::value(mcc_));
-  } else {
-    system_info::SetPicoJsonObjectValue(data, "mnc",
-        picojson::value(""));
-  }
-
-  s = NULL;
-  if (sim_get_msin(&s) != SIM_ERROR_NONE) {
-    system_info::SetPicoJsonObjectValue(error, "message",
-        picojson::value("Get msin failed."));
-    return;
-  }
-  if (s) {
-    msin_ = s;
-    free(s);
-    system_info::SetPicoJsonObjectValue(data, "msin",
-        picojson::value(msin_));
-  } else {
-    system_info::SetPicoJsonObjectValue(data, "msin",
-        picojson::value(""));
-  }
-
-  s = NULL;
-  if (sim_get_spn(&s) != SIM_ERROR_NONE) {
-    system_info::SetPicoJsonObjectValue(error, "message",
-        picojson::value("Get spn failed."));
-    return;
-  }
-  if (s) {
-    spn_ = s;
-    free(s);
-    system_info::SetPicoJsonObjectValue(data, "spn",
-        picojson::value(spn_));
-  } else {
-    system_info::SetPicoJsonObjectValue(data, "spn",
-        picojson::value(""));
-  }
-
-  s = NULL;
-  char* short_name = NULL;
-  if (sim_get_cphs_operator_name(&s, &short_name) != SIM_ERROR_NONE) {
-    system_info::SetPicoJsonObjectValue(error, "message",
-        picojson::value("Get operator name failed."));
-    return;
-  }
-  if (s && short_name) {
-    operatorName_ = s;
-    free(s);
-    free(short_name);
-    system_info::SetPicoJsonObjectValue(data, "operatorName",
-        picojson::value(operatorName_));
-  } else {
-    system_info::SetPicoJsonObjectValue(data, "operatorName",
-        picojson::value(""));
-  }
-
+bool SysInfoSim::QuerySIMStatus() {
   sim_state_e state = SIM_STATE_UNKNOWN;
-  if (sim_get_state(&state) != SIM_ERROR_NONE) {
-    system_info::SetPicoJsonObjectValue(error, "message",
-        picojson::value("Get state failed."));
-    return;
+  if (sim_get_state(&state) == SIM_ERROR_NONE) {
+    state_ = GetSystemInfoSIMState(state);
+    return true;
   }
-  state_ = Get_systeminfo_sim_state(state);
+  return false;
+}
+
+bool SysInfoSim::QuerySIM(SIMGetterFunction1 getter,
+                          std::string& member,
+                          const std::string& default_value) {
+  char* value = NULL;
+  switch (getter(&value)) {
+    case SIM_ERROR_NONE:
+      member = value ? std::string(value) : default_value;
+      free(value);
+      return true;
+    case SIM_ERROR_NOT_AVAILABLE:
+      member = default_value;
+      return true;
+  }
+  return false;
+}
+
+bool SysInfoSim::QuerySIM(SIMGetterFunction2 getter,
+                          std::string& member,
+                          const std::string& default_value) {
+  char* value1 = NULL;
+  char* value2 = NULL;
+  switch (getter(&value1, &value2)) {
+    case SIM_ERROR_NONE:
+      if (value1)
+        member = std::string(value1);
+      else if (value2)
+        member = std::string(value2);
+      else
+        member = default_value;
+      free(value1);
+      free(value2);
+      return true;
+    case SIM_ERROR_NOT_AVAILABLE:
+      member = default_value;
+      return true;
+  }
+  return false;
+}
+
+bool SysInfoSim::QuerySIM(SIMGetterFunction1 getter,
+                          unsigned int& member,
+                          const unsigned int& default_value) {
+  char* value = NULL;
+  switch (getter(&value)) {
+    case SIM_ERROR_NONE:
+      member = value ? strtoul(value, NULL, 0) : default_value;
+      if (errno == ERANGE) {
+        fprintf(stderr, "QuerySIM strtoul error: out of range");
+        member = default_value;
+      }
+      free(value);
+      return true;
+    case SIM_ERROR_NOT_AVAILABLE:
+      member = default_value;
+      return true;
+  }
+  return false;
+}
+
+void SysInfoSim::SetJsonValues(picojson::value& data) {
   system_info::SetPicoJsonObjectValue(data, "state",
       picojson::value(ToSimStateString(state_)));
-
-  s = NULL;
-  if (sim_get_subscriber_number(&s) != SIM_ERROR_NONE) {
-    system_info::SetPicoJsonObjectValue(error, "message",
-        picojson::value("Get SIM card subscriber number failed."));
-    return;
-  }
-  if (s) {
-    msisdn_ = s;
-    free(s);
-    system_info::SetPicoJsonObjectValue(data, "msisdn",
-        picojson::value(msisdn_));
-  } else {
-    system_info::SetPicoJsonObjectValue(data, "msisdn",
-        picojson::value(""));
-  }
-
-  system_info::SetPicoJsonObjectValue(error, "message", picojson::value(""));
+  system_info::SetPicoJsonObjectValue(data, "operatorName",
+      picojson::value(operatorName_));
+  system_info::SetPicoJsonObjectValue(data, "msisdn",
+      picojson::value(msisdn_));
+  system_info::SetPicoJsonObjectValue(data, "iccid",
+      picojson::value(iccid_));
+  system_info::SetPicoJsonObjectValue(data, "mcc",
+      picojson::value(static_cast<double>(mcc_)));
+  system_info::SetPicoJsonObjectValue(data, "mnc",
+      picojson::value(static_cast<double>(mnc_)));
+  system_info::SetPicoJsonObjectValue(data, "msin",
+      picojson::value(msin_));
+  system_info::SetPicoJsonObjectValue(data, "spn",
+      picojson::value(spn_));
 }
 
 std::string SysInfoSim::ToSimStateString(SystemInfoSimState state) {
@@ -179,7 +155,7 @@ void SysInfoSim::StopListening(ContextAPI* api) {
     sim_unset_state_changed_cb();
 }
 
-SysInfoSim::SystemInfoSimState SysInfoSim::Get_systeminfo_sim_state
+SysInfoSim::SystemInfoSimState SysInfoSim::GetSystemInfoSIMState
     (sim_state_e state) {
   SystemInfoSimState sstate;
   // FIXME(jiajia): missed some standand states
@@ -207,9 +183,16 @@ void SysInfoSim::OnSimStateChanged(sim_state_e state, void *user_data) {
   picojson::value output = picojson::value(picojson::object());;
   picojson::value data = picojson::value(picojson::object());
 
-  SystemInfoSimState sstate = sim->Get_systeminfo_sim_state(state);
-  system_info::SetPicoJsonObjectValue(data, "state",
-      picojson::value(sim->ToSimStateString(sstate)));
+  sim->state_ = sim->GetSystemInfoSIMState(state);
+  if (!sim->QuerySIM(sim_get_cphs_operator_name, sim->operatorName_) ||
+      !sim->QuerySIM(sim_get_subscriber_number, sim->msisdn_) ||
+      !sim->QuerySIM(sim_get_icc_id, sim->iccid_) ||
+      !sim->QuerySIM(sim_get_mcc, sim->mcc_) ||
+      !sim->QuerySIM(sim_get_mnc, sim->mnc_) ||
+      !sim->QuerySIM(sim_get_msin, sim->msin_) ||
+      !sim->QuerySIM(sim_get_spn, sim->spn_))
+    return;
+  sim->SetJsonValues(data);
 
   system_info::SetPicoJsonObjectValue(output, "cmd",
       picojson::value("SystemInfoPropertyValueChanged"));
