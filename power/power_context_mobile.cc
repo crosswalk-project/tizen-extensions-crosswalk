@@ -120,36 +120,21 @@ void PowerContext::HandleRelease(const picojson::value& msg) {
   // FIXME: Check return value and throw exception if needed.
 }
 
-// FIXME : This callback can be removed when extensions are moved to
-// their own process. For now it is needed for vconf to function correctly.
-// This callback actually make sure that the code is run in the main thread.
-static gboolean set_brightness_callback(gpointer data) {
-  double* brightness = static_cast<double*>(data);
-  if (*brightness < 0) {
+void PowerContext::HandleSetScreenBrightness(const picojson::value& msg) {
+  double brightness = msg.get("value").get<double>();
+  if (brightness < 0)
     // Resource brightness.
     device_set_brightness_from_settings(0);
-    delete brightness;
-    return false;
-  }
 
   int maxBrightness;
   power_wakeup(false);
   int ret = device_get_max_brightness(0, &maxBrightness);
   if (ret != 0) {
     fprintf(stderr, "Can't get the max brightness from the platform. \n");
-    device_set_brightness(0, static_cast<int>(*brightness * 100.0));
+    device_set_brightness(0, static_cast<int>(brightness * 100.0));
   } else {
-    device_set_brightness(0, static_cast<int>(*brightness * maxBrightness));
+    device_set_brightness(0, static_cast<int>(brightness * maxBrightness));
   }
-  delete brightness;
-  return false;
-}
-
-void PowerContext::HandleSetScreenBrightness(const picojson::value& msg) {
-  double* requested_brightness = new double[1];
-  *requested_brightness = msg.get("value").get<double>();
-  g_timeout_add(0, set_brightness_callback,
-                static_cast<gpointer>(requested_brightness));
 }
 
 void PowerContext::HandleGetScreenState() {
@@ -161,10 +146,11 @@ void PowerContext::HandleGetScreenState() {
 }
 
 void PowerContext::HandleGetScreenBrightness() {
-  // FIXME : This need to be called from the main thread, when extensions are
-  // moved to their own process the code should work.
   int platformBrightness;
-  vconf_get_int(VCONFKEY_SETAPPL_LCD_BRIGHTNESS, &platformBrightness);
+  int ret = device_get_brightness(0, &platformBrightness);
+  if (ret != 0)
+    fprintf(stderr, "Can't get the brightness from the platform. \n");
+
   double brightness = platformBrightness / 100.0;
   char brightnessAsString[32];
   snprintf(brightnessAsString, sizeof(brightnessAsString), "%g", brightness);

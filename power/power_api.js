@@ -138,10 +138,10 @@ defaultScreenBrightness = exports.getScreenBrightness();
 exports.setScreenBrightness = function(brightness) {
   // Validate permission to 'power'.
   // throw new WebAPIException(SECURITY_ERR);
-  if (typeof brightness !== 'number')
+  if (typeof brightness !== 'number' || !isFinite(brightness))
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
 
-  if (brightness < 0 || brightness > 1 || isNaN(brightness))
+  if (brightness < 0 || brightness > 1)
     throw new tizen.WebAPIException(tizen.WebAPIException.INVALID_VALUES_ERR);
 
   postMessage({
