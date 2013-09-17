@@ -227,13 +227,34 @@ tizen.TZDate = (function() {
                                       other.getTime(), 'MSEC');
       },
       equalsTo: function(other) {
-        return this.getTime() == other.getTime();
+        try {
+            return this.getTime() == other.getTime();
+        } catch (e) {
+            if (e instanceof TypeError)
+              throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+            else if (e instanceof RangeError)
+              throw new tizen.WebAPIException(tizen.WebAPIException.INVALID_VALUES_ERR);
+        }
       },
       earlierThan: function(other) {
-        return this.getTime() < other.getTime();
+        try {
+            return this.getTime() < other.getTime();
+        } catch (e) {
+            if (e instanceof TypeError)
+              throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+            else if (e instanceof RangeError)
+              throw new tizen.WebAPIException(tizen.WebAPIException.INVALID_VALUES_ERR);
+        }
       },
       laterThan: function(other) {
-        return this.getTime() > other.getTime();
+        try {
+            return this.getTime() > other.getTime();
+        } catch(e) {
+            if (e instanceof TypeError)
+              throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+            else if (e instanceof RangeError)
+              throw new tizen.WebAPIException(tizen.WebAPIException.INVALID_VALUES_ERR);
+        }
       },
       addDuration: function(duration) {
         var date = new TZDate(date_.getFullYear(), date_.getMonth(),
