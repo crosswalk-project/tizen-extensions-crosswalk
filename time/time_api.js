@@ -40,57 +40,58 @@ exports.isLeapYear = function(year) {
     return false;
 };
 
-tizen.TimeDuration = (function() {
-  var TimeDurationUnit = [
-    "MSECS",
-    "SECS",
-    "MINS",
-    "HOURS",
-    "DAYS"
-  ];
-  var TimeDuration = function(length, unit) {
-    var length_ = length || 0;
-    var unit_ = unit || 'MSECS';
+var TimeDurationUnit = [
+  "MSECS",
+  "SECS",
+  "MINS",
+  "HOURS",
+  "DAYS"
+];
 
-    if (TimeDurationUnit.indexOf(unit_) == -1)
-      unit_ = 'MSECS';
+tizen.TimeDuration = function(length, unit) {
+  this.length = length || 0;
+  this.unit = unit || 'MSECS';
 
-    var getMultiplier = function(unit) {
-      if (unit == 'MSECS')
-        return 1.0;
-      if (unit == 'SECS')
-        return 1.0 * 1000.0;
-      if (unit == 'MINS')
-        return 60.0 * 1000.0;
-      if (unit == 'HOURS')
-        return 3600.0 * 1000.0;
-      return 86400.0 * 1000.0;
-    }
+  if (TimeDurationUnit.indexOf(this.unit) == -1)
+    this.unit = 'MSECS';
+};
 
-    return {
-      getMilliseconds: function() {
-        return getMultiplier(unit_) * length_;
-      },
-      difference: function(other) {
-        return new TimeDuration(this.getMilliseconds() -
-                                other.getMilliseconds(), 'MSECS');
-      },
-      equalsTo: function(other) {
-        return other.getMilliseconds() == this.getMilliseconds();
-      },
-      lessThan: function(other) {
-        return this.getMilliseconds() < other.getMilliseconds();
-      },
-      greaterThan: function(other) {
-        return this.getMilliseconds() > other.getMilliseconds();
-      },
-      toString: function() {
-        return length_ + ' ' + unit_;
-      }
-    };
-  };
-  return TimeDuration;
-})();
+function getMultiplier(unit) {
+  if (unit == 'MSECS')
+    return 1.0;
+  if (unit == 'SECS')
+    return 1.0 * 1000.0;
+  if (unit == 'MINS')
+    return 60.0 * 1000.0;
+  if (unit == 'HOURS')
+    return 3600.0 * 1000.0;
+  return 86400.0 * 1000.0;
+}
+
+tizen.TimeDuration.prototype.getMilliseconds = function() {
+  return getMultiplier(this.unit) * this.length;
+}
+
+tizen.TimeDuration.prototype.difference = function(other) {
+  return new TimeDuration(this.getMilliseconds() - other.getMilliseconds(),
+                          'MSECS');
+}
+
+tizen.TimeDuration.prototype.equalsTo = function(other) {
+  return this.getMilliseconds() == other.getMilliseconds();
+}
+
+tizen.TimeDuration.prototype.lessThan = function(other) {
+  return this.getMilliseconds() < other.getMilliseconds();
+}
+
+tizen.TimeDuration.prototype.greaterThan = function(other) {
+  return this.getMilliseconds() > other.getMilliseconds();
+}
+
+tizen.TimeDuration.prototype.toString = function() {
+  return this.length + ' ' + this.unit;
+}
 
 tizen.TZDate = (function() {
   var TZDate = function(year, month, day, hours, minutes, seconds, milliseconds, timezone) {
