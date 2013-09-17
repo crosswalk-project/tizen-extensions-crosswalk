@@ -19,6 +19,12 @@ const char sDeviceInterface[] = "org.freedesktop.NetworkManager.Device";
 
 }  // namespace
 
+SysInfoNetwork::SysInfoNetwork(ContextAPI* api)
+    : type_(SYSTEM_INFO_NETWORK_UNKNOWN) {
+  api_ = api;
+  PlatformInitialize();
+}
+
 void SysInfoNetwork::PlatformInitialize() {
   active_connection_ = "";
   active_device_ = "";
@@ -36,6 +42,12 @@ void SysInfoNetwork::PlatformInitialize() {
 }
 
 SysInfoNetwork::~SysInfoNetwork() {
+}
+
+void SysInfoNetwork::StartListening() {
+}
+
+void SysInfoNetwork::StopListening() {
 }
 
 void SysInfoNetwork::OnNetworkManagerCreated(GObject*, GAsyncResult* res) {

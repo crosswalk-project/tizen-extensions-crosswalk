@@ -6,20 +6,77 @@
 
 #include <vconf.h>
 
-SysInfoNetwork::~SysInfoNetwork() {
-    if (timeout_cb_id_ > 0)
-      g_source_remove(timeout_cb_id_);
+SysInfoNetwork::SysInfoNetwork(ContextAPI* api)
+    : type_(SYSTEM_INFO_NETWORK_UNKNOWN),
+      is_registered_(false),
+      connection_handle_(NULL) {
+  api_ = api;
+  PlatformInitialize();
 }
 
 void SysInfoNetwork::PlatformInitialize() {
-  timeout_cb_id_ = 0;
+  if (connection_create(&connection_handle_) != CONNECTION_ERROR_NONE)
+    connection_handle_ = NULL;
+}
+
+SysInfoNetwork::~SysInfoNetwork() {
+  if (is_registered_)
+    StopListening();
+  if (connection_handle_)
+    free(connection_handle_);
+}
+
+void SysInfoNetwork::StartListening() {
+  if (connection_handle_ && !is_registered_) {
+    connection_set_type_changed_cb(connection_handle_,
+                                   OnTypeChanged, this);
+    is_registered_ = true;
+  }
+}
+
+void SysInfoNetwork::StopListening() {
+  if (connection_handle_) {
+    connection_unset_type_changed_cb(connection_handle_);
+    is_registered_ = false;
+  }
 }
 
 bool SysInfoNetwork::Update(picojson::value& error) {
-  int service_type = 0;
-  if (vconf_get_int(VCONFKEY_TELEPHONY_SVCTYPE, &service_type)) {
+  if (!connection_handle_) {
+    if (error.get("message").to_str().empty())
+      system_info::SetPicoJsonObjectValue(error, "message",
+          picojson::value("Get connection faild."));
     return false;
   }
+
+  connection_type_e connection_type;
+  if (connection_get_type(connection_handle_, &connection_type) !=
+      CONNECTION_ERROR_NONE) {
+    if (error.get("message").to_str().empty())
+      system_info::SetPicoJsonObjectValue(error, "message",
+          picojson::value("Get net state faild."));
+    return false;
+  }
+
+  if (connection_type == CONNECTION_TYPE_WIFI) {
+    type_ = SYSTEM_INFO_NETWORK_WIFI;
+    return true;
+  }
+
+  if (!GetNetworkType()) {
+    if (error.get("message").to_str().empty())
+      system_info::SetPicoJsonObjectValue(error, "message",
+          picojson::value("Get network type at vconf faild."));
+    return false;
+  }
+
+  return true;
+}
+
+bool SysInfoNetwork::GetNetworkType() {
+  int service_type = 0;
+  if (vconf_get_int(VCONFKEY_TELEPHONY_SVCTYPE, &service_type))
+    return false;
 
   switch (service_type) {
     case VCONFKEY_TELEPHONY_SVCTYPE_NONE:
@@ -47,30 +104,25 @@ bool SysInfoNetwork::Update(picojson::value& error) {
   return true;
 }
 
-gboolean SysInfoNetwork::OnUpdateTimeout(gpointer user_data) {
-  SysInfoNetwork* instance = static_cast<SysInfoNetwork*>(user_data);
+void SysInfoNetwork::OnTypeChanged(connection_type_e type, void* user_data) {
+  SysInfoNetwork* network = static_cast<SysInfoNetwork*>(user_data);
 
-  SystemInfoNetworkType old_type = instance->type_;
-  picojson::value error = picojson::value(picojson::object());;
-  if (!instance->Update(error)) {
-    // Fail to update, wait for next round.
-    return TRUE;
-  }
+  if (type == CONNECTION_TYPE_WIFI &&
+      network->type_ != SYSTEM_INFO_NETWORK_WIFI)
+    network->type_ = SYSTEM_INFO_NETWORK_WIFI;
+  else if (!network->GetNetworkType())
+    network->type_ = SYSTEM_INFO_NETWORK_NONE;
 
-  if (old_type != instance->type_) {
-    picojson::value output = picojson::value(picojson::object());;
-    picojson::value data = picojson::value(picojson::object());
+  picojson::value output = picojson::value(picojson::object());
+  picojson::value data = picojson::value(picojson::object());
 
-    instance->SetData(data);
-    system_info::SetPicoJsonObjectValue(output, "cmd",
-        picojson::value("SystemInfoPropertyValueChanged"));
-    system_info::SetPicoJsonObjectValue(output, "prop",
-        picojson::value("NETWORK"));
-    system_info::SetPicoJsonObjectValue(output, "data", data);
+  network->SetData(data);
+  system_info::SetPicoJsonObjectValue(output, "cmd",
+      picojson::value("SystemInfoPropertyValueChanged"));
+  system_info::SetPicoJsonObjectValue(output, "prop",
+      picojson::value("NETWORK"));
+  system_info::SetPicoJsonObjectValue(output, "data", data);
 
-    std::string result = output.serialize();
-    instance->api_->PostMessage(result.c_str());
-  }
-
-  return TRUE;
+  std::string result = output.serialize();
+  network->api_->PostMessage(result.c_str());
 }
