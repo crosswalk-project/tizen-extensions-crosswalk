@@ -96,13 +96,16 @@ tizen.TimeDuration.prototype.toString = function() {
 tizen.TZDate = (function() {
   var TZDate = function(year, month, day, hours, minutes, seconds, milliseconds, timezone) {
     var date_;
+    var hours = hours || 0;
+    var minutes = minutes || 0;
+    var seconds = seconds || 0;
+    var milliseconds = milliseconds || 0;
+    var timezone_ = timezone || tizen.time.getLocalTimezone();
 
     if (!arguments.length)
       date_ = new Date();
     else
       date_ = new Date(year, month, day, hours, minutes, seconds, milliseconds);
-
-    var timezone_ = timezone || tizen.time.getLocalTimezone();
 
     var toTimezone = function(timezone) {
         return new TZDate(date_.getFullYear(), date_.getMonth(),
