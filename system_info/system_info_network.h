@@ -8,7 +8,7 @@
 #if defined(GENERIC_DESKTOP)
 #include <gio/gio.h>
 #elif defined(TIZEN_MOBILE)
-#include <glib.h>
+#include <net_connection.h>
 #endif
 #include <string>
 
@@ -42,20 +42,8 @@ class SysInfoNetwork {
   explicit SysInfoNetwork(ContextAPI* api);
   ~SysInfoNetwork();
   void Get(picojson::value& error, picojson::value& data);
-  inline void StartListening() {
-#if defined(TIZEN_MOBILE)
-    timeout_cb_id_ = g_timeout_add(system_info::default_timeout_interval,
-                                   SysInfoNetwork::OnUpdateTimeout,
-                                   static_cast<gpointer>(this));
-#endif
-  }
-  inline void StopListening() {
-#if defined(TIZEN_MOBILE)
-    if (timeout_cb_id_ > 0) {
-      g_source_remove(timeout_cb_id_);
-    }
-#endif
-}
+  void StartListening();
+  void StopListening();
 
  private:
   void PlatformInitialize();
@@ -88,8 +76,11 @@ class SysInfoNetwork {
   std::string active_device_;
   guint device_type_;
 #elif defined(TIZEN_MOBILE)
-  static gboolean OnUpdateTimeout(gpointer user_data);
-  int timeout_cb_id_;
+  bool GetNetworkType();
+  static void OnTypeChanged(connection_type_e type, void* user_data);
+
+  bool is_registered_;
+  connection_h connection_handle_;
 #endif
 
   DISALLOW_COPY_AND_ASSIGN(SysInfoNetwork);
