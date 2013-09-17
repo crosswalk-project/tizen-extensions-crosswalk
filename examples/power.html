@@ -76,18 +76,13 @@ shouldNotThrow("tizen.power.request('SCREEN', 'SCREEN_NORMAL')");
 shouldNotThrow("tizen.power.request('SCREEN', 'SCREEN_BRIGHT')");
 shouldThrow("tizen.power.release(1)", "new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR)");
 shouldThrow("tizen.power.release('MOUSE')", "new tizen.WebAPIException(tizen.WebAPIException.INVALID_VALUES_ERR)");
-// FIXME : For now deactivate the test of turning off the screen as it will lead to the lock screen but afer unlocking Xwalk is
-// not in foreground so you can't check the results. When #313 is fixed we can turn it on.
-//shouldNotThrow("tizen.power.release('CPU')");
+shouldNotThrow("tizen.power.release('CPU')");
 shouldNotThrow("tizen.power.release('SCREEN')");
 
 var screenBrightness = tizen.power.getScreenBrightness();
 shouldThrow("tizen.power.setScreenBrightness('1')", "new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR)");
 shouldThrow("tizen.power.setScreenBrightness(2)", "new tizen.WebAPIException(tizen.WebAPIException.INVALID_VALUES_ERR)");
 tizen.power.setScreenBrightness(0.5);
-// FIXME : Getter needs sync and uses vconf which can't be called from the extensions thread. When the extensions are
-// in their own process we can enable the test and fix the getter to work.
-//shouldBe("tizen.power.getScreenBrightness()", "0.5");
 
 tizen.power.restoreScreenBrightness();
 shouldBeTrue("tizen.power.getScreenBrightness() == screenBrightness");
@@ -115,10 +110,8 @@ function switchOffScreen() {
   tizen.power.unsetScreenStateChangeListener(ScreenStateChangeListener);
   tizen.power.restoreScreenBrightness();
   shouldBeTrue("tizen.power.isScreenOn()");
-  // FIXME : For now deactivate the test of turning off the screen as it will lead to the lock screen but afer unlocking Xwalk is
-  // not in foreground so you can't check the results. When #313 is fixed we can turn it on.
-  //shouldNotThrow("tizen.power.turnScreenOff()");
-  //setTimeout(waitForScreenOff, 100);
+  shouldNotThrow("tizen.power.turnScreenOff()");
+  setTimeout(waitForScreenOff, 100);
 }
 
 function waitForScreenOff() {
