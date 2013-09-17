@@ -105,7 +105,7 @@ tizen.TZDate = (function() {
 
     var toTimezone = function(timezone) {
         return new TZDate(date_.getFullYear(), date_.getMonth(),
-              date_.getDay(), date_.getHours(), date_.getMinutes(),
+              date_.getDate(), date_.getHours(), date_.getMinutes(),
               date_.getSeconds(), date_.getMilliseconds(), timezone);
     };
 
