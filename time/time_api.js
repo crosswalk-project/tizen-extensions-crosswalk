@@ -40,6 +40,15 @@ exports.isLeapYear = function(year) {
     return false;
 };
 
+function _throwProperTizenException(e) {
+  if (e instanceof TypeError)
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+  else if (e instanceof RangeError)
+    throw new tizen.WebAPIException(tizen.WebAPIException.INVALID_VALUES_ERR);
+  else
+    throw new tizen.WebAPIException(tizen.WebAPIException.UNKNOWN_ERR);
+}
+
 var TimeDurationUnit = [
   "MSECS",
   "SECS",
@@ -73,8 +82,12 @@ tizen.TimeDuration.prototype.getMilliseconds = function() {
 }
 
 tizen.TimeDuration.prototype.difference = function(other) {
-  return new TimeDuration(this.getMilliseconds() - other.getMilliseconds(),
-                          'MSECS');
+  try {
+      return new TimeDuration(this.getMilliseconds() - other.getMilliseconds(),
+                              'MSECS');
+  } catch (e) {
+      _throwProperTizenException(e);
+  }
 }
 
 tizen.TimeDuration.prototype.equalsTo = function(other) {
@@ -223,37 +236,31 @@ tizen.TZDate = (function() {
         return toTimezone('GMT')
       },
       difference: function(other) {
-        return new tizen.TimeDuration(this.getTime() -
-                                      other.getTime(), 'MSEC');
+        try {
+            return new tizen.TimeDuration(this.getTime() - other.getTime(), 'MSEC');
+        } catch (e) {
+            _throwProperTizenException(e);
+        }
       },
       equalsTo: function(other) {
         try {
             return this.getTime() == other.getTime();
         } catch (e) {
-            if (e instanceof TypeError)
-              throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
-            else if (e instanceof RangeError)
-              throw new tizen.WebAPIException(tizen.WebAPIException.INVALID_VALUES_ERR);
+            _throwProperTizenException(e);
         }
       },
       earlierThan: function(other) {
         try {
             return this.getTime() < other.getTime();
         } catch (e) {
-            if (e instanceof TypeError)
-              throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
-            else if (e instanceof RangeError)
-              throw new tizen.WebAPIException(tizen.WebAPIException.INVALID_VALUES_ERR);
+            _throwProperTizenException(e);
         }
       },
       laterThan: function(other) {
         try {
             return this.getTime() > other.getTime();
         } catch(e) {
-            if (e instanceof TypeError)
-              throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
-            else if (e instanceof RangeError)
-              throw new tizen.WebAPIException(tizen.WebAPIException.INVALID_VALUES_ERR);
+            _throwProperTizenException(e);
         }
       },
       addDuration: function(duration) {
