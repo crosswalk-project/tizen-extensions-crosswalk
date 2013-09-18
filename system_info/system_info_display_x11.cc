@@ -9,7 +9,6 @@
 #include <X11/Xlib.h>
 
 #include "common/picojson.h"
-#include "system_info/system_info_utils.h"
 
 #if defined(GENERIC_DESKTOP)
   #define ACPI_BACKLIGHT_DIR "/sys/class/backlight/acpi_video0"
@@ -19,14 +18,14 @@
   #error "Unsupported platform"
 #endif
 
-SysInfoDisplay::SysInfoDisplay(ContextAPI* api)
+SysInfoDisplay::SysInfoDisplay()
     : resolution_width_(0),
       resolution_height_(0),
       physical_width_(0.0),
       physical_height_(0.0),
       brightness_(0.0),
       timeout_cb_id_(0) {
-  api_ = api;
+  pthread_mutex_init(&events_list_mutex_, NULL);
 }
 
 void SysInfoDisplay::Get(picojson::value& error,
@@ -122,7 +121,12 @@ gboolean SysInfoDisplay::OnUpdateTimeout(gpointer user_data) {
     system_info::SetPicoJsonObjectValue(output, "data", data);
 
     std::string result = output.serialize();
-    instance->api_->PostMessage(result.c_str());
+    const char* result_as_cstr = result.c_str();
+    AutoLock lock(&(instance->events_list_mutex_));
+    for (SystemInfoEventsList::iterator it = display_events_.begin();
+         it != display_events_.end(); it++) {
+      (*it)->PostMessage(result_as_cstr);
+    }
   }
 
   return TRUE;

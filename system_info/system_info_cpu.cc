@@ -7,8 +7,6 @@
 #include <stdio.h>
 #include <string>
 
-#include "system_info/system_info_utils.h"
-
 void SysInfoCpu::Get(picojson::value& error,
                      picojson::value& data) {
   if (!UpdateLoad()) {
@@ -38,10 +36,34 @@ gboolean SysInfoCpu::OnUpdateTimeout(gpointer user_data) {
     system_info::SetPicoJsonObjectValue(output, "data", data);
 
     std::string result = output.serialize();
-    instance->api_->PostMessage(result.c_str());
+    const char* result_as_cstr = result.c_str();
+    AutoLock lock(&(instance->events_list_mutex_));
+    for (SystemInfoEventsList::iterator it = cpu_events_.begin();
+         it != cpu_events_.end(); it++) {
+      (*it)->PostMessage(result_as_cstr);
+    }
   }
 
   return TRUE;
+}
+
+void SysInfoCpu::StartListening(ContextAPI* api) {
+  AutoLock lock(&events_list_mutex_);
+  cpu_events_.push_back(api);
+  if (timeout_cb_id_ == 0) {
+    timeout_cb_id_ = g_timeout_add(system_info::default_timeout_interval,
+                                   SysInfoCpu::OnUpdateTimeout,
+                                   static_cast<gpointer>(this));
+  }
+}
+
+void SysInfoCpu::StopListening(ContextAPI* api) {
+  AutoLock lock(&events_list_mutex_);
+  cpu_events_.remove(api);
+  if (cpu_events_.empty() && timeout_cb_id_ > 0) {
+    g_source_remove(timeout_cb_id_);
+    timeout_cb_id_ = 0;
+  }
 }
 
 bool SysInfoCpu::UpdateLoad() {

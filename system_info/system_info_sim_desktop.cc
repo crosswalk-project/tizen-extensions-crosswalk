@@ -4,13 +4,11 @@
 
 #include "system_info/system_info_sim.h"
 
-#include "system_info/system_info_utils.h"
-
 void SysInfoSim::Get(picojson::value& error,
                      picojson::value& data) {
   system_info::SetPicoJsonObjectValue(error, "message",
       picojson::value("SIM is not supported on desktop."));
 }
 
-void SysInfoSim::StartListening() { }
-void SysInfoSim::StopListening() { }
+void SysInfoSim::StartListening(ContextAPI* api) { }
+void SysInfoSim::StopListening(ContextAPI* api) { }

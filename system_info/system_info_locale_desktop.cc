@@ -12,26 +12,29 @@
 #include <string>
 
 #include "common/picojson.h"
-#include "system_info/system_info_utils.h"
 
-SysInfoLocale::SysInfoLocale(ContextAPI* api)
+SysInfoLocale::SysInfoLocale()
     : timeout_cb_id_(0) {
-  api_ = api;
+  pthread_mutex_init(&events_list_mutex_, NULL);
 }
 
-SysInfoLocale::~SysInfoLocale() {
+void SysInfoLocale::StartListening(ContextAPI* api) {
+  AutoLock lock(&events_list_mutex_);
+  local_events_.push_back(api);
+  if (timeout_cb_id_ == 0) {
+    timeout_cb_id_ = g_timeout_add(system_info::default_timeout_interval,
+                                   SysInfoLocale::OnUpdateTimeout,
+                                   static_cast<gpointer>(this));
+  }
 }
 
-
-void SysInfoLocale::StartListening() {
-  timeout_cb_id_ = g_timeout_add(system_info::default_timeout_interval,
-                                 SysInfoLocale::OnUpdateTimeout,
-                                 static_cast<gpointer>(this));
-}
-
-void SysInfoLocale::StopListening() {
-  if (timeout_cb_id_ > 0)
+void SysInfoLocale::StopListening(ContextAPI* api) {
+  AutoLock lock(&events_list_mutex_);
+  local_events_.remove(api);
+  if (local_events_.empty() && timeout_cb_id_ > 0) {
     g_source_remove(timeout_cb_id_);
+    timeout_cb_id_ = 0;
+  }
 }
 
 void SysInfoLocale::Get(picojson::value& error,
@@ -124,7 +127,12 @@ gboolean SysInfoLocale::OnUpdateTimeout(gpointer user_data) {
     system_info::SetPicoJsonObjectValue(output, "data", data);
 
     std::string result = output.serialize();
-    instance->api_->PostMessage(result.c_str());
+    const char* result_as_cstr = result.c_str();
+    AutoLock lock(&(instance->events_list_mutex_));
+    for (SystemInfoEventsList::iterator it = local_events_.begin();
+         it != local_events_.end(); it++) {
+      (*it)->PostMessage(result_as_cstr);
+    }
   }
 
   return TRUE;

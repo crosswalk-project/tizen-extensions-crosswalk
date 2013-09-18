@@ -4,8 +4,6 @@
 
 #include "system_info/system_info_device_orientation.h"
 
-#include "system_info/system_info_utils.h"
-
 void SysInfoDeviceOrientation::Get(picojson::value& error,
                                    picojson::value& data) {
   SetStatus();
@@ -58,7 +56,11 @@ void SysInfoDeviceOrientation::SendUpdate() {
   system_info::SetPicoJsonObjectValue(output, "data", data);
 
   std::string result = output.serialize();
-  api_->PostMessage(result.c_str());
+  const char* result_as_cstr = result.c_str();
+  AutoLock lock(&events_list_mutex_);
+  for (SystemInfoEventsList::iterator it = device_orientation_events_.begin();
+       it != device_orientation_events_.end(); it++)
+    (*it)->PostMessage(result_as_cstr);
 }
 
 std::string SysInfoDeviceOrientation::ToOrientationStatusString(
@@ -137,7 +139,13 @@ void SysInfoDeviceOrientation::OnAutoRotationChanged(keynode_t* node,
   orientation->SendUpdate();
 }
 
-void SysInfoDeviceOrientation::StartListening() {
+void SysInfoDeviceOrientation::StartListening(ContextAPI* api) {
+  AutoLock lock(&events_list_mutex_);
+  device_orientation_events_.push_back(api);
+
+  if (device_orientation_events_.size() > 1)
+    return;
+
   vconf_notify_key_changed(VCONFKEY_SETAPPL_AUTO_ROTATE_SCREEN_BOOL,
       (vconf_callback_fn)OnAutoRotationChanged, this);
 
@@ -157,16 +165,19 @@ void SysInfoDeviceOrientation::StartListening() {
     sf_unregister_event(sensorHandle_, ACCELEROMETER_EVENT_ROTATION_CHECK);
     sf_disconnect(sensorHandle_);
   }
-
-  isRegister_ = true;
 }
 
-void SysInfoDeviceOrientation::StopListening() {
+void SysInfoDeviceOrientation::StopListening(ContextAPI* api) {
+  AutoLock lock(&events_list_mutex_);
+  device_orientation_events_.remove(api);
+
+  if (!device_orientation_events_.empty())
+    return;
+
   vconf_ignore_key_changed(VCONFKEY_SETAPPL_AUTO_ROTATE_SCREEN_BOOL,
       (vconf_callback_fn)OnAutoRotationChanged);
 
   sf_unregister_event(sensorHandle_, ACCELEROMETER_EVENT_ROTATION_CHECK);
   sf_stop(sensorHandle_);
   sf_disconnect(sensorHandle_);
-  isRegister_ = false;
 }

@@ -39,21 +39,25 @@ enum SystemInfoNetworkType {
 
 class SysInfoNetwork {
  public:
-  explicit SysInfoNetwork(ContextAPI* api);
+  static SysInfoNetwork& GetSysInfoNetwork() {
+    static SysInfoNetwork instance;
+    return instance;
+  }
   ~SysInfoNetwork();
   void Get(picojson::value& error, picojson::value& data);
-  void StartListening();
-  void StopListening();
+  void StartListening(ContextAPI* api);
+  void StopListening(ContextAPI* api);
 
  private:
+  explicit SysInfoNetwork();
   void PlatformInitialize();
 
   bool Update(picojson::value& error);
   void SetData(picojson::value& data);
   std::string ToNetworkTypeString(SystemInfoNetworkType type);
 
-  ContextAPI* api_;
   SystemInfoNetworkType type_;
+  pthread_mutex_t events_list_mutex_;
 
 #if defined(GENERIC_DESKTOP)
   G_CALLBACK_1(OnNetworkManagerCreated, GObject*, GAsyncResult*);
@@ -79,7 +83,6 @@ class SysInfoNetwork {
   bool GetNetworkType();
   static void OnTypeChanged(connection_type_e type, void* user_data);
 
-  bool is_registered_;
   connection_h connection_handle_;
 #endif
 

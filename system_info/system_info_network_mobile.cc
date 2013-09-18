@@ -6,11 +6,10 @@
 
 #include <vconf.h>
 
-SysInfoNetwork::SysInfoNetwork(ContextAPI* api)
+SysInfoNetwork::SysInfoNetwork()
     : type_(SYSTEM_INFO_NETWORK_UNKNOWN),
-      is_registered_(false),
       connection_handle_(NULL) {
-  api_ = api;
+  pthread_mutex_init(&events_list_mutex_, NULL);
   PlatformInitialize();
 }
 
@@ -20,24 +19,29 @@ void SysInfoNetwork::PlatformInitialize() {
 }
 
 SysInfoNetwork::~SysInfoNetwork() {
-  if (is_registered_)
-    StopListening();
+  for (SystemInfoEventsList::iterator it = network_events_.begin();
+       it != network_events_.end(); it++) {
+    StopListening(*it);
+  }
   if (connection_handle_)
     free(connection_handle_);
+  pthread_mutex_destroy(&events_list_mutex_);
 }
 
-void SysInfoNetwork::StartListening() {
-  if (connection_handle_ && !is_registered_) {
+void SysInfoNetwork::StartListening(ContextAPI* api) {
+  AutoLock lock(&events_list_mutex_);
+  network_events_.push_back(api);
+  if (connection_handle_ && network_events_.size() == 1) {
     connection_set_type_changed_cb(connection_handle_,
                                    OnTypeChanged, this);
-    is_registered_ = true;
   }
 }
 
-void SysInfoNetwork::StopListening() {
-  if (connection_handle_) {
+void SysInfoNetwork::StopListening(ContextAPI* api) {
+  AutoLock lock(&events_list_mutex_);
+  network_events_.remove(api);
+  if (network_events_.empty() && connection_handle_) {
     connection_unset_type_changed_cb(connection_handle_);
-    is_registered_ = false;
   }
 }
 
@@ -124,5 +128,10 @@ void SysInfoNetwork::OnTypeChanged(connection_type_e type, void* user_data) {
   system_info::SetPicoJsonObjectValue(output, "data", data);
 
   std::string result = output.serialize();
-  network->api_->PostMessage(result.c_str());
+  const char* result_as_cstr = result.c_str();
+  AutoLock lock(&(network->events_list_mutex_));
+  for (SystemInfoEventsList::iterator it = network_events_.begin();
+       it != network_events_.end(); it++) {
+    (*it)->PostMessage(result_as_cstr);
+  }
 }

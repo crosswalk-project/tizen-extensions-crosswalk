@@ -20,19 +20,28 @@
 
 class SysInfoLocale {
  public:
-  explicit SysInfoLocale(ContextAPI* api);
-  ~SysInfoLocale();
+  static SysInfoLocale& GetSysInfoLocale() {
+    static SysInfoLocale instance;
+    return instance;
+  }
+  ~SysInfoLocale() {
+    for (SystemInfoEventsList::iterator it = local_events_.begin();
+         it != local_events_.end(); it++)
+      StopListening(*it);
+    pthread_mutex_destroy(&events_list_mutex_);
+  }
   void Get(picojson::value& error, picojson::value& data);
-  void StartListening();
-  void StopListening();
+  void StartListening(ContextAPI* api);
+  void StopListening(ContextAPI* api);
 
  private:
+  explicit SysInfoLocale();
   bool GetLanguage();
   bool GetCountry();
 
-  ContextAPI* api_;
   std::string language_;
   std::string country_;
+  pthread_mutex_t events_list_mutex_;
 
 #if defined(GENERIC_DESKTOP)
   static gboolean OnUpdateTimeout(gpointer user_data);
@@ -42,8 +51,6 @@ class SysInfoLocale {
   static void OnCountryChanged(keynode_t* node, void* user_data);
   static void OnLanguageChanged(keynode_t* node, void* user_data);
   void Update();
-
-  bool is_registered_;
 #endif
 
   DISALLOW_COPY_AND_ASSIGN(SysInfoLocale);

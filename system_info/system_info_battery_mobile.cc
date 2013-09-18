@@ -7,18 +7,19 @@
 #include <string>
 
 #include "common/picojson.h"
-#include "system_info/system_info_utils.h"
 
-SysInfoBattery::SysInfoBattery(ContextAPI* api)
+SysInfoBattery::SysInfoBattery()
     : level_(0.0),
-      charging_(false),
-      is_registered_(false) {
-  api_ = api;
+      charging_(false) {
+  pthread_mutex_init(&events_list_mutex_, NULL);
 }
 
 SysInfoBattery::~SysInfoBattery() {
-  if (is_registered_)
-    StopListening();
+  for (SystemInfoEventsList::iterator it = battery_events_.begin();
+       it != battery_events_.end(); it++) {
+    StopListening(*it);
+  }
+  pthread_mutex_destroy(&events_list_mutex_);
 }
 
 void SysInfoBattery::Get(picojson::value& error,
@@ -52,7 +53,12 @@ bool SysInfoBattery::Update(picojson::value& error) {
   system_info::SetPicoJsonObjectValue(output, "data", data);
 
   std::string result = output.serialize();
-  api_->PostMessage(result.c_str());
+  const char* result_as_cstr = result.c_str();
+  AutoLock lock(&events_list_mutex_);
+  for (SystemInfoEventsList::iterator it = battery_events_.begin();
+       it != battery_events_.end(); it++) {
+    (*it)->PostMessage(result_as_cstr);
+  }
   return true;
 }
 
@@ -95,18 +101,28 @@ void SysInfoBattery::OnIsChargingChanged(keynode_t* node, void* user_data) {
   battery->UpdateCharging(charging);
 }
 
-void SysInfoBattery::StartListening() {
+void SysInfoBattery::StartListening(ContextAPI* api) {
+  AutoLock lock(&events_list_mutex_);
+  battery_events_.push_back(api);
+
+  if (battery_events_.size() > 1)
+    return;
+
   vconf_notify_key_changed(VCONFKEY_SYSMAN_BATTERY_CAPACITY,
       (vconf_callback_fn)OnLevelChanged, this);
   vconf_notify_key_changed(VCONFKEY_SYSMAN_BATTERY_CHARGE_NOW,
       (vconf_callback_fn)OnIsChargingChanged, this);
-  is_registered_ = true;
 }
 
-void SysInfoBattery::StopListening() {
+void SysInfoBattery::StopListening(ContextAPI* api) {
+  AutoLock lock(&events_list_mutex_);
+  battery_events_.remove(api);
+
+  if (!battery_events_.empty())
+    return;
+
   vconf_ignore_key_changed(VCONFKEY_SYSMAN_BATTERY_CAPACITY,
       (vconf_callback_fn)OnLevelChanged);
   vconf_ignore_key_changed(VCONFKEY_SYSMAN_BATTERY_CHARGE_NOW,
       (vconf_callback_fn)OnIsChargingChanged);
-  is_registered_ = false;
 }

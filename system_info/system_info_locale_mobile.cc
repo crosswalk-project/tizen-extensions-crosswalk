@@ -7,34 +7,35 @@
 #include <stdlib.h>
 
 #include "common/picojson.h"
-#include "system_info/system_info_utils.h"
 
-SysInfoLocale::SysInfoLocale(ContextAPI* api)
-    : is_registered_(false) {
-  api_ = api;
+SysInfoLocale::SysInfoLocale() {
+  pthread_mutex_init(&events_list_mutex_, NULL);
 }
 
-SysInfoLocale::~SysInfoLocale() {
-  if (is_registered_)
-    StopListening();
-}
+void SysInfoLocale::StartListening(ContextAPI* api) {
+  AutoLock lock(&events_list_mutex_);
+  local_events_.push_back(api);
 
-void SysInfoLocale::StartListening() {
+  if (local_events_.size() > 1)
+    return;
+
   vconf_notify_key_changed(VCONFKEY_REGIONFORMAT,
       static_cast<vconf_callback_fn>(OnCountryChanged), this);
   vconf_notify_key_changed(VCONFKEY_LANGSET,
       static_cast<vconf_callback_fn>(OnLanguageChanged), this);
-
-  is_registered_ = true;
 }
 
-void SysInfoLocale::StopListening() {
+void SysInfoLocale::StopListening(ContextAPI* api) {
+  AutoLock lock(&events_list_mutex_);
+  local_events_.remove(api);
+
+  if (!local_events_.empty())
+    return;
+
   vconf_ignore_key_changed(VCONFKEY_REGIONFORMAT,
       static_cast<vconf_callback_fn>(OnCountryChanged));
   vconf_ignore_key_changed(VCONFKEY_LANGSET,
       static_cast<vconf_callback_fn>(OnLanguageChanged));
-
-  is_registered_ = false;
 }
 
 void SysInfoLocale::OnLanguageChanged(keynode_t* node, void* user_data) {
@@ -102,7 +103,12 @@ void SysInfoLocale::Update() {
   system_info::SetPicoJsonObjectValue(output, "data", data);
 
   std::string result = output.serialize();
-  api_->PostMessage(result.c_str());
+  const char* result_as_cstr = result.c_str();
+  AutoLock lock(&events_list_mutex_);
+  for (SystemInfoEventsList::iterator it = local_events_.begin();
+       it != local_events_.end(); it++) {
+    (*it)->PostMessage(result_as_cstr);
+  }
 }
 
 bool SysInfoLocale::GetLanguage() {

@@ -14,38 +14,53 @@
 
 class SysInfoDisplay {
  public:
-  explicit SysInfoDisplay(ContextAPI* api);
+  static SysInfoDisplay& GetSysInfoDisplay() {
+    static SysInfoDisplay instance;
+    return instance;
+  }
   ~SysInfoDisplay() {
     if (timeout_cb_id_ > 0)
       g_source_remove(timeout_cb_id_);
-}
+    pthread_mutex_destroy(&events_list_mutex_);
+  }
   // Get support
   void Get(picojson::value& error, picojson::value& data);
   // Listerner support
-  inline void StartListening() {
+  inline void StartListening(ContextAPI* api) {
     // FIXME(halton): Use Xlib event or D-Bus interface to monitor.
-    timeout_cb_id_ = g_timeout_add(system_info::default_timeout_interval,
-                                   SysInfoDisplay::OnUpdateTimeout,
-                                   static_cast<gpointer>(this));
+    AutoLock lock(&events_list_mutex_);
+    display_events_.push_back(api);
+
+    if (timeout_cb_id_ == 0) {
+      timeout_cb_id_ = g_timeout_add(system_info::default_timeout_interval,
+                                     SysInfoDisplay::OnUpdateTimeout,
+                                     static_cast<gpointer>(this));
+    }
   }
-  void StopListening() {
-    if (timeout_cb_id_ > 0)
+  inline void StopListening(ContextAPI* api) {
+    AutoLock lock(&events_list_mutex_);
+    display_events_.remove(api);
+    if (display_events_.empty() && timeout_cb_id_ > 0) {
       g_source_remove(timeout_cb_id_);
-}
+      timeout_cb_id_ = 0;
+    }
+  }
 
  private:
+  explicit SysInfoDisplay();
+
   static gboolean OnUpdateTimeout(gpointer user_data);
   bool UpdateSize();
   bool UpdateBrightness();
   void SetData(picojson::value& data);
 
-  ContextAPI* api_;
   int resolution_width_;
   int resolution_height_;
   double physical_width_;
   double physical_height_;
   double brightness_;
   int timeout_cb_id_;
+  pthread_mutex_t events_list_mutex_;
 
   DISALLOW_COPY_AND_ASSIGN(SysInfoDisplay);
 };
