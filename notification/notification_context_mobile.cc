@@ -34,6 +34,7 @@ NotificationContext::NotificationContext(ContextAPI* api)
 
 NotificationContext::~NotificationContext() {
   g_notification_manager->DetachClient(this);
+  delete api_;
 }
 
 void NotificationContext::HandlePost(const picojson::value& msg) {
