@@ -27,7 +27,7 @@ class NotificationContext
 #endif
 {
  public:
-  NotificationContext(ContextAPI* api);
+  explicit NotificationContext(ContextAPI* api);
   ~NotificationContext();
 
   static void PlatformInitialize();

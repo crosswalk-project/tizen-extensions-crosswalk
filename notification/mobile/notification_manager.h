@@ -6,7 +6,6 @@
 #define NOTIFICATION_MOBILE_NOTIFICATION_MANAGER_H_
 
 #include <notification.h>
-#include <pthread.h>
 #include <map>
 #include <string>
 
@@ -70,17 +69,7 @@ class NotificationManager {
   };
 
   typedef std::map<std::string, NotificationEntry> IDMap;
-  IDMap::iterator FindByPrivID(int priv_id) {
-    IDMap::iterator it = id_map_.begin();
-    while (it != id_map_.end()) {
-      if (it->second.priv_id == priv_id)
-        break;
-    }
-    return it;
-  }
-
   IDMap id_map_;
-  pthread_mutex_t mutex_;
 };
 
 #endif  // NOTIFICATION_MOBILE_NOTIFICATION_MANAGER_H_
