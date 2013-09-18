@@ -109,42 +109,50 @@ tizen.StatusNotification = function(statusType, title, dict) {
   defineReadOnlyProperty(this, "postedTime", null);
   defineReadOnlyProperty(this, "type", "STATUS");
 
+  if (["SIMPLE", "THUMBNAIL", "ONGOING", "PROGRESS"].indexOf(statusType) < -1)
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+  defineReadOnlyProperty(this, "statusType", statusType);
+
   if (dict) {
     this.content = dict.content;
     this.iconPath = dict.iconPath;
     this.soundPath = dict.soundPath;
-    this.vibration = dict.vibration;
+    this.vibration = Boolean(dict.vibration);
     this.appControl = dict.appControl;
     this.appId = dict.appId;
-    this.progressType = dict.progressType;
+    this.progressType = dict.progressType || "PERCENTAGE";
     this.progressValue = dict.progressValue;
     this.number = dict.number;
     this.subIconPath = dict.subIconPath;
-    this.detailInfo = dict.detailInfo;
+    // FIXME(cmarcelo): enforce maximum of 2 elements in the array.
+    this.detailInfo = dict.detailInfo || [];
     this.ledColor = dict.ledColor;
-    this.ledOnPeriod = dict.ledOnPeriod;
+    this.ledOnPeriod = dict.ledOnPeriod || 0;
+    this.ledOffPeriod = dict.ledOffPeriod || 0;
     this.backgroundImagePath = dict.backgroundImagePath;
-    this.thumbnails = dict.thumbnails;
+    this.thumbnails = dict.thumbnails || [];
   }
 }
 
 var copyStatusNotification = function(notification) {
-  var copy = new tizen.StatusNotification(notification.type, notification.title, {
-    content: notification.content,
-    iconPath: notification.iconPath,
-    soundPath: notification.soundPath,
-    vibration: notification.vibration,
-    appControl: notification.appControl,
-    appId: notification.appId,
-    progressType: notification.progressType,
-    progressValue: notification.progressValue,
-    number: notification.number,
-    subIconPath: notification.subIconPath,
-    ledColor: notification.ledColor,
-    ledOnPeriod: notification.ledOnPeriod,
-    backgroundImagePath: notification.backgroundImagePath,
-    thumbnails: notification.thumbnails
-  });
+  var copy = new tizen.StatusNotification(
+    notification.statusType, notification.title, {
+      content: notification.content,
+      iconPath: notification.iconPath,
+      soundPath: notification.soundPath,
+      vibration: notification.vibration,
+      appControl: notification.appControl,
+      appId: notification.appId,
+      progressType: notification.progressType,
+      progressValue: notification.progressValue,
+      number: notification.number,
+      subIconPath: notification.subIconPath,
+      ledColor: notification.ledColor,
+      ledOnPeriod: notification.ledOnPeriod,
+      ledOffPeriod: notification.ledOffPeriod,
+      backgroundImagePath: notification.backgroundImagePath,
+      thumbnails: notification.thumbnails
+    });
 
   v8tools.forceSetProperty(copy, "id", notification.id);
   v8tools.forceSetProperty(copy, "postedTime", notification.postedTime);
