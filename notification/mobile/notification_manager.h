@@ -69,15 +69,6 @@ class NotificationManager {
   };
 
   typedef std::map<std::string, NotificationEntry> IDMap;
-  IDMap::iterator FindByPrivID(int priv_id) {
-    IDMap::iterator it = id_map_.begin();
-    while (it != id_map_.end()) {
-      if (it->second.priv_id == priv_id)
-        break;
-    }
-    return it;
-  }
-
   IDMap id_map_;
 };
 

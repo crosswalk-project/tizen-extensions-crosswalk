@@ -4,6 +4,8 @@
 
 #include "notification/mobile/notification_manager.h"
 
+#include <algorithm>
+
 NotificationManager::NotificationManager() {
   notification_register_detailed_changed_cb(
       OnDetailedChanged, reinterpret_cast<void*>(this));
@@ -59,6 +61,19 @@ void NotificationManager::DetachClient(NotificationClient* client) {
   }
 }
 
+namespace {
+
+template <class T>
+struct MatchPrivID {
+  explicit MatchPrivID(int priv_id) : priv_id(priv_id) {}
+  bool operator()(const typename T::value_type& value) {
+    return value.second.priv_id == priv_id;
+  }
+  int priv_id;
+};
+
+}  // namespace
+
 void NotificationManager::OnDetailedChanged(
     notification_type_e type, notification_op* op_list, int num_op) {
   // This function gets warned about every notification event for every
@@ -69,7 +84,8 @@ void NotificationManager::OnDetailedChanged(
     if (operation->type != NOTIFICATION_OP_DELETE)
       continue;
 
-    IDMap::iterator it = FindByPrivID(operation->priv_id);
+    IDMap::iterator it = std::find_if(id_map_.begin(), id_map_.end(),
+                                      MatchPrivID<IDMap>(operation->priv_id));
     if (it == id_map_.end())
       continue;
 
