@@ -77,14 +77,23 @@ function getMultiplier(unit) {
   return 86400.0 * 1000.0;
 }
 
+function makeMillisecondsDurationObject(length) {
+  var dayInMsecs = 1000 * 60 * 60 * 24;
+
+  if ((length % dayInMsecs) == 0)
+    return new tizen.TimeDuration(length / dayInMsecs, 'DAYS');
+
+  return new tizen.TimeDuration(length, 'MSECS');
+}
+
 tizen.TimeDuration.prototype.getMilliseconds = function() {
   return getMultiplier(this.unit) * this.length;
 }
 
 tizen.TimeDuration.prototype.difference = function(other) {
   try {
-      return new TimeDuration(this.getMilliseconds() - other.getMilliseconds(),
-                              'MSECS');
+      return makeMillisecondsDurationObject(this.getMilliseconds() -
+                                            other.getMilliseconds());
   } catch (e) {
       _throwProperTizenException(e);
   }
@@ -239,7 +248,7 @@ tizen.TZDate = (function() {
       },
       difference: function(other) {
         try {
-            return new tizen.TimeDuration(this.getTime() - other.getTime(), 'MSEC');
+            return makeMillisecondsDurationObject(this.getTime() - other.getTime());
         } catch (e) {
             _throwProperTizenException(e);
         }
