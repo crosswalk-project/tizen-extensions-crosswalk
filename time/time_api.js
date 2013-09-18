@@ -40,72 +40,76 @@ exports.isLeapYear = function(year) {
     return false;
 };
 
-tizen.TimeDuration = (function() {
-  var TimeDurationUnit = [
-    "MSECS",
-    "SECS",
-    "MINS",
-    "HOURS",
-    "DAYS"
-  ];
-  var TimeDuration = function(length, unit) {
-    var length_ = length || 0;
-    var unit_ = unit || 'MSECS';
+var TimeDurationUnit = [
+  "MSECS",
+  "SECS",
+  "MINS",
+  "HOURS",
+  "DAYS"
+];
 
-    if (TimeDurationUnit.indexOf(unit_) == -1)
-      unit_ = 'MSECS';
+tizen.TimeDuration = function(length, unit) {
+  this.length = length || 0;
+  this.unit = unit || 'MSECS';
 
-    var getMultiplier = function(unit) {
-      if (unit == 'MSECS')
-        return 1.0;
-      if (unit == 'SECS')
-        return 1.0 * 1000.0;
-      if (unit == 'MINS')
-        return 60.0 * 1000.0;
-      if (unit == 'HOURS')
-        return 3600.0 * 1000.0;
-      return 86400.0 * 1000.0;
-    }
+  if (TimeDurationUnit.indexOf(this.unit) == -1)
+    this.unit = 'MSECS';
+};
 
-    return {
-      getMilliseconds: function() {
-        return getMultiplier(unit_) * length_;
-      },
-      difference: function(other) {
-        return new TimeDuration(this.getMilliseconds() -
-                                other.getMilliseconds(), 'MSECS');
-      },
-      equalsTo: function(other) {
-        return other.getMilliseconds() == this.getMilliseconds();
-      },
-      lessThan: function(other) {
-        return this.getMilliseconds() < other.getMilliseconds();
-      },
-      greaterThan: function(other) {
-        return this.getMilliseconds() > other.getMilliseconds();
-      },
-      toString: function() {
-        return length_ + ' ' + unit_;
-      }
-    };
-  };
-  return TimeDuration;
-})();
+function getMultiplier(unit) {
+  if (unit == 'MSECS')
+    return 1.0;
+  if (unit == 'SECS')
+    return 1.0 * 1000.0;
+  if (unit == 'MINS')
+    return 60.0 * 1000.0;
+  if (unit == 'HOURS')
+    return 3600.0 * 1000.0;
+  return 86400.0 * 1000.0;
+}
+
+tizen.TimeDuration.prototype.getMilliseconds = function() {
+  return getMultiplier(this.unit) * this.length;
+}
+
+tizen.TimeDuration.prototype.difference = function(other) {
+  return new TimeDuration(this.getMilliseconds() - other.getMilliseconds(),
+                          'MSECS');
+}
+
+tizen.TimeDuration.prototype.equalsTo = function(other) {
+  return this.getMilliseconds() == other.getMilliseconds();
+}
+
+tizen.TimeDuration.prototype.lessThan = function(other) {
+  return this.getMilliseconds() < other.getMilliseconds();
+}
+
+tizen.TimeDuration.prototype.greaterThan = function(other) {
+  return this.getMilliseconds() > other.getMilliseconds();
+}
+
+tizen.TimeDuration.prototype.toString = function() {
+  return this.length + ' ' + this.unit;
+}
 
 tizen.TZDate = (function() {
   var TZDate = function(year, month, day, hours, minutes, seconds, milliseconds, timezone) {
     var date_;
+    var hours = hours || 0;
+    var minutes = minutes || 0;
+    var seconds = seconds || 0;
+    var milliseconds = milliseconds || 0;
+    var timezone_ = timezone || tizen.time.getLocalTimezone();
 
     if (!arguments.length)
       date_ = new Date();
     else
       date_ = new Date(year, month, day, hours, minutes, seconds, milliseconds);
 
-    var timezone_ = timezone || tizen.time.getLocalTimezone();
-
     var toTimezone = function(timezone) {
         return new TZDate(date_.getFullYear(), date_.getMonth(),
-              date_.getDay(), date_.getHours(), date_.getMinutes(),
+              date_.getDate(), date_.getHours(), date_.getMinutes(),
               date_.getSeconds(), date_.getMilliseconds(), timezone);
     };
 
@@ -121,6 +125,9 @@ tizen.TZDate = (function() {
       },
       getFullYear: function() {
         return date_.getFullYear();
+      },
+      setFullYear: function(year) {
+        date_.setFullYear(year);
       },
       getHours: function() {
         return date_.getHours();
@@ -139,6 +146,12 @@ tizen.TZDate = (function() {
       },
       setMonth: function(month) {
         date_.setMonth(month);
+      },
+      getMinutes: function() {
+        return date_.getMinutes();
+      },
+      setMinutes: function(minutes) {
+        date_.setMinutes(minutes);
       },
       getSeconds: function() {
         return date_.getSeconds();
@@ -194,6 +207,9 @@ tizen.TZDate = (function() {
       setUTCSeconds: function(secs) {
         date_.setUTCSeconds(secs);
       },
+      getTime: function() {
+        return date_.getTime();
+      },
       getTimezone: function() {
         return timezone_;
       },
@@ -207,17 +223,38 @@ tizen.TZDate = (function() {
         return toTimezone('GMT')
       },
       difference: function(other) {
-        return new TimeDuration(this.secondsFromUTC() - other.secondsFromUTC(),
-              'MSEC');
+        return new tizen.TimeDuration(this.getTime() -
+                                      other.getTime(), 'MSEC');
       },
       equalsTo: function(other) {
-        return this.secondsFromUTC() == other.secondsFromUTC();
+        try {
+            return this.getTime() == other.getTime();
+        } catch (e) {
+            if (e instanceof TypeError)
+              throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+            else if (e instanceof RangeError)
+              throw new tizen.WebAPIException(tizen.WebAPIException.INVALID_VALUES_ERR);
+        }
       },
       earlierThan: function(other) {
-        return this.secondsFromUTC() < other.secondsFromUTC();
+        try {
+            return this.getTime() < other.getTime();
+        } catch (e) {
+            if (e instanceof TypeError)
+              throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+            else if (e instanceof RangeError)
+              throw new tizen.WebAPIException(tizen.WebAPIException.INVALID_VALUES_ERR);
+        }
       },
       laterThan: function(other) {
-        return this.secondsFromUTC() > other.secondsFromUTC();
+        try {
+            return this.getTime() > other.getTime();
+        } catch(e) {
+            if (e instanceof TypeError)
+              throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+            else if (e instanceof RangeError)
+              throw new tizen.WebAPIException(tizen.WebAPIException.INVALID_VALUES_ERR);
+        }
       },
       addDuration: function(duration) {
         var date = new TZDate(date_.getFullYear(), date_.getMonth(),
@@ -253,7 +290,7 @@ tizen.TZDate = (function() {
         return 'GMT+' + hoursToUTC;
       },
       secondsFromUTC: function() {
-        return date_.getTime() / 1000.0;
+        return date_.getTimezoneOffset() * 60;
       },
       isDST: function() {
         return false;
