@@ -447,7 +447,6 @@ void BluetoothContext::HandleSetAdapterProperty(const picojson::value& msg) {
 }
 
 void BluetoothContext::HandleCreateBonding(const picojson::value& msg) {
-  GError *error = 0;
   std::string address = msg.get("address").to_str();
   callbacks_map_["CreateBonding"] = msg.get("reply_id").to_str();
 
@@ -457,7 +456,6 @@ void BluetoothContext::HandleCreateBonding(const picojson::value& msg) {
 }
 
 void BluetoothContext::HandleDestroyBonding(const picojson::value& msg) {
-  GError* error = 0;
   std::string address = msg.get("address").to_str();
   callbacks_map_["DestroyBonding"] = msg.get("reply_id").to_str();
 
