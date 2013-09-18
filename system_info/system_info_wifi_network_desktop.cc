@@ -11,12 +11,28 @@
 #define NM_WIRELESS              NM_DBUS_INTERFACE_DEVICE ".Wireless"
 #define NM_IP4_ADDRESS           NM_DBUS_INTERFACE_DEVICE ".Ip4Address"
 
+namespace {
+
+const double kWifiSignalStrengthDivisor = 100.0;
+
+}  // namespace
+
+SysInfoWifiNetwork::SysInfoWifiNetwork(ContextAPI* api)
+    : signal_strength_(0.0),
+      ip_address_(""),
+      ipv6_address_(""),
+      ssid_(""),
+      status_("OFF") {
+  api_ = api;
+  PlatformInitialize();
+}
+
 void SysInfoWifiNetwork::PlatformInitialize() {
   active_access_point_ = "";
   active_connection_ = "";
   active_device_ = "";
   device_type_ = NM_DEVICE_TYPE_UNKNOWN;
-  ip6_config_ = "";
+  ipv6_config_ = "";
 
   g_dbus_proxy_new_for_bus(G_BUS_TYPE_SYSTEM,
       G_DBUS_PROXY_FLAGS_NONE,
@@ -30,6 +46,12 @@ void SysInfoWifiNetwork::PlatformInitialize() {
 }
 
 SysInfoWifiNetwork::~SysInfoWifiNetwork() {
+}
+
+void SysInfoWifiNetwork::StartListening() {
+}
+
+void SysInfoWifiNetwork::StopListening() {
 }
 
 void SysInfoWifiNetwork::SetData(picojson::value& data) {
@@ -116,7 +138,7 @@ void SysInfoWifiNetwork::OnAccessPointCreated(GObject*,
     g_printerr("Failed to get ssid or strength.");
     return;
   }
-  UpdateSsid(ssid);
+  UpdateSSID(ssid);
   UpdateSignalStrength(strength);
 
   g_signal_connect(proxy, "g-signal",
@@ -218,14 +240,14 @@ void SysInfoWifiNetwork::OnIPv6AddressCreated(GObject*, GAsyncResult* res) {
   }
 
   const char* str = g_variant_get_string(value, NULL);
-  if (str && (strcmp(ip6_config_.c_str(), str) != 0)) {
+  if (str && (strcmp(ipv6_config_.c_str(), str) != 0)) {
     if (strlen(str) > 2) {
-      ip6_config_ = std::string(str);
+      ipv6_config_ = std::string(str);
       g_dbus_proxy_new_for_bus(G_BUS_TYPE_SYSTEM,
           G_DBUS_PROXY_FLAGS_NONE,
           NULL,
           NM_DBUS_SERVICE,
-          ip6_config_.c_str(),
+          ipv6_config_.c_str(),
           NM_DBUS_INTERFACE_IP6_CONFIG,
           NULL,
           OnUpdateIPv6AddressThunk,
@@ -387,7 +409,7 @@ void SysInfoWifiNetwork::UpdateIPv6Address(GVariant* value) {
   SendUpdate();
 }
 
-void SysInfoWifiNetwork::UpdateSsid(GVariant* value) {
+void SysInfoWifiNetwork::UpdateSSID(GVariant* value) {
   gsize length = g_variant_get_size(value);
   gconstpointer g_pointer = g_variant_get_fixed_array(value, &length,
                                                       sizeof(guchar));
@@ -400,7 +422,7 @@ void SysInfoWifiNetwork::UpdateSsid(GVariant* value) {
 
 void SysInfoWifiNetwork::UpdateSignalStrength(GVariant* value) {
   int result = static_cast<int>(g_variant_get_byte(value));
-  double strength = static_cast<double>(result) / 100.0;
+  double strength = static_cast<double>(result) / kWifiSignalStrengthDivisor;
   if (strength == signal_strength_)
     return;
   signal_strength_ = strength;
@@ -432,7 +454,7 @@ void SysInfoWifiNetwork::OnAccessPointSignal(GDBusProxy* proxy,
   g_variant_get(parameters, "(a{sv})", &iter);
   while (g_variant_iter_loop(iter, "{&sv}", &key, &value)) {
     if (strcmp(key, "Ssid") == 0) {
-      self->UpdateSsid(value);
+      self->UpdateSSID(value);
     } else if (strcmp(key, "Strength") == 0) {
       self->UpdateSignalStrength(value);
     }
