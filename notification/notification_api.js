@@ -181,7 +181,7 @@ exports.getAll = function() {
 }
 
 exports.get = function(notificationId) {
-  return notificationCenter.get();
+  return notificationCenter.get(notificationId);
 }
 
 exports.removeAll = function() {
