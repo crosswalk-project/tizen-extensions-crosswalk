@@ -4,7 +4,7 @@
 
 #include "system_info/system_info_cpu.h"
 
-#include <stdlib.h>
+#include <stdio.h>
 #include <string>
 
 #include "system_info/system_info_utils.h"
@@ -27,7 +27,7 @@ gboolean SysInfoCpu::OnUpdateTimeout(gpointer user_data) {
   double old_load = instance->load_;
   instance->UpdateLoad();
   if (old_load != instance->load_) {
-    picojson::value output = picojson::value(picojson::object());;
+    picojson::value output = picojson::value(picojson::object());
     picojson::value data = picojson::value(picojson::object());
 
     system_info::SetPicoJsonObjectValue(data, "load",
@@ -45,11 +45,40 @@ gboolean SysInfoCpu::OnUpdateTimeout(gpointer user_data) {
 }
 
 bool SysInfoCpu::UpdateLoad() {
-  double loads[1];
-  if (-1 == getloadavg(loads, 1)) {
+  FILE *fp = fopen("/proc/stat", "r");
+  if (!fp)
     return false;
-  }
 
-  load_ = loads[0];
+  unsigned long long user; //NOLINT
+  unsigned long long nice; //NOLINT
+  unsigned long long system; //NOLINT
+  unsigned long long idle; //NOLINT
+  unsigned long long iowait; //NOLINT
+  unsigned long long irq; //NOLINT
+  unsigned long long softirq; //NOLINT
+
+  unsigned long long total; //NOLINT
+  unsigned long long used; //NOLINT
+
+  fscanf(fp, "%*s %llu %llu %llu %llu %llu %llu %llu",
+         &user, &nice, &system, &idle, &iowait, &irq, &softirq);
+  fclose(fp);
+
+  // The algorithm here can be found at:
+  // http://stackoverflow.com/questions/3017162
+  // /how-to-get-total-cpu-usage-in-linux-c
+  //
+  // The process is:
+  // work_over_period = work_jiffies_2 - work_jiffies_1
+  // total_over_period = total_jiffies_2 - total_jiffies_1
+  // cpu_load = work_over_period / total_over_period
+  used = user + nice + system;
+  total = used + idle + iowait + irq + softirq;
+
+  load_ = static_cast<double>(used - old_used_) / (total - old_total_);
+
+  old_total_ = total;
+  old_used_ = used;
+
   return true;
 }
