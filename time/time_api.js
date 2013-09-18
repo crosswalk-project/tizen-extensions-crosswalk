@@ -289,7 +289,22 @@ tizen.TZDate = (function() {
         return date_.toTimeString();
       },
       toString: function() {
-        return date_.toString();
+        var weekday = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri','Sat'][date_.getDay()];
+        var month = [
+              '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul',
+              'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][date_.getMonth()];
+        function pad2(num) {
+          return (100 + num).toString().substring(1);
+        };
+        var day = pad2(date_.getDay());
+        var year = date_.getFullYear();
+        var hour = pad2(date_.getHours());
+        var minute = pad2(date_.getMinutes());
+        var second = pad2(date_.getSeconds());
+        var dateAsString = weekday + ', ' + month + ' ' + day + ' ' + year;
+        var timeAsString = hour + ':' + minute + ':' + second;
+
+        return dateAsString + ' ' + timeAsString;
       },
       getTimezoneAbbreviation: function() {
         var minutesToUTC = (new Date()).getTimezoneOffset();
