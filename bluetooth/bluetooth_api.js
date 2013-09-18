@@ -26,6 +26,8 @@ extension.setMessageListener(function(json) {
     handleDeviceUpdated(msg);
   else if (msg.cmd == "AdapterUpdated")
     handleAdapterUpdated(msg);
+  else if (msg.cmd == "RFCOMMSocketAccept")
+    handleRFCOMMSocketAccept(msg);
   else { // Then we are dealing with postMessage return.
     var reply_id = msg.reply_id;
     var callback = _callbacks[reply_id];
@@ -44,6 +46,8 @@ function Adapter() {
   this.known_devices = []; // Keeps Managed and Found devices.
   this.discovery_callbacks = {};
   this.isReady = false;
+  this.service_handlers = [];
+  this.sockets = [];
 };
 
 Adapter.prototype.serviceNotAvailable = function(errorCallback) {
@@ -166,6 +170,26 @@ var handleAdapterUpdated = function(msg) {
       _addConstProperty(defaultAdapter, "visible",
           (msg.Discoverable == "true") ? true : false);
     }
+};
+
+var handleRFCOMMSocketAccept = function(msg) {
+  for (var i in adapter.service_handlers) {
+    var server = adapter.service_handlers[i];
+    if (server.channel === msg.channel) {
+      var j = adapter.indexOfDevice(adapter.known_devices, msg.peer);
+      var peer = adapter.known_devices[j];
+
+      var socket = new BluetoothSocket(server.uuid, peer, msg);
+
+      adapter.sockets.push(socket);
+
+      _addConstProperty(server, "isConnected", true);
+
+      if (server.onconnect && typeof server.onconnect === 'function')
+        server.onconnect(socket);
+      return;
+    }
+  }
 };
 
 var defaultAdapter = new BluetoothAdapter();
@@ -578,7 +602,49 @@ BluetoothAdapter.prototype.destroyBonding = function(address, successCallback, e
   });
 };
 
-BluetoothAdapter.prototype.registerRFCOMMServiceByUUID = function(uuid, name, serviceSuccessCallback, errorCallback) {};
+BluetoothAdapter.prototype.registerRFCOMMServiceByUUID = function(uuid, name, serviceSuccessCallback, errorCallback) {
+  if (adapter.serviceNotAvailable(errorCallback))
+    return;
+
+  if (typeof uuid !== 'string'
+      || typeof name !== 'string'
+      || (serviceSuccessCallback && typeof serviceSuccessCallback !== 'function')
+      || (errorCallback && typeof errorCallback !== 'function')) {
+    if (errorCallback) {
+      var error = new tizen.WebAPIError(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+      errorCallback(error);
+    }
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+    return;
+  }
+
+  var msg = {
+    'cmd': 'RFCOMMListen',
+    'uuid': uuid,
+    'name': name
+  };
+
+  postMessage(msg, function(result) {
+    if (result.error != 0) {
+      if (errorCallback) {
+        var error;
+        if (result.error == 1)
+          error = new tizen.WebAPIError(tizen.WebAPIException.NOT_FOUND_ERR);
+        else
+          error = new tizen.WebAPIError(tizen.WebAPIException.UNKNOWN_ERR);
+        errorCallback(error);
+      }
+      return;
+    }
+
+    var service = new BluetoothServiceHandler(uuid, name, result);
+    adapter.service_handlers.push(service);
+
+    if (serviceSuccessCallback) {
+      serviceSuccessCallback(service);
+    }
+  });
+};
 
 var _deviceClassMask = {
   "MINOR": 0x3F,
@@ -670,7 +736,35 @@ BluetoothDevice.prototype._updateProperties = function(device) {
   }
 };
 
-function BluetoothSocket() {};
+function BluetoothSocket(uuid, peer, msg) {
+  _addConstProperty(this, "uuid", uuid);
+  _addConstProperty(this, "peer", peer);
+  _addConstProperty(this, "state", this.BluetoothSocketState.OPEN);
+  this.onclose = null;
+  this.onmessage = null;
+  this.data = [];
+  this.channel = 0;
+  this.socket_fd = 0;
+
+  if (msg) {
+    this.channel = msg.channel;
+    this.socket_fd = msg.socket_fd;
+  }
+};
+
+BluetoothSocket.prototype.BluetoothSocketState = {};
+var BluetoothSocketState = {
+  "CLOSE": 1,
+  "OPEN": 2,
+};
+for (var key in BluetoothSocketState) {
+  Object.defineProperty(BluetoothSocket.prototype.BluetoothSocketState, key, {
+    configurable: false,
+    writable: false,
+    value: BluetoothSocketState[key]
+  });
+};
+
 BluetoothSocket.prototype.writeData = function(data) {/*return ulong*/};
 BluetoothSocket.prototype.readData = function() {/*return byte[]*/};
 BluetoothSocket.prototype.close = function() {/*return byte[]*/};
@@ -684,5 +778,15 @@ BluetoothClass.prototype.hasService = function(service) {
   return false;
 };
 
-function BluetoothServiceHandler() {};
+function BluetoothServiceHandler(name, uuid, msg) {
+  _addConstProperty(this, "name", name);
+  _addConstProperty(this, "uuid", uuid);
+  _addConstProperty(this, "isConnected", false);
+
+  if (msg) {
+    this.server_fd = msg.server_fd;
+    this.sdp_handle = msg.sdp_handle;
+    this.channel = msg.channel;
+  }
+};
 BluetoothServiceHandler.prototype.unregister = function(successCallback, errorCallback) {};
