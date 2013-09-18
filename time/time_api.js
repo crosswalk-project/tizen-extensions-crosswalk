@@ -117,6 +117,8 @@ tizen.TZDate = (function() {
 
     if (!arguments.length)
       date_ = new Date();
+    else if (arguments[0] instanceof Date)
+      date_ = arguments[0];
     else
       date_ = new Date(year, month, day, hours, minutes, seconds, milliseconds);
 
