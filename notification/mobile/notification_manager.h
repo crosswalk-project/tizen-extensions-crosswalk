@@ -6,7 +6,6 @@
 #define NOTIFICATION_MOBILE_NOTIFICATION_MANAGER_H_
 
 #include <notification.h>
-#include <pthread.h>
 #include <map>
 #include <string>
 
@@ -80,7 +79,6 @@ class NotificationManager {
   }
 
   IDMap id_map_;
-  pthread_mutex_t mutex_;
 };
 
 #endif  // NOTIFICATION_MOBILE_NOTIFICATION_MANAGER_H_
