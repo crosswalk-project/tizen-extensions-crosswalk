@@ -82,8 +82,12 @@ tizen.TimeDuration.prototype.getMilliseconds = function() {
 }
 
 tizen.TimeDuration.prototype.difference = function(other) {
-  return new TimeDuration(this.getMilliseconds() - other.getMilliseconds(),
-                          'MSECS');
+  try {
+      return new TimeDuration(this.getMilliseconds() - other.getMilliseconds(),
+                              'MSECS');
+  } catch (e) {
+      _throwProperTizenException(e);
+  }
 }
 
 tizen.TimeDuration.prototype.equalsTo = function(other) {
@@ -232,8 +236,11 @@ tizen.TZDate = (function() {
         return toTimezone('GMT')
       },
       difference: function(other) {
-        return new tizen.TimeDuration(this.getTime() -
-                                      other.getTime(), 'MSEC');
+        try {
+            return new tizen.TimeDuration(this.getTime() - other.getTime(), 'MSEC');
+        } catch (e) {
+            _throwProperTizenException(e);
+        }
       },
       equalsTo: function(other) {
         try {
