@@ -66,6 +66,8 @@ void BluetoothContext::HandleMessage(const char* message) {
     HandleCreateBonding(v);
   else if (cmd == "DestroyBonding")
     HandleDestroyBonding(v);
+  else if (cmd == "RFCOMMListen")
+    HandleRFCOMMListen(v);
 }
 
 void BluetoothContext::HandleSyncMessage(const char* message) {
