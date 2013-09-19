@@ -126,25 +126,26 @@ tizen.StatusNotification = function(statusType, title, dict) {
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
   defineReadOnlyProperty(this, "statusType", statusType);
 
-  if (dict) {
-    this.content = dict.content;
-    this.iconPath = dict.iconPath;
-    this.soundPath = dict.soundPath;
-    this.vibration = Boolean(dict.vibration);
-    this.appControl = dict.appControl;
-    this.appId = dict.appId;
-    this.progressType = dict.progressType || "PERCENTAGE";
-    this.progressValue = dict.progressValue;
-    this.number = dict.number;
-    this.subIconPath = dict.subIconPath;
-    // FIXME(cmarcelo): enforce maximum of 2 elements in the array.
-    this.detailInfo = dict.detailInfo || [];
-    this.ledColor = dict.ledColor;
-    this.ledOnPeriod = dict.ledOnPeriod || 0;
-    this.ledOffPeriod = dict.ledOffPeriod || 0;
-    this.backgroundImagePath = dict.backgroundImagePath;
-    this.thumbnails = dict.thumbnails || [];
-  }
+  if (!dict)
+    dict = {}
+
+  this.content = dict.content || null;
+  this.iconPath = dict.iconPath || null;
+  this.soundPath = dict.soundPath || null;
+  this.vibration = Boolean(dict.vibration);
+  this.appControl = dict.appControl || null;
+  this.appId = dict.appId !== undefined ? dict.appId : null;
+  this.progressType = dict.progressType || "PERCENTAGE";
+  this.progressValue = dict.progressValue !== undefined ? dict.progressValue : null;
+  this.number = dict.number || null;
+  this.subIconPath = dict.subIconPath || null;
+  // FIXME(cmarcelo): enforce maximum of 2 elements in the array.
+  this.detailInfo = dict.detailInfo || [];
+  this.ledColor = dict.ledColor;
+  this.ledOnPeriod = dict.ledOnPeriod || 0;
+  this.ledOffPeriod = dict.ledOffPeriod || 0;
+  this.backgroundImagePath = dict.backgroundImagePath || null;
+  this.thumbnails = dict.thumbnails || [];
 }
 
 var copyStatusNotification = function(notification) {
