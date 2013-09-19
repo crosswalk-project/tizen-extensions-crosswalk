@@ -763,18 +763,16 @@ function BluetoothSocket(uuid, peer, msg) {
   }
 }
 
-BluetoothSocket.prototype.BluetoothSocketState = 0;
 var BluetoothSocketState = {
   'CLOSE': 1,
   'OPEN': 2
 };
-for (var key in BluetoothSocketState) {
-  Object.defineProperty(BluetoothSocket.prototype.BluetoothSocketState, key, {
-    configurable: false,
-    writable: false,
-    value: BluetoothSocketState[key]
-  });
-}
+Object.defineProperty(BluetoothSocket, 'BluetoothSocketState', {
+  configurable: false,
+  writable: false,
+  value: BluetoothSocketState
+});
+
 
 BluetoothSocket.prototype.writeData = function(data) {/*return ulong*/};
 BluetoothSocket.prototype.readData = function() {/*return byte[]*/};
