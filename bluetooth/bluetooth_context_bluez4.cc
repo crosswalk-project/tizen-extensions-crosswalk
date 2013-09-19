@@ -386,9 +386,9 @@ void BluetoothContext::OnGotDefaultAdapterPath(GObject*, GAsyncResult* res) {
       "org.bluez",
       path,
       "org.bluez.Service",
-      NULL, /* GCancellable */
+      all_pending_, /* GCancellable */
       OnServiceProxyCreatedThunk,
-      this);
+      CancellableWrap(all_pending_, this));
 
   g_variant_unref(result);
   g_free(path);
@@ -727,7 +727,8 @@ void BluetoothContext::HandleRFCOMMListen(const picojson::value& msg) {
   char *record = g_strdup_printf(RFCOMM_RECORD, uuid.c_str(), channel, name.c_str());
 
   g_dbus_proxy_call(service_proxy_, "AddRecord", g_variant_new("(s)", record),
-                    G_DBUS_CALL_FLAGS_NONE, -1, NULL, OnServiceAddRecordThunk, this);
+                    G_DBUS_CALL_FLAGS_NONE, -1, all_pending_,
+                    OnServiceAddRecordThunk, CancellableWrap(all_pending_, this));
 }
 
 void BluetoothContext::OnDeviceProxyCreated(GObject* object, GAsyncResult* res) {
