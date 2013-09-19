@@ -353,6 +353,15 @@ BluetoothAdapter.prototype.setName = function(name, successCallback, errorCallba
 };
 
 BluetoothAdapter.prototype.setPowered = function(state, successCallback, errorCallback) {
+  // FIXME: Until there is a proper solution for the problem that the adapter disappears
+  // from the USB bus when it is powered down, we can only work around this issue, this
+  // is the simplest one.
+  if (state && defaultAdapter.powered
+      && successCallback && typeof successCallback === 'function') {
+    successCallback();
+    return;
+  }
+
   throw new tizen.WebAPIException(tizen.WebAPIException.NOT_SUPPORTED_ERR);
 };
 
