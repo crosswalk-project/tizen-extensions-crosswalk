@@ -61,6 +61,17 @@ tizen.TimeDuration = function(length, unit) {
   this.length = length || 0;
   this.unit = unit || 'MSECS';
 
+  Object.defineProperty(this, "length", { get : function() {
+                                            return length; },
+                                          set : function(NewValue) {
+                                            if (NewValue != null)
+                                              length = NewValue; }});
+  Object.defineProperty(this, "unit", { get : function() {
+                                          return unit; },
+                                        set : function(NewValue) {
+                                          if (NewValue in TimeDurationUnit)
+                                            unit = NewValue; }});
+
   if (TimeDurationUnit.indexOf(this.unit) == -1)
     this.unit = 'MSECS';
 };
