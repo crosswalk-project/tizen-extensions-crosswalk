@@ -100,15 +100,27 @@ tizen.TimeDuration.prototype.difference = function(other) {
 }
 
 tizen.TimeDuration.prototype.equalsTo = function(other) {
-  return this.getMilliseconds() == other.getMilliseconds();
+  try {
+      return this.getMilliseconds() == other.getMilliseconds();
+  } catch (e) {
+      _throwProperTizenException(e);
+  }
 }
 
 tizen.TimeDuration.prototype.lessThan = function(other) {
-  return this.getMilliseconds() < other.getMilliseconds();
+  try {
+      return this.getMilliseconds() < other.getMilliseconds();
+  } catch (e) {
+      _throwProperTizenException(e);
+  }
 }
 
 tizen.TimeDuration.prototype.greaterThan = function(other) {
-  return this.getMilliseconds() > other.getMilliseconds();
+  try {
+      return this.getMilliseconds() > other.getMilliseconds();
+  } catch (e) {
+      _throwProperTizenException(e);
+  }
 }
 
 tizen.TimeDuration.prototype.toString = function() {
