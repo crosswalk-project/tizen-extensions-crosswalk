@@ -65,6 +65,8 @@ NotificationCenter.prototype.get = function(notificationId) {
 }
 
 NotificationCenter.prototype.remove = function(notificationId) {
+  // FIXME(cmarcelo): Do we need to make removals synchronous?
+  this.onNotificationRemoved(notificationId);
   postMessage({
     "cmd": "NotificationRemove",
     "id": notificationId,
@@ -73,8 +75,8 @@ NotificationCenter.prototype.remove = function(notificationId) {
 
 NotificationCenter.prototype.removeAll = function() {
   var i;
-  for (i = 0; i < this.postedNotifications.length; i++)
-    this.remove(this.postedNotifications[i].id);
+  while (this.postedNotifications.length > 0)
+    this.remove(this.postedNotifications[0].id);
 }
 
 var notificationCenter = new NotificationCenter;
@@ -85,6 +87,8 @@ var postMessage = function(msg) {
 
 extension.setMessageListener(function(msg) {
   var m = JSON.parse(msg);
+  // FIXME(cmarcelo): for removals issues by JS, we are also being
+  // notified, but is unnecessary.
   if (m.cmd == "NotificationRemoved")
     notificationCenter.onNotificationRemoved(m.id);
 });
@@ -181,6 +185,8 @@ exports.post = function(notification) {
 }
 
 exports.remove = function(notificationId) {
+  if (!notificationCenter.get(notificationId))
+    throw new tizen.WebAPIException(tizen.WebAPIException.NOT_FOUND_ERR);
   notificationCenter.remove(notificationId);
 }
 
@@ -189,7 +195,10 @@ exports.getAll = function() {
 }
 
 exports.get = function(notificationId) {
-  return notificationCenter.get(notificationId);
+  var notification = notificationCenter.get(notificationId);
+  if (!notification)
+    throw new tizen.WebAPIException(tizen.WebAPIException.NOT_FOUND_ERR);
+  return notification;
 }
 
 exports.removeAll = function() {
