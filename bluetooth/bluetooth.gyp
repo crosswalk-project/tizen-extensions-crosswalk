@@ -9,6 +9,7 @@
       'variables': {
         'packages': [
           'gio-2.0',
+          'bluez',
         ],
         'bluetooth%': 'bluez4',
       },
