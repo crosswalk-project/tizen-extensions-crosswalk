@@ -102,14 +102,23 @@ function defineReadOnlyProperty(object, key, value) {
 }
 
 tizen.NotificationDetailInfo = function(mainText, subText) {
+  // FIXME(cmarcelo): This is a best effort that covers the common
+  // cases. Investigate whether we can implement a primitive natively to give us
+  // the information that the function was called as a constructor.
+  if (!this || this.constructor != tizen.NotificationDetailInfo)
+    throw new TypeError;
   this.mainText = mainText;
   this.subText = subText || null;
 }
 
 tizen.StatusNotification = function(statusType, title, dict) {
+  // See comment in tizen.NotificationDetailInfo.
+  if (!this || this.constructor != tizen.StatusNotification)
+    throw new TypeError;
+
   this.title = title;
 
-  defineReadOnlyProperty(this, "id", null);
+  defineReadOnlyProperty(this, "id", undefined);
   defineReadOnlyProperty(this, "postedTime", null);
   defineReadOnlyProperty(this, "type", "STATUS");
 
