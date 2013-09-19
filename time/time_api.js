@@ -61,6 +61,17 @@ tizen.TimeDuration = function(length, unit) {
   this.length = length || 0;
   this.unit = unit || 'MSECS';
 
+  Object.defineProperty(this, "length", { get : function() {
+                                            return length; },
+                                          set : function(NewValue) {
+                                            if (NewValue != null)
+                                              length = NewValue; }});
+  Object.defineProperty(this, "unit", { get : function() {
+                                          return unit; },
+                                        set : function(NewValue) {
+                                          if (NewValue in TimeDurationUnit)
+                                            unit = NewValue; }});
+
   if (TimeDurationUnit.indexOf(this.unit) == -1)
     this.unit = 'MSECS';
 };
@@ -100,15 +111,27 @@ tizen.TimeDuration.prototype.difference = function(other) {
 }
 
 tizen.TimeDuration.prototype.equalsTo = function(other) {
-  return this.getMilliseconds() == other.getMilliseconds();
+  try {
+      return this.getMilliseconds() == other.getMilliseconds();
+  } catch (e) {
+      _throwProperTizenException(e);
+  }
 }
 
 tizen.TimeDuration.prototype.lessThan = function(other) {
-  return this.getMilliseconds() < other.getMilliseconds();
+  try {
+      return this.getMilliseconds() < other.getMilliseconds();
+  } catch (e) {
+      _throwProperTizenException(e);
+  }
 }
 
 tizen.TimeDuration.prototype.greaterThan = function(other) {
-  return this.getMilliseconds() > other.getMilliseconds();
+  try {
+      return this.getMilliseconds() > other.getMilliseconds();
+  } catch (e) {
+      _throwProperTizenException(e);
+  }
 }
 
 tizen.TimeDuration.prototype.toString = function() {
@@ -126,8 +149,11 @@ tizen.TZDate = (function() {
 
     if (!arguments.length)
       date_ = new Date();
-    else if (arguments[0] instanceof Date)
+    else if (arguments[0] instanceof Date) {
       date_ = arguments[0];
+      if (arguments[1])
+        timezone_ = arguments[1];
+    }
     else
       date_ = new Date(year, month, day, hours, minutes, seconds, milliseconds);
 
