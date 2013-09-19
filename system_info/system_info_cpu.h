@@ -16,13 +16,16 @@ class SysInfoCpu {
  public:
   explicit SysInfoCpu(ContextAPI* api)
       : load_(0.0),
+        old_total_(0),
+        old_used_(0),
         timeout_cb_id_(0) {
     api_ = api;
+    UpdateLoad();
   }
   ~SysInfoCpu() {
     if (timeout_cb_id_ > 0)
       g_source_remove(timeout_cb_id_);
-}
+  }
   // Get support
   void Get(picojson::value& error, picojson::value& data);
 
@@ -35,7 +38,7 @@ class SysInfoCpu {
   inline void StopListening() {
     if (timeout_cb_id_ > 0)
       g_source_remove(timeout_cb_id_);
-}
+  }
 
  private:
   static gboolean OnUpdateTimeout(gpointer user_data);
@@ -43,6 +46,8 @@ class SysInfoCpu {
 
   ContextAPI* api_;
   double load_;
+  unsigned long long old_total_; //NOLINT
+  unsigned long long old_used_; //NOLINT
   int timeout_cb_id_;
 
   DISALLOW_COPY_AND_ASSIGN(SysInfoCpu);
