@@ -65,6 +65,8 @@ NotificationCenter.prototype.get = function(notificationId) {
 }
 
 NotificationCenter.prototype.remove = function(notificationId) {
+  // FIXME(cmarcelo): Do we need to make removals synchronous?
+  this.onNotificationRemoved(notificationId);
   postMessage({
     "cmd": "NotificationRemove",
     "id": notificationId,
@@ -73,8 +75,8 @@ NotificationCenter.prototype.remove = function(notificationId) {
 
 NotificationCenter.prototype.removeAll = function() {
   var i;
-  for (i = 0; i < this.postedNotifications.length; i++)
-    this.remove(this.postedNotifications[i].id);
+  while (this.postedNotifications.length > 0)
+    this.remove(this.postedNotifications[0].id);
 }
 
 var notificationCenter = new NotificationCenter;
@@ -85,6 +87,8 @@ var postMessage = function(msg) {
 
 extension.setMessageListener(function(msg) {
   var m = JSON.parse(msg);
+  // FIXME(cmarcelo): for removals issues by JS, we are also being
+  // notified, but is unnecessary.
   if (m.cmd == "NotificationRemoved")
     notificationCenter.onNotificationRemoved(m.id);
 });
@@ -98,53 +102,71 @@ function defineReadOnlyProperty(object, key, value) {
 }
 
 tizen.NotificationDetailInfo = function(mainText, subText) {
+  // FIXME(cmarcelo): This is a best effort that covers the common
+  // cases. Investigate whether we can implement a primitive natively to give us
+  // the information that the function was called as a constructor.
+  if (!this || this.constructor != tizen.NotificationDetailInfo)
+    throw new TypeError;
   this.mainText = mainText;
   this.subText = subText || null;
 }
 
 tizen.StatusNotification = function(statusType, title, dict) {
+  // See comment in tizen.NotificationDetailInfo.
+  if (!this || this.constructor != tizen.StatusNotification)
+    throw new TypeError;
+
   this.title = title;
 
-  defineReadOnlyProperty(this, "id", null);
+  defineReadOnlyProperty(this, "id", undefined);
   defineReadOnlyProperty(this, "postedTime", null);
   defineReadOnlyProperty(this, "type", "STATUS");
 
-  if (dict) {
-    this.content = dict.content;
-    this.iconPath = dict.iconPath;
-    this.soundPath = dict.soundPath;
-    this.vibration = dict.vibration;
-    this.appControl = dict.appControl;
-    this.appId = dict.appId;
-    this.progressType = dict.progressType;
-    this.progressValue = dict.progressValue;
-    this.number = dict.number;
-    this.subIconPath = dict.subIconPath;
-    this.detailInfo = dict.detailInfo;
-    this.ledColor = dict.ledColor;
-    this.ledOnPeriod = dict.ledOnPeriod;
-    this.backgroundImagePath = dict.backgroundImagePath;
-    this.thumbnails = dict.thumbnails;
-  }
+  if (["SIMPLE", "THUMBNAIL", "ONGOING", "PROGRESS"].indexOf(statusType) < -1)
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+  defineReadOnlyProperty(this, "statusType", statusType);
+
+  if (!dict)
+    dict = {}
+
+  this.content = dict.content || null;
+  this.iconPath = dict.iconPath || null;
+  this.soundPath = dict.soundPath || null;
+  this.vibration = Boolean(dict.vibration);
+  this.appControl = dict.appControl || null;
+  this.appId = dict.appId !== undefined ? dict.appId : null;
+  this.progressType = dict.progressType || "PERCENTAGE";
+  this.progressValue = dict.progressValue !== undefined ? dict.progressValue : null;
+  this.number = dict.number || null;
+  this.subIconPath = dict.subIconPath || null;
+  // FIXME(cmarcelo): enforce maximum of 2 elements in the array.
+  this.detailInfo = dict.detailInfo || [];
+  this.ledColor = dict.ledColor;
+  this.ledOnPeriod = dict.ledOnPeriod || 0;
+  this.ledOffPeriod = dict.ledOffPeriod || 0;
+  this.backgroundImagePath = dict.backgroundImagePath || null;
+  this.thumbnails = dict.thumbnails || [];
 }
 
 var copyStatusNotification = function(notification) {
-  var copy = new tizen.StatusNotification(notification.type, notification.title, {
-    content: notification.content,
-    iconPath: notification.iconPath,
-    soundPath: notification.soundPath,
-    vibration: notification.vibration,
-    appControl: notification.appControl,
-    appId: notification.appId,
-    progressType: notification.progressType,
-    progressValue: notification.progressValue,
-    number: notification.number,
-    subIconPath: notification.subIconPath,
-    ledColor: notification.ledColor,
-    ledOnPeriod: notification.ledOnPeriod,
-    backgroundImagePath: notification.backgroundImagePath,
-    thumbnails: notification.thumbnails
-  });
+  var copy = new tizen.StatusNotification(
+    notification.statusType, notification.title, {
+      content: notification.content,
+      iconPath: notification.iconPath,
+      soundPath: notification.soundPath,
+      vibration: notification.vibration,
+      appControl: notification.appControl,
+      appId: notification.appId,
+      progressType: notification.progressType,
+      progressValue: notification.progressValue,
+      number: notification.number,
+      subIconPath: notification.subIconPath,
+      ledColor: notification.ledColor,
+      ledOnPeriod: notification.ledOnPeriod,
+      ledOffPeriod: notification.ledOffPeriod,
+      backgroundImagePath: notification.backgroundImagePath,
+      thumbnails: notification.thumbnails
+    });
 
   v8tools.forceSetProperty(copy, "id", notification.id);
   v8tools.forceSetProperty(copy, "postedTime", notification.postedTime);
@@ -173,6 +195,8 @@ exports.post = function(notification) {
 }
 
 exports.remove = function(notificationId) {
+  if (!notificationCenter.get(notificationId))
+    throw new tizen.WebAPIException(tizen.WebAPIException.NOT_FOUND_ERR);
   notificationCenter.remove(notificationId);
 }
 
@@ -181,7 +205,10 @@ exports.getAll = function() {
 }
 
 exports.get = function(notificationId) {
-  return notificationCenter.get();
+  var notification = notificationCenter.get(notificationId);
+  if (!notification)
+    throw new tizen.WebAPIException(tizen.WebAPIException.NOT_FOUND_ERR);
+  return notification;
 }
 
 exports.removeAll = function() {
