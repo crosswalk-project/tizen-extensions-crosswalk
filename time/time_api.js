@@ -3,41 +3,41 @@
 // found in the LICENSE file.
 
 exports.getCurrentDateTime = function() {
-    return new tizen.TZDate();
+  return new tizen.TZDate();
 };
 
- exports.getLocalTimezone = function() {
-    var minutesToUTC = (new Date()).getTimezoneOffset();
-    var hoursToUTC = - (minutesToUTC / 60);
-    if (hoursToUTC < 0)
-      return 'GMT' + hoursToUTC;
-    return 'GMT+' + hoursToUTC;
+exports.getLocalTimezone = function() {
+  var minutesToUTC = (new Date()).getTimezoneOffset();
+  var hoursToUTC = - (minutesToUTC / 60);
+  if (hoursToUTC < 0)
+    return 'GMT' + hoursToUTC;
+  return 'GMT+' + hoursToUTC;
 };
 
 exports.getAvailableTimezones = function() {
-    return [
-      tizen.time.getLocalTimezone()
-    ];
+  return [
+    tizen.time.getLocalTimezone()
+  ];
 };
 
 exports.getDateFormat = function(shortformat) {
-    if (shortformat)
-      return 'd/m/y';
-    return 'D, M d y';
+  if (shortformat)
+    return 'd/m/y';
+  return 'D, M d y';
 };
 
 exports.getTimeFormat = function() {
-    return 'h:m:s';
+  return 'h:m:s';
 };
 
 exports.isLeapYear = function(year) {
-    if (!(year % 400))
-      return true;
-    if (!(year % 100))
-      return false;
-    if (!(year % 4))
-      return true;
+  if (!(year % 400))
+    return true;
+  if (!(year % 100))
     return false;
+  if (!(year % 4))
+    return true;
+  return false;
 };
 
 function _throwProperTizenException(e) {
@@ -50,27 +50,30 @@ function _throwProperTizenException(e) {
 }
 
 var TimeDurationUnit = [
-  "MSECS",
-  "SECS",
-  "MINS",
-  "HOURS",
-  "DAYS"
+  'MSECS',
+  'SECS',
+  'MINS',
+  'HOURS',
+  'DAYS'
 ];
 
 tizen.TimeDuration = function(length, unit) {
   this.length = length || 0;
   this.unit = unit || 'MSECS';
 
-  Object.defineProperty(this, "length", { get : function() {
-                                            return length; },
-                                          set : function(NewValue) {
-                                            if (NewValue != null)
-                                              length = NewValue; }});
-  Object.defineProperty(this, "unit", { get : function() {
-                                          return unit; },
-                                        set : function(NewValue) {
-                                          if (NewValue in TimeDurationUnit)
-                                            unit = NewValue; }});
+  Object.defineProperty(this, 'length', {
+    get: function() {
+      return length; },
+    set: function(NewValue) {
+      if (NewValue != null)
+        length = NewValue; }});
+
+  Object.defineProperty(this, 'unit', {
+    get: function() {
+      return unit; },
+    set: function(NewValue) {
+      if (NewValue in TimeDurationUnit)
+        unit = NewValue; }});
 
   if (TimeDurationUnit.indexOf(this.unit) == -1)
     this.unit = 'MSECS';
@@ -99,44 +102,44 @@ function makeMillisecondsDurationObject(length) {
 
 tizen.TimeDuration.prototype.getMilliseconds = function() {
   return getMultiplier(this.unit) * this.length;
-}
+};
 
 tizen.TimeDuration.prototype.difference = function(other) {
   try {
-      return makeMillisecondsDurationObject(this.getMilliseconds() -
-                                            other.getMilliseconds());
+    return makeMillisecondsDurationObject(this.getMilliseconds() -
+                                          other.getMilliseconds());
   } catch (e) {
-      _throwProperTizenException(e);
+    _throwProperTizenException(e);
   }
-}
+};
 
 tizen.TimeDuration.prototype.equalsTo = function(other) {
   try {
-      return this.getMilliseconds() == other.getMilliseconds();
+    return this.getMilliseconds() == other.getMilliseconds();
   } catch (e) {
-      _throwProperTizenException(e);
+    _throwProperTizenException(e);
   }
-}
+};
 
 tizen.TimeDuration.prototype.lessThan = function(other) {
   try {
-      return this.getMilliseconds() < other.getMilliseconds();
+    return this.getMilliseconds() < other.getMilliseconds();
   } catch (e) {
-      _throwProperTizenException(e);
+    _throwProperTizenException(e);
   }
-}
+};
 
 tizen.TimeDuration.prototype.greaterThan = function(other) {
   try {
-      return this.getMilliseconds() > other.getMilliseconds();
+    return this.getMilliseconds() > other.getMilliseconds();
   } catch (e) {
-      _throwProperTizenException(e);
+    _throwProperTizenException(e);
   }
-}
+};
 
 tizen.TimeDuration.prototype.toString = function() {
   return this.length + ' ' + this.unit;
-}
+};
 
 tizen.TZDate = (function() {
   var TZDate = function(year, month, day, hours, minutes, seconds, milliseconds, timezone) {
@@ -158,9 +161,9 @@ tizen.TZDate = (function() {
       date_ = new Date(year, month, day, hours, minutes, seconds, milliseconds);
 
     var toTimezone = function(timezone) {
-        return new TZDate(date_.getFullYear(), date_.getMonth(),
-              date_.getDate(), date_.getHours(), date_.getMinutes(),
-              date_.getSeconds(), date_.getMilliseconds(), timezone);
+      return new TZDate(date_.getFullYear(), date_.getMonth(), date_.getDate(),
+                        date_.getHours(), date_.getMinutes(), date_.getSeconds(),
+                        date_.getMilliseconds(), timezone);
     };
 
     return {
@@ -270,42 +273,41 @@ tizen.TZDate = (function() {
         return toTimezone(getLocalTimezone());
       },
       toUTC: function() {
-        return toTimezone('GMT')
+        return toTimezone('GMT');
       },
       difference: function(other) {
         try {
-            return makeMillisecondsDurationObject(this.getTime() - other.getTime());
+          return makeMillisecondsDurationObject(this.getTime() - other.getTime());
         } catch (e) {
-            _throwProperTizenException(e);
+          _throwProperTizenException(e);
         }
       },
       equalsTo: function(other) {
         try {
-            return this.getTime() == other.getTime();
+          return this.getTime() == other.getTime();
         } catch (e) {
-            _throwProperTizenException(e);
+          _throwProperTizenException(e);
         }
       },
       earlierThan: function(other) {
         try {
-            return this.getTime() < other.getTime();
+          return this.getTime() < other.getTime();
         } catch (e) {
-            _throwProperTizenException(e);
+          _throwProperTizenException(e);
         }
       },
       laterThan: function(other) {
         try {
-            return this.getTime() > other.getTime();
-        } catch(e) {
-            _throwProperTizenException(e);
+          return this.getTime() > other.getTime();
+        } catch (e) {
+          _throwProperTizenException(e);
         }
       },
       addDuration: function(duration) {
-        var date = new TZDate(date_.getFullYear(), date_.getMonth(),
-              date_.getDate(), date_.getHours(), date_.getMinutes(),
-              date_.getSeconds(), date_.getMilliseconds(), timezone_);
-        date.setMilliseconds(duration.getMilliseconds() +
-              date.getMilliseconds());
+        var date = new TZDate(date_.getFullYear(), date_.getMonth(), date_.getDate(),
+                              date_.getHours(), date_.getMinutes(), date_.getSeconds(),
+                              date_.getMilliseconds(), timezone_);
+        date.setMilliseconds(duration.getMilliseconds() + date.getMilliseconds());
         return date;
       },
       toLocaleDateString: function() {
@@ -324,10 +326,9 @@ tizen.TZDate = (function() {
         return date_.toTimeString();
       },
       toString: function() {
-        var weekday = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri','Sat'][date_.getDay()];
-        var month = [
-              '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul',
-              'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][date_.getMonth()];
+        var weekday = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][date_.getDay()];
+        var month = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul',
+                     'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][date_.getMonth()];
         function pad2(num) {
           return (100 + num).toString().substring(1);
         };
