@@ -9,27 +9,27 @@ var screenState = undefined;
 var defaultScreenBrightness = undefined;
 
 var resources = {
-  "SCREEN": {
+  'SCREEN': {
     type: 0,
     states: {
-      "SCREEN_OFF": 0,
-      "SCREEN_DIM": 1,
-      "SCREEN_NORMAL": 2,
-      "SCREEN_BRIGHT": 3 // Deprecated.
+      'SCREEN_OFF': 0,
+      'SCREEN_DIM': 1,
+      'SCREEN_NORMAL': 2,
+      'SCREEN_BRIGHT': 3 // Deprecated.
     }
   },
-  "CPU": {
+  'CPU': {
     type: 1,
     states: {
-      "CPU_AWAKE": 4
+      'CPU_AWAKE': 4
     }
   }
-}
+};
 
 var listeners = [];
 function callListeners(oldState, newState) {
-  var previousState = Object.keys(resources["SCREEN"].states)[oldState];
-  var changedState = Object.keys(resources["SCREEN"].states)[newState];
+  var previousState = Object.keys(resources['SCREEN'].states)[oldState];
+  var changedState = Object.keys(resources['SCREEN'].states)[newState];
   listeners.forEach(function(listener) {
     listener(previousState, changedState);
   });
@@ -55,7 +55,7 @@ function getScreenState() {
 
 extension.setMessageListener(function(msg) {
   var m = JSON.parse(msg);
-  if (m.cmd == "ScreenStateChanged") {
+  if (m.cmd == 'ScreenStateChanged') {
     var newState = m.state;
     if (screenState == undefined)
       getScreenState();
@@ -83,16 +83,16 @@ exports.request = function(resource, state) {
   }
 
   // Exception check: SCREEN_OFF is a state cannot be requested
-  if (resource === "SCREEN" && state === "SCREEN_OFF") {
+  if (resource === 'SCREEN' && state === 'SCREEN_OFF') {
     throw new tizen.WebAPIException(tizen.WebAPIException.INVALID_VALUES_ERR);
   }
 
   postMessage({
-    "cmd": "PowerRequest",
-    "resource": resources[resource].type,
-    "state": resources[resource].states[state]
+    'cmd': 'PowerRequest',
+    'resource': resources[resource].type,
+    'state': resources[resource].states[state]
   });
-}
+};
 
 exports.release = function(resource) {
   // Validate permission to 'power'. Do not throw, just bail out.
@@ -103,11 +103,11 @@ exports.release = function(resource) {
   if (!resources.hasOwnProperty(resource))
     throw new tizen.WebAPIException(tizen.WebAPIException.INVALID_VALUES_ERR);
 
-   postMessage({
-    "cmd": "PowerRelease",
-    "resource": resources[resource].type
+  postMessage({
+    'cmd': 'PowerRelease',
+    'resource': resources[resource].type
   });
-}
+};
 
 exports.setScreenStateChangeListener = function(listener) {
   // No permission validation.
@@ -119,19 +119,19 @@ exports.setScreenStateChangeListener = function(listener) {
   // parameters contain an invalid value. Verify the Tizen 2.x impl.
 
   listeners.push(listener);
-}
+};
 
 exports.unsetScreenStateChangeListener = function() {
   // No permission validation.
   listeners = [];
-}
+};
 
 exports.getScreenBrightness = function() {
   var brightness = parseFloat(sendSyncMessage({
-    "cmd": "PowerGetScreenBrightness",
+    'cmd': 'PowerGetScreenBrightness'
   }));
   return brightness;
-}
+};
 
 defaultScreenBrightness = exports.getScreenBrightness();
 
@@ -145,17 +145,17 @@ exports.setScreenBrightness = function(brightness) {
     throw new tizen.WebAPIException(tizen.WebAPIException.INVALID_VALUES_ERR);
 
   postMessage({
-    "cmd": "PowerSetScreenBrightness",
-    "value": brightness
+    'cmd': 'PowerSetScreenBrightness',
+    'value': brightness
   });
-}
+};
 
 exports.isScreenOn = function() {
   getScreenState();
   if (typeof screenState !== 'number')
     throw new tizen.WebAPIException(tizen.WebAPIException.UNKNOWN_ERR);
-  return screenState !== resources["SCREEN"].states["SCREEN_OFF"]
-}
+  return screenState !== resources['SCREEN'].states['SCREEN_OFF'];
+};
 
 exports.restoreScreenBrightness = function() {
   // Validate permission to 'power'.
@@ -165,10 +165,10 @@ exports.restoreScreenBrightness = function() {
     throw new tizen.WebAPIException(tizen.WebAPIException.UNKNOWN_ERR);
 
   postMessage({
-    "cmd": "PowerSetScreenBrightness",
-    "value": defaultScreenBrightness
+    'cmd': 'PowerSetScreenBrightness',
+    'value': defaultScreenBrightness
   });
-}
+};
 
 exports.turnScreenOff = function() {
   // Validate permission to 'power'.
@@ -176,10 +176,10 @@ exports.turnScreenOff = function() {
 
   // FIXME: throw UNKNOWN_ERR during failure to set the new value.
   postMessage({
-    "cmd": "PowerSetScreenEnabled",
-    "value": false
+    'cmd': 'PowerSetScreenEnabled',
+    'value': false
   });
-}
+};
 
 exports.turnScreenOn = function() {
   // Validate permission to 'power'.
@@ -187,7 +187,7 @@ exports.turnScreenOn = function() {
 
   // FIXME: throw UNKNOWN_ERR during failure to set the new value.
   postMessage({
-    "cmd": "PowerSetScreenEnabled",
-    "value": true
+    'cmd': 'PowerSetScreenEnabled',
+    'value': true
   });
-}
+};
