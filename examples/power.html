@@ -108,13 +108,8 @@ function waitForRestore() {
 function switchOffScreen() {
   // ScreenStateChangeListener will be called asynchronously, so we check it a bit later.
   tizen.power.unsetScreenStateChangeListener(ScreenStateChangeListener);
-  tizen.power.restoreScreenBrightness();
   shouldBeTrue("tizen.power.isScreenOn()");
   shouldNotThrow("tizen.power.turnScreenOff()");
-  setTimeout(waitForScreenOff, 100);
-}
-
-function waitForScreenOff() {
   shouldBeFalse("tizen.power.isScreenOn()");
   shouldNotThrow("tizen.power.turnScreenOn()");
 }

@@ -7,13 +7,14 @@
 #include <device.h>
 #include <glib.h>
 #include <pmapi.h>
-#include <power.h>
 #include <vconf.h>
 #include "common/picojson.h"
 
-static void OnPlatformStateChanged(power_state_e state, void *user_data);
+void OnPlatformStateChanged(power_state_e state, void *user_data);
 
 void PowerContext::PlatformInitialize() {
+  pending_screen_state_change_ = false;
+  pending_screen_state_reply_ = false;
   // Hook up for changes.
   power_set_changed_cb(OnPlatformStateChanged, this);
 }
@@ -49,9 +50,22 @@ static PowerContext::ResourceState toResourceState(power_state_e pstate) {
     }
 }
 
+void PowerContext::OnPlatformScreenStateChanged(power_state_e pstate) {
+  PowerContext::ResourceState state = toResourceState(pstate);
+  pending_screen_state_change_ = false;
+  OnScreenStateChanged(state);
+  if (pending_screen_state_reply_) {
+    picojson::value::object o;
+    o["state"] = picojson::value(static_cast<double>(state));
+    picojson::value v(o);
+    pending_screen_state_reply_ = false;
+    api_->SetSyncReply(v.serialize().c_str());
+  }
+}
+
 void OnPlatformStateChanged(power_state_e pstate, void *data) {
   PowerContext* self = static_cast<PowerContext*>(data);
-  self->OnScreenStateChanged(toResourceState(pstate));
+  self->OnPlatformScreenStateChanged(pstate);
 }
 
 void PowerContext::HandleRequest(const picojson::value& msg) {
@@ -122,10 +136,6 @@ void PowerContext::HandleRelease(const picojson::value& msg) {
 
 void PowerContext::HandleSetScreenBrightness(const picojson::value& msg) {
   double brightness = msg.get("value").get<double>();
-  if (brightness < 0)
-    // Resource brightness.
-    device_set_brightness_from_settings(0);
-
   int maxBrightness;
   power_wakeup(false);
   int ret = device_get_max_brightness(0, &maxBrightness);
@@ -138,18 +148,24 @@ void PowerContext::HandleSetScreenBrightness(const picojson::value& msg) {
 }
 
 void PowerContext::HandleGetScreenState() {
-  power_state_e pstate = power_get_state();
-  picojson::value::object o;
-  o["state"] = picojson::value(static_cast<double>(toResourceState(pstate)));
-  picojson::value v(o);
-  api_->SetSyncReply(v.serialize().c_str());
+  if (pending_screen_state_change_) {
+    pending_screen_state_reply_ = true;
+  } else {
+    picojson::value::object o;
+    o["state"] = picojson::value(
+            static_cast<double>(toResourceState(power_get_state())));
+    picojson::value v(o);
+    api_->SetSyncReply(v.serialize().c_str());
+  }
 }
 
 void PowerContext::HandleGetScreenBrightness() {
   int platformBrightness;
   int ret = device_get_brightness(0, &platformBrightness);
-  if (ret != 0)
+  if (ret != 0) {
     fprintf(stderr, "Can't get the brightness from the platform. \n");
+    return;
+  }
 
   double brightness = platformBrightness / 100.0;
   char brightnessAsString[32];
@@ -158,12 +174,18 @@ void PowerContext::HandleGetScreenBrightness() {
 }
 
 void PowerContext::HandleSetScreenEnabled(const picojson::value& msg) {
-  bool isEnabled = msg.get("value").get<bool>();
+  bool is_enabled = msg.get("value").get<bool>();
+  power_state_e current_state = power_get_state();
+  if ((is_enabled && current_state != POWER_STATE_SCREEN_OFF)
+    || (!is_enabled && current_state == POWER_STATE_SCREEN_OFF))
+      return;
 
-  if (isEnabled)
-    pm_change_state(LCD_NORMAL);
-  else
-    pm_change_state(LCD_OFF);
-
-  // FIXME: Check return value and throw Unknown exception if needed.
+  int ret = 0;
+  int new_state = is_enabled ? LCD_NORMAL : LCD_OFF;
+  ret = pm_change_state(new_state);
+  if (ret != 0) {
+    // FIXME: Check return value and throw Unknown exception if needed.
+    return;
+  }
+  pending_screen_state_change_ = true;
 }
