@@ -44,13 +44,11 @@ var sendSyncMessage = function(msg) {
 };
 
 function getScreenState() {
-  if (screenState === undefined) {
     var msg = {
       'cmd': 'PowerGetScreenState'
     };
     var r = JSON.parse(sendSyncMessage(msg));
     screenState = r.state;
-  }
 }
 
 extension.setMessageListener(function(msg) {

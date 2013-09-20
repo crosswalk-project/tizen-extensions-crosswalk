@@ -7,6 +7,8 @@
 
 #if defined(GENERIC_DESKTOP)
 #include <gio/gio.h>
+#else
+#include <power.h>
 #endif
 
 #include <map>
@@ -48,6 +50,9 @@ class PowerContext {
   };
 
   void OnScreenStateChanged(ResourceState state);
+#if defined(TIZEN_MOBILE)
+  void OnPlatformScreenStateChanged(power_state_e pstate);
+#endif
 
  private:
   void HandleRequest(const picojson::value& msg);
@@ -63,6 +68,9 @@ class PowerContext {
   friend void OnScreenProxyCreatedThunk(GObject* source, GAsyncResult*,
                                         gpointer);
   GDBusProxy* screen_proxy_;
+#else
+  bool pending_screen_state_change_;
+  bool pending_screen_state_reply_;
 #endif
 };
 
