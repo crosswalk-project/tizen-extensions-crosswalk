@@ -1,75 +1,87 @@
-<h1>Hello Tizen-WRT</h1>
-
+<html>
+<head>
+<meta name="viewport" content="width=device-width">
+<h1>Tizen Notification API</h1>
+<style>
+div.block {
+   background-color: gainsboro;
+   text-align: center;
+   font-family: monospace;
+   font-size: 200%;
+   width: 8em;
+   height: 6em;
+   float: left;
+   margin: 10px;
+   display: flex;
+   justify-content: center;
+   align-items: center;
+   user-select: none;
+   cursor: hand;
+}
+</style>
+</head>
 <body>
-<input type="text" size=50 id="text"><button id="notify">Notify!</button>
-<br>
-<textarea cols=50 rows=20 id="output"></textarea>
-<br>
-<button id="button1">Click 1</button>
-<button id="button2">Click 2</button>
-<button id="button3">Click 3</button>
-<button id="button4">Click 4</button>
-<button id="button5">Click 5</button>
-<button id="button6">Click 6</button>
-<button id="button7">Click 7</button>
-</body>
-
-<script src="js/js-test-pre.js"></script>
+<textarea cols=50 rows=5 id="output"></textarea><br>
 <script>
 
-var output = document.getElementById("output");
-
-
-function handle(button, text, callback) {
-    var b = document.getElementById(button);
-    b.innerText = text;
-    b.addEventListener("click", callback);
+function createButton(caption, callback) {
+  var button = document.createElement("div");
+  button.className = "block";
+  button.innerText = caption;
+  button.addEventListener("click", callback);
+  document.body.appendChild(button);
 }
 
-var n = new tizen.StatusNotification("SIMPLE", "Hello my friend", { content: "Stay awhile and listen..." });
-handle("button1", "Post n", function() {
-        tizen.notification.post(n);
-    });
+var output = document.getElementById("output");
+var N = new tizen.StatusNotification("SIMPLE", "Hello my friend",
+                                     { content: "Stay awhile and listen..." });
 
-handle("button2", "Remove n", function() {
-        tizen.notification.remove(n.id);
-    });
+createButton("post (N)", function() {
+  tizen.notification.post(N);
+});
 
-handle("button5", "Get n", function() {
-        var notification = tizen.notification.get(n.id);
-        if (notification)
-            output.value += '\nNOTIFICATION N: ' + notification.title + ' (' + notification.id + ')\n';
-        else
-            output.value += '\nNO NOTIFICATION N !\n';
-    });
+createButton("get (N)", function() {
+  try {
+    var notification = tizen.notification.get(N.id);
+    output.value = "Notification N: " + notification.title;
+  } catch(e) {
+    output.value = "Couldn't get N.";
+  }
+});
 
-handle("button3", "Post a string", function() {
-        shouldThrow("tizen.notification.post('string')", "new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR)");
-    });
+createButton("update (N)", function() {
+  N.title = "(UPDATED) " + N.title;
+  N.content = "(UPDATED) " + N.content;
+  tizen.notification.update(N);
+});
 
-handle("button4", "Get active notifications", function() {
-        var notifications = tizen.notification.getAll();
-        var i;
-        output.value += '\nNOTIFICATIONS\n';
-        for (i = 0; i < notifications.length; i++) {
-            output.value += notifications[i].title + ' (' + notifications[i].id + ')\n';
-        }
-    });
+createButton("remove (N)", function() {
+  tizen.notification.remove(N.id);
+});
 
-handle("notify", "Post!", function() {
-        var t = document.getElementById("text");
-        var noti = new tizen.StatusNotification("SIMPLE", "Tizen WRT",
-                                                { content: text.value });
-        tizen.notification.post(noti);
-    });
+var count = 1;
+createButton("create new and post", function() {
+  var otherNotification = new tizen.StatusNotification("SIMPLE", "Other " + count,
+                                                       { content: count });
+  count += 1;
+  tizen.notification.post(otherNotification);
+});
 
-handle("button6", "Remove All", function() {
-        tizen.notification.removeAll();
-    });
+createButton("get all", function() {
+  var notifications = tizen.notification.getAll();
+  var i;
+  output.value = "NOTIFICATIONS:\n";
+  for (i = 0; i < notifications.length; i++) {
+    output.value += notifications[i].title + " (" + notifications[i].id + ")\n";
+  }
+});
 
-handle("button7", "Update n", function() {
-        n.title += "-" + n.id;
-        tizen.notification.update(n);
-    });
+createButton("remove all", function() {
+  tizen.notification.removeAll();
+});
 
 </script>
+</body>
+</html>
+
+
