@@ -17,8 +17,7 @@ class NotificationClient {
 };
 
 // Uses Tizen notification library to post notifications and keep track on
-// updates made to them. Since clients can be running in different threads,
-// public functions of the manager are thread safe.
+// updates made to them.
 class NotificationManager {
  public:
   NotificationManager();
@@ -26,12 +25,12 @@ class NotificationManager {
 
   // Create a notification_h handle that should be filled using the Tizen
   // notification library functions. We control creation so we can pre-set
-  // certain parameters if necessary. This function is thread-safe.
+  // certain parameters if necessary.
   notification_h CreateNotification();
 
   // Post a notification created with the function above. The passed client will
   // be informed when the notification was destroyed. Return value is false if
-  // the notification couldn't be posted. This function is thread-safe.
+  // the notification couldn't be posted.
   //
   // Ownership of notification_h is taken by the NotificationManager.
   bool PostNotification(const std::string& id, notification_h notification,
@@ -40,12 +39,11 @@ class NotificationManager {
   // Asks for a Notification to be removed, should be called with the identifier
   // received from PostNotification. If returns false, an error happened; if
   // true the removal was dispatched. Later the function OnNotificationRemoved()
-  // from the client associated with the id will be called. This function is
-  // thread-safe.
+  // from the client associated with the id will be called.
   bool RemoveNotification(const std::string& id);
 
   // Called when a Client is being destroyed, so we stop watching its
-  // notifications. This function is thread-safe.
+  // notifications.
   void DetachClient(NotificationClient* client);
 
  private:
