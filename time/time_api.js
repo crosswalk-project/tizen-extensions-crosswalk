@@ -332,7 +332,7 @@ tizen.TZDate = (function() {
         function pad2(num) {
           return (100 + num).toString().substring(1);
         };
-        var day = pad2(date_.getDay());
+        var day = pad2(date_.getDate());
         var year = date_.getFullYear();
         var hour = pad2(date_.getHours());
         var minute = pad2(date_.getMinutes());
