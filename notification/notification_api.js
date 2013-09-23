@@ -33,7 +33,7 @@ NotificationCenter.prototype.onNotificationRemoved = function(id) {
 NotificationCenter.prototype.wasPosted = function(notification) {
   var i;
   for (i = 0; i < this.postedNotifications.length; i++) {
-    if (this.postedNotifications[i].original === notification)
+    if (this.postedNotifications[i] === notification)
       return true;
   }
   return false;
@@ -49,18 +49,11 @@ NotificationCenter.prototype.postNotification = function(notification) {
   postMessage(msg);
 
   v8tools.forceSetProperty(notification, 'postedTime', new Date);
-
-  var posted = copyStatusNotification(notification);
-  posted.original = notification;
-  this.postedNotifications.push(posted);
+  this.postedNotifications.push(notification);
 };
 
 NotificationCenter.prototype.getAll = function() {
-  var result = [];
-  var i;
-  for (i = 0; i < this.postedNotifications.length; i++)
-    result[i] = this.postedNotifications[i].original;
-  return result;
+  return this.postedNotifications.slice();
 };
 
 NotificationCenter.prototype.get = function(notificationId) {
@@ -68,7 +61,7 @@ NotificationCenter.prototype.get = function(notificationId) {
   var i;
   for (i = 0; i < this.postedNotifications.length; i++) {
     if (this.postedNotifications[i].id == notificationId) {
-      result = this.postedNotifications[i].original;
+      result = this.postedNotifications[i];
       break;
     }
   }
@@ -157,41 +150,6 @@ tizen.StatusNotification = function(statusType, title, dict) {
   this.ledOffPeriod = dict.ledOffPeriod || 0;
   this.backgroundImagePath = dict.backgroundImagePath || null;
   this.thumbnails = dict.thumbnails || [];
-};
-
-var copyStatusNotification = function(notification) {
-  var copy = new tizen.StatusNotification(notification.statusType, notification.title, {
-    content: notification.content,
-    iconPath: notification.iconPath,
-    soundPath: notification.soundPath,
-    vibration: notification.vibration,
-    appControl: notification.appControl,
-    appId: notification.appId,
-    progressType: notification.progressType,
-    progressValue: notification.progressValue,
-    number: notification.number,
-    subIconPath: notification.subIconPath,
-    ledColor: notification.ledColor,
-    ledOnPeriod: notification.ledOnPeriod,
-    ledOffPeriod: notification.ledOffPeriod,
-    backgroundImagePath: notification.backgroundImagePath,
-    thumbnails: notification.thumbnails
-  });
-
-  v8tools.forceSetProperty(copy, 'id', notification.id);
-  v8tools.forceSetProperty(copy, 'postedTime', notification.postedTime);
-  copy.detailInfo = [];
-  if (notification.detailInfo) {
-    var i;
-    for (i = 0; i < notification.detailInfo.length; i++) {
-      var info = notification.detailInfo[i];
-      copy.detailInfo[i] = {
-        mainText: info.mainText,
-        subText: info.subText
-      };
-    }
-  }
-  return copy;
 };
 
 exports.post = function(notification) {
