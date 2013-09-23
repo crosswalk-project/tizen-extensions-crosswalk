@@ -4,6 +4,18 @@
 
 var v8tools = requireNative('v8tools');
 
+var NOTIFICATION_PROPERTIES = ['title', 'content'];
+
+function extractNotificationProperties(notification) {
+  var result = {};
+  var i;
+  for (i in NOTIFICATION_PROPERTIES) {
+    var property = NOTIFICATION_PROPERTIES[i];
+    result[property] = notification[property];
+  }
+  return result;
+}
+
 function NotificationCenter() {
   this.postedNotifications = [];
   this.statusNotificationNextId = 0;
@@ -31,12 +43,11 @@ NotificationCenter.prototype.postNotification = function(notification) {
   var id = (this.statusNotificationNextId++).toString();
   v8tools.forceSetProperty(notification, 'id', id);
 
-  postMessage({
-    'cmd': 'NotificationPost',
-    'id': notification.id,
-    'title': notification.title,
-    'content': notification.content
-  });
+  var msg = extractNotificationProperties(notification);
+  msg.cmd = 'NotificationPost';
+  msg.id = notification.id;
+  postMessage(msg);
+
   v8tools.forceSetProperty(notification, 'postedTime', new Date);
 
   var posted = copyStatusNotification(notification);
