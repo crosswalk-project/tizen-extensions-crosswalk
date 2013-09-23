@@ -11,12 +11,16 @@
       ],
       'sources': [
         'notification_api.js',
-        'notification_context.cc',
-        'notification_context.h',
-        'notification_context_desktop.cc',
-        'notification_context_mobile.cc',
+        'notification_extension.cc',
+        'notification_extension.h',
+        'notification_instance_desktop.cc',
+        'notification_instance_desktop.h',
+        'notification_instance_mobile.cc',
+        'notification_instance_mobile.h',
         'mobile/notification_manager.cc',
         'mobile/notification_manager.h',
+        '../common/extension.h',
+        '../common/extension.cc',
       ],
 
       'conditions': [
