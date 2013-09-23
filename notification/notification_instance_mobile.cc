@@ -5,6 +5,7 @@
 #include "notification/notification_instance_mobile.h"
 
 #include "common/picojson.h"
+#include "notification/picojson_helpers.h"
 
 namespace {
 
@@ -26,20 +27,21 @@ NotificationInstanceMobile::~NotificationInstanceMobile() {
 }
 
 void NotificationInstanceMobile::HandleMessage(const char* message) {
-  picojson::value v;
+  picojson::value v = ParseJSONMessage(message);
+  std::string cmd = v.get("cmd").to_str();
+  if (cmd == "NotificationRemove")
+    HandleRemove(v);
+  else
+    std::cerr << "Notification: received invalid command '" << cmd << "'\n";
+}
 
-  std::string err;
-  picojson::parse(v, message, message + strlen(message), &err);
-  if (!err.empty()) {
-    std::cout << "Ignoring message.\n";
-    return;
-  }
-
+void NotificationInstanceMobile::HandleSyncMessage(const char* message) {
+  picojson::value v = ParseJSONMessage(message);
   std::string cmd = v.get("cmd").to_str();
   if (cmd == "NotificationPost")
     HandlePost(v);
-  else if (cmd == "NotificationRemove")
-    HandleRemove(v);
+  else
+    std::cerr << "Notification: received invalid command '" << cmd << "'\n";
 }
 
 void NotificationInstanceMobile::HandlePost(const picojson::value& msg) {
@@ -49,26 +51,27 @@ void NotificationInstanceMobile::HandlePost(const picojson::value& msg) {
   NotificationSetText(notification, NOTIFICATION_TEXT_TYPE_CONTENT,
                       msg.get("content").to_str());
 
-  std::string id = msg.get("id").to_str();
-  if (!manager_->PostNotification(id, notification, this)) {
-    std::cerr << "tizen.notification error: "
-              << " couldn't post notification with id '" << id << "'";
+  int id = manager_->PostNotification(notification, this);
+  if (!id) {
+    SendSyncReply(picojson::value().serialize().c_str());
     return;
   }
+
+  SendSyncReply(JSONValueFromInt(id).serialize().c_str());
 }
 
 void NotificationInstanceMobile::HandleRemove(const picojson::value& msg) {
-  std::string id = msg.get("id").to_str();
+  int id = msg.get("id").get<double>();
   if (!manager_->RemoveNotification(id)) {
     std::cerr << "tizen.notification error: "
               << "couldn't remove notification with id '" << id << "'\n";
   }
 }
 
-void NotificationInstanceMobile::OnNotificationRemoved(const std::string& id) {
+void NotificationInstanceMobile::OnNotificationRemoved(int id) {
   picojson::value::object o;
   o["cmd"] = picojson::value("NotificationRemoved");
-  o["id"] = picojson::value(id);
+  o["id"] = JSONValueFromInt(id);
   picojson::value v(o);
   PostMessage(v.serialize().c_str());
 }

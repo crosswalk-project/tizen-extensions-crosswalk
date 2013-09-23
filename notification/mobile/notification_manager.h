@@ -7,11 +7,10 @@
 
 #include <notification.h>
 #include <map>
-#include <string>
 
 class NotificationClient {
  public:
-  virtual void OnNotificationRemoved(const std::string& id) = 0;
+  virtual void OnNotificationRemoved(int id) = 0;
  protected:
   virtual ~NotificationClient() {}
 };
@@ -29,18 +28,17 @@ class NotificationManager {
   notification_h CreateNotification();
 
   // Post a notification created with the function above. The passed client will
-  // be informed when the notification was destroyed. Return value is false if
-  // the notification couldn't be posted.
+  // be informed when the notification was destroyed. Return value is 0 if the
+  // notification couldn't be posted or the id in case of success.
   //
   // Ownership of notification_h is taken by the NotificationManager.
-  bool PostNotification(const std::string& id, notification_h notification,
-                        NotificationClient* client);
+  int PostNotification(notification_h notification, NotificationClient* client);
 
   // Asks for a Notification to be removed, should be called with the identifier
   // received from PostNotification. If returns false, an error happened; if
   // true the removal was dispatched. Later the function OnNotificationRemoved()
   // from the client associated with the id will be called.
-  bool RemoveNotification(const std::string& id);
+  bool RemoveNotification(int id);
 
   // Called when a Client is being destroyed, so we stop watching its
   // notifications.
@@ -61,12 +59,11 @@ class NotificationManager {
       notification_type_e type, notification_op* op_list, int num_op);
 
   struct NotificationEntry {
-    int priv_id;
     notification_h handle;
     NotificationClient* client;
   };
 
-  typedef std::map<std::string, NotificationEntry> IDMap;
+  typedef std::map<int, NotificationEntry> IDMap;
   IDMap id_map_;
 };
 

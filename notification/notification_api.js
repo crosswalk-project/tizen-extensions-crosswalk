@@ -4,6 +4,14 @@
 
 var v8tools = requireNative('v8tools');
 
+var postMessage = function(msg) {
+  extension.postMessage(JSON.stringify(msg));
+};
+
+var sendSyncMessage = function(msg) {
+  return JSON.parse(extension.internal.sendSyncMessage(JSON.stringify(msg)));
+};
+
 var NOTIFICATION_PROPERTIES = ['title', 'content'];
 
 function extractNotificationProperties(notification) {
@@ -18,7 +26,6 @@ function extractNotificationProperties(notification) {
 
 function NotificationCenter() {
   this.postedNotifications = [];
-  this.statusNotificationNextId = 0;
 }
 
 NotificationCenter.prototype.onNotificationRemoved = function(id) {
@@ -40,16 +47,17 @@ NotificationCenter.prototype.wasPosted = function(notification) {
 };
 
 NotificationCenter.prototype.postNotification = function(notification) {
-  var id = (this.statusNotificationNextId++).toString();
-  v8tools.forceSetProperty(notification, 'id', id);
-
   var msg = extractNotificationProperties(notification);
   msg.cmd = 'NotificationPost';
-  msg.id = notification.id;
-  postMessage(msg);
+  var posted_id = sendSyncMessage(msg);
 
+  if (posted_id == null)
+    return false;
+
+  v8tools.forceSetProperty(notification, 'id', posted_id.toString());
   v8tools.forceSetProperty(notification, 'postedTime', new Date);
   this.postedNotifications.push(notification);
+  return true;
 };
 
 NotificationCenter.prototype.getAll = function() {
@@ -73,7 +81,7 @@ NotificationCenter.prototype.remove = function(notificationId) {
   this.onNotificationRemoved(notificationId);
   postMessage({
     'cmd': 'NotificationRemove',
-    'id': notificationId
+    'id': +notificationId  // Pass ID as a number.
   });
 };
 
@@ -84,10 +92,6 @@ NotificationCenter.prototype.removeAll = function() {
 };
 
 var notificationCenter = new NotificationCenter;
-
-var postMessage = function(msg) {
-  extension.postMessage(JSON.stringify(msg));
-};
 
 extension.setMessageListener(function(msg) {
   var m = JSON.parse(msg);

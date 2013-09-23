@@ -19,6 +19,7 @@
         'notification_instance_mobile.h',
         'mobile/notification_manager.cc',
         'mobile/notification_manager.h',
+        'picojson_helpers.h',
         '../common/extension.h',
         '../common/extension.cc',
       ],

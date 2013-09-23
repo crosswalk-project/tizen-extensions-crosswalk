@@ -4,27 +4,39 @@
 
 #include "notification/notification_instance_desktop.h"
 
+#include <iostream>
 #include "common/picojson.h"
+#include "notification/picojson_helpers.h"
 
 NotificationInstanceDesktop::NotificationInstanceDesktop() {}
 
 NotificationInstanceDesktop::~NotificationInstanceDesktop() {}
 
+namespace {
+
+int GetNextUniqueID() {
+  static int next_id = 1;
+  return next_id++;
+}
+
+}
+
 void NotificationInstanceDesktop::HandleMessage(const char* message) {
-  picojson::value v;
+  picojson::value v = ParseJSONMessage(message);
+  std::string cmd = v.get("cmd").to_str();
+  if (cmd == "NotificationRemove")
+    HandleRemove(v);
+  else
+    std::cerr << "Notification: received invalid command '" << cmd << "'\n";
+}
 
-  std::string err;
-  picojson::parse(v, message, message + strlen(message), &err);
-  if (!err.empty()) {
-    std::cout << "Ignoring message.\n";
-    return;
-  }
-
+void NotificationInstanceDesktop::HandleSyncMessage(const char* message) {
+  picojson::value v = ParseJSONMessage(message);
   std::string cmd = v.get("cmd").to_str();
   if (cmd == "NotificationPost")
     HandlePost(v);
-  else if (cmd == "NotificationRemove")
-    HandleRemove(v);
+  else
+    std::cerr << "Notification: received invalid command '" << cmd << "'\n";
 }
 
 void NotificationInstanceDesktop::HandlePost(const picojson::value& msg) {
@@ -33,30 +45,35 @@ void NotificationInstanceDesktop::HandlePost(const picojson::value& msg) {
                               msg.get("content").to_str().c_str(),
                               NULL);
   notify_notification_set_timeout(notification, NOTIFY_EXPIRES_NEVER);
-  g_signal_connect(notification, "closed",
-                   G_CALLBACK(OnNotificationClosedThunk), this);
-  notify_notification_show(notification, NULL);
+  gulong handler = g_signal_connect(
+      notification, "closed", G_CALLBACK(OnNotificationClosedThunk), this);
+  if (!notify_notification_show(notification, NULL)) {
+    g_signal_handler_disconnect(notification, handler);
+    SendSyncReply(picojson::value().serialize().c_str());
+    return;
+  }
 
-  std::string id = msg.get("id").to_str();
+  int id = GetNextUniqueID();
   notifications_[id] = notification;
+  SendSyncReply(JSONValueFromInt(id).serialize().c_str());
 }
 
 void NotificationInstanceDesktop::HandleRemove(const picojson::value& msg) {
-  std::string id = msg.get("id").to_str();
+  int id = msg.get("id").get<double>();
   NotificationsMap::iterator it = notifications_.find(id);
   if (it == notifications_.end())
     return;
   notify_notification_close(it->second, NULL);
 }
 
-std::string NotificationInstanceDesktop::IdFromNotification(
+int NotificationInstanceDesktop::IdFromNotification(
     NotifyNotification* notification) {
   NotificationsMap::iterator it;
   for (it = notifications_.begin(); it != notifications_.end(); ++it) {
     if (it->second == notification)
       return it->first;
   }
-  return std::string();
+  return 0;
 }
 
 void NotificationInstanceDesktop::OnNotificationClosedThunk(
@@ -68,12 +85,12 @@ void NotificationInstanceDesktop::OnNotificationClosedThunk(
 
 void NotificationInstanceDesktop::OnNotificationClosed(
     NotifyNotification* notification) {
-  const std::string id = IdFromNotification(notification);
-  if (id.empty())
+  const int id = IdFromNotification(notification);
+  if (!id)
     return;
   picojson::value::object o;
   o["cmd"] = picojson::value("NotificationRemoved");
-  o["id"] = picojson::value(id);
+  o["id"] = JSONValueFromInt(id);
   picojson::value v(o);
   PostMessage(v.serialize().c_str());
 
