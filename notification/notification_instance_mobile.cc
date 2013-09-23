@@ -4,7 +4,9 @@
 
 #include "notification/notification_instance_mobile.h"
 
+#include <iostream>
 #include "common/picojson.h"
+#include "notification/notification_common.h"
 #include "notification/picojson_helpers.h"
 
 namespace {
@@ -14,6 +16,11 @@ void NotificationSetText(notification_h notification,
                          const std::string& text) {
   notification_set_text(
       notification, type, text.c_str(), NULL, NOTIFICATION_VARIABLE_TYPE_NONE);
+}
+
+void FillNotificationHandle(notification_h n, const NotificationParameters& p) {
+  NotificationSetText(n, NOTIFICATION_TEXT_TYPE_TITLE, p.title);
+  NotificationSetText(n, NOTIFICATION_TEXT_TYPE_CONTENT, p.content);
 }
 
 }  // namespace
@@ -40,16 +47,15 @@ void NotificationInstanceMobile::HandleSyncMessage(const char* message) {
   std::string cmd = v.get("cmd").to_str();
   if (cmd == "NotificationPost")
     HandlePost(v);
+  else if (cmd == "NotificationUpdate")
+    HandleUpdate(v);
   else
     std::cerr << "Notification: received invalid command '" << cmd << "'\n";
 }
 
 void NotificationInstanceMobile::HandlePost(const picojson::value& msg) {
   notification_h notification = manager_->CreateNotification();
-  NotificationSetText(notification, NOTIFICATION_TEXT_TYPE_TITLE,
-                      msg.get("title").to_str());
-  NotificationSetText(notification, NOTIFICATION_TEXT_TYPE_CONTENT,
-                      msg.get("content").to_str());
+  FillNotificationHandle(notification, ReadNotificationParameters(msg));
 
   int id = manager_->PostNotification(notification, this);
   if (!id) {
@@ -66,6 +72,22 @@ void NotificationInstanceMobile::HandleRemove(const picojson::value& msg) {
     std::cerr << "tizen.notification error: "
               << "couldn't remove notification with id '" << id << "'\n";
   }
+}
+
+void NotificationInstanceMobile::HandleUpdate(const picojson::value& msg) {
+  int id = msg.get("id").get<double>();
+  notification_h notification = manager_->GetNotification(id);
+  if (!notification) {
+    SendSyncReply(picojson::value().serialize().c_str());
+    return;
+  }
+
+  FillNotificationHandle(notification, ReadNotificationParameters(msg));
+
+  picojson::value result;
+  if (manager_->UpdateNotification(notification))
+    result = picojson::value(true);
+  SendSyncReply(result.serialize().c_str());
 }
 
 void NotificationInstanceMobile::OnNotificationRemoved(int id) {

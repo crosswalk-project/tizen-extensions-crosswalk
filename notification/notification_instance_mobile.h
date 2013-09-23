@@ -28,6 +28,7 @@ class NotificationInstanceMobile
 
   void HandlePost(const picojson::value& msg);
   void HandleRemove(const picojson::value& msg);
+  void HandleUpdate(const picojson::value& msg);
 
   // NotificationClient implementation.
   virtual void OnNotificationRemoved(int id);

@@ -40,6 +40,10 @@ class NotificationManager {
   // from the client associated with the id will be called.
   bool RemoveNotification(int id);
 
+  notification_h GetNotification(int id);
+
+  bool UpdateNotification(notification_h notification);
+
   // Called when a Client is being destroyed, so we stop watching its
   // notifications.
   void DetachClient(NotificationClient* client);

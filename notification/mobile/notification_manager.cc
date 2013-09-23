@@ -44,6 +44,18 @@ bool NotificationManager::RemoveNotification(int id) {
   return (err == NOTIFICATION_ERROR_NONE);
 }
 
+notification_h NotificationManager::GetNotification(int id) {
+  IDMap::iterator it = id_map_.find(id);
+  if (it == id_map_.end())
+    return NULL;
+  return it->second.handle;
+}
+
+bool NotificationManager::UpdateNotification(notification_h notification) {
+  notification_error_e err = notification_update(notification);
+  return (err == NOTIFICATION_ERROR_NONE);
+}
+
 void NotificationManager::DetachClient(NotificationClient* client) {
   IDMap::iterator it = id_map_.begin();
   while (it != id_map_.end()) {
