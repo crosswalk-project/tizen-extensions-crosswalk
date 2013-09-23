@@ -14,6 +14,12 @@
 #include "common/picojson.h"
 #include "system_info/system_info_utils.h"
 
+namespace {
+
+const char* sSystemInfoFilePath = "/usr/etc/system-info.ini";
+
+}  // namespace
+
 DEFINE_XWALK_EXTENSION(SystemInfoContext);
 
 SystemInfoContext::SystemInfoContext(ContextAPI* api)
@@ -269,17 +275,20 @@ void SystemInfoContext::HandleGetCapabilities() {
   o["fmRadio"] = picojson::value(b);
 
   s = NULL;
-  system_info_get_value_string(SYSTEM_INFO_KEY_TIZEN_VERSION_NAME, &s);
+  system_info_get_value_string(SYSTEM_INFO_KEY_TIZEN_VERSION, &s);
   SetStringPropertyValue(o, "platformVersion", s);
   free(s);
 
-  s = NULL;
-  system_info_get_value_string(SYSTEM_INFO_KEY_TIZEN_VERSION, &s);
-  SetStringPropertyValue(o, "webApiVersion", s);
-  free(s);
+  std::string version =
+      system_info::GetPropertyFromFile(
+          sSystemInfoFilePath,
+          "http://tizen.org/feature/platform.web.api.version");
+  SetStringPropertyValue(o, "webApiVersion", version.c_str());
 
-  // FIXME(halton): find which key reflect this prop
-  o["nativeApiVersion"] = picojson::value("Unknown");
+  version = system_info::GetPropertyFromFile(
+                sSystemInfoFilePath,
+                "http://tizen.org/feature/platform.native.api.version");
+  SetStringPropertyValue(o, "nativeApiVersion", version.c_str());
 
   s = NULL;
   system_info_get_value_string(SYSTEM_INFO_KEY_PLATFORM_NAME, &s);

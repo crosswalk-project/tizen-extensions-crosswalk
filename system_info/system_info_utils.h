@@ -23,6 +23,8 @@ std::string GetUdevProperty(struct udev_device* dev,
 void SetPicoJsonObjectValue(picojson::value& obj,
                             const char* prop,
                             const picojson::value& val);
+std::string GetPropertyFromFile(const std::string& file_path,
+                                const std::string& key);
 
 }  // namespace system_info
 
