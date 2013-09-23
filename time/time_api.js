@@ -72,7 +72,7 @@ tizen.TimeDuration = function(length, unit) {
     get: function() {
       return unit; },
     set: function(NewValue) {
-      if (NewValue in TimeDurationUnit)
+      if (TimeDurationUnit.indexOf(NewValue) >= 0)
         unit = NewValue; }});
 
   if (TimeDurationUnit.indexOf(this.unit) == -1)
