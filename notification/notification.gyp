@@ -11,6 +11,8 @@
       ],
       'sources': [
         'notification_api.js',
+        'notification_common.cc',
+        'notification_common.h',
         'notification_extension.cc',
         'notification_extension.h',
         'notification_instance_desktop.cc',

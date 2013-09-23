@@ -60,6 +60,13 @@ NotificationCenter.prototype.postNotification = function(notification) {
   return true;
 };
 
+NotificationCenter.prototype.update = function(notification) {
+  var msg = extractNotificationProperties(notification);
+  msg.cmd = 'NotificationUpdate';
+  msg.id = +notification.id;  // Pass ID as a number.
+  return sendSyncMessage(msg);
+};
+
 NotificationCenter.prototype.getAll = function() {
   return this.postedNotifications.slice();
 };
@@ -192,6 +199,5 @@ exports.update = function(notification) {
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
   else if (!notificationCenter.wasPosted(notification))
     throw new tizen.WebAPIException(tizen.WebAPIException.UNKNOWN_ERR);
-
-  console.log('tizen.notification.update() not implemented');
+  notificationCenter.update(notification);
 };

@@ -6,6 +6,7 @@
 
 #include <iostream>
 #include "common/picojson.h"
+#include "notification/notification_common.h"
 #include "notification/picojson_helpers.h"
 
 NotificationInstanceDesktop::NotificationInstanceDesktop() {}
@@ -35,14 +36,17 @@ void NotificationInstanceDesktop::HandleSyncMessage(const char* message) {
   std::string cmd = v.get("cmd").to_str();
   if (cmd == "NotificationPost")
     HandlePost(v);
+  else if (cmd == "NotificationUpdate")
+    HandleUpdate(v);
   else
     std::cerr << "Notification: received invalid command '" << cmd << "'\n";
 }
 
 void NotificationInstanceDesktop::HandlePost(const picojson::value& msg) {
+  NotificationParameters params = ReadNotificationParameters(msg);
   NotifyNotification* notification =
-      notify_notification_new(msg.get("title").to_str().c_str(),
-                              msg.get("content").to_str().c_str(),
+      notify_notification_new(params.title.c_str(),
+                              params.content.c_str(),
                               NULL);
   notify_notification_set_timeout(notification, NOTIFY_EXPIRES_NEVER);
   gulong handler = g_signal_connect(
@@ -64,6 +68,25 @@ void NotificationInstanceDesktop::HandleRemove(const picojson::value& msg) {
   if (it == notifications_.end())
     return;
   notify_notification_close(it->second, NULL);
+}
+
+void NotificationInstanceDesktop::HandleUpdate(const picojson::value& msg) {
+  int id = msg.get("id").get<double>();
+  NotificationsMap::iterator it = notifications_.find(id);
+  if (it == notifications_.end()) {
+    SendSyncReply(picojson::value().serialize().c_str());
+    return;
+  }
+  NotifyNotification* notification = it->second;
+  NotificationParameters params = ReadNotificationParameters(msg);
+  notify_notification_update(notification,
+                             params.title.c_str(),
+                             params.content.c_str(),
+                             NULL);
+  picojson::value result;
+  if (notify_notification_show(notification, NULL))
+    result = picojson::value(true);
+  SendSyncReply(result.serialize().c_str());
 }
 
 int NotificationInstanceDesktop::IdFromNotification(

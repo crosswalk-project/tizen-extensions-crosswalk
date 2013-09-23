@@ -29,6 +29,7 @@ class NotificationInstanceDesktop : public common::Instance {
 
   void HandlePost(const picojson::value& msg);
   void HandleRemove(const picojson::value& msg);
+  void HandleUpdate(const picojson::value& msg);
 
   int IdFromNotification(NotifyNotification* notification);
   static void OnNotificationClosedThunk(NotifyNotification* notification,
