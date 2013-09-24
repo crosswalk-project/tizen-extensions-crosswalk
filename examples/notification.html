@@ -59,6 +59,22 @@ createButton("remove (N)", function() {
   tizen.notification.remove(N.id);
 });
 
+var P = new tizen.StatusNotification(
+  "PROGRESS", "New progress", {
+    content: "New progressing...",
+    progressValue: 0,
+    progressType: "PERCENTAGE"
+  });
+createButton("post (P)", function() {
+  tizen.notification.post(P);
+});
+
+createButton("update (P)", function() {
+  P.progressValue += 1;
+  tizen.notification.update(P);
+});
+
+
 var count = 1;
 createButton("create new and post", function() {
   var otherNotification = new tizen.StatusNotification("SIMPLE", "Other " + count,

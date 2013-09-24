@@ -6,7 +6,7 @@
 
 #include <iostream>
 #include "common/picojson.h"
-#include "notification/notification_common.h"
+#include "notification/notification_parameters.h"
 #include "notification/picojson_helpers.h"
 
 namespace {
@@ -21,6 +21,14 @@ void NotificationSetText(notification_h notification,
 void FillNotificationHandle(notification_h n, const NotificationParameters& p) {
   NotificationSetText(n, NOTIFICATION_TEXT_TYPE_TITLE, p.title);
   NotificationSetText(n, NOTIFICATION_TEXT_TYPE_CONTENT, p.content);
+
+  if (p.status_type == "PROGRESS") {
+    if (p.progress_type == "PERCENTAGE") {
+      notification_set_progress(n, p.progress_value / 100.0);
+    } else if (p.progress_type == "BYTE") {
+      notification_set_size(n, p.progress_value);
+    }
+  }
 }
 
 }  // namespace
@@ -54,8 +62,16 @@ void NotificationInstanceMobile::HandleSyncMessage(const char* message) {
 }
 
 void NotificationInstanceMobile::HandlePost(const picojson::value& msg) {
-  notification_h notification = manager_->CreateNotification();
-  FillNotificationHandle(notification, ReadNotificationParameters(msg));
+  NotificationParameters params = ReadNotificationParameters(msg);
+
+  notification_type_e type;
+  if (params.status_type == "PROGRESS" || params.status_type == "ONGOING")
+    type = NOTIFICATION_TYPE_ONGOING;
+  else
+    type = NOTIFICATION_TYPE_NOTI;
+
+  notification_h notification = manager_->CreateNotification(type);
+  FillNotificationHandle(notification, params);
 
   int id = manager_->PostNotification(notification, this);
   if (!id) {

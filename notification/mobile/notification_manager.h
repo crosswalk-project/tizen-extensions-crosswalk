@@ -25,7 +25,7 @@ class NotificationManager {
   // Create a notification_h handle that should be filled using the Tizen
   // notification library functions. We control creation so we can pre-set
   // certain parameters if necessary.
-  notification_h CreateNotification();
+  notification_h CreateNotification(notification_type_e type);
 
   // Post a notification created with the function above. The passed client will
   // be informed when the notification was destroyed. Return value is 0 if the

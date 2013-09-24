@@ -11,8 +11,9 @@ NotificationManager::NotificationManager() {
 
 NotificationManager::~NotificationManager() {}
 
-notification_h NotificationManager::CreateNotification() {
-  return notification_new(NOTIFICATION_TYPE_NOTI,
+notification_h NotificationManager::CreateNotification(
+    notification_type_e type) {
+  return notification_new(type,
                           NOTIFICATION_GROUP_ID_NONE,
                           NOTIFICATION_PRIV_ID_NONE);
 }

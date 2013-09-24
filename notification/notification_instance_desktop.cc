@@ -6,7 +6,7 @@
 
 #include <iostream>
 #include "common/picojson.h"
-#include "notification/notification_common.h"
+#include "notification/notification_parameters.h"
 #include "notification/picojson_helpers.h"
 
 NotificationInstanceDesktop::NotificationInstanceDesktop() {}

@@ -12,7 +12,13 @@ var sendSyncMessage = function(msg) {
   return JSON.parse(extension.internal.sendSyncMessage(JSON.stringify(msg)));
 };
 
-var NOTIFICATION_PROPERTIES = ['title', 'content'];
+var NOTIFICATION_PROPERTIES = [
+  'statusType',
+  'title',
+  'content',
+  'progressType',
+  'progressValue'
+];
 
 function extractNotificationProperties(notification) {
   var result = {};
