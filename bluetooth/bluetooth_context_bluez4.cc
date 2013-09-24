@@ -229,6 +229,46 @@ void BluetoothContext::OnDeviceSignal(GDBusProxy* proxy, gchar* sender, gchar* s
   handler->PostMessage(picojson::value(o));
 }
 
+// static
+void BluetoothContext::OnManagerSignal(GDBusProxy* proxy, gchar* sender_name,
+                                       gchar* signal, GVariant* parameters,
+                                       gpointer user_data)
+{
+  BluetoothContext* handler = reinterpret_cast<BluetoothContext*>(user_data);
+  const char* iface = g_dbus_proxy_get_interface_name(proxy);
+
+  // We only want org.bluez.Manager signals.
+  if (strcmp(iface, "org.bluez.Manager"))
+    return;
+
+  // More specifically, DefaultAdapterChanged ones.
+  if (strcmp(signal, "DefaultAdapterChanged"))
+    return;
+
+  const char* path;
+  g_variant_get(parameters, "(o)", &path);
+
+  g_dbus_proxy_new_for_bus(G_BUS_TYPE_SYSTEM,
+                           G_DBUS_PROXY_FLAGS_NONE,
+                           NULL, /* GDBusInterfaceInfo */
+                           "org.bluez",
+                           path,
+                           "org.bluez.Adapter",
+                           handler->all_pending_, /* GCancellable */
+                           OnAdapterProxyCreatedThunk,
+                           CancellableWrap(handler->all_pending_, handler));
+
+  g_dbus_proxy_new_for_bus(G_BUS_TYPE_SYSTEM,
+                           G_DBUS_PROXY_FLAGS_NONE,
+                           NULL, /* GDBusInterfaceInfo */
+                           "org.bluez",
+                           path,
+                           "org.bluez.Service",
+                           handler->all_pending_, /* GCancellable */
+                           OnServiceProxyCreatedThunk,
+                           CancellableWrap(handler->all_pending_, handler));
+}
+
 void BluetoothContext::OnGotAdapterProperties(GObject*, GAsyncResult* res) {
   GError* error = 0;
   GVariant* result = g_dbus_proxy_call_finish(adapter_proxy_, res, &error);
@@ -358,8 +398,48 @@ void BluetoothContext::OnManagerCreated(GObject*, GAsyncResult* res) {
   }
 
   g_dbus_proxy_call(manager_proxy_, "DefaultAdapter", NULL,
-                    G_DBUS_CALL_FLAGS_NONE, 5000, all_pending_, OnGotDefaultAdapterPathThunk,
+                    G_DBUS_CALL_FLAGS_NONE, 5000, all_pending_,
+                    OnGotDefaultAdapterPathThunk,
                     CancellableWrap(all_pending_, this));
+
+  g_signal_connect(manager_proxy_, "g-signal",
+                   G_CALLBACK(BluetoothContext::OnManagerSignal), this);
+}
+
+// static
+void BluetoothContext::OnBluetoothServiceAppeared(GDBusConnection* connection,
+                                                  const char* name,
+                                                  const char* name_owner,
+                                                  void* user_data) {
+  BluetoothContext* handler = reinterpret_cast<BluetoothContext*>(user_data);
+
+
+  g_dbus_proxy_new_for_bus(G_BUS_TYPE_SYSTEM,
+                           G_DBUS_PROXY_FLAGS_NONE,
+                           NULL, /* GDBusInterfaceInfo */
+                           "org.bluez",
+                           "/",
+                           "org.bluez.Manager",
+                           handler->all_pending_, /* GCancellable */
+                           OnManagerCreatedThunk,
+                           CancellableWrap(handler->all_pending_, handler));
+}
+
+// static
+void BluetoothContext::OnBluetoothServiceVanished(GDBusConnection* connection,
+                                                  const char* name,
+                                                  void* user_data) {
+  BluetoothContext* handler = reinterpret_cast<BluetoothContext*>(user_data);
+
+  if (handler->manager_proxy_) {
+    g_object_unref(handler->manager_proxy_);
+    handler->manager_proxy_ = 0;
+  }
+
+  if (handler->adapter_proxy_) {
+    g_object_unref(handler->adapter_proxy_);
+    handler->adapter_proxy_ = 0;
+  }
 }
 
 void BluetoothContext::OnGotDefaultAdapterPath(GObject*, GAsyncResult* res) {
@@ -487,6 +567,8 @@ BluetoothContext::~BluetoothContext() {
   for (it = known_devices_.begin(); it != known_devices_.end(); ++it)
     g_object_unref(it->second);
 
+  g_bus_unwatch_name(name_watch_id_);
+
 #if defined(TIZEN_MOBILE)
     bt_deinitialize();
 #endif
@@ -504,15 +586,11 @@ void BluetoothContext::PlatformInitialize() {
 
   all_pending_ = new_cancellable();
 
-  g_dbus_proxy_new_for_bus(G_BUS_TYPE_SYSTEM,
-      G_DBUS_PROXY_FLAGS_NONE,
-      NULL, /* GDBusInterfaceInfo */
-      "org.bluez",
-      "/",
-      "org.bluez.Manager",
-      all_pending_, /* GCancellable */
-      OnManagerCreatedThunk,
-      CancellableWrap(all_pending_, this));
+  name_watch_id_ = g_bus_watch_name(G_BUS_TYPE_SYSTEM, "org.bluez",
+                                    G_BUS_NAME_WATCHER_FLAGS_NONE,
+                                    OnBluetoothServiceAppeared,
+                                    OnBluetoothServiceVanished,
+                                    this, NULL);
 }
 
 void BluetoothContext::HandleGetDefaultAdapter(const picojson::value& msg) {
