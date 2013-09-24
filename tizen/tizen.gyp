@@ -9,8 +9,10 @@
       'sources': [
         'tizen.h',
         'tizen_api.js',
-        'tizen_context.cc',
-        'tizen_context.h',
+        'tizen_extension.cc',
+        'tizen_extension.h',
+        '../common/extension.cc',
+        '../common/extension.h',
       ],
     },
   ],
