@@ -166,29 +166,14 @@ void BluetoothContext::OnSignal(GDBusProxy* proxy, gchar* sender, gchar* signal,
 
       g_variant_iter_free(iter);
     } else {
+      handler->adapter_info_[name] = g_variant_print(value, false);
+
       picojson::value::object property_updated;
       property_updated["cmd"] = picojson::value("AdapterUpdated");
       property_updated[name] = picojson::value(handler->adapter_info_[name]);
       handler->PostMessage(picojson::value(property_updated));
-
-      // If in our callback ids map we have a reply_id related to the property
-      // being updated now, then we must also reply to the PostMessage call.
-      // This way we enforce that our JavaScript context calls the onsuccess
-      // return callback only after the property has actually been modified.
-      std::map<std::string, std::string>::iterator it =
-          handler->callbacks_map_.find(name);
-
-      if (it != handler->callbacks_map_.end()) {
-        picojson::value::object property_changed;
-        property_changed["cmd"] = picojson::value("");
-        property_changed["reply_id"] = picojson::value(it->second);
-        property_changed["error"] = picojson::value(static_cast<double>(0));
-        handler->PostMessage(picojson::value(property_changed));
-        handler->callbacks_map_.erase(it);
-      }
-
-      g_variant_unref(value);
     }
+    g_variant_unref(value);
   }
 }
 
@@ -335,26 +320,22 @@ void BluetoothContext::OnAdapterPropertySet(std::string property, GAsyncResult* 
   GError* error = 0;
   GVariant* result = g_dbus_proxy_call_finish(adapter_proxy_, res, &error);
 
-  // We should only reply to the PostMessage here if an error happened when
-  // changing the property. For replying to the successful property change
-  // we wait until BluetoothContext::OnSignal receives the related PropertyChange
-  // signal, so we avoid that our JavaScript context calls the onsuccess return
-  // callback before the property was actually updated on the adapter.
+  picojson::value::object o;
+  o["cmd"] = picojson::value("");
+  o["reply_id"] = picojson::value(callbacks_map_[property]);
+
   if (!result) {
     g_printerr("\n\nError Got DefaultAdapter Property SET: %s\n", error->message);
     g_error_free(error);
-    picojson::value::object o;
-    o["cmd"] = picojson::value("");
-    o["reply_id"] = picojson::value(callbacks_map_[property]);
-
     // No matter the error info here, BlueZ4's documentation says the only
     // error that can be raised here is org.bluez.Error.InvalidArguments.
     o["error"] = picojson::value(static_cast<double>(1));
-    PostMessage(picojson::value(o));
-
-    callbacks_map_.erase(property);
-    return;
+  } else {
+    o["error"] = picojson::value(static_cast<double>(0));
   }
+
+  PostMessage(picojson::value(o));
+  callbacks_map_.erase(property);
 
   g_variant_unref(result);
 }
