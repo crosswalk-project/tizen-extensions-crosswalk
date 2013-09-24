@@ -28,6 +28,8 @@ class TimeContext {
   const picojson::value::object
      HandleGetTimeZoneRawOffset(const picojson::value& msg);
   const picojson::value::object
+     HandleGetTimeZoneAbbreviation(const picojson::value& msg);
+  const picojson::value::object
      HandleIsDST(const picojson::value& msg);
   const picojson::value::object
      HandleGetDSTTransition(const picojson::value& msg);

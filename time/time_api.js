@@ -357,11 +357,12 @@ tizen.TZDate = (function() {
         return dateAsString + ' ' + timeAsString;
       },
       getTimezoneAbbreviation: function() {
-        var minutesToUTC = (new Date()).getTimezoneOffset();
-        var hoursToUTC = - (minutesToUTC / 60);
-        if (hoursToUTC < 0)
-          return 'GMT' + hoursToUTC;
-        return 'GMT+' + hoursToUTC;
+        var result = _sendSyncMessage('GetTimeZoneAbbreviation', timezone,
+                                      date_.getTime());
+
+        if (result.error)
+          return '';
+        return result.value;
       },
       secondsFromUTC: function() {
         return date_.getTimezoneOffset() * 60;

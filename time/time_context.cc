@@ -15,6 +15,7 @@
 #include "unicode/calendar.h"
 #include "unicode/vtzone.h"
 #include "unicode/tztrans.h"
+#include "unicode/smpdtfmt.h"
 
 DEFINE_XWALK_EXTENSION(TimeContext)
 
@@ -43,6 +44,8 @@ void TimeContext::HandleSyncMessage(const char* message) {
     o = HandleGetLocalTimeZone(v);
   else if (cmd == "GetTimeZoneRawOffset")
     o = HandleGetTimeZoneRawOffset(v);
+  else if (cmd == "GetTimeZoneAbbreviation")
+    o = HandleGetTimeZoneAbbreviation(v);
   else if (cmd == "IsDST")
     o = HandleIsDST(v);
   else if (cmd == "GetDSTTransition")
@@ -80,6 +83,46 @@ const picojson::value::object TimeContext::HandleGetTimeZoneRawOffset(
   offset << TimeZone::createTimeZone(*id)->getRawOffset();
 
   o["value"] = picojson::value(offset.str());
+
+  return o;
+}
+
+const picojson::value::object TimeContext::HandleGetTimeZoneAbbreviation(
+  const picojson::value& msg) {
+  picojson::value::object o;
+
+  std::auto_ptr<UnicodeString> id(
+    new UnicodeString(msg.get("timezone").to_str().c_str()));
+  UDate dateInMs = strtod(msg.get("value").to_str().c_str(), NULL);
+
+  if (errno == ERANGE)
+    return o;
+
+  UErrorCode ec = U_ZERO_ERROR;
+  std::auto_ptr<Calendar> cal(
+    Calendar::createInstance(TimeZone::createTimeZone(*id), ec));
+  if (U_FAILURE(ec))
+    return o;
+
+  cal->setTime(dateInMs, ec);
+  if (U_FAILURE(ec))
+    return o;
+
+  std::auto_ptr<DateFormat> fmt(
+    new SimpleDateFormat(UnicodeString("z"), Locale::getEnglish(), ec));
+  if (U_FAILURE(ec))
+    return o;
+
+  UnicodeString uAbbreviation;
+  fmt->setCalendar(*cal);
+  fmt->format(cal->getTime(ec), uAbbreviation);
+  if (U_FAILURE(ec))
+    return o;
+
+  std::string abbreviation = "";
+  uAbbreviation.toUTF8String(abbreviation);
+
+  o["value"] = picojson::value(abbreviation);
 
   return o;
 }
