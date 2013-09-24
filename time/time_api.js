@@ -7,11 +7,12 @@ exports.getCurrentDateTime = function() {
 };
 
 exports.getLocalTimezone = function() {
-  var minutesToUTC = (new Date()).getTimezoneOffset();
-  var hoursToUTC = - (minutesToUTC / 60);
-  if (hoursToUTC < 0)
-    return 'GMT' + hoursToUTC;
-  return 'GMT+' + hoursToUTC;
+  var msg = {
+    'cmd': 'GetLocalTimeZone'
+  };
+  var result = JSON.parse(extension.internal.sendSyncMessage(JSON.stringify(msg)));
+
+  return result.value;
 };
 
 exports.getAvailableTimezones = function() {
@@ -72,7 +73,7 @@ tizen.TimeDuration = function(length, unit) {
     get: function() {
       return unit; },
     set: function(NewValue) {
-      if (NewValue in TimeDurationUnit)
+      if (TimeDurationUnit.indexOf(NewValue) >= 0)
         unit = NewValue; }});
 
   if (TimeDurationUnit.indexOf(this.unit) == -1)
@@ -160,10 +161,24 @@ tizen.TZDate = (function() {
     else
       date_ = new Date(year, month, day, hours, minutes, seconds, milliseconds);
 
+    var getTimezoneRawOffset = function(timezone) {
+      var msg = {
+        'cmd': 'GetTimeZoneRawOffset',
+        'value': timezone
+      };
+      var result = JSON.parse(extension.internal.sendSyncMessage(JSON.stringify(msg)));
+
+      return result.value;
+    };
+
     var toTimezone = function(timezone) {
-      return new TZDate(date_.getFullYear(), date_.getMonth(), date_.getDate(),
-                        date_.getHours(), date_.getMinutes(), date_.getSeconds(),
-                        date_.getMilliseconds(), timezone);
+      if (timezone_ == timezone)
+        return this;
+      var d = new TZDate(date_.getFullYear(), date_.getMonth(), date_.getDate(),
+                         date_.getHours(), date_.getMinutes(), date_.getSeconds(),
+                         date_.getMilliseconds(), timezone);
+      return d.addDuration(new tizen.TimeDuration((getTimezoneRawOffset(timezone) * 1) +
+                                                  (getTimezoneRawOffset(timezone_) * -1)));
     };
 
     return {
@@ -332,7 +347,7 @@ tizen.TZDate = (function() {
         function pad2(num) {
           return (100 + num).toString().substring(1);
         };
-        var day = pad2(date_.getDay());
+        var day = pad2(date_.getDate());
         var year = date_.getFullYear();
         var hour = pad2(date_.getHours());
         var minute = pad2(date_.getMinutes());
