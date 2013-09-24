@@ -45,11 +45,12 @@ function _throwProperTizenException(e) {
     throw new tizen.WebAPIException(tizen.WebAPIException.UNKNOWN_ERR);
 }
 
-function _sendSyncMessage(cmd, timezone, value) {
+function _sendSyncMessage(cmd, timezone, value, trans) {
   var msg = {
     'cmd': cmd,
     'timezone': timezone || '',
-    'value': value || ''
+    'value': value || '',
+    'trans': trans || ''
   };
   return JSON.parse(extension.internal.sendSyncMessage(JSON.stringify(msg)));
 }
@@ -366,13 +367,27 @@ tizen.TZDate = (function() {
         return date_.getTimezoneOffset() * 60;
       },
       isDST: function() {
-        return false;
+        var result = _sendSyncMessage('IsDST', timezone, date_.getTime());
+
+        if (result.error)
+          return false;
+        return result.value;
       },
       getPreviousDSTTransition: function() {
-        return void 0;
+        var result = _sendSyncMessage('GetDSTTransition', timezone,
+                                      date_.getTime(), 'NEXT_TRANSITION');
+
+        if (result.error || result.value == 0)
+          return undefined;
+        return new TZDate(new Date(result.value), timezone_);
       },
       getNextDSTTransition: function() {
-        return void 0;
+        var result = _sendSyncMessage('GetDSTTransition', timezone,
+                                      date_.getTime(), 'PREV_TRANSITION');
+
+        if (result.error || result.value == 0)
+          return undefined;
+        return new TZDate(new Date(result.value), timezone_);
       }
     };
   };

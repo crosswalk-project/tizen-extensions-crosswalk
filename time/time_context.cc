@@ -5,12 +5,16 @@
 #include <sstream>
 #include <string>
 #include <memory>
+#include <cerrno>
 
 #include "time/time_context.h"
 #include "common/picojson.h"
 
 #include "unicode/ustring.h"
 #include "unicode/timezone.h"
+#include "unicode/calendar.h"
+#include "unicode/vtzone.h"
+#include "unicode/tztrans.h"
 
 DEFINE_XWALK_EXTENSION(TimeContext)
 
@@ -39,9 +43,15 @@ void TimeContext::HandleSyncMessage(const char* message) {
     o = HandleGetLocalTimeZone(v);
   else if (cmd == "GetTimeZoneRawOffset")
     o = HandleGetTimeZoneRawOffset(v);
+  else if (cmd == "IsDST")
+    o = HandleIsDST(v);
+  else if (cmd == "GetDSTTransition")
+    o = HandleGetDSTTransition(v);
 
-  if (!o.empty())
-    SetSyncReply(picojson::value(o));
+  if (o.empty())
+    o["error"] = picojson::value(true);
+
+  SetSyncReply(picojson::value(o));
 }
 
 const picojson::value::object TimeContext::HandleGetLocalTimeZone(
@@ -70,6 +80,59 @@ const picojson::value::object TimeContext::HandleGetTimeZoneRawOffset(
   offset << TimeZone::createTimeZone(*id)->getRawOffset();
 
   o["value"] = picojson::value(offset.str());
+
+  return o;
+}
+
+const picojson::value::object TimeContext::HandleIsDST(
+  const picojson::value& msg) {
+  picojson::value::object o;
+
+  std::auto_ptr<UnicodeString> id(
+    new UnicodeString(msg.get("timezone").to_str().c_str()));
+  UDate dateInMs = strtod(msg.get("value").to_str().c_str(), NULL);
+
+  if (errno == ERANGE)
+    return o;
+
+  UErrorCode ec = U_ZERO_ERROR;
+  std::auto_ptr<Calendar> cal(
+    Calendar::createInstance(TimeZone::createTimeZone(*id), ec));
+  if (U_FAILURE(ec))
+    return o;
+
+  cal->setTime(dateInMs, ec);
+  if (U_FAILURE(ec))
+    return o;
+
+  o["value"] = picojson::value(static_cast<bool>(cal->inDaylightTime(ec)));
+
+  return o;
+}
+
+const picojson::value::object TimeContext::HandleGetDSTTransition(
+  const picojson::value& msg) {
+  picojson::value::object o;
+
+  std::auto_ptr<UnicodeString> id(
+    new UnicodeString(msg.get("timezone").to_str().c_str()));
+  std::string trans = msg.get("trans").to_str();
+  UDate dateInMs = strtod(msg.get("value").to_str().c_str(), NULL);
+
+  if (errno == ERANGE)
+    return o;
+
+  std::auto_ptr<VTimeZone> vtimezone(VTimeZone::createVTimeZoneByID(*id));
+
+  if (!vtimezone->useDaylightTime())
+    return o;
+
+  TimeZoneTransition tzTransition;
+  if (trans.compare("NEXT_TRANSITION") &&
+      vtimezone->getNextTransition(dateInMs, FALSE, tzTransition))
+    o["value"] = picojson::value(tzTransition.getTime());
+  else if (vtimezone->getPreviousTransition(dateInMs, FALSE, tzTransition))
+    o["value"] = picojson::value(tzTransition.getTime());
 
   return o;
 }
