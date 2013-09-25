@@ -1,0 +1,86 @@
+<h1>Hello Device Capabilities API!</h1>
+
+<body>
+<textarea cols=100 rows=20 id="output"></textarea>
+<br>
+<button id="getCPUInfo" style="height:60px; width:100px">GetCpuInfo</button>
+<button id="getStorageInfo" style="height:60px; width:100px">GetStorageInfo</button>
+<br>
+<button id="getMemoryInfo" style="height:60px; width:100px">GetMemoryInfo</button>
+<button id="getDisplayInfo" style="height:60px; width:100px">GetDisplayInfo</button>
+</body>
+
+<script>
+
+var output = document.getElementById("output");
+
+function handle(button, callback) {
+  var b = document.getElementById(button);
+  b.addEventListener("click", callback);
+}
+
+function onErrorCallback(error) {
+  output.value += '\n An error occurred: ' + error.message + '\n';
+  output.scrollTop = output.scrollHeight;
+}
+
+handle("getCPUInfo", function() {
+  navigator.system.getCPUInfo(
+    function(cpu) {
+      output.value += '\n Device Capabilities CPU returned.';
+      output.value += '\n\t numOfProcessors : ' + cpu.numOfProcessors;
+      output.value += '\n\t archName : ' + cpu.archName;
+      output.value += '\n\t load : ' + cpu.load;
+      output.scrollTop = output.scrollHeight;
+    });
+});
+
+handle("getStorageInfo", function() {
+  navigator.system.addEventListener(
+    "onattach",
+    function(storage) {
+      output.value += '\n A new storage attached';
+      output.value += '\n\t\t id: ' + storage.id;
+      output.value += '\n\t\t name: ' + storage.name;
+      output.value += '\n\t\t type: ' + storage.type;
+      output.value += '\n\t\t capacity: ' + storage.capacity + ' bytes';
+      output.scrollTop = output.scrollHeight;
+    });
+
+  navigator.system.addEventListener(
+    "ondetach",
+    function(storage) {
+      output.value += '\n A storage was removed';
+      output.value += '\n\t\t id: ' + storage.id;
+      output.value += '\n\t\t name: ' + storage.name;
+      output.value += '\n\t\t type: ' + storage.type;
+      output.value += '\n\t\t capacity: ' + storage.capacity + ' bytes';
+      output.scrollTop = output.scrollHeight;
+    });
+
+  navigator.system.getStorageInfo(
+    function(storage) {
+      output.value += '\n Device Capabilities STORAGE returned.';
+      output.value += '\n\t There are ' + storage.storages.length + ' storage units.\n';
+      for (var i = 0; i < storage.storages.length; i++) {
+        output.value += '\n\t storage[' + i + ']:';
+        output.value += '\n\t\t id: ' + storage.storages[i].id;
+        output.value += '\n\t\t name: ' + storage.storages[i].name;
+        output.value += '\n\t\t type: ' + storage.storages[i].type;
+        output.value += '\n\t\t capacity: ' + storage.storages[i].capacity + ' bytes';
+        output.scrollTop = output.scrollHeight;
+      }
+    });
+});
+
+handle("getMemoryInfo", function() {
+  navigator.system.getMemoryInfo(
+    function(memeory) {
+      output.value += '\n Device Capabilities Memory returned.';
+      output.value += '\n\t capacity : ' + memeory.capacity;
+      output.value += '\n\t availableCapacity : ' + memeory.availableCapacity;
+      output.scrollTop = output.scrollHeight;
+    });
+});
+
+</script>
