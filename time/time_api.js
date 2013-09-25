@@ -10,10 +10,13 @@ exports.getLocalTimezone = function() {
   return _sendSyncMessage('GetLocalTimeZone').value;
 };
 
+var _availableTimezonesCache = [];
+
 exports.getAvailableTimezones = function() {
-  return [
-    tizen.time.getLocalTimezone()
-  ];
+  if (_availableTimezonesCache.length)
+    return _availableTimezonesCache;
+  _availableTimezonesCache = _sendSyncMessage('GetAvailableTimeZones').value;
+  return _availableTimezonesCache;
 };
 
 exports.getDateFormat = function(shortformat) {

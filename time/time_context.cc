@@ -42,6 +42,8 @@ void TimeContext::HandleSyncMessage(const char* message) {
   picojson::value::object o;
   if (cmd == "GetLocalTimeZone")
     o = HandleGetLocalTimeZone(v);
+  else if (cmd == "GetAvailableTimeZones")
+    o = HandleGetAvailableTimeZones(v);
   else if (cmd == "GetTimeZoneRawOffset")
     o = HandleGetTimeZoneRawOffset(v);
   else if (cmd == "GetTimeZoneAbbreviation")
@@ -68,6 +70,34 @@ const picojson::value::object TimeContext::HandleGetLocalTimeZone(
   local_timezone.toUTF8String(localtz);
 
   o["value"] = picojson::value(localtz);
+
+  return o;
+}
+
+const picojson::value::object TimeContext::HandleGetAvailableTimeZones(
+  const picojson::value& msg) {
+  picojson::value::object o;
+
+  UErrorCode ec = U_ZERO_ERROR;
+  std::auto_ptr<StringEnumeration> timezones(TimeZone::createEnumeration());
+  int32_t count = timezones->count(ec);
+
+  if (U_FAILURE(ec))
+    return o;
+
+  picojson::value::array a;
+  const char *timezone = NULL;
+  int i = 0;
+  do {
+    int32_t resultLen = 0;
+    timezone = timezones->next(&resultLen, ec);
+    if (U_SUCCESS(ec)) {
+      a.push_back(picojson::value(timezone));
+      i++;
+    }
+  }while(timezone && i < count);
+
+  o["value"] = picojson::value(a);
 
   return o;
 }
