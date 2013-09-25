@@ -7,12 +7,7 @@ exports.getCurrentDateTime = function() {
 };
 
 exports.getLocalTimezone = function() {
-  var msg = {
-    'cmd': 'GetLocalTimeZone'
-  };
-  var result = JSON.parse(extension.internal.sendSyncMessage(JSON.stringify(msg)));
-
-  return result.value;
+  return _sendSyncMessage('GetLocalTimeZone').value;
 };
 
 exports.getAvailableTimezones = function() {
@@ -48,6 +43,15 @@ function _throwProperTizenException(e) {
     throw new tizen.WebAPIException(tizen.WebAPIException.INVALID_VALUES_ERR);
   else
     throw new tizen.WebAPIException(tizen.WebAPIException.UNKNOWN_ERR);
+}
+
+function _sendSyncMessage(cmd, timezone, value) {
+  var msg = {
+    'cmd': cmd,
+    'timezone': timezone || '',
+    'value': value || ''
+  };
+  return JSON.parse(extension.internal.sendSyncMessage(JSON.stringify(msg)));
 }
 
 var TimeDurationUnit = [
@@ -162,13 +166,7 @@ tizen.TZDate = (function() {
       date_ = new Date(year, month, day, hours, minutes, seconds, milliseconds);
 
     var getTimezoneRawOffset = function(timezone) {
-      var msg = {
-        'cmd': 'GetTimeZoneRawOffset',
-        'value': timezone
-      };
-      var result = JSON.parse(extension.internal.sendSyncMessage(JSON.stringify(msg)));
-
-      return result.value;
+      return _sendSyncMessage('GetTimeZoneRawOffset', timezone).value;
     };
 
     var toTimezone = function(timezone) {

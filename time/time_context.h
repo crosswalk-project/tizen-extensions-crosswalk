@@ -23,8 +23,10 @@ class TimeContext {
  private:
   void SetSyncReply(picojson::value v);
 
-  void HandleGetLocalTimeZone(const picojson::value& msg);
-  void HandleGetTimeZoneRawOffset(const picojson::value& msg);
+  const picojson::value::object
+     HandleGetLocalTimeZone(const picojson::value& msg);
+  const picojson::value::object
+     HandleGetTimeZoneRawOffset(const picojson::value& msg);
 
   ContextAPI* api_;
 };

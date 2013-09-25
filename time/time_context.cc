@@ -4,6 +4,7 @@
 
 #include <sstream>
 #include <string>
+#include <memory>
 
 #include "time/time_context.h"
 #include "common/picojson.h"
@@ -33,13 +34,18 @@ void TimeContext::HandleSyncMessage(const char* message) {
   }
 
   std::string cmd = v.get("cmd").to_str();
+  picojson::value::object o;
   if (cmd == "GetLocalTimeZone")
-    HandleGetLocalTimeZone(v);
+    o = HandleGetLocalTimeZone(v);
   else if (cmd == "GetTimeZoneRawOffset")
-    HandleGetTimeZoneRawOffset(v);
+    o = HandleGetTimeZoneRawOffset(v);
+
+  if (!o.empty())
+    SetSyncReply(picojson::value(o));
 }
 
-void TimeContext::HandleGetLocalTimeZone(const picojson::value& msg) {
+const picojson::value::object TimeContext::HandleGetLocalTimeZone(
+  const picojson::value& msg) {
   picojson::value::object o;
 
   UnicodeString local_timezone;
@@ -50,20 +56,22 @@ void TimeContext::HandleGetLocalTimeZone(const picojson::value& msg) {
 
   o["value"] = picojson::value(localtz);
 
-  SetSyncReply(picojson::value(o));
+  return o;
 }
 
-void TimeContext::HandleGetTimeZoneRawOffset(const picojson::value& msg) {
+const picojson::value::object TimeContext::HandleGetTimeZoneRawOffset(
+  const picojson::value& msg) {
   picojson::value::object o;
 
-  UnicodeString* id = new UnicodeString(msg.get("value").to_str().c_str());
+  std::auto_ptr<UnicodeString> id(
+    new UnicodeString(msg.get("timezone").to_str().c_str()));
 
   std::stringstream offset;
   offset << TimeZone::createTimeZone(*id)->getRawOffset();
 
   o["value"] = picojson::value(offset.str());
 
-  SetSyncReply(picojson::value(o));
+  return o;
 }
 
 void TimeContext::SetSyncReply(picojson::value v) {
