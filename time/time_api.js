@@ -411,7 +411,7 @@ tizen.TZDate.prototype.toString = function() {
 };
 
 tizen.TZDate.prototype.getTimezoneAbbreviation = function() {
-  var result = _sendSyncMessage('GetTimeZoneAbbreviation', this.timezone,
+  var result = _sendSyncMessage('GetTimeZoneAbbreviation', this.timezone_,
                                 this.date_.getTime());
 
   if (result.error)
@@ -424,7 +424,7 @@ tizen.TZDate.prototype.secondsFromUTC = function() {
 };
 
 tizen.TZDate.prototype.isDST = function() {
-  var result = _sendSyncMessage('IsDST', this.timezone, this.date_.getTime());
+  var result = _sendSyncMessage('IsDST', this.timezone_, this.date_.getTime());
 
   if (result.error)
     return false;
@@ -432,7 +432,7 @@ tizen.TZDate.prototype.isDST = function() {
 };
 
 tizen.TZDate.prototype.getPreviousDSTTransition = function() {
-  var result = _sendSyncMessage('GetDSTTransition', this.timezone,
+  var result = _sendSyncMessage('GetDSTTransition', this.timezone_,
                                 this.date_.getTime(), 'NEXT_TRANSITION');
 
   if (result.error || result.value == 0)
@@ -441,7 +441,7 @@ tizen.TZDate.prototype.getPreviousDSTTransition = function() {
 };
 
 tizen.TZDate.prototype.getNextDSTTransition = function() {
-  var result = _sendSyncMessage('GetDSTTransition', this.timezone,
+  var result = _sendSyncMessage('GetDSTTransition', this.timezone_,
                                 this.date_.getTime(), 'PREV_TRANSITION');
 
   if (result.error || result.value == 0)
