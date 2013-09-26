@@ -65,7 +65,10 @@ void NotificationInstanceDesktop::HandlePost(const picojson::value& msg) {
 }
 
 void NotificationInstanceDesktop::HandleRemove(const picojson::value& msg) {
-  int id = msg.get("id").get<double>();
+  int id;
+  if (GetIntFromJSONValue(msg.get("id"), &id))
+    return;
+
   NotificationsMap::iterator it = notifications_.find(id);
   if (it == notifications_.end())
     return;
@@ -73,7 +76,12 @@ void NotificationInstanceDesktop::HandleRemove(const picojson::value& msg) {
 }
 
 void NotificationInstanceDesktop::HandleUpdate(const picojson::value& msg) {
-  int id = msg.get("id").get<double>();
+  int id;
+  if (!GetIntFromJSONValue(msg.get("id"), &id)) {
+    SendSyncReply(kSerializedNull);
+    return;
+  }
+
   NotificationsMap::iterator it = notifications_.find(id);
   if (it == notifications_.end()) {
     SendSyncReply(kSerializedNull);

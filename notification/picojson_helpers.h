@@ -23,4 +23,11 @@ picojson::value JSONValueFromInt(int value) {
   return picojson::value(static_cast<double>(value));
 }
 
+bool GetIntFromJSONValue(const picojson::value& v, int* result) {
+  if (!result || !v.is<double>())
+    return false;
+  *result = v.get<double>();
+  return true;
+}
+
 #endif  // NOTIFICATION_PICOJSON_HELPERS_H_

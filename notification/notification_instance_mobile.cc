@@ -85,7 +85,9 @@ void NotificationInstanceMobile::HandlePost(const picojson::value& msg) {
 }
 
 void NotificationInstanceMobile::HandleRemove(const picojson::value& msg) {
-  int id = msg.get("id").get<double>();
+  int id;
+  if (GetIntFromJSONValue(msg.get("id"), &id))
+    return;
   if (!manager_->RemoveNotification(id)) {
     std::cerr << "tizen.notification error: "
               << "couldn't remove notification with id '" << id << "'\n";
@@ -93,7 +95,12 @@ void NotificationInstanceMobile::HandleRemove(const picojson::value& msg) {
 }
 
 void NotificationInstanceMobile::HandleUpdate(const picojson::value& msg) {
-  int id = msg.get("id").get<double>();
+  int id;
+  if (!GetIntFromJSONValue(msg.get("id"), &id)) {
+    SendSyncReply(kSerializedNull);
+    return;
+  }
+
   notification_h notification = manager_->GetNotification(id);
   if (!notification) {
     SendSyncReply(kSerializedNull);
