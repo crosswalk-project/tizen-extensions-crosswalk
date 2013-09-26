@@ -442,18 +442,33 @@ BluetoothAdapter.prototype.setPowered = function(state, successCallback, errorCa
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
   }
 
-  // FIXME: Until there is a proper solution for the problem that the adapter disappears
-  // from the USB bus when it is powered down, we can only work around this issue, this
-  // is the simplest one.
-  if (state && defaultAdapter.powered && successCallback) {
+  if ((state === defaultAdapter.powered) && successCallback) {
     successCallback();
     return;
   }
 
-  adapter.isReady = state;
-  _addConstProperty(defaultAdapter, 'powered', state);
+  var msg = {
+    'cmd': 'SetAdapterProperty',
+    'property': 'Powered',
+    'value': state
+  };
 
-  successCallback();
+  postMessage(msg, function(result) {
+    if (result.error != 0) {
+      if (errorCallback) {
+        var error = new tizen.WebAPIError(tizen.WebAPIException.INVALID_VALUES_ERR);
+        errorCallback(error);
+        return;
+      }
+
+      throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+    }
+
+    _addConstProperty(defaultAdapter, 'powered', state);
+
+    if (successCallback)
+      successCallback();
+  });
 };
 
 BluetoothAdapter.prototype.setVisible = function(mode, successCallback, errorCallback, timeout) {
