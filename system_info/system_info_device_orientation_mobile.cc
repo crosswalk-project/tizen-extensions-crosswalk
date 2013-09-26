@@ -23,7 +23,7 @@ void SysInfoDeviceOrientation::SetStatus() {
 
   int r = sf_check_rotation(&event);
   if (r < 0) {
-    status_ = UNKNOWN;
+    status_ = PORTRAIT_PRIMARY;
     return;
   }
 
@@ -78,14 +78,14 @@ std::string SysInfoDeviceOrientation::ToOrientationStatusString(
       ret = "LANDSCAPE_SECONDARY";
       break;
     default:
-      ret = "UNKNOWN";
+      ret = "PORTRAIT_PRIMARY";
   }
   return ret;
 }
 
 enum SystemInfoDeviceOrientationStatus
 SysInfoDeviceOrientation::EventToStatus(int event_data) {
-  enum SystemInfoDeviceOrientationStatus m = UNKNOWN;
+  enum SystemInfoDeviceOrientationStatus m = PORTRAIT_PRIMARY;
   switch (event_data) {
     case(ROTATION_EVENT_0):
       m = PORTRAIT_PRIMARY;
@@ -100,7 +100,7 @@ SysInfoDeviceOrientation::EventToStatus(int event_data) {
       m = LANDSCAPE_PRIMARY;
       break;
     default:
-      m = UNKNOWN;
+      m = PORTRAIT_PRIMARY;
   }
 
   return m;
