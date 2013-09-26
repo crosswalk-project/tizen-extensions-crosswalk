@@ -172,11 +172,16 @@ tizen.TZDate = (function() {
     else
       date_ = new Date(year, month, day, hours, minutes, seconds, milliseconds);
 
+    if (tizen.time.getAvailableTimezones().indexOf(timezone_) < 0)
+      throw new tizen.WebAPIException(tizen.WebAPIException.INVALID_VALUES_ERR);
+
     var getTimezoneRawOffset = function(timezone) {
       return _sendSyncMessage('GetTimeZoneRawOffset', timezone).value;
     };
 
     var toTimezone = function(timezone) {
+      if (!timezone)
+        throw new tizen.WebAPIException(tizen.WebAPIException.INVALID_VALUES_ERR);
       if (timezone_ == timezone)
         return this;
       var d = new TZDate(new Date(date_.getTime()), timezone);
