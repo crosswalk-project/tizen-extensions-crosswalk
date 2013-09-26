@@ -315,8 +315,6 @@ tizen.TZDate.prototype.getTimezone = function() {
 tizen.TZDate.prototype.toTimezone = function(timezone) {
   if (!timezone)
     throw new tizen.WebAPIException(tizen.WebAPIException.INVALID_VALUES_ERR);
-  if (this.timezone_ == timezone)
-    return this;
   var d = new tizen.TZDate(new Date(this.date_.getTime()), timezone);
   return d.addDuration(new tizen.TimeDuration((getTimezoneRawOffset(timezone) * 1) +
                                               (getTimezoneRawOffset(this.timezone_) * -1)));
