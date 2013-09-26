@@ -21,13 +21,12 @@ enum SystemInfoDeviceOrientationStatus {
   PORTRAIT_SECONDARY,
   LANDSCAPE_PRIMARY,
   LANDSCAPE_SECONDARY,
-  UNKNOWN
 };
 
 class SysInfoDeviceOrientation {
  public:
   explicit SysInfoDeviceOrientation(ContextAPI* api)
-    :status_(UNKNOWN),
+    :status_(PORTRAIT_PRIMARY),
      sensorHandle_(0),
      isRegister_(false) {
     api_ = api;
