@@ -4,8 +4,6 @@
 
 #include "notification/mobile/notification_manager.h"
 
-#include <algorithm>
-
 NotificationManager::NotificationManager() {
   notification_register_detailed_changed_cb(
       OnDetailedChanged, reinterpret_cast<void*>(this));
@@ -13,39 +11,49 @@ NotificationManager::NotificationManager() {
 
 NotificationManager::~NotificationManager() {}
 
-notification_h NotificationManager::CreateNotification() {
-  return notification_new(NOTIFICATION_TYPE_NOTI,
+notification_h NotificationManager::CreateNotification(
+    notification_type_e type) {
+  return notification_new(type,
                           NOTIFICATION_GROUP_ID_NONE,
                           NOTIFICATION_PRIV_ID_NONE);
 }
 
-bool NotificationManager::PostNotification(const std::string& id,
-                                           notification_h notification,
-                                           NotificationClient* client) {
+int NotificationManager::PostNotification(notification_h notification,
+                                          NotificationClient* client) {
   int priv_id;
   notification_error_e err = notification_insert(notification, &priv_id);
   if (err != NOTIFICATION_ERROR_NONE)
-    return false;
+    return 0;
 
   NotificationEntry entry;
-  entry.priv_id = priv_id;
   entry.handle = notification;
   entry.client = client;
 
-  id_map_[id] = entry;
-  return true;
+  id_map_[priv_id] = entry;
+  return priv_id;
 }
 
-bool NotificationManager::RemoveNotification(const std::string& id) {
+bool NotificationManager::RemoveNotification(int id) {
   IDMap::iterator it = id_map_.find(id);
   if (it == id_map_.end())
     return false;
 
   // We don't erase the entry from the map here, but when the OnDetailedChanged
   // is called later.
-  const NotificationEntry& entry = it->second;
   notification_error_e err = notification_delete_by_priv_id(
-      NULL, NOTIFICATION_TYPE_NOTI, entry.priv_id);
+      NULL, NOTIFICATION_TYPE_NOTI, id);
+  return (err == NOTIFICATION_ERROR_NONE);
+}
+
+notification_h NotificationManager::GetNotification(int id) {
+  IDMap::iterator it = id_map_.find(id);
+  if (it == id_map_.end())
+    return NULL;
+  return it->second.handle;
+}
+
+bool NotificationManager::UpdateNotification(notification_h notification) {
+  notification_error_e err = notification_update(notification);
   return (err == NOTIFICATION_ERROR_NONE);
 }
 
@@ -61,19 +69,6 @@ void NotificationManager::DetachClient(NotificationClient* client) {
   }
 }
 
-namespace {
-
-template <class T>
-struct MatchPrivID {
-  explicit MatchPrivID(int priv_id) : priv_id(priv_id) {}
-  bool operator()(const typename T::value_type& value) {
-    return value.second.priv_id == priv_id;
-  }
-  int priv_id;
-};
-
-}  // namespace
-
 void NotificationManager::OnDetailedChanged(
     notification_type_e type, notification_op* op_list, int num_op) {
   // This function gets warned about every notification event for every
@@ -84,13 +79,12 @@ void NotificationManager::OnDetailedChanged(
     if (operation->type != NOTIFICATION_OP_DELETE)
       continue;
 
-    IDMap::iterator it = std::find_if(id_map_.begin(), id_map_.end(),
-                                      MatchPrivID<IDMap>(operation->priv_id));
+    IDMap::iterator it = id_map_.find(operation->priv_id);
     if (it == id_map_.end())
       continue;
 
     NotificationEntry entry = it->second;
-    entry.client->OnNotificationRemoved(it->first);
+    entry.client->OnNotificationRemoved(operation->priv_id);
     id_map_.erase(it);
     notification_free(entry.handle);
   }

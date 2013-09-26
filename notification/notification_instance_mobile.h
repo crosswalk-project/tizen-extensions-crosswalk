@@ -24,12 +24,14 @@ class NotificationInstanceMobile
  private:
   // common::Instance implementation.
   virtual void HandleMessage(const char* msg);
+  virtual void HandleSyncMessage(const char* msg);
 
   void HandlePost(const picojson::value& msg);
   void HandleRemove(const picojson::value& msg);
+  void HandleUpdate(const picojson::value& msg);
 
   // NotificationClient implementation.
-  virtual void OnNotificationRemoved(const std::string& id);
+  virtual void OnNotificationRemoved(int id);
 
   NotificationManager* manager_;
 };
