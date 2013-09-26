@@ -31,6 +31,8 @@ void FillNotificationHandle(notification_h n, const NotificationParameters& p) {
   }
 }
 
+const char kSerializedNull[] = "null";
+
 }  // namespace
 
 NotificationInstanceMobile::NotificationInstanceMobile(
@@ -75,7 +77,7 @@ void NotificationInstanceMobile::HandlePost(const picojson::value& msg) {
 
   int id = manager_->PostNotification(notification, this);
   if (!id) {
-    SendSyncReply(picojson::value().serialize().c_str());
+    SendSyncReply(kSerializedNull);
     return;
   }
 
@@ -94,7 +96,7 @@ void NotificationInstanceMobile::HandleUpdate(const picojson::value& msg) {
   int id = msg.get("id").get<double>();
   notification_h notification = manager_->GetNotification(id);
   if (!notification) {
-    SendSyncReply(picojson::value().serialize().c_str());
+    SendSyncReply(kSerializedNull);
     return;
   }
 

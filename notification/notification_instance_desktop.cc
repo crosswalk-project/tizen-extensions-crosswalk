@@ -20,6 +20,8 @@ int GetNextUniqueID() {
   return next_id++;
 }
 
+const char kSerializedNull[] = "null";
+
 }
 
 void NotificationInstanceDesktop::HandleMessage(const char* message) {
@@ -53,7 +55,7 @@ void NotificationInstanceDesktop::HandlePost(const picojson::value& msg) {
       notification, "closed", G_CALLBACK(OnNotificationClosedThunk), this);
   if (!notify_notification_show(notification, NULL)) {
     g_signal_handler_disconnect(notification, handler);
-    SendSyncReply(picojson::value().serialize().c_str());
+    SendSyncReply(kSerializedNull);
     return;
   }
 
@@ -74,7 +76,7 @@ void NotificationInstanceDesktop::HandleUpdate(const picojson::value& msg) {
   int id = msg.get("id").get<double>();
   NotificationsMap::iterator it = notifications_.find(id);
   if (it == notifications_.end()) {
-    SendSyncReply(picojson::value().serialize().c_str());
+    SendSyncReply(kSerializedNull);
     return;
   }
   NotifyNotification* notification = it->second;
