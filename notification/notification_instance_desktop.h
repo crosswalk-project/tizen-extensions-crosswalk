@@ -25,16 +25,18 @@ class NotificationInstanceDesktop : public common::Instance {
  private:
   // common::Instance implementation.
   virtual void HandleMessage(const char* msg);
+  virtual void HandleSyncMessage(const char* msg);
 
   void HandlePost(const picojson::value& msg);
   void HandleRemove(const picojson::value& msg);
+  void HandleUpdate(const picojson::value& msg);
 
-  std::string IdFromNotification(NotifyNotification* notification);
+  int IdFromNotification(NotifyNotification* notification);
   static void OnNotificationClosedThunk(NotifyNotification* notification,
                                         gpointer data);
   void OnNotificationClosed(NotifyNotification* notification);
 
-  typedef std::map<std::string, NotifyNotification*> NotificationsMap;
+  typedef std::map<int, NotifyNotification*> NotificationsMap;
   NotificationsMap notifications_;
 };
 

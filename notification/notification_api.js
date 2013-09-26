@@ -4,9 +4,34 @@
 
 var v8tools = requireNative('v8tools');
 
+var postMessage = function(msg) {
+  extension.postMessage(JSON.stringify(msg));
+};
+
+var sendSyncMessage = function(msg) {
+  return JSON.parse(extension.internal.sendSyncMessage(JSON.stringify(msg)));
+};
+
+var NOTIFICATION_PROPERTIES = [
+  'statusType',
+  'title',
+  'content',
+  'progressType',
+  'progressValue'
+];
+
+function extractNotificationProperties(notification) {
+  var result = {};
+  var i;
+  for (i in NOTIFICATION_PROPERTIES) {
+    var property = NOTIFICATION_PROPERTIES[i];
+    result[property] = notification[property];
+  }
+  return result;
+}
+
 function NotificationCenter() {
   this.postedNotifications = [];
-  this.statusNotificationNextId = 0;
 }
 
 NotificationCenter.prototype.onNotificationRemoved = function(id) {
@@ -21,35 +46,35 @@ NotificationCenter.prototype.onNotificationRemoved = function(id) {
 NotificationCenter.prototype.wasPosted = function(notification) {
   var i;
   for (i = 0; i < this.postedNotifications.length; i++) {
-    if (this.postedNotifications[i].original === notification)
+    if (this.postedNotifications[i] === notification)
       return true;
   }
   return false;
 };
 
 NotificationCenter.prototype.postNotification = function(notification) {
-  var id = (this.statusNotificationNextId++).toString();
-  v8tools.forceSetProperty(notification, 'id', id);
+  var msg = extractNotificationProperties(notification);
+  msg.cmd = 'NotificationPost';
+  var posted_id = sendSyncMessage(msg);
 
-  postMessage({
-    'cmd': 'NotificationPost',
-    'id': notification.id,
-    'title': notification.title,
-    'content': notification.content
-  });
+  if (posted_id == null)
+    return false;
+
+  v8tools.forceSetProperty(notification, 'id', posted_id.toString());
   v8tools.forceSetProperty(notification, 'postedTime', new Date);
+  this.postedNotifications.push(notification);
+  return true;
+};
 
-  var posted = copyStatusNotification(notification);
-  posted.original = notification;
-  this.postedNotifications.push(posted);
+NotificationCenter.prototype.update = function(notification) {
+  var msg = extractNotificationProperties(notification);
+  msg.cmd = 'NotificationUpdate';
+  msg.id = +notification.id;  // Pass ID as a number.
+  return sendSyncMessage(msg);
 };
 
 NotificationCenter.prototype.getAll = function() {
-  var result = [];
-  var i;
-  for (i = 0; i < this.postedNotifications.length; i++)
-    result[i] = this.postedNotifications[i].original;
-  return result;
+  return this.postedNotifications.slice();
 };
 
 NotificationCenter.prototype.get = function(notificationId) {
@@ -57,7 +82,7 @@ NotificationCenter.prototype.get = function(notificationId) {
   var i;
   for (i = 0; i < this.postedNotifications.length; i++) {
     if (this.postedNotifications[i].id == notificationId) {
-      result = this.postedNotifications[i].original;
+      result = this.postedNotifications[i];
       break;
     }
   }
@@ -69,7 +94,7 @@ NotificationCenter.prototype.remove = function(notificationId) {
   this.onNotificationRemoved(notificationId);
   postMessage({
     'cmd': 'NotificationRemove',
-    'id': notificationId
+    'id': +notificationId  // Pass ID as a number.
   });
 };
 
@@ -80,10 +105,6 @@ NotificationCenter.prototype.removeAll = function() {
 };
 
 var notificationCenter = new NotificationCenter;
-
-var postMessage = function(msg) {
-  extension.postMessage(JSON.stringify(msg));
-};
 
 extension.setMessageListener(function(msg) {
   var m = JSON.parse(msg);
@@ -148,41 +169,6 @@ tizen.StatusNotification = function(statusType, title, dict) {
   this.thumbnails = dict.thumbnails || [];
 };
 
-var copyStatusNotification = function(notification) {
-  var copy = new tizen.StatusNotification(notification.statusType, notification.title, {
-    content: notification.content,
-    iconPath: notification.iconPath,
-    soundPath: notification.soundPath,
-    vibration: notification.vibration,
-    appControl: notification.appControl,
-    appId: notification.appId,
-    progressType: notification.progressType,
-    progressValue: notification.progressValue,
-    number: notification.number,
-    subIconPath: notification.subIconPath,
-    ledColor: notification.ledColor,
-    ledOnPeriod: notification.ledOnPeriod,
-    ledOffPeriod: notification.ledOffPeriod,
-    backgroundImagePath: notification.backgroundImagePath,
-    thumbnails: notification.thumbnails
-  });
-
-  v8tools.forceSetProperty(copy, 'id', notification.id);
-  v8tools.forceSetProperty(copy, 'postedTime', notification.postedTime);
-  copy.detailInfo = [];
-  if (notification.detailInfo) {
-    var i;
-    for (i = 0; i < notification.detailInfo.length; i++) {
-      var info = notification.detailInfo[i];
-      copy.detailInfo[i] = {
-        mainText: info.mainText,
-        subText: info.subText
-      };
-    }
-  }
-  return copy;
-};
-
 exports.post = function(notification) {
   if (!(notification instanceof tizen.StatusNotification)) {
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
@@ -219,6 +205,5 @@ exports.update = function(notification) {
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
   else if (!notificationCenter.wasPosted(notification))
     throw new tizen.WebAPIException(tizen.WebAPIException.UNKNOWN_ERR);
-
-  console.log('tizen.notification.update() not implemented');
+  notificationCenter.update(notification);
 };

@@ -7,18 +7,16 @@
 
 #include <notification.h>
 #include <map>
-#include <string>
 
 class NotificationClient {
  public:
-  virtual void OnNotificationRemoved(const std::string& id) = 0;
+  virtual void OnNotificationRemoved(int id) = 0;
  protected:
   virtual ~NotificationClient() {}
 };
 
 // Uses Tizen notification library to post notifications and keep track on
-// updates made to them. Since clients can be running in different threads,
-// public functions of the manager are thread safe.
+// updates made to them.
 class NotificationManager {
  public:
   NotificationManager();
@@ -26,26 +24,28 @@ class NotificationManager {
 
   // Create a notification_h handle that should be filled using the Tizen
   // notification library functions. We control creation so we can pre-set
-  // certain parameters if necessary. This function is thread-safe.
-  notification_h CreateNotification();
+  // certain parameters if necessary.
+  notification_h CreateNotification(notification_type_e type);
 
   // Post a notification created with the function above. The passed client will
-  // be informed when the notification was destroyed. Return value is false if
-  // the notification couldn't be posted. This function is thread-safe.
+  // be informed when the notification was destroyed. Return value is 0 if the
+  // notification couldn't be posted or the id in case of success.
   //
   // Ownership of notification_h is taken by the NotificationManager.
-  bool PostNotification(const std::string& id, notification_h notification,
-                        NotificationClient* client);
+  int PostNotification(notification_h notification, NotificationClient* client);
 
   // Asks for a Notification to be removed, should be called with the identifier
   // received from PostNotification. If returns false, an error happened; if
   // true the removal was dispatched. Later the function OnNotificationRemoved()
-  // from the client associated with the id will be called. This function is
-  // thread-safe.
-  bool RemoveNotification(const std::string& id);
+  // from the client associated with the id will be called.
+  bool RemoveNotification(int id);
+
+  notification_h GetNotification(int id);
+
+  bool UpdateNotification(notification_h notification);
 
   // Called when a Client is being destroyed, so we stop watching its
-  // notifications. This function is thread-safe.
+  // notifications.
   void DetachClient(NotificationClient* client);
 
  private:
@@ -63,12 +63,11 @@ class NotificationManager {
       notification_type_e type, notification_op* op_list, int num_op);
 
   struct NotificationEntry {
-    int priv_id;
     notification_h handle;
     NotificationClient* client;
   };
 
-  typedef std::map<std::string, NotificationEntry> IDMap;
+  typedef std::map<int, NotificationEntry> IDMap;
   IDMap id_map_;
 };
 
