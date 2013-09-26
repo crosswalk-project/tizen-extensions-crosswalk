@@ -322,9 +322,13 @@ tizen.TZDate = (function() {
         }
       },
       addDuration: function(duration) {
-        var date = new TZDate(new Date(date_.getTime()), timezone_);
-        date.setMilliseconds(duration.getMilliseconds() + date.getMilliseconds());
-        return date;
+        try {
+          var date = new TZDate(new Date(date_.getTime()), timezone_);
+          date.setMilliseconds(duration.getMilliseconds() + date.getMilliseconds());
+          return date;
+        } catch (e) {
+          _throwProperTizenException(e);
+        }
       },
       toLocaleDateString: function() {
         return date_.toLocaleDateString();
