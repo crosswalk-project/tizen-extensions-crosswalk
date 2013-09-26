@@ -7,12 +7,7 @@ exports.getCurrentDateTime = function() {
 };
 
 exports.getLocalTimezone = function() {
-  var msg = {
-    'cmd': 'GetLocalTimeZone'
-  };
-  var result = JSON.parse(extension.internal.sendSyncMessage(JSON.stringify(msg)));
-
-  return result.value;
+  return _sendSyncMessage('GetLocalTimeZone').value;
 };
 
 exports.getAvailableTimezones = function() {
@@ -48,6 +43,16 @@ function _throwProperTizenException(e) {
     throw new tizen.WebAPIException(tizen.WebAPIException.INVALID_VALUES_ERR);
   else
     throw new tizen.WebAPIException(tizen.WebAPIException.UNKNOWN_ERR);
+}
+
+function _sendSyncMessage(cmd, timezone, value, trans) {
+  var msg = {
+    'cmd': cmd,
+    'timezone': timezone || '',
+    'value': value || '',
+    'trans': trans || ''
+  };
+  return JSON.parse(extension.internal.sendSyncMessage(JSON.stringify(msg)));
 }
 
 var TimeDurationUnit = [
@@ -162,13 +167,7 @@ tizen.TZDate = (function() {
       date_ = new Date(year, month, day, hours, minutes, seconds, milliseconds);
 
     var getTimezoneRawOffset = function(timezone) {
-      var msg = {
-        'cmd': 'GetTimeZoneRawOffset',
-        'value': timezone
-      };
-      var result = JSON.parse(extension.internal.sendSyncMessage(JSON.stringify(msg)));
-
-      return result.value;
+      return _sendSyncMessage('GetTimeZoneRawOffset', timezone).value;
     };
 
     var toTimezone = function(timezone) {
@@ -358,23 +357,38 @@ tizen.TZDate = (function() {
         return dateAsString + ' ' + timeAsString;
       },
       getTimezoneAbbreviation: function() {
-        var minutesToUTC = (new Date()).getTimezoneOffset();
-        var hoursToUTC = - (minutesToUTC / 60);
-        if (hoursToUTC < 0)
-          return 'GMT' + hoursToUTC;
-        return 'GMT+' + hoursToUTC;
+        var result = _sendSyncMessage('GetTimeZoneAbbreviation', timezone,
+                                      date_.getTime());
+
+        if (result.error)
+          return '';
+        return result.value;
       },
       secondsFromUTC: function() {
         return date_.getTimezoneOffset() * 60;
       },
       isDST: function() {
-        return false;
+        var result = _sendSyncMessage('IsDST', timezone, date_.getTime());
+
+        if (result.error)
+          return false;
+        return result.value;
       },
       getPreviousDSTTransition: function() {
-        return void 0;
+        var result = _sendSyncMessage('GetDSTTransition', timezone,
+                                      date_.getTime(), 'NEXT_TRANSITION');
+
+        if (result.error || result.value == 0)
+          return undefined;
+        return new TZDate(new Date(result.value), timezone_);
       },
       getNextDSTTransition: function() {
-        return void 0;
+        var result = _sendSyncMessage('GetDSTTransition', timezone,
+                                      date_.getTime(), 'PREV_TRANSITION');
+
+        if (result.error || result.value == 0)
+          return undefined;
+        return new TZDate(new Date(result.value), timezone_);
       }
     };
   };
