@@ -14,6 +14,32 @@ var postMessage = function(msg) {
   extension.postMessage(JSON.stringify(msg));
 };
 
+var asValidString = function(o) {
+  return (typeof o == "string") ? o : "";
+}
+
+var ensureType = function(o, expected) {
+  if (typeof o != expected) {
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+  }
+}
+
+var ensureHas = function(o) {
+  if (typeof o == "undefined") {
+    throw new tizen.WebAPIException(tizen.WebAPIException.NOT_FOUND_ERR);
+  }
+}
+
+var getNetworkTypeThrowsError = function(networkType) {
+  if (typeof networkType == "undefined") {
+    return "ALL";
+  } else if (networkType in AllowDownloadOnNetworkType) {
+    return networkType;
+  } else {
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+  }
+}
+
 var errorMap = {
   "DOWNLOAD_ERROR_NONE" : {
     code : tizen.WebAPIException.NOT_SUPPORTED_ERR,
@@ -137,50 +163,84 @@ var errorMap = {
   },
 };
 
+var AllowDownloadOnNetworkType = {
+  "ALL": 0,
+  "CELLULAR": 1,
+  "WIFI": 2,
+};
+
 extension.setMessageListener(function(msg) {
   var m = JSON.parse(msg);
-  if (m.cmd == "DownloadReplyProgress") {
-    startListeners[m.uid].onprogress(m.uid, m.receivedSize, m.totalSize);
+  var id = parseInt(m.uid);
+  if (isNaN(id) || typeof startListeners[id] === "undefined") {
+    return;
+  } else if (m.cmd == "DownloadReplyProgress") {
+    if (typeof startListeners[id].onprogress !== "undefined") {
+      var receivedSize = parseInt(m.receivedSize);
+      var totalSize = parseInt(m.totalSize);
+      startListeners[id].onprogress(id, receivedSize, totalSize);
+    }
   } else if (m.cmd == "DownloadReplyComplete") {
-    startListeners[m.uid].oncompleted(m.uid, m.fullPath);
+    if (typeof startListeners[id].oncompleted !== "undefined") {
+      startListeners[id].oncompleted(id, m.fullPath);
+    }
   } else if (m.cmd == "DownloadReplyPause") {
-    startListeners[m.uid].onpaused(m.uid);
+    if (typeof startListeners[id].onpaused !== "undefined") {
+      startListeners[id].onpaused(id);
+    }
   } else if (m.cmd == "DownloadReplyCancel") {
-    startListeners[m.uid].oncanceled(m.uid);
+    if (typeof startListeners[id].oncanceled !== "undefined") {
+      startListeners[id].oncanceled(id);
+    }
   } else if (m.cmd == "DownloadReplyNetworkType") {
-    networkTypeCallbacks[m.uid](m.networkType);
+    networkTypeCallbacks[id](m.networkType);
   } else if (m.cmd == "DownloadReplyMIMEType") {
-    mimeTypeCallbacks[m.uid](m.mimeType);
+    mimeTypeCallbacks[id](m.mimeType);
   } else if (m.cmd == "DownloadReplyFail") {
-    startListeners[m.uid].onfailed(m.uid,
+    startListeners[id].onfailed(id,
         new tizen.WebAPIError(errorMap[m.errorCode].code,
                               errorMap[m.errorCode].message,
                               errorMap[m.errorCode].name));
   }
 });
 
-tizen.DownloadRequest = function(url, destination, filename, networkType) {
+tizen.DownloadRequest = function(url, destination, fileName, networkType) {
+  Object.defineProperty(this, "networkType", {
+    get: function() { return this.networkTypeValue; },
+    set: function(type) {
+      if (type in AllowDownloadOnNetworkType) {
+        this.networkTypeValue = type;
+      } else {
+        throw new tizen.WebAPIException(tizen.WebAPIException.INVALID_VALUES_ERR);
+      }
+    }
+  });
+
+  if (!(this instanceof tizen.DownloadRequest)) {
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+  }
   this.url = url;
-  this.uid = (++currentUID).toString();
-  typeof destination != "undefined" && (this.destination = destination);
-  typeof filename != "undefined" && (this.filename = filename);
-  typeof networkType != "undefined" && (this.networkType = networkType);
+  this.uid = ++currentUID;
+  this.destination = asValidString(destination);
+  this.fileName = asValidString(fileName);
+  this.networkType = getNetworkTypeThrowsError(networkType);
   this.httpHeader = {};
 }
 
 exports.start = function(request, listener) {
   if (!(request instanceof tizen.DownloadRequest)) {
-    console.log("tizen.download.start(): argument of invalid type " + typeof(request));
-    return;
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
   }
   requests[request.uid] = request;
-  startListeners[request.uid] = listener;
+  if (typeof listener != "undefined") {
+    exports.setListener(request.uid, listener);
+  }
   postMessage({
     "cmd": "DownloadStart",
     "url": request.url,
     "uid": request.uid,
     "destination": request.destination,
-    "filename": request.filename,
+    "fileName": request.fileName,
     "networkType": request.networkType,
     "httpHeader": request.httpHeader,
   });
@@ -188,16 +248,21 @@ exports.start = function(request, listener) {
 }
 
 exports.setListener = function(downloadId, listener) {
-  if (typeof requests[downloadId] == "undefined") {
-    throw new tizen.WebAPIException(tizen.WebAPIException.NOT_FOUND_ERR);
+  ensureType(downloadId, "number");
+  ensureType(listener, "object");
+  if (listener === null) { // null is also an object, so we need double check
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
   }
-  startListeners[request.uid] = listener;
+  for (var property in listener) {
+    ensureType(listener[property], "function");
+  }
+  ensureHas(requests[downloadId]);
+  startListeners[downloadId] = listener;
 }
 
 exports.pause = function(downloadId) {
-  if (typeof requests[downloadId] == "undefined") {
-    throw new tizen.WebAPIException(tizen.WebAPIException.NOT_FOUND_ERR);
-  }
+  ensureType(downloadId, "number");
+  ensureHas(requests[downloadId]);
   postMessage({
     "cmd": "DownloadPause",
     "uid": downloadId,
@@ -205,9 +270,8 @@ exports.pause = function(downloadId) {
 }
 
 exports.resume = function(downloadId) {
-  if (typeof requests[downloadId] == "undefined") {
-    throw new tizen.WebAPIException(tizen.WebAPIException.NOT_FOUND_ERR);
-  }
+  ensureType(downloadId, "number");
+  ensureHas(requests[downloadId]);
   postMessage({
     "cmd": "DownloadResume",
     "uid": downloadId,
@@ -215,9 +279,8 @@ exports.resume = function(downloadId) {
 }
 
 exports.cancel = function(downloadId) {
-  if (typeof requests[downloadId] == "undefined") {
-    throw new tizen.WebAPIException(tizen.WebAPIException.NOT_FOUND_ERR);
-  }
+  ensureType(downloadId, "number");
+  ensureHas(requests[downloadId]);
   postMessage({
     "cmd": "DownloadCancel",
     "uid": downloadId,
@@ -225,16 +288,15 @@ exports.cancel = function(downloadId) {
 }
 
 exports.getDownloadRequest = function(downloadId) {
-  if (typeof requests[downloadId] == "undefined") {
-    throw new tizen.WebAPIException(tizen.WebAPIException.NOT_FOUND_ERR);
-  }
+  ensureType(downloadId, "number");
+  ensureHas(requests[downloadId]);
   return requests[downloadId];
 }
 
 exports.getNetworkType = function(downloadId, callback) {
-  if (typeof requests[downloadId] == "undefined") {
-    throw new tizen.WebAPIException(tizen.WebAPIException.NOT_FOUND_ERR);
-  }
+  ensureType(downloadId, "number");
+  ensureType(callback, "function");
+  ensureHas(requests[downloadId]);
   networkTypeCallbacks[downloadId] = callback;
   postMessage({
     "cmd": "DownloadGetNetworkType",
@@ -242,21 +304,33 @@ exports.getNetworkType = function(downloadId, callback) {
   });
 }
 
-exports.getMIMEType = function(downloadId, callback) {
-  if (typeof requests[downloadId] == "undefined") {
-    throw new tizen.WebAPIException(tizen.WebAPIException.NOT_FOUND_ERR);
-  }
-  mimeTypeCallbacks[downloadId] = callback;
-  postMessage({
+exports.getMIMEType = function(downloadId) {
+  ensureType(downloadId, "number");
+  ensureHas(requests[downloadId]);
+  var reply = JSON.parse(_sendSyncMessage({
     "cmd": "DownloadGetMIMEType",
     "uid": downloadId,
-  });
+  }));
+  if (reply["error"] != "DOWNLOAD_ERROR_NONE") {
+    switch (reply["error"]) {
+    case "DOWNLOAD_ERROR_INVALID_PARAMETER":
+      throw new tizen.WebAPIException(tizen.WebAPIException.SYNTAX_ERR);
+      break;
+    case "DOWNLOAD_ERROR_ID_NOT_FOUND":
+      throw new tizen.WebAPIException(tizen.WebAPIException.NOT_FOUND_ERR);
+      break;
+    default:
+      throw new tizen.WebAPIException(tizen.WebAPIException.NOT_SUPPORTED_ERR);
+    }
+  } else {
+    delete reply["error"];
+    return reply["mimeType"];
+  }
 }
 
 exports.getState = function(downloadId) {
-  if (typeof requests[downloadId] == "undefined") {
-    throw new tizen.WebAPIException(tizen.WebAPIException.NOT_FOUND_ERR);
-  }
+  ensureType(downloadId, "number");
+  ensureHas(requests[downloadId]);
   var reply = JSON.parse(_sendSyncMessage({
     "cmd": "DownloadGetState",
     "uid": downloadId,

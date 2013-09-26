@@ -70,7 +70,7 @@ var url1 = "http://ipv4.download.thinkbroadband.com/200MB.zip";
 var url2 = "https://developer.tizen.org/sites/all/themes/tizen_theme/logo.png";
 // Test downloading with specific HTTP header
 var url_httpheader = "http://download.tizen.org/tools/README.txt";
-var urls = { "1" : url1, "2" : url2, "3" : url_httpheader }
+var urls = { 1 : url1, 2 : url2, 3 : url_httpheader }
 
 var r1, id1, r2, id2;
 var paused1=false;
@@ -78,7 +78,8 @@ var paused2=false;
 
 handle("bnstart1", "Start Download1", function() {
   r1 = new tizen.DownloadRequest(url1); // Test saving to default folder
-  id1 = tizen.download.start(r1, listener);
+  id1 = tizen.download.start(r1);
+  tizen.download.setListener(id1, listener); // Test setListener()
   urls[id1] = url1;
   output.value += "> asked to start download " + url1 + " to default location.\n";
 });
@@ -205,10 +206,6 @@ handle("bnnetworktype2", "GetNetworkType of Download2", function() {
   tizen.download.getNetworkType(id2, networkTypeCallback);
 });
 
-var mimeCallback = function(mimeType) {
-  output.value += "> received mimeType: " + mimeType + "\n";
-}
-
 handle("bnmimetype1", "GetMIMEType of Download1", function() {
   if (typeof id1 == "undefined") {
     output.value += "> Download1 is not started yet.\n";
@@ -216,7 +213,11 @@ handle("bnmimetype1", "GetMIMEType of Download1", function() {
   }
 
   output.value += "> asked to get MIME type of download1, id:" + id1 + "\n";
-  tizen.download.getMIMEType(id1, mimeCallback);
+  try {
+    output.value += "> return: " + tizen.download.getMIMEType(id1) + "\n";
+  } catch (err) {
+    output.value += "> received exception: " + err.name + "\n";
+  }
 });
 
 handle("bnmimetype2", "GetMIMEType of Download2", function() {
@@ -226,7 +227,11 @@ handle("bnmimetype2", "GetMIMEType of Download2", function() {
   }
 
   output.value += "> asked to get MIME type of download2, id:" + id2 + "\n";
-  tizen.download.getMIMEType(id2, mimeCallback);
+  try {
+    output.value += "> return: " + tizen.download.getMIMEType(id2) + "\n";
+  } catch (err) {
+    output.value += "> received exception: " + err.name + "\n";
+  }
 });
 
 handle("bngetrequest1", "Get download request 1", function() {

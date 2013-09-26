@@ -74,8 +74,6 @@ void DownloadContext::HandleMessage(const char* message) {
     HandleGeneral(v, download_cancel, "HandleCancel");
   else if (cmd == "DownloadGetNetworkType")
     HandleGetNetworkType(v);
-  else if (cmd == "DownloadGetMIMEType")
-    HandleGetMIMEType(v);
   else
     fprintf(stderr, "Not supported async command %s\n", cmd.c_str());
 }
@@ -93,6 +91,8 @@ void DownloadContext::HandleSyncMessage(const char* message) {
   std::string cmd = v.get("cmd").to_str();
   if (cmd == "DownloadGetState")
     HandleGetState(v);
+  else if (cmd == "DownloadGetMIMEType")
+    HandleGetMIMEType(v);
   else
     fprintf(stderr, "Not supported sync command %s\n", cmd.c_str());
 }
@@ -208,8 +208,8 @@ void DownloadContext::HandleStart(const picojson::value& msg) {
 
   d->url = msg.get("url").to_str();
   d->destination = GetFullDestinationPath(msg.get("destination").to_str());
-  std::string filename = msg.get("filename").to_str();
-  d->filename = (filename == "null") ? std::string() : filename;
+  std::string fileName = msg.get("fileName").to_str();
+  d->fileName = fileName;
 
   std::string network_type = msg.get("networkType").to_str();
   if (network_type == "CELLULAR")
@@ -230,8 +230,8 @@ void DownloadContext::HandleStart(const picojson::value& msg) {
                                  static_cast<void*>(args)), args);
   CHECK(download_set_url(d->downloadID, d->url.c_str()), args);
   CHECK(download_set_destination(d->downloadID, d->destination.c_str()), args);
-  if (!d->filename.empty()) {
-    CHECK(download_set_file_name(d->downloadID, d->filename.c_str()), args);
+  if (!d->fileName.empty()) {
+    CHECK(download_set_file_name(d->downloadID, d->fileName.c_str()), args);
   }
   CHECK(download_set_network_type(d->downloadID, d->networkType), args);
 
@@ -300,20 +300,25 @@ void DownloadContext::HandleGetNetworkType(const picojson::value& msg) {
 }
 
 void DownloadContext::HandleGetMIMEType(const picojson::value& msg) {
-  int downloadID;
-  DownloadArgs* args;
-  if (!GetDownloadID(msg, downloadID, &args))
-    return;
-
+  std::string uid;
+  int downloadID = -1;
+  std::string retStr("DOWNLOAD_ERROR_NONE");
   char* mimeType = 0;
-  CHECK(download_get_mime_type(downloadID, &mimeType), args);
 
   picojson::value::object o;
-  o["cmd"] = picojson::value("DownloadReplyMIMEType");
-  o["uid"] = picojson::value(args->download_uid);
-  o["mimeType"] = picojson::value(mimeType);
+  if (!GetID(msg, uid, downloadID)) {
+    retStr = "DOWNLOAD_ERROR_ID_NOT_FOUND";
+  } else {
+    int ret = download_get_mime_type(downloadID, &mimeType);
+    if (ret != DOWNLOAD_ERROR_NONE) {
+      retStr = EnumToPChar(ret);
+    } else {
+      o["mimeType"] = picojson::value(mimeType);
+    }
+  }
+  o["error"] = picojson::value(retStr);
   picojson::value v(o);
-  args->context->api_->PostMessage(v.serialize().c_str());
+  api_->SetSyncReply(v.serialize().c_str());
 
   if (mimeType)
     free(mimeType);

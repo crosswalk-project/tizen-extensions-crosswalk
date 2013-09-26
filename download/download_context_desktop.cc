@@ -11,17 +11,15 @@
 
 std::string DownloadContext::GetFullDestinationPath(
     const std::string destination) const {
-  std::string folder = (destination == "null") ? std::string() : destination;
-
   std::string path(getenv("HOME"));
   if (path.empty()) {
     struct passwd password_entry;
-    struct passwd *password_entry_ptr;
+    struct passwd* password_entry_ptr;
     char buf[1024];
     if (!getpwuid_r(getuid(), &password_entry,
                     buf, sizeof buf, &password_entry_ptr)) {
       path = password_entry.pw_dir;
     }
   }
-  return (path + '/' + folder);
+  return (path + '/' + destination);
 }

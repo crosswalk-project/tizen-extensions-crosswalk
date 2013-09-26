@@ -75,23 +75,23 @@ const char* EnumToPChar(int error) {  // enum download_error_e
 const char* EnumToPChar(download_state_e state) {
   switch (state) {
   case DOWNLOAD_STATE_NONE:
-    return "DOWNLOAD_STATE_NONE";
+    return "NONE";
   case DOWNLOAD_STATE_READY:
-    return "DOWNLOAD_STATE_READY";
+    return "READY";
   case DOWNLOAD_STATE_QUEUED:
-    return "DOWNLOAD_STATE_QUEUED";
+    return "QUEUED";
   case DOWNLOAD_STATE_DOWNLOADING:
-    return "DOWNLOAD_STATE_DOWNLOADING";
+    return "DOWNLOADING";
   case DOWNLOAD_STATE_PAUSED:
-    return "DOWNLOAD_STATE_PAUSED";
+    return "PAUSED";
   case DOWNLOAD_STATE_COMPLETED:
-    return "DOWNLOAD_STATE_COMPLETED";
+    return "COMPLETED";
   case DOWNLOAD_STATE_FAILED:
-    return "DOWNLOAD_STATE_FAILED";
+    return "FAILED";
   case DOWNLOAD_STATE_CANCELED:
-    return "DOWNLOAD_STATE_CANCELED";
+    return "CANCELED";
   default:
-    return "DOWNLOAD_UNKNOWN_STATE";
+    return "UNKNOWN_STATE";
   }
 }
 
