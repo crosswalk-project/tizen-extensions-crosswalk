@@ -48,12 +48,13 @@ function _throwProperTizenException(e) {
     throw new tizen.WebAPIException(tizen.WebAPIException.UNKNOWN_ERR);
 }
 
-function _sendSyncMessage(cmd, timezone, value, trans) {
+function _sendSyncMessage(cmd, timezone, value, trans, locale) {
   var msg = {
     'cmd': cmd,
     'timezone': timezone || '',
     'value': value || '',
-    'trans': trans || ''
+    'trans': trans || '',
+    'locale': locale || false
   };
   return JSON.parse(extension.internal.sendSyncMessage(JSON.stringify(msg)));
 }
@@ -371,41 +372,51 @@ tizen.TZDate.prototype.addDuration = function(duration) {
 };
 
 tizen.TZDate.prototype.toLocaleDateString = function() {
-  return this.date_.toLocaleDateString();
+  var result = _sendSyncMessage('ToDateString', this.timezone_,
+                                this.date_.getTime(), '', true);
+  if (result.error)
+    return '';
+  return result.value;
 };
 
 tizen.TZDate.prototype.toLocaleTimeString = function() {
-  return this.date_.toLocaleTimeString();
+  var result = _sendSyncMessage('ToTimeString', this.timezone_,
+                                this.date_.getTime(), '', true);
+  if (result.error)
+    return '';
+  return result.value;
 };
 
 tizen.TZDate.prototype.toLocaleString = function() {
-  return this.date_.toLocaleString();
+  var result = _sendSyncMessage('ToString', this.timezone_,
+                                this.date_.getTime(), '', true);
+  if (result.error)
+    return '';
+  return result.value;
 };
 
 tizen.TZDate.prototype.toDateString = function() {
-  return this.date_.toDateString();
+  var result = _sendSyncMessage('ToDateString', this.timezone_,
+                                this.date_.getTime(), '', false);
+  if (result.error)
+    return '';
+  return result.value;
 };
 
 tizen.TZDate.prototype.toTimeString = function() {
-  return this.date_.toTimeString();
+  var result = _sendSyncMessage('ToTimeString', this.timezone_,
+                                this.date_.getTime(), '', false);
+  if (result.error)
+    return '';
+  return result.value;
 };
 
 tizen.TZDate.prototype.toString = function() {
-  var weekday = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][this.date_.getDay()];
-  var month = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul',
-               'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][this.date_.getMonth()];
-  function pad2(num) {
-    return (100 + num).toString().substring(1);
-  };
-  var day = pad2(this.date_.getDate());
-  var year = this.date_.getFullYear();
-  var hour = pad2(this.date_.getHours());
-  var minute = pad2(this.date_.getMinutes());
-  var second = pad2(this.date_.getSeconds());
-  var dateAsString = weekday + ', ' + month + ' ' + day + ' ' + year;
-  var timeAsString = hour + ' =' + minute + ' =' + second;
-
-  return dateAsString + ' ' + timeAsString;
+  var result = _sendSyncMessage('ToString', this.timezone_,
+                                this.date_.getTime(), '', false);
+  if (result.error)
+    return '';
+  return result.value;
 };
 
 tizen.TZDate.prototype.getTimezoneAbbreviation = function() {

@@ -2,6 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#if defined(TIZEN_MOBILE)
+#include <vconf.h>
+#endif
+
 #include <sstream>
 #include <string>
 #include <memory>
@@ -10,12 +14,12 @@
 #include "time/time_context.h"
 #include "common/picojson.h"
 
-#include "unicode/ustring.h"
 #include "unicode/timezone.h"
 #include "unicode/calendar.h"
 #include "unicode/vtzone.h"
 #include "unicode/tztrans.h"
 #include "unicode/smpdtfmt.h"
+#include "unicode/dtptngen.h"
 
 DEFINE_XWALK_EXTENSION(TimeContext)
 
@@ -52,6 +56,12 @@ void TimeContext::HandleSyncMessage(const char* message) {
     o = HandleIsDST(v);
   else if (cmd == "GetDSTTransition")
     o = HandleGetDSTTransition(v);
+  else if (cmd == "ToDateString")
+    o = HandleToString(v, TimeContext::DATE_FORMAT);
+  else if (cmd == "ToTimeString")
+    o = HandleToString(v, TimeContext::TIME_FORMAT);
+  else if (cmd == "ToString")
+    o = HandleToString(v, TimeContext::DATETIME_FORMAT);
 
   if (o.empty())
     o["error"] = picojson::value(true);
@@ -208,6 +218,91 @@ const picojson::value::object TimeContext::HandleGetDSTTransition(
     o["value"] = picojson::value(tzTransition.getTime());
 
   return o;
+}
+
+const picojson::value::object TimeContext::HandleToString(
+  const picojson::value& msg, DateTimeFormatType format) {
+  picojson::value::object o;
+
+  std::auto_ptr<UnicodeString> id(
+    new UnicodeString(msg.get("timezone").to_str().c_str()));
+  bool bLocale = msg.get("locale").evaluate_as_boolean();
+
+  UDate dateInMs = strtod(msg.get("value").to_str().c_str(), NULL);
+  if (errno == ERANGE)
+    return o;
+
+  UErrorCode ec = U_ZERO_ERROR;
+  std::auto_ptr<Calendar> cal(
+    Calendar::createInstance(TimeZone::createTimeZone(*id), ec));
+  if (U_FAILURE(ec))
+    return o;
+
+  cal->setTime(dateInMs, ec);
+  if (U_FAILURE(ec))
+    return o;
+
+  std::auto_ptr<DateFormat> fmt(
+    new SimpleDateFormat(getDateTimeFormat(format, bLocale),
+                        (bLocale ? Locale::getDefault() : Locale::getEnglish()),
+                         ec));
+  if (U_FAILURE(ec))
+    return o;
+
+  UnicodeString uResult;
+  fmt->setCalendar(*cal);
+  fmt->format(cal->getTime(ec), uResult);
+  if (U_FAILURE(ec))
+    return o;
+
+  std::string result = "";
+  uResult.toUTF8String(result);
+
+  o["value"] = picojson::value(result);
+
+  return o;
+}
+
+UnicodeString TimeContext::getDateTimeFormat(DateTimeFormatType type,
+                                             bool bLocale) {
+  UErrorCode ec = U_ZERO_ERROR;
+  std::auto_ptr<DateTimePatternGenerator> dateTimepattern(
+     DateTimePatternGenerator::createInstance(
+        (bLocale ? Locale::getDefault() : Locale::getEnglish()), ec));
+
+  if (U_FAILURE(ec))
+    return "";
+
+  UnicodeString pattern;
+  if (type == DATE_FORMAT) {
+    pattern = dateTimepattern->getBestPattern(UDAT_YEAR_MONTH_WEEKDAY_DAY, ec);
+  } else if (type == DATE_SHORT_FORMAT) {
+    pattern = dateTimepattern->getBestPattern(UDAT_YEAR_NUM_MONTH_DAY, ec);
+  } else {
+    std::string skeleton;
+    if (type != TIME_FORMAT)
+      skeleton = UDAT_YEAR_MONTH_WEEKDAY_DAY;
+
+#if defined(TIZEN_MOBILE)
+    int value = 0;
+    if (vconf_get_int(VCONFKEY_REGIONFORMAT_TIME1224, &value) == -1)
+      skeleton += "hhmmss";
+    else
+      skeleton += "HHmmss";
+#else
+    skeleton += "hhmmss";
+#endif
+
+    pattern = dateTimepattern->getBestPattern(
+       *(new UnicodeString(skeleton.c_str())), ec);
+    if (U_FAILURE(ec))
+      return "";
+
+    if (!bLocale)
+      pattern += " 'GMT'Z v'";
+  }
+
+  return pattern;
 }
 
 void TimeContext::SetSyncReply(picojson::value v) {
