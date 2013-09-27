@@ -725,7 +725,7 @@ function BluetoothDevice(msg) {
     return;
   }
 
-  _addConstProperty(this, 'name', msg.Name);
+  _addConstProperty(this, 'name', msg.Alias);
   _addConstProperty(this, 'address', msg.Address);
 
   _addConstProperty(this, 'deviceClass', new BluetoothClass());
