@@ -5,6 +5,7 @@
 #include "system_info/system_info_utils.h"
 
 #include <stdio.h>
+#include <unistd.h>
 
 #include <algorithm>
 #include <fstream>
@@ -76,6 +77,10 @@ std::string GetPropertyFromFile(const std::string& file_path,
   }
 
   return "";
+}
+
+bool IsExist(const char* path) {
+  return 0 == access(path, F_OK);
 }
 
 }  // namespace system_info

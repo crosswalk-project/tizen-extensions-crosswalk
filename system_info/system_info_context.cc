@@ -6,6 +6,8 @@
 
 #include <stdlib.h>
 #if defined(TIZEN_MOBILE)
+#include <pkgmgr-info.h>
+#include <sensors.h>
 #include <system_info.h>
 #endif
 
@@ -268,7 +270,7 @@ void SystemInfoContext::HandleGetCapabilities() {
 
   s = NULL;
   system_info_get_value_string(SYSTEM_INFO_KEY_OPENGLES_TEXTURE_FORMAT, &s);
-  SetStringPropertyValue(o, "openglestextureFormat", s);
+  SetStringPropertyValue(o, "openglestextureFormat", s ? s : "");
   free(s);
 
   system_info_get_value_bool(SYSTEM_INFO_KEY_FMRADIO_SUPPORTED, &b);
@@ -276,7 +278,7 @@ void SystemInfoContext::HandleGetCapabilities() {
 
   s = NULL;
   system_info_get_value_string(SYSTEM_INFO_KEY_TIZEN_VERSION, &s);
-  SetStringPropertyValue(o, "platformVersion", s);
+  SetStringPropertyValue(o, "platformVersion", s ? s : "");
   free(s);
 
   std::string version =
@@ -292,7 +294,7 @@ void SystemInfoContext::HandleGetCapabilities() {
 
   s = NULL;
   system_info_get_value_string(SYSTEM_INFO_KEY_PLATFORM_NAME, &s);
-  SetStringPropertyValue(o, "platformName", s);
+  SetStringPropertyValue(o, "platformName", s ? s : "");
   free(s);
 
   system_info_get_value_int(SYSTEM_INFO_KEY_CAMERA_COUNT, &i);
@@ -336,12 +338,12 @@ void SystemInfoContext::HandleGetCapabilities() {
 
   s = NULL;
   system_info_get_value_string(SYSTEM_INFO_KEY_CORE_CPU_ARCH, &s);
-  SetStringPropertyValue(o, "platformCoreCpuArch", s);
+  SetStringPropertyValue(o, "platformCoreCpuArch", s ? s : "");
   free(s);
 
   s = NULL;
   system_info_get_value_string(SYSTEM_INFO_KEY_CORE_FPU_ARCH, &s);
-  SetStringPropertyValue(o, "platformCoreFpuArch", s);
+  SetStringPropertyValue(o, "platformCoreFpuArch", s ? s : "");
   free(s);
 
   system_info_get_value_bool(SYSTEM_INFO_KEY_SIP_VOIP_SUPPORTED, &b);
@@ -349,20 +351,20 @@ void SystemInfoContext::HandleGetCapabilities() {
 
   s = NULL;
   system_info_get_value_string(SYSTEM_INFO_KEY_DEVICE_UUID, &s);
-  SetStringPropertyValue(o, "duid", s);
+  SetStringPropertyValue(o, "duid", s ? s : "");
   free(s);
 
   system_info_get_value_bool(SYSTEM_INFO_KEY_SPEECH_RECOGNITION_SUPPORTED, &b);
   o["speechRecognition"] = picojson::value(b);
 
-  // FIXME(halton): find which key reflect this prop
-  o["speechSynthesis"] = picojson::value(false);
+  b = system_info::IsExist("/usr/lib/libtts.so");
+  o["speechSynthesis"] = picojson::value(b);
 
-  // FIXME(halton): find which key reflect this prop
-  o["accelerometer"] = picojson::value(false);
+  sensor_is_supported(SENSOR_ACCELEROMETER, &b);
+  o["accelerometer"] = picojson::value(b);
 
-  // FIXME(halton): find which key reflect this prop
-  o["accelerometerWakeup"] = picojson::value(false);
+  sensor_awake_is_supported(SENSOR_ACCELEROMETER, &b);
+  o["accelerometerWakeup"] = picojson::value(b);
 
   system_info_get_value_bool(SYSTEM_INFO_KEY_BAROMETER_SENSOR_SUPPORTED, &b);
   o["barometer"] = picojson::value(b);
@@ -370,53 +372,53 @@ void SystemInfoContext::HandleGetCapabilities() {
   // FIXME(halton): find which key reflect this prop
   o["barometerWakeup"] = picojson::value(false);
 
-  // FIXME(halton): find which key reflect this prop
-  o["gyroscope"] = picojson::value(false);
+  sensor_is_supported(SENSOR_GYROSCOPE, &b);
+  o["gyroscope"] = picojson::value(b);
 
-  // FIXME(halton): find which key reflect this prop
-  o["gyroscopeWakeup"] = picojson::value(false);
+  sensor_awake_is_supported(SENSOR_GYROSCOPE, &b);
+  o["gyroscopeWakeup"] = picojson::value(b);
 
-  // FIXME(halton): find which key reflect this prop
-  o["magnetometer"] = picojson::value(false);
+  sensor_is_supported(SENSOR_MAGNETIC, &b);
+  o["magnetometer"] = picojson::value(b);
 
-  // FIXME(halton): find which key reflect this prop
-  o["magnetometerWakeup"] = picojson::value(false);
+  sensor_awake_is_supported(SENSOR_MAGNETIC, &b);
+  o["magnetometerWakeup"] = picojson::value(b);
 
-  // FIXME(halton): find which key reflect this prop
-  o["photometer"] = picojson::value(false);
+  sensor_is_supported(SENSOR_LIGHT, &b);
+  o["photometer"] = picojson::value(b);
 
-  // FIXME(halton): find which key reflect this prop
-  o["photometerWakeup"] = picojson::value(false);
+  sensor_awake_is_supported(SENSOR_LIGHT, &b);
+  o["photometerWakeup"] = picojson::value(b);
 
-  // FIXME(halton): find which key reflect this prop
-  o["proximity"] = picojson::value(false);
+  sensor_is_supported(SENSOR_PROXIMITY, &b);
+  o["proximity"] = picojson::value(b);
 
-  // FIXME(halton): find which key reflect this prop
-  o["proximityWakeup"] = picojson::value(false);
+  sensor_awake_is_supported(SENSOR_PROXIMITY, &b);
+  o["proximityWakeup"] = picojson::value(b);
 
-  // FIXME(halton): find which key reflect this prop
-  o["tiltmeter"] = picojson::value(false);
+  sensor_is_supported(SENSOR_MOTION_TILT, &b);
+  o["tiltmeter"] = picojson::value(b);
 
-  // FIXME(halton): find which key reflect this prop
-  o["tiltmeterWakeup"] = picojson::value(false);
+  sensor_awake_is_supported(SENSOR_MOTION_TILT, &b);
+  o["tiltmeterWakeup"] = picojson::value(b);
 
-  // FIXME(halton): find which key reflect this prop
-  o["dataEncryption"] = picojson::value(false);
+  b = system_info::IsExist("/usr/lib/libsqlite3.so.0");
+  o["dataEncryption"] = picojson::value(b);
 
   // FIXME(halton): find which key reflect this prop
   o["graphicsAcceleration"] = picojson::value(false);
 
-  // FIXME(halton): find which key reflect this prop
-  o["push"] = picojson::value(false);
+  b = system_info::IsExist("/usr/bin/pushd");
+  o["push"] = picojson::value(b);
 
-  // FIXME(halton): find which key reflect this prop
-  o["telephony"] = picojson::value(false);
+  b = system_info::IsExist("/usr/bin/telephony-daemon");
+  o["telephony"] = picojson::value(b);
 
-  // FIXME(halton): find which key reflect this prop
-  o["telephonyMms"] = picojson::value(false);
+  system_info_get_value_bool(SYSTEM_INFO_KEY_MMS_SUPPORTED, &b);
+  o["telephonyMms"] = picojson::value(b);
 
-  // FIXME(halton): find which key reflect this prop
-  o["telephonySms"] = picojson::value(false);
+  system_info_get_value_bool(SYSTEM_INFO_KEY_SMS_SUPPORTED, &b);
+  o["telephonySms"] = picojson::value(b);
 
   // FIXME(halton): find which key reflect this prop
   o["screenSizeNormal"] = picojson::value(false);
@@ -436,28 +438,29 @@ void SystemInfoContext::HandleGetCapabilities() {
   // FIXME(halton): find which key reflect this prop
   o["autoRotation"] = picojson::value(false);
 
-  // FIXME(halton): find which key reflect this prop
-  o["shellAppWidget"] = picojson::value(false);
+  pkgmgrinfo_pkginfo_h handle;
+  if (pkgmgrinfo_pkginfo_get_pkginfo("gi2qxenosh", &handle) == PMINFO_R_OK)
+    o["shellAppWidget"] = picojson::value(true);
+  else
+    o["shellAppWidget"] = picojson::value(false);
 
-  // FIXME(halton): find which key reflect this prop
-  o["visionImageRecognition"] = picojson::value(false);
+  b = system_info::IsExist("/usr/lib/osp/libarengine.so");
+  o["visionImageRecognition"] = picojson::value(b);
+  o["visionQrcodeGeneration"] = picojson::value(b);
+  o["visionQrcodeRecognition"] = picojson::value(b);
+  o["visionFaceRecognition"] = picojson::value(b);
 
-  // FIXME(halton): find which key reflect this prop
-  o["visionQrcodeGeneration"] = picojson::value(false);
+  b = system_info::IsExist("/usr/bin/smartcard-daemon");
+  o["secureElement"] = picojson::value(b);
 
-  // FIXME(halton): find which key reflect this prop
-  o["visionQrcodeRecognition"] = picojson::value(false);
+  std::string osp_compatible =
+      system_info::GetPropertyFromFile(
+          sSystemInfoFilePath,
+          "http://tizen.org/feature/platform.native.osp_compatible");
+  o["nativeOspCompatible"] =
+      picojson::value(osp_compatible == "true" ? true : false);
 
-  // FIXME(halton): find which key reflect this prop
-  o["visionFaceRecognition"] = picojson::value(false);
-
-  // FIXME(halton): find which key reflect this prop
-  o["secureElement"] = picojson::value(false);
-
-  // FIXME(halton): find which key reflect this prop
-  o["nativeOspCompatible"] = picojson::value(false);
-
-  // FIXME(halton): find which key reflect this prop
+  // FIXME(halton): Not supported until Tizen 2.2
   o["profile"] = picojson::value("MOBILE_WEB");
 
   o["error"] = picojson::value("");
