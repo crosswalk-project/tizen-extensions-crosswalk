@@ -4,7 +4,7 @@
 
 #ifndef SYSTEM_INFO_SYSTEM_INFO_CPU_H_
 #define SYSTEM_INFO_SYSTEM_INFO_CPU_H_
-
+#include <stdio.h>
 #include <glib.h>
 
 #include "common/extension_adapter.h"
@@ -14,40 +14,38 @@
 
 class SysInfoCpu {
  public:
-  explicit SysInfoCpu(ContextAPI* api)
-      : load_(0.0),
-        old_total_(0),
-        old_used_(0),
-        timeout_cb_id_(0) {
-    api_ = api;
-    UpdateLoad();
+  static SysInfoCpu& GetSysInfoCpu() {
+    static SysInfoCpu instance;
+    return instance;
   }
   ~SysInfoCpu() {
     if (timeout_cb_id_ > 0)
       g_source_remove(timeout_cb_id_);
+    pthread_mutex_destroy(&events_list_mutex_);
   }
   // Get support
   void Get(picojson::value& error, picojson::value& data);
 
   // Listerner support
-  inline void StartListening() {
-    timeout_cb_id_ = g_timeout_add(system_info::default_timeout_interval,
-                                   SysInfoCpu::OnUpdateTimeout,
-                                   static_cast<gpointer>(this));
-  }
-  inline void StopListening() {
-    if (timeout_cb_id_ > 0)
-      g_source_remove(timeout_cb_id_);
-  }
+  void StartListening(ContextAPI* api);
+  void StopListening(ContextAPI* api);
 
  private:
+  explicit SysInfoCpu()
+      : load_(0.0),
+        old_total_(0),
+        old_used_(0),
+        timeout_cb_id_(0) {
+    UpdateLoad();
+    pthread_mutex_init(&events_list_mutex_, NULL);
+  }
   static gboolean OnUpdateTimeout(gpointer user_data);
   bool UpdateLoad();
 
-  ContextAPI* api_;
   double load_;
   unsigned long long old_total_; //NOLINT
   unsigned long long old_used_; //NOLINT
+  pthread_mutex_t events_list_mutex_;
   int timeout_cb_id_;
 
   DISALLOW_COPY_AND_ASSIGN(SysInfoCpu);

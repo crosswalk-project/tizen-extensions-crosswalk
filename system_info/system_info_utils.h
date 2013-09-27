@@ -6,9 +6,35 @@
 #define SYSTEM_INFO_SYSTEM_INFO_UTILS_H_
 
 #include <libudev.h>
+#include <pthread.h>
+
+#include <list>
 #include <string>
 
+#include "common/extension_adapter.h"
 #include "common/picojson.h"
+
+typedef std::list<ContextAPI*> SystemInfoEventsList;
+
+static SystemInfoEventsList battery_events_;
+static SystemInfoEventsList build_events_;
+static SystemInfoEventsList cellular_events_;
+static SystemInfoEventsList cpu_events_;
+static SystemInfoEventsList device_orientation_events_;
+static SystemInfoEventsList display_events_;
+static SystemInfoEventsList local_events_;
+static SystemInfoEventsList network_events_;
+static SystemInfoEventsList peripheral_events_;
+static SystemInfoEventsList sim_events_;
+static SystemInfoEventsList storage_events_;
+static SystemInfoEventsList wifi_network_events_;
+
+struct AutoLock {
+  explicit AutoLock(pthread_mutex_t* m) : m_(m) { pthread_mutex_lock(m_); }
+  ~AutoLock() { pthread_mutex_unlock(m_); }
+ private:
+  pthread_mutex_t* m_;
+};
 
 namespace system_info {
 

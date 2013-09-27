@@ -4,8 +4,6 @@
 
 #include "system_info/system_info_wifi_network.h"
 
-#include "system_info/system_info_utils.h"
-
 void SysInfoWifiNetwork::Get(picojson::value& error,
                              picojson::value& data) {
   if (!Update(error)) {
@@ -31,5 +29,10 @@ void SysInfoWifiNetwork::SendUpdate() {
   system_info::SetPicoJsonObjectValue(output, "data", data);
 
   std::string result = output.serialize();
-  api_->PostMessage(result.c_str());
+  const char* result_as_cstr = result.c_str();
+  AutoLock lock(&events_list_mutex_);
+  for (SystemInfoEventsList::iterator it = wifi_network_events_.begin();
+    it != wifi_network_events_.end(); it++) {
+    (*it)->PostMessage(result_as_cstr);
+  }
 }

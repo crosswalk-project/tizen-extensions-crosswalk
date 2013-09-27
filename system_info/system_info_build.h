@@ -15,25 +15,45 @@
 
 class SysInfoBuild {
  public:
-  explicit SysInfoBuild(ContextAPI* api);
-  ~SysInfoBuild();
-  void Get(picojson::value& error, picojson::value& data);
-  inline void StartListening() {
-    timeout_cb_id_ = g_timeout_add(system_info::default_timeout_interval,
-                                   SysInfoBuild::OnUpdateTimeout,
-                                   static_cast<gpointer>(this));
+  static SysInfoBuild& GetSysInfoBuild() {
+    static SysInfoBuild instance;
+    return instance;
   }
-  inline void StopListening() {
+  ~SysInfoBuild() {
     if (timeout_cb_id_ > 0)
       g_source_remove(timeout_cb_id_);
+    pthread_mutex_destroy(&events_list_mutex_);
+  }
+  void Get(picojson::value& error, picojson::value& data);
+  inline void StartListening(ContextAPI* api) {
+    AutoLock lock(&events_list_mutex_);
+    build_events_.push_back(api);
+    if (timeout_cb_id_ == 0) {
+      timeout_cb_id_ = g_timeout_add(system_info::default_timeout_interval,
+                                     SysInfoBuild::OnUpdateTimeout,
+                                     static_cast<gpointer>(this));
+    }
+  }
+  inline void StopListening(ContextAPI* api) {
+    AutoLock lock(&events_list_mutex_);
+    build_events_.remove(api);
+    if (build_events_.empty() && timeout_cb_id_ > 0) {
+      g_source_remove(timeout_cb_id_);
+      timeout_cb_id_ = 0;
+    }
   }
 
  private:
+  explicit SysInfoBuild()
+      : timeout_cb_id_(0) {
+    pthread_mutex_init(&events_list_mutex_, NULL);
+  }
+
   bool UpdateHardware();
   bool UpdateOSBuild();
   static gboolean OnUpdateTimeout(gpointer user_data);
 
-  ContextAPI* api_;
+  pthread_mutex_t events_list_mutex_;
   std::string model_;
   std::string manufacturer_;
   std::string buildversion_;

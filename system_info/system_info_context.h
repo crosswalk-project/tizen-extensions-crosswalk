@@ -49,18 +49,18 @@ class SystemInfoContext {
   }
 
   ContextAPI* api_;
-  SysInfoBattery* battery_;
-  SysInfoBuild* build_;
-  SysInfoCellularNetwork* cellular_network_;
-  SysInfoCpu* cpu_;
-  SysInfoDeviceOrientation* device_orientation_;
-  SysInfoDisplay* display_;
-  SysInfoLocale* locale_;
-  SysInfoNetwork* network_;
-  SysInfoPeripheral* peripheral_;
-  SysInfoSim* sim_;
-  SysInfoStorage* storage_;
-  SysInfoWifiNetwork* wifi_network_;
+  SysInfoBattery& battery_;
+  SysInfoBuild& build_;
+  SysInfoCellularNetwork& cellular_network_;
+  SysInfoCpu& cpu_;
+  SysInfoDeviceOrientation& device_orientation_;
+  SysInfoDisplay& display_;
+  SysInfoLocale& locale_;
+  SysInfoNetwork& network_;
+  SysInfoPeripheral& peripheral_;
+  SysInfoSim& sim_;
+  SysInfoStorage& storage_;
+  SysInfoWifiNetwork& wifi_network_;
 };
 
 #endif  // SYSTEM_INFO_SYSTEM_INFO_CONTEXT_H_

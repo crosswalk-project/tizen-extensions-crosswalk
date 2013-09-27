@@ -6,8 +6,6 @@
 
 #include <NetworkManager.h>
 
-#include "system_info/system_info_utils.h"
-
 #define NM_WIRELESS              NM_DBUS_INTERFACE_DEVICE ".Wireless"
 #define NM_IP4_ADDRESS           NM_DBUS_INTERFACE_DEVICE ".Ip4Address"
 
@@ -17,14 +15,14 @@ const double kWifiSignalStrengthDivisor = 100.0;
 
 }  // namespace
 
-SysInfoWifiNetwork::SysInfoWifiNetwork(ContextAPI* api)
+SysInfoWifiNetwork::SysInfoWifiNetwork()
     : signal_strength_(0.0),
       ip_address_(""),
       ipv6_address_(""),
       ssid_(""),
       status_("OFF") {
-  api_ = api;
   PlatformInitialize();
+  pthread_mutex_init(&events_list_mutex_, NULL);
 }
 
 void SysInfoWifiNetwork::PlatformInitialize() {
@@ -46,13 +44,11 @@ void SysInfoWifiNetwork::PlatformInitialize() {
 }
 
 SysInfoWifiNetwork::~SysInfoWifiNetwork() {
+  pthread_mutex_destroy(&events_list_mutex_);
 }
 
-void SysInfoWifiNetwork::StartListening() {
-}
-
-void SysInfoWifiNetwork::StopListening() {
-}
+void SysInfoWifiNetwork::StartListening(ContextAPI* api) { }
+void SysInfoWifiNetwork::StopListening(ContextAPI* api) { }
 
 void SysInfoWifiNetwork::SetData(picojson::value& data) {
   system_info::SetPicoJsonObjectValue(data, "status",

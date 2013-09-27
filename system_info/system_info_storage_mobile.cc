@@ -8,7 +8,6 @@
 #include <vconf.h>
 
 #include "common/picojson.h"
-#include "system_info/system_info_utils.h"
 
 namespace {
 
@@ -17,15 +16,16 @@ const char* sStorageSDCardPath = "/opt/storage/sdcard";
 
 }  // namespace
 
-SysInfoStorage::SysInfoStorage(ContextAPI* api)
+SysInfoStorage::SysInfoStorage()
     : timeout_cb_id_(0) {
-  api_ = api;
   units_ = picojson::value(picojson::array(0));
+  pthread_mutex_init(&events_list_mutex_, NULL);
 }
 
 SysInfoStorage::~SysInfoStorage() {
-    if (timeout_cb_id_ > 0)
-      g_source_remove(timeout_cb_id_);
+  if (timeout_cb_id_ > 0)
+    g_source_remove(timeout_cb_id_);
+  pthread_mutex_destroy(&events_list_mutex_);
 }
 
 bool SysInfoStorage::Update(picojson::value& error) {

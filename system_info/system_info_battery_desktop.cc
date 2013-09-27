@@ -9,31 +9,41 @@
 #include <string>
 
 #include "common/picojson.h"
-#include "system_info/system_info_utils.h"
 
-SysInfoBattery::SysInfoBattery(ContextAPI* api)
+SysInfoBattery::SysInfoBattery()
     : level_(0.0),
       charging_(false),
       timeout_cb_id_(0) {
-  api_ = api;
   udev_ = udev_new();
+  pthread_mutex_init(&events_list_mutex_, NULL);
 }
 
 SysInfoBattery::~SysInfoBattery() {
   if (udev_)
     udev_unref(udev_);
-}
-
-void SysInfoBattery::StartListening() {
-  // FIXME(halton): Use udev D-Bus interface to monitor.
-  timeout_cb_id_ = g_timeout_add(system_info::default_timeout_interval,
-                SysInfoBattery::OnUpdateTimeout,
-                static_cast<gpointer>(this));
-}
-
-void SysInfoBattery::StopListening() {
   if (timeout_cb_id_ > 0)
     g_source_remove(timeout_cb_id_);
+  pthread_mutex_destroy(&events_list_mutex_);
+}
+
+void SysInfoBattery::StartListening(ContextAPI* api) {
+  // FIXME(halton): Use udev D-Bus interface to monitor.
+  AutoLock lock(&events_list_mutex_);
+  battery_events_.push_back(api);
+  if (timeout_cb_id_ == 0) {
+    timeout_cb_id_ = g_timeout_add(system_info::default_timeout_interval,
+                                   SysInfoBattery::OnUpdateTimeout,
+                                   static_cast<gpointer>(this));
+  }
+}
+
+void SysInfoBattery::StopListening(ContextAPI* api) {
+  AutoLock lock(&events_list_mutex_);
+  battery_events_.remove(api);
+  if (battery_events_.empty() && timeout_cb_id_ > 0) {
+    g_source_remove(timeout_cb_id_);
+    timeout_cb_id_ = 0;
+  }
 }
 
 void SysInfoBattery::Get(picojson::value& error,
@@ -116,7 +126,12 @@ gboolean SysInfoBattery::OnUpdateTimeout(gpointer user_data) {
     system_info::SetPicoJsonObjectValue(output, "data", data);
 
     std::string result = output.serialize();
-    instance->api_->PostMessage(result.c_str());
+    const char* result_as_cstr = result.c_str();
+    AutoLock lock(&(instance->events_list_mutex_));
+    for (SystemInfoEventsList::iterator it = battery_events_.begin();
+         it != battery_events_.end(); it++) {
+      (*it)->PostMessage(result_as_cstr);
+    }
   }
 
   return TRUE;

@@ -13,22 +13,29 @@
 #include "common/extension_adapter.h"
 #include "common/picojson.h"
 #include "common/utils.h"
+#include "system_info/system_info_utils.h"
 
 class SysInfoPeripheral {
  public:
-  explicit SysInfoPeripheral(ContextAPI* api)
-    :isRegister_(false) {
-    api_ = api;
+  static SysInfoPeripheral& GetSysInfoPeripheral() {
+    static SysInfoPeripheral instance;
+    return instance;
   }
   ~SysInfoPeripheral() {
-    if (isRegister_)
-      StopListening();
-}
+    for (SystemInfoEventsList::iterator it = peripheral_events_.begin();
+         it != peripheral_events_.end(); it++)
+      StopListening(*it);
+    pthread_mutex_destroy(&events_list_mutex_);
+  }
   void Get(picojson::value& error, picojson::value& data);
-  void StartListening();
-  void StopListening();
+  void StartListening(ContextAPI* api);
+  void StopListening(ContextAPI* api);
 
  private:
+  explicit SysInfoPeripheral() {
+    pthread_mutex_init(&events_list_mutex_, NULL);
+  }
+
 #if defined(TIZEN_MOBILE)
   void SetWFD(int wfd);
   void SetHDMI(int hdmi);
@@ -40,11 +47,10 @@ class SysInfoPeripheral {
   static void OnHDMIChanged(keynode_t* node, void* user_data);
 #endif
 
-  ContextAPI* api_;
   bool is_video_output_;
   int wfd_;
   int hdmi_;
-  bool isRegister_;
+  pthread_mutex_t events_list_mutex_;
 
   DISALLOW_COPY_AND_ASSIGN(SysInfoPeripheral);
 };
