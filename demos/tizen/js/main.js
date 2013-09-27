@@ -40,7 +40,9 @@ blueApp.adapterPowerSuccessCb = function() {
         content : "Successfully powered " + status + " bluetooth adapter."
     });
     tizen.notification.post(noti);
-    blueApp.discoverDevices();
+
+    if (blueApp.adapter.powered)
+        blueApp.discoverDevices();
 };
 
 /**
@@ -69,11 +71,9 @@ blueApp.adapterStatusToggle = function() {
             blueApp.adapter.setPowered(status, blueApp.adapterPowerSuccessCb,
                                        blueApp.adapterPowerErrCb);
         });
-        blueApp.adapter = tizen.bluetooth.getDefaultAdapter();
     } else {
         blueApp.adapter.setPowered(status, blueApp.adapterPowerSuccessCb,
                                    blueApp.adapterPowerErrCb);
-        blueApp.adapter = null;
     }
 };
 
@@ -226,16 +226,15 @@ blueApp.bluetoothLoad = function() {
         console.log("bluetooth is off");
     }
 
-    if (!blueApp.adapter || !blueApp.adapter.powered) return;
-
     if (blueApp.adapter.visible) {
         $("#visibility-display").html("On");
     }
 
-    $("#bluetooth-toggle").val("on");
+    $("#bluetooth-toggle").val(blueApp.adapter.powered ? 'on' : 'off');
     $("#bluetooth-toggle").slider('refresh');
 
-    blueApp.discoverDevices();
+    if (blueApp.adapter.powered)
+        blueApp.discoverDevices();
 };
 
 /**
