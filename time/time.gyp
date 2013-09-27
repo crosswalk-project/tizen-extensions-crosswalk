@@ -9,6 +9,7 @@
       'variables': {
         'packages': [
           'icu-i18n',
+          'vconf',
         ],
       },
       'includes': [
