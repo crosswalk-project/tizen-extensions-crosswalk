@@ -8,6 +8,8 @@
 #include "common/extension_adapter.h"
 #include "common/picojson.h"
 
+#include "unicode/unistr.h"
+
 class TimeContext {
  public:
   explicit TimeContext(ContextAPI* api)
@@ -21,10 +23,19 @@ class TimeContext {
   void HandleSyncMessage(const char* message);
 
  private:
+  enum DateTimeFormatType {
+      TIME_FORMAT,
+      DATE_FORMAT,
+      DATE_SHORT_FORMAT,
+      DATETIME_FORMAT
+  };
+
   void SetSyncReply(picojson::value v);
 
   const picojson::value::object
      HandleGetLocalTimeZone(const picojson::value& msg);
+  const picojson::value::object
+     HandleGetAvailableTimeZones(const picojson::value& msg);
   const picojson::value::object
      HandleGetTimeZoneRawOffset(const picojson::value& msg);
   const picojson::value::object
@@ -33,6 +44,10 @@ class TimeContext {
      HandleIsDST(const picojson::value& msg);
   const picojson::value::object
      HandleGetDSTTransition(const picojson::value& msg);
+  const picojson::value::object
+     HandleToString(const picojson::value& msg, DateTimeFormatType type);
+
+  UnicodeString getDateTimeFormat(DateTimeFormatType type, bool bLocale);
 
   ContextAPI* api_;
 };
