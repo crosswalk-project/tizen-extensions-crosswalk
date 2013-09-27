@@ -4,25 +4,22 @@
 
 #include "system_info/system_info_wifi_network.h"
 
-#include "system_info/system_info_utils.h"
-
 namespace {
 
 const double kWifiSignalStrengthDivisor = 100.0;
 
 }  // namespace
 
-SysInfoWifiNetwork::SysInfoWifiNetwork(ContextAPI* api)
+SysInfoWifiNetwork::SysInfoWifiNetwork()
     : signal_strength_(0.0),
       ip_address_(""),
       ipv6_address_(""),
       ssid_(""),
       status_("OFF"),
-      is_registered_(false),
       connection_handle_(NULL),
       connection_profile_handle_(NULL) {
-  api_ = api;
   PlatformInitialize();
+  pthread_mutex_init(&events_list_mutex_, NULL);
 }
 
 void SysInfoWifiNetwork::PlatformInitialize() {
@@ -38,29 +35,33 @@ void SysInfoWifiNetwork::PlatformInitialize() {
 }
 
 SysInfoWifiNetwork::~SysInfoWifiNetwork() {
-  if (is_registered_)
-    StopListening();
+  for (SystemInfoEventsList::iterator it = wifi_network_events_.begin();
+       it != wifi_network_events_.end(); it++)
+    StopListening(*it);
   if (connection_profile_handle_)
     free(connection_profile_handle_);
   if (connection_handle_)
     free(connection_handle_);
+  pthread_mutex_destroy(&events_list_mutex_);
 }
 
-void SysInfoWifiNetwork::StartListening() {
-  if (connection_handle_ && !is_registered_) {
+void SysInfoWifiNetwork::StartListening(ContextAPI* api) {
+  AutoLock lock(&events_list_mutex_);
+  wifi_network_events_.push_back(api);
+  if (connection_handle_ && wifi_network_events_.size() == 1) {
     connection_set_type_changed_cb(connection_handle_,
                                    OnTypeChanged, this);
     connection_set_ip_address_changed_cb(connection_handle_,
                                          OnIPChanged, this);
-    is_registered_ = true;
   }
 }
 
-void SysInfoWifiNetwork::StopListening() {
-  if (connection_handle_) {
+void SysInfoWifiNetwork::StopListening(ContextAPI* api) {
+  AutoLock lock(&events_list_mutex_);
+  wifi_network_events_.remove(api);
+  if (connection_handle_ && wifi_network_events_.empty()) {
     connection_unset_type_changed_cb(connection_handle_);
     connection_unset_ip_address_changed_cb(connection_handle_);
-    is_registered_ = false;
   }
 }
 

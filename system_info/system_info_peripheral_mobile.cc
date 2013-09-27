@@ -4,8 +4,6 @@
 
 #include "system_info/system_info_peripheral.h"
 
-#include "system_info/system_info_utils.h"
-
 void SysInfoPeripheral::Get(picojson::value& error,
                             picojson::value& data) {
   if (vconf_get_int(VCONFKEY_MIRACAST_WFD_SOURCE_STATUS, &wfd_) != 0) {
@@ -47,7 +45,12 @@ void SysInfoPeripheral::UpdateIsVideoOutputOn() {
   system_info::SetPicoJsonObjectValue(output, "data", data);
 
   std::string result = output.serialize();
-  api_->PostMessage(result.c_str());
+  const char* result_as_cstr = result.c_str();
+  AutoLock lock(&events_list_mutex_);
+  for (SystemInfoEventsList::iterator it = peripheral_events_.begin();
+       it != peripheral_events_.end(); it++) {
+    (*it)->PostMessage(result_as_cstr);
+  }
 }
 
 void SysInfoPeripheral::SetWFD(int wfd) {
@@ -76,18 +79,28 @@ void SysInfoPeripheral::OnHDMIChanged(keynode_t* node, void* user_data) {
   peripheral->SetHDMI(hdmi);
 }
 
-void SysInfoPeripheral::StartListening() {
+void SysInfoPeripheral::StartListening(ContextAPI* api) {
+  AutoLock lock(&events_list_mutex_);
+  peripheral_events_.push_back(api);
+
+  if (peripheral_events_.size() > 1)
+    return;
+
   vconf_notify_key_changed(VCONFKEY_MIRACAST_WFD_SOURCE_STATUS,
       (vconf_callback_fn)OnWFDChanged, this);
   vconf_notify_key_changed(VCONFKEY_SYSMAN_HDMI,
       (vconf_callback_fn)OnHDMIChanged, this);
-  isRegister_ = true;
 }
 
-void SysInfoPeripheral::StopListening() {
+void SysInfoPeripheral::StopListening(ContextAPI* api) {
+  AutoLock lock(&events_list_mutex_);
+  peripheral_events_.remove(api);
+
+  if (!peripheral_events_.empty())
+    return;
+
   vconf_ignore_key_changed(VCONFKEY_MIRACAST_WFD_SOURCE_STATUS,
       (vconf_callback_fn)OnWFDChanged);
   vconf_ignore_key_changed(VCONFKEY_SYSMAN_HDMI,
       (vconf_callback_fn)OnHDMIChanged);
-  isRegister_ = false;
 }

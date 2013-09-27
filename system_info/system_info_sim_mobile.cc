@@ -4,8 +4,6 @@
 
 #include "system_info/system_info_sim.h"
 
-#include "system_info/system_info_utils.h"
-
 void SysInfoSim::Get(picojson::value& error,
                      picojson::value& data) {
   char* s = NULL;
@@ -167,14 +165,18 @@ std::string SysInfoSim::ToSimStateString(SystemInfoSimState state) {
   return ret;
 }
 
-void SysInfoSim::StartListening() {
-  sim_set_state_changed_cb(OnSimStateChanged, this);
-  isRegister_ = true;
+void SysInfoSim::StartListening(ContextAPI* api) {
+  AutoLock lock(&events_list_mutex_);
+  sim_events_.push_back(api);
+  if (sim_events_.size() == 1)
+    sim_set_state_changed_cb(OnSimStateChanged, this);
 }
 
-void SysInfoSim::StopListening() {
-  sim_unset_state_changed_cb();
-  isRegister_ = false;
+void SysInfoSim::StopListening(ContextAPI* api) {
+  AutoLock lock(&events_list_mutex_);
+  sim_events_.remove(api);
+  if (sim_events_.empty())
+    sim_unset_state_changed_cb();
 }
 
 SysInfoSim::SystemInfoSimState SysInfoSim::Get_systeminfo_sim_state
@@ -215,5 +217,9 @@ void SysInfoSim::OnSimStateChanged(sim_state_e state, void *user_data) {
       picojson::value("SIM"));
   system_info::SetPicoJsonObjectValue(output, "data", data);
   std::string result = output.serialize();
-  sim->api_->PostMessage(result.c_str());
+  const char* result_as_cstr = result.c_str();
+  AutoLock lock(&(sim->events_list_mutex_));
+  for (SystemInfoEventsList::iterator it = sim_events_.begin();
+       it != sim_events_.end(); it++)
+    (*it)->PostMessage(result_as_cstr);
 }

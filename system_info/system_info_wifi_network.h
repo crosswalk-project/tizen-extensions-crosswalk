@@ -29,25 +29,29 @@
 
 class SysInfoWifiNetwork {
  public:
-  explicit SysInfoWifiNetwork(ContextAPI* api);
+  static SysInfoWifiNetwork& GetSysInfoWifiNetwork() {
+    static SysInfoWifiNetwork instance;
+    return instance;
+  }
   ~SysInfoWifiNetwork();
   void Get(picojson::value& error, picojson::value& data);
-  void StartListening();
-  void StopListening();
+  void StartListening(ContextAPI* api);
+  void StopListening(ContextAPI* api);
 
  private:
+  explicit SysInfoWifiNetwork();
   void PlatformInitialize();
 
   bool Update(picojson::value& error);
   void SendUpdate();
   void SetData(picojson::value& data);
 
-  ContextAPI* api_;
   double signal_strength_;
   std::string ip_address_;
   std::string ipv6_address_;
   std::string ssid_;
   std::string status_;
+  pthread_mutex_t events_list_mutex_;
 
 #if defined(GENERIC_DESKTOP)
   G_CALLBACK_WIFI(OnAccessPointCreated, GObject*, GAsyncResult*);
@@ -93,7 +97,6 @@ class SysInfoWifiNetwork {
       void* user_data);
   static void OnTypeChanged(connection_type_e type, void* user_data);
 
-  bool is_registered_;
   connection_h connection_handle_;
   connection_profile_h connection_profile_handle_;
 #endif

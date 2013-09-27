@@ -15,6 +15,7 @@
 #include "common/extension_adapter.h"
 #include "common/picojson.h"
 #include "common/utils.h"
+#include "system_info/system_info_utils.h"
 
 enum SystemInfoDeviceOrientationStatus {
   PORTRAIT_PRIMARY,
@@ -25,22 +26,27 @@ enum SystemInfoDeviceOrientationStatus {
 
 class SysInfoDeviceOrientation {
  public:
-  explicit SysInfoDeviceOrientation(ContextAPI* api)
-    :status_(PORTRAIT_PRIMARY),
-     sensorHandle_(0),
-     isRegister_(false) {
-    api_ = api;
+  static SysInfoDeviceOrientation& GetSysInfoDeviceOrientation() {
+    static SysInfoDeviceOrientation instance;
+    return instance;
   }
   ~SysInfoDeviceOrientation() {
-  if (isRegister_) {
-    StopListening();
+    for (SystemInfoEventsList::iterator it = device_orientation_events_.begin();
+         it != device_orientation_events_.end(); it++)
+      StopListening(*it);
+    pthread_mutex_destroy(&events_list_mutex_);
   }
-}
   void Get(picojson::value& error, picojson::value& data);
-  void StartListening();
-  void StopListening();
+  void StartListening(ContextAPI* api);
+  void StopListening(ContextAPI* api);
 
  private:
+  explicit SysInfoDeviceOrientation()
+      : status_(PORTRAIT_PRIMARY),
+        sensorHandle_(0) {
+    pthread_mutex_init(&events_list_mutex_, NULL);
+  }
+
 #if defined(TIZEN_MOBILE)
   void SetStatus();
   bool SetAutoRotation();
@@ -55,11 +61,10 @@ class SysInfoDeviceOrientation {
                                          void* data);
 #endif
 
-  ContextAPI* api_;
   SystemInfoDeviceOrientationStatus status_;
   bool isAutoRotation_;
   int sensorHandle_;
-  bool isRegister_;
+  pthread_mutex_t events_list_mutex_;
 
   DISALLOW_COPY_AND_ASSIGN(SysInfoDeviceOrientation);
 };

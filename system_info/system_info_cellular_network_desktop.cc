@@ -4,13 +4,11 @@
 
 #include "system_info/system_info_cellular_network.h"
 
-#include "system_info/system_info_utils.h"
-
 void SysInfoCellularNetwork::Get(picojson::value& error,
                                  picojson::value& data) {
   system_info::SetPicoJsonObjectValue(error, "message",
       picojson::value("Cellular Network is not supported on desktop."));
 }
 
-void SysInfoCellularNetwork::StartListening() { }
-void SysInfoCellularNetwork::StopListening() { }
+void SysInfoCellularNetwork::StartListening(ContextAPI* api) { }
+void SysInfoCellularNetwork::StopListening(ContextAPI* api) { }

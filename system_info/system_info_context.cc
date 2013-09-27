@@ -18,33 +18,35 @@ DEFINE_XWALK_EXTENSION(SystemInfoContext);
 
 SystemInfoContext::SystemInfoContext(ContextAPI* api)
     : api_(api),
-      battery_(new SysInfoBattery(api)),
-      build_(new SysInfoBuild(api)),
-      cellular_network_(new SysInfoCellularNetwork(api)),
-      cpu_(new SysInfoCpu(api)),
-      device_orientation_(new SysInfoDeviceOrientation(api)),
-      display_(new SysInfoDisplay(api)),
-      locale_(new SysInfoLocale(api)),
-      sim_(new SysInfoSim(api)),
-      storage_(new SysInfoStorage(api)),
-      network_(new SysInfoNetwork(api)),
-      peripheral_(new SysInfoPeripheral(api)),
-      wifi_network_(new SysInfoWifiNetwork(api)) {
+      battery_(SysInfoBattery::GetSysInfoBattery()),
+      build_(SysInfoBuild::GetSysInfoBuild()),
+      cellular_network_(
+          SysInfoCellularNetwork::GetSysInfoCellularNetwork()),
+      cpu_(SysInfoCpu::GetSysInfoCpu()),
+      device_orientation_(
+          SysInfoDeviceOrientation::GetSysInfoDeviceOrientation()),
+      display_(SysInfoDisplay::GetSysInfoDisplay()),
+      locale_(SysInfoLocale::GetSysInfoLocale()),
+      sim_(SysInfoSim::GetSysInfoSim()),
+      storage_(SysInfoStorage::GetSysInfoStorage()),
+      network_(SysInfoNetwork::GetSysInfoNetwork()),
+      peripheral_(SysInfoPeripheral::GetSysInfoPeripheral()),
+      wifi_network_(SysInfoWifiNetwork::GetSysInfoWifiNetwork()) {
 }
 
 SystemInfoContext::~SystemInfoContext() {
-  delete wifi_network_;
-  delete peripheral_;
-  delete network_;
-  delete storage_;
-  delete sim_;
-  delete locale_;
-  delete display_;
-  delete device_orientation_;
-  delete cpu_;
-  delete cellular_network_;
-  delete build_;
-  delete battery_;
+  cpu_.StopListening(api_);
+  wifi_network_.StopListening(api_);
+  peripheral_.StopListening(api_);
+  network_.StopListening(api_);
+  storage_.StopListening(api_);
+  sim_.StopListening(api_);
+  locale_.StopListening(api_);
+  display_.StopListening(api_);
+  device_orientation_.StopListening(api_);
+  cellular_network_.StopListening(api_);
+  build_.StopListening(api_);
+  battery_.StopListening(api_);
   delete api_;
 }
 
@@ -70,29 +72,29 @@ void SystemInfoContext::HandleGetPropertyValue(const picojson::value& input,
   std::string prop = input.get("prop").to_str();
 
   if (prop == "BATTERY") {
-    battery_->Get(error, data);
+    battery_.Get(error, data);
   } else if (prop == "CPU") {
-    cpu_->Get(error, data);
+    cpu_.Get(error, data);
   } else if (prop == "STORAGE") {
-    storage_->Get(error, data);
+    storage_.Get(error, data);
   } else if (prop == "DISPLAY") {
-    display_->Get(error, data);
+    display_.Get(error, data);
   } else if (prop == "DEVICE_ORIENTATION") {
-    device_orientation_->Get(error, data);
+    device_orientation_.Get(error, data);
   } else if (prop == "BUILD") {
-    build_->Get(error, data);
+    build_.Get(error, data);
   } else if (prop == "LOCALE") {
-    locale_->Get(error, data);
+    locale_.Get(error, data);
   } else if (prop == "NETWORK") {
-    network_->Get(error, data);
+    network_.Get(error, data);
   } else if (prop == "WIFI_NETWORK") {
-    wifi_network_->Get(error, data);
+    wifi_network_.Get(error, data);
   } else if (prop == "CELLULAR_NETWORK") {
-    cellular_network_->Get(error, data);
+    cellular_network_.Get(error, data);
   } else if (prop == "SIM") {
-    sim_->Get(error, data);
+    sim_.Get(error, data);
   } else if (prop == "PERIPHERAL") {
-    peripheral_->Get(error, data);
+    peripheral_.Get(error, data);
   } else {
     system_info::SetPicoJsonObjectValue(error, "message",
         picojson::value("Not supported property " + prop));
@@ -112,29 +114,29 @@ void SystemInfoContext::HandleStartListening(const picojson::value& input) {
   std::string prop = input.get("prop").to_str();
 
   if (prop == "BATTERY") {
-    battery_->StartListening();
+    battery_.StartListening(api_);
   } else if (prop == "CPU") {
-    cpu_->StartListening();
+    cpu_.StartListening(api_);
   } else if (prop == "STORAGE") {
-    storage_->StartListening();
+    storage_.StartListening(api_);
   } else if (prop == "DISPLAY") {
-    display_->StartListening();
+    display_.StartListening(api_);
   } else if (prop == "DEVICE_ORIENTATION") {
-    device_orientation_->StartListening();
+    device_orientation_.StartListening(api_);
   } else if (prop == "BUILD") {
-    build_->StartListening();
+    build_.StartListening(api_);
   } else if (prop == "LOCALE") {
-    locale_->StartListening();
+    locale_.StartListening(api_);
   } else if (prop == "NETWORK") {
-    network_->StartListening();
+    network_.StartListening(api_);
   } else if (prop == "WIFI_NETWORK") {
-    wifi_network_->StartListening();
+    wifi_network_.StartListening(api_);
   } else if (prop == "CELLULAR_NETWORK") {
-    cellular_network_->StartListening();
+    cellular_network_.StartListening(api_);
   } else if (prop == "SIM") {
-    sim_->StartListening();
+    sim_.StartListening(api_);
   } else if (prop == "PERIPHERAL") {
-    peripheral_->StartListening();
+    peripheral_.StartListening(api_);
   }
 }
 
@@ -142,29 +144,29 @@ void SystemInfoContext::HandleStopListening(const picojson::value& input) {
   std::string prop = input.get("prop").to_str();
 
   if (prop == "BATTERY") {
-    battery_->StopListening();
+    battery_.StopListening(api_);
   } else if (prop == "CPU") {
-    cpu_->StopListening();
+    cpu_.StopListening(api_);
   } else if (prop == "STORAGE") {
-    storage_->StopListening();
+    storage_.StopListening(api_);
   } else if (prop == "DISPLAY") {
-    display_->StopListening();
+    display_.StopListening(api_);
   } else if (prop == "DEVICE_ORIENTATION") {
-    device_orientation_->StopListening();
+    device_orientation_.StopListening(api_);
   } else if (prop == "BUILD") {
-    build_->StopListening();
+    build_.StopListening(api_);
   } else if (prop == "LOCALE") {
-    locale_->StopListening();
+    locale_.StopListening(api_);
   } else if (prop == "NETWORK") {
-    network_->StopListening();
+    network_.StopListening(api_);
   } else if (prop == "WIFI_NETWORK") {
-    wifi_network_->StopListening();
+    wifi_network_.StopListening(api_);
   } else if (prop == "CELLULAR_NETWORK") {
-    cellular_network_->StopListening();
+    cellular_network_.StopListening(api_);
   } else if (prop == "SIM") {
-    sim_->StopListening();
+    sim_.StopListening(api_);
   } else if (prop == "PERIPHERAL") {
-    peripheral_->StopListening();
+    peripheral_.StopListening(api_);
   }
 }
 

@@ -12,15 +12,6 @@
 #include <string>
 
 #include "common/picojson.h"
-#include "system_info/system_info_utils.h"
-
-SysInfoBuild::SysInfoBuild(ContextAPI* api)
-    : timeout_cb_id_(0) {
-  api_ = api;
-}
-
-SysInfoBuild::~SysInfoBuild() {
-}
 
 void SysInfoBuild::Get(picojson::value& error,
                        picojson::value& data) {
@@ -134,7 +125,12 @@ gboolean SysInfoBuild::OnUpdateTimeout(gpointer user_data) {
     system_info::SetPicoJsonObjectValue(output, "data", data);
 
     std::string result = output.serialize();
-    instance->api_->PostMessage(result.c_str());
+    const char* result_as_cstr = result.c_str();
+    AutoLock lock(&(instance->events_list_mutex_));
+    for (SystemInfoEventsList::iterator it = build_events_.begin();
+         it != build_events_.end(); it++) {
+      (*it)->PostMessage(result_as_cstr);
+    }
   }
 
   return TRUE;

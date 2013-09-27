@@ -4,8 +4,6 @@
 
 #include "system_info/system_info_network.h"
 
-#include "system_info/system_info_utils.h"
-
 void SysInfoNetwork::Get(picojson::value& error,
                          picojson::value& data) {
   if (!Update(error)) {

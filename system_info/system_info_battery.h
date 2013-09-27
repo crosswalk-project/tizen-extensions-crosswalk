@@ -20,19 +20,25 @@
 
 class SysInfoBattery {
  public:
-  explicit SysInfoBattery(ContextAPI* api);
+  static SysInfoBattery& GetSysInfoBattery() {
+    static SysInfoBattery instance;
+    return instance;
+  }
+
   ~SysInfoBattery();
   void Get(picojson::value& error, picojson::value& data);
-  void StartListening();
-  void StopListening();
+  void StartListening(ContextAPI* api);
+  void StopListening(ContextAPI* api);
 
  private:
+  explicit SysInfoBattery();
   bool Update(picojson::value& error);
   void SetData(picojson::value& data);
 
 #if defined(GENERIC_DESKTOP)
   static gboolean OnUpdateTimeout(gpointer user_data);
 
+  udev* udev_;
   int timeout_cb_id_;
 #elif defined(TIZEN_MOBILE)
   void UpdateLevel(double level);
@@ -40,13 +46,11 @@ class SysInfoBattery {
   static void OnLevelChanged(keynode_t* node, void* user_data);
   static void OnIsChargingChanged(keynode_t* node, void* user_data);
 
-  bool is_registered_;
 #endif
 
-  ContextAPI* api_;
-  struct udev* udev_;
   double level_;
   bool charging_;
+  pthread_mutex_t events_list_mutex_;
 
   DISALLOW_COPY_AND_ASSIGN(SysInfoBattery);
 };
