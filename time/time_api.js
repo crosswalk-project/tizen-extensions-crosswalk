@@ -179,9 +179,7 @@ tizen.TZDate = (function() {
     var toTimezone = function(timezone) {
       if (timezone_ == timezone)
         return this;
-      var d = new TZDate(date_.getFullYear(), date_.getMonth(), date_.getDate(),
-                         date_.getHours(), date_.getMinutes(), date_.getSeconds(),
-                         date_.getMilliseconds(), timezone);
+      var d = new TZDate(new Date(date_.getTime()), timezone);
       return d.addDuration(new tizen.TimeDuration((getTimezoneRawOffset(timezone) * 1) +
                                                   (getTimezoneRawOffset(timezone_) * -1)));
     };
@@ -324,9 +322,7 @@ tizen.TZDate = (function() {
         }
       },
       addDuration: function(duration) {
-        var date = new TZDate(date_.getFullYear(), date_.getMonth(), date_.getDate(),
-                              date_.getHours(), date_.getMinutes(), date_.getSeconds(),
-                              date_.getMilliseconds(), timezone_);
+        var date = new TZDate(new Date(date_.getTime()), timezone_);
         date.setMilliseconds(duration.getMilliseconds() + date.getMilliseconds());
         return date;
       },
