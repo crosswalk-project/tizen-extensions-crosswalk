@@ -164,7 +164,8 @@ var handleDeviceFound = function(msg) {
 var handleDiscoveryFinished = function() {
   // FIXME(jeez): we are not returning a deep copy so we can keep
   // the devices up-to-date. We have to find a better way to handle this.
-  adapter.discovery_callbacks.onfinished(adapter.found_devices);
+  if (typeof adapter.discovery_callbacks.onfinished === 'function')
+    adapter.discovery_callbacks.onfinished(adapter.found_devices);
 
   adapter.found_devices = [];
   adapter.discovery_callbacks = {};
@@ -528,7 +529,9 @@ BluetoothAdapter.prototype.discoverDevices = function(discoverySuccessCallback, 
     }
 
     adapter.discovery_callbacks = discoverySuccessCallback;
-    discoverySuccessCallback.onstarted();
+
+    if (discoverySuccessCallback && typeof discoverySuccessCallback.onstarted === 'function')
+      discoverySuccessCallback.onstarted();
   });
 };
 
