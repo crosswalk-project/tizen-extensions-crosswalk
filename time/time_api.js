@@ -68,6 +68,12 @@ var TimeDurationUnit = [
 ];
 
 tizen.TimeDuration = function(length, unit) {
+  // FIXME(cmarcelo): This is a best effort to ensure that this function is
+  // called as a constructor only. We may need to implement some native
+  // primitive to ensure that.
+  if (!this || this.constructor != tizen.TimeDuration)
+    throw new TypeError;
+
   this.length = length || 0;
   this.unit = unit || 'MSECS';
 
@@ -152,6 +158,12 @@ tizen.TimeDuration.prototype.toString = function() {
 };
 
 tizen.TZDate = function(year, month, day, hours, minutes, seconds, milliseconds, timezone) {
+  // FIXME(cmarcelo): This is a best effort to ensure that this function is
+  // called as a constructor only. We may need to implement some native
+  // primitive to ensure that.
+  if (!this || this.constructor != tizen.TZDate)
+    throw new TypeError;
+
   this.date_;
   this.timezone_ = timezone || tizen.time.getLocalTimezone();
 
