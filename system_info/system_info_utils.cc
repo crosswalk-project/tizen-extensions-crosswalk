@@ -5,6 +5,10 @@
 #include "system_info/system_info_utils.h"
 
 #include <stdio.h>
+#include <unistd.h>
+
+#include <algorithm>
+#include <fstream>
 
 namespace system_info {
 
@@ -55,6 +59,28 @@ void SetPicoJsonObjectValue(picojson::value& obj,
                             const picojson::value& val) {
   picojson::object& o = obj.get<picojson::object>();
   o[prop] = val;
+}
+
+std::string GetPropertyFromFile(const std::string& file_path,
+                                const std::string& key) {
+  std::ifstream in(file_path.c_str());
+  if (!in)
+    return "";
+
+  std::string line;
+  while (getline(in, line)) {
+    line.erase(std::remove_if(line.begin(), line.end(), isspace), line.end());
+
+    if (line.substr(0, line.find("=")) == key) {
+      return line.substr(line.find("=") + 1, line.length());
+    }
+  }
+
+  return "";
+}
+
+bool IsExist(const char* path) {
+  return 0 == access(path, F_OK);
 }
 
 }  // namespace system_info

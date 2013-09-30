@@ -22,7 +22,9 @@
               'capi-network-connection',
               'capi-system-info',
               'capi-system-runtime-info',
+              'capi-system-sensor',
               'capi-telephony-sim',
+              'pkgmgr-info',
               'vconf',
             ]
           },
