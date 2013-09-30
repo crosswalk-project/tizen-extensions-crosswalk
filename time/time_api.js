@@ -152,34 +152,34 @@ tizen.TimeDuration.prototype.toString = function() {
 };
 
 tizen.TZDate = function(year, month, day, hours, minutes, seconds, milliseconds, timezone) {
-    this.date_;
-    this.timezone_ = timezone || tizen.time.getLocalTimezone();
+  this.date_;
+  this.timezone_ = timezone || tizen.time.getLocalTimezone();
 
-    var hours = hours || 0;
-    var minutes = minutes || 0;
-    var seconds = seconds || 0;
-    var milliseconds = milliseconds || 0;
+  var hours = hours || 0;
+  var minutes = minutes || 0;
+  var seconds = seconds || 0;
+  var milliseconds = milliseconds || 0;
 
-    if (!arguments.length)
-      this.date_ = new Date();
-    else if (arguments.length == 1 || arguments.length == 2) {
-      if (arguments[0] instanceof Date)
-        this.date_ = arguments[0];
-      else
-        this.date_ = new Date();
-      if (arguments[1])
-        this.timezone_ = arguments[1];
-    }
+  if (!arguments.length)
+    this.date_ = new Date();
+  else if (arguments.length == 1 || arguments.length == 2) {
+    if (arguments[0] instanceof Date)
+      this.date_ = arguments[0];
     else
-      this.date_ = new Date(year, month, day, hours, minutes, seconds, milliseconds);
+      this.date_ = new Date();
+    if (arguments[1])
+      this.timezone_ = arguments[1];
+  }
+  else
+    this.date_ = new Date(year, month, day, hours, minutes, seconds, milliseconds);
 
-    if (tizen.time.getAvailableTimezones().indexOf(this.timezone_) < 0)
-      throw new tizen.WebAPIException(tizen.WebAPIException.INVALID_VALUES_ERR);
+  if (tizen.time.getAvailableTimezones().indexOf(this.timezone_) < 0)
+    throw new tizen.WebAPIException(tizen.WebAPIException.INVALID_VALUES_ERR);
 };
 
 function getTimezoneRawOffset(timezone) {
   return _sendSyncMessage('GetTimeZoneRawOffset', timezone).value;
-};
+}
 
 tizen.TZDate.prototype.getDate = function() {
   return this.date_.getDate();
