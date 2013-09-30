@@ -35,10 +35,10 @@ SystemInfoContext::SystemInfoContext(ContextAPI* api)
           SysInfoDeviceOrientation::GetSysInfoDeviceOrientation()),
       display_(SysInfoDisplay::GetSysInfoDisplay()),
       locale_(SysInfoLocale::GetSysInfoLocale()),
-      sim_(SysInfoSim::GetSysInfoSim()),
-      storage_(SysInfoStorage::GetSysInfoStorage()),
       network_(SysInfoNetwork::GetSysInfoNetwork()),
       peripheral_(SysInfoPeripheral::GetSysInfoPeripheral()),
+      sim_(SysInfoSim::GetSysInfoSim()),
+      storage_(SysInfoStorage::GetSysInfoStorage()),
       wifi_network_(SysInfoWifiNetwork::GetSysInfoWifiNetwork()) {
 }
 
