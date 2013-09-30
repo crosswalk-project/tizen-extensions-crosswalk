@@ -89,7 +89,7 @@ const picojson::value::object TimeContext::HandleGetAvailableTimeZones(
   picojson::value::object o;
 
   UErrorCode ec = U_ZERO_ERROR;
-  std::auto_ptr<StringEnumeration> timezones(TimeZone::createEnumeration());
+  std::unique_ptr<StringEnumeration> timezones(TimeZone::createEnumeration());
   int32_t count = timezones->count(ec);
 
   if (U_FAILURE(ec))
@@ -116,7 +116,7 @@ const picojson::value::object TimeContext::HandleGetTimeZoneRawOffset(
   const picojson::value& msg) {
   picojson::value::object o;
 
-  std::auto_ptr<UnicodeString> id(
+  std::unique_ptr<UnicodeString> id(
     new UnicodeString(msg.get("timezone").to_str().c_str()));
 
   std::stringstream offset;
@@ -131,7 +131,7 @@ const picojson::value::object TimeContext::HandleGetTimeZoneAbbreviation(
   const picojson::value& msg) {
   picojson::value::object o;
 
-  std::auto_ptr<UnicodeString> id(
+  std::unique_ptr<UnicodeString> id(
     new UnicodeString(msg.get("timezone").to_str().c_str()));
   UDate dateInMs = strtod(msg.get("value").to_str().c_str(), NULL);
 
@@ -139,7 +139,7 @@ const picojson::value::object TimeContext::HandleGetTimeZoneAbbreviation(
     return o;
 
   UErrorCode ec = U_ZERO_ERROR;
-  std::auto_ptr<Calendar> cal(
+  std::unique_ptr<Calendar> cal(
     Calendar::createInstance(TimeZone::createTimeZone(*id), ec));
   if (U_FAILURE(ec))
     return o;
@@ -148,7 +148,7 @@ const picojson::value::object TimeContext::HandleGetTimeZoneAbbreviation(
   if (U_FAILURE(ec))
     return o;
 
-  std::auto_ptr<DateFormat> fmt(
+  std::unique_ptr<DateFormat> fmt(
     new SimpleDateFormat(UnicodeString("z"), Locale::getEnglish(), ec));
   if (U_FAILURE(ec))
     return o;
@@ -171,7 +171,7 @@ const picojson::value::object TimeContext::HandleIsDST(
   const picojson::value& msg) {
   picojson::value::object o;
 
-  std::auto_ptr<UnicodeString> id(
+  std::unique_ptr<UnicodeString> id(
     new UnicodeString(msg.get("timezone").to_str().c_str()));
   UDate dateInMs = strtod(msg.get("value").to_str().c_str(), NULL);
 
@@ -179,7 +179,7 @@ const picojson::value::object TimeContext::HandleIsDST(
     return o;
 
   UErrorCode ec = U_ZERO_ERROR;
-  std::auto_ptr<Calendar> cal(
+  std::unique_ptr<Calendar> cal(
     Calendar::createInstance(TimeZone::createTimeZone(*id), ec));
   if (U_FAILURE(ec))
     return o;
@@ -197,7 +197,7 @@ const picojson::value::object TimeContext::HandleGetDSTTransition(
   const picojson::value& msg) {
   picojson::value::object o;
 
-  std::auto_ptr<UnicodeString> id(
+  std::unique_ptr<UnicodeString> id(
     new UnicodeString(msg.get("timezone").to_str().c_str()));
   std::string trans = msg.get("trans").to_str();
   UDate dateInMs = strtod(msg.get("value").to_str().c_str(), NULL);
@@ -205,7 +205,7 @@ const picojson::value::object TimeContext::HandleGetDSTTransition(
   if (errno == ERANGE)
     return o;
 
-  std::auto_ptr<VTimeZone> vtimezone(VTimeZone::createVTimeZoneByID(*id));
+  std::unique_ptr<VTimeZone> vtimezone(VTimeZone::createVTimeZoneByID(*id));
 
   if (!vtimezone->useDaylightTime())
     return o;
@@ -224,7 +224,7 @@ const picojson::value::object TimeContext::HandleToString(
   const picojson::value& msg, DateTimeFormatType format) {
   picojson::value::object o;
 
-  std::auto_ptr<UnicodeString> id(
+  std::unique_ptr<UnicodeString> id(
     new UnicodeString(msg.get("timezone").to_str().c_str()));
   bool bLocale = msg.get("locale").evaluate_as_boolean();
 
@@ -233,7 +233,7 @@ const picojson::value::object TimeContext::HandleToString(
     return o;
 
   UErrorCode ec = U_ZERO_ERROR;
-  std::auto_ptr<Calendar> cal(
+  std::unique_ptr<Calendar> cal(
     Calendar::createInstance(TimeZone::createTimeZone(*id), ec));
   if (U_FAILURE(ec))
     return o;
@@ -242,7 +242,7 @@ const picojson::value::object TimeContext::HandleToString(
   if (U_FAILURE(ec))
     return o;
 
-  std::auto_ptr<DateFormat> fmt(
+  std::unique_ptr<DateFormat> fmt(
     new SimpleDateFormat(getDateTimeFormat(format, bLocale),
                         (bLocale ? Locale::getDefault() : Locale::getEnglish()),
                          ec));
@@ -266,7 +266,7 @@ const picojson::value::object TimeContext::HandleToString(
 UnicodeString TimeContext::getDateTimeFormat(DateTimeFormatType type,
                                              bool bLocale) {
   UErrorCode ec = U_ZERO_ERROR;
-  std::auto_ptr<DateTimePatternGenerator> dateTimepattern(
+  std::unique_ptr<DateTimePatternGenerator> dateTimepattern(
      DateTimePatternGenerator::createInstance(
         (bLocale ? Locale::getDefault() : Locale::getEnglish()), ec));
 
