@@ -3,8 +3,8 @@
 // found in the LICENSE file.
 
 var NetworkType = {
-  "CELLULAR" : 0,
-  "UNKNOWN" : 1
+  'CELLULAR' : 0,
+  'UNKNOWN' : 1
 };
 
 var _callbacks = {};
@@ -15,7 +15,7 @@ function _messageListener(msg) {
   var handler = _callbacks[m.reply_id];
   var no_error = tizen.WebAPIError.NO_ERROR;
 
-  if (!(m.cmd == "requestRouteToHost" && m.disconnected == false && m.error == no_error))
+  if (!(m.cmd == 'requestRouteToHost' && m.disconnected == false && m.error == no_error))
     delete _callbacks[m.reply_id];
 
   if (m.error != no_error && handler[1]) {
@@ -28,43 +28,43 @@ function _messageListener(msg) {
     return;
   }
 
-  if (m.cmd == "releaseRouteToHost")
+  if (m.cmd == 'releaseRouteToHost')
     handler[0]();
   else
     handler[0].onsuccess();
-};
+}
 
 function _typeMismatchError() {
   throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
-};
+}
 
 function _routeToHost(cmd, networkType, domainName, successCallback, errorCallback) {
   if (!networkType in NetworkType)
     _typeMismatchError();
 
-  if (typeof domainName !== "string")
+  if (typeof domainName !== 'string')
     _typeMismatchError();
 
-  if (errorCallback && typeof errorCallback !== "function")
+  if (errorCallback && typeof errorCallback !== 'function')
     _typeMismatchError();
 
-  if (cmd == "requestRouteToHost") {
-    if (typeof successCallback !== "object")
+  if (cmd == 'requestRouteToHost') {
+    if (typeof successCallback !== 'object')
       _typeMismatchError();
 
-    if (!successCallback.hasOwnProperty("onsuccess"))
+    if (!successCallback.hasOwnProperty('onsuccess'))
       _typeMismatchError();
 
-    if (typeof successCallback.onsuccess !== "function")
+    if (typeof successCallback.onsuccess !== 'function')
       _typeMismatchError();
 
-    if (!successCallback.hasOwnProperty("ondisconnected"))
+    if (!successCallback.hasOwnProperty('ondisconnected'))
       _typeMismatchError();
 
-    if (typeof successCallback.ondisconnected !== "function")
+    if (typeof successCallback.ondisconnected !== 'function')
       _typeMismatchError();
   } else {
-    if (typeof successCallback !== "function")
+    if (typeof successCallback !== 'function')
       _typeMismatchError();
   }
 
@@ -72,19 +72,19 @@ function _routeToHost(cmd, networkType, domainName, successCallback, errorCallba
   _callbacks[id] = [successCallback, errorCallback];
 
   extension.postMessage(JSON.stringify({
-    "cmd": cmd,
-    "network_type": NetworkType[networkType],
-    "domain_name": domainName,
-    "reply_id": id,
+    'cmd': cmd,
+    'network_type': NetworkType[networkType],
+    'domain_name': domainName,
+    'reply_id': id
   }));
-};
+}
 
 extension.setMessageListener(_messageListener);
 
 exports.requestRouteToHost = function(networkType, domainName, successCallback, errorCallback) {
-  _routeToHost("requestRouteToHost", networkType, domainName, successCallback, errorCallback);
+  _routeToHost('requestRouteToHost', networkType, domainName, successCallback, errorCallback);
 };
 
 exports.releaseRouteToHost = function(networkType, domainName, successCallback, errorCallback) {
-  _routeToHost("releaseRouteToHost", networkType, domainName, successCallback, errorCallback);
+  _routeToHost('releaseRouteToHost', networkType, domainName, successCallback, errorCallback);
 };
