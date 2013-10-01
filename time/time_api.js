@@ -481,7 +481,7 @@ tizen.TZDate.prototype.getPreviousDSTTransition = function() {
                                 _getTimeWithOffset(this.date_), 'NEXT_TRANSITION');
 
   if (result.error || result.value == 0)
-    return undefined;
+    return null;
   return new tizen.TZDate(new Date(result.value - OffsetInMilliseconds), this.timezone_);
 };
 
@@ -491,6 +491,6 @@ tizen.TZDate.prototype.getNextDSTTransition = function() {
                                 _getTimeWithOffset(this.date_), 'PREV_TRANSITION');
 
   if (result.error || result.value == 0)
-    return undefined;
+    return null;
   return new tizen.TZDate(new Date(result.value - OffsetInMilliseconds), this.timezone_);
 };
