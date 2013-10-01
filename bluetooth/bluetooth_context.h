@@ -175,6 +175,8 @@ class BluetoothContext {
                                          const char* name,
                                          gpointer user_data);
 
+  void AdapterSetPowered(const picojson::value& msg);
+
   void DeviceFound(std::string address, GVariantIter* properties);
 
   static gboolean OnSocketHasData(GSocket* client, GIOCondition cond,
