@@ -21,6 +21,12 @@
 #include "unicode/smpdtfmt.h"
 #include "unicode/dtptngen.h"
 
+namespace {
+
+const int _hourInMilliseconds = 3600000;
+
+}  // namespace
+
 DEFINE_XWALK_EXTENSION(TimeContext)
 
 const char TimeContext::name[] = "tizen.time";
@@ -48,8 +54,8 @@ void TimeContext::HandleSyncMessage(const char* message) {
     o = HandleGetLocalTimeZone(v);
   else if (cmd == "GetAvailableTimeZones")
     o = HandleGetAvailableTimeZones(v);
-  else if (cmd == "GetTimeZoneRawOffset")
-    o = HandleGetTimeZoneRawOffset(v);
+  else if (cmd == "GetTimeZoneOffset")
+    o = HandleGetTimeZoneOffset(v);
   else if (cmd == "GetTimeZoneAbbreviation")
     o = HandleGetTimeZoneAbbreviation(v);
   else if (cmd == "IsDST")
@@ -112,17 +118,36 @@ const picojson::value::object TimeContext::HandleGetAvailableTimeZones(
   return o;
 }
 
-const picojson::value::object TimeContext::HandleGetTimeZoneRawOffset(
+const picojson::value::object TimeContext::HandleGetTimeZoneOffset(
   const picojson::value& msg) {
   picojson::value::object o;
 
   std::unique_ptr<UnicodeString> id(
     new UnicodeString(msg.get("timezone").to_str().c_str()));
+  UDate dateInMs = strtod(msg.get("value").to_str().c_str(), NULL);
 
-  std::stringstream offset;
-  offset << TimeZone::createTimeZone(*id)->getRawOffset();
+  if (errno == ERANGE)
+    return o;
 
-  o["value"] = picojson::value(offset.str());
+  UErrorCode ec = U_ZERO_ERROR;
+  std::unique_ptr<TimeZone> timezone(TimeZone::createTimeZone(*id));
+  std::unique_ptr<Calendar> cal(Calendar::createInstance(*timezone, ec));
+  if (U_FAILURE(ec))
+    return o;
+
+  cal->setTime(dateInMs, ec);
+  if (U_FAILURE(ec))
+    return o;
+
+  int32_t offset = timezone->getRawOffset();
+
+  if (cal->inDaylightTime(ec))
+    offset += _hourInMilliseconds;
+
+  std::stringstream offsetStr;
+  offsetStr << offset;
+
+  o["value"] = picojson::value(offsetStr.str());
 
   return o;
 }
@@ -174,6 +199,7 @@ const picojson::value::object TimeContext::HandleIsDST(
   std::unique_ptr<UnicodeString> id(
     new UnicodeString(msg.get("timezone").to_str().c_str()));
   UDate dateInMs = strtod(msg.get("value").to_str().c_str(), NULL);
+  dateInMs -= _hourInMilliseconds;
 
   if (errno == ERANGE)
     return o;

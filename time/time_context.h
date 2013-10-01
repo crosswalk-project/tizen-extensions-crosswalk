@@ -37,7 +37,7 @@ class TimeContext {
   const picojson::value::object
      HandleGetAvailableTimeZones(const picojson::value& msg);
   const picojson::value::object
-     HandleGetTimeZoneRawOffset(const picojson::value& msg);
+     HandleGetTimeZoneOffset(const picojson::value& msg);
   const picojson::value::object
      HandleGetTimeZoneAbbreviation(const picojson::value& msg);
   const picojson::value::object
