@@ -16,10 +16,6 @@
       'includes': [
         '../common/pkg-config.gypi',
       ],
-      # Can't use the flag since BlueZ's bluetooth.h is not compatible with it.
-      'cflags!': [
-        '-std=c++0x',
-      ],
       'sources': [
         'bluetooth_api.js',
         'bluetooth_context.cc',

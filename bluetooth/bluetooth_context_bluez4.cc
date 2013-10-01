@@ -14,6 +14,11 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
+// FIXME: C++0x removed support for typeof. bluetooth.h requires it, so until
+// bluetooth.h is fixed to use something future safe, use the GCC intrinsic
+// __typeof__ as replacement.
+#define typeof(x) __typeof__(x)
+
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/rfcomm.h>
 
