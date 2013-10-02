@@ -14,6 +14,11 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
+// FIXME: C++0x removed support for typeof. bluetooth.h requires it, so until
+// bluetooth.h is fixed to use something future safe, use the GCC intrinsic
+// __typeof__ as replacement.
+#define typeof(x) __typeof__(x)
+
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/rfcomm.h>
 
@@ -161,29 +166,14 @@ void BluetoothContext::OnSignal(GDBusProxy* proxy, gchar* sender, gchar* signal,
 
       g_variant_iter_free(iter);
     } else {
+      handler->adapter_info_[name] = g_variant_print(value, false);
+
       picojson::value::object property_updated;
       property_updated["cmd"] = picojson::value("AdapterUpdated");
       property_updated[name] = picojson::value(handler->adapter_info_[name]);
       handler->PostMessage(picojson::value(property_updated));
-
-      // If in our callback ids map we have a reply_id related to the property
-      // being updated now, then we must also reply to the PostMessage call.
-      // This way we enforce that our JavaScript context calls the onsuccess
-      // return callback only after the property has actually been modified.
-      std::map<std::string, std::string>::iterator it =
-          handler->callbacks_map_.find(name);
-
-      if (it != handler->callbacks_map_.end()) {
-        picojson::value::object property_changed;
-        property_changed["cmd"] = picojson::value("");
-        property_changed["reply_id"] = picojson::value(it->second);
-        property_changed["error"] = picojson::value(static_cast<double>(0));
-        handler->PostMessage(picojson::value(property_changed));
-        handler->callbacks_map_.erase(it);
-      }
-
-      g_variant_unref(value);
     }
+    g_variant_unref(value);
   }
 }
 
@@ -224,6 +214,46 @@ void BluetoothContext::OnDeviceSignal(GDBusProxy* proxy, gchar* sender, gchar* s
   handler->PostMessage(picojson::value(o));
 }
 
+// static
+void BluetoothContext::OnManagerSignal(GDBusProxy* proxy, gchar* sender_name,
+                                       gchar* signal, GVariant* parameters,
+                                       gpointer user_data)
+{
+  BluetoothContext* handler = reinterpret_cast<BluetoothContext*>(user_data);
+  const char* iface = g_dbus_proxy_get_interface_name(proxy);
+
+  // We only want org.bluez.Manager signals.
+  if (strcmp(iface, "org.bluez.Manager"))
+    return;
+
+  // More specifically, DefaultAdapterChanged ones.
+  if (strcmp(signal, "DefaultAdapterChanged"))
+    return;
+
+  const char* path;
+  g_variant_get(parameters, "(o)", &path);
+
+  g_dbus_proxy_new_for_bus(G_BUS_TYPE_SYSTEM,
+                           G_DBUS_PROXY_FLAGS_NONE,
+                           NULL, /* GDBusInterfaceInfo */
+                           "org.bluez",
+                           path,
+                           "org.bluez.Adapter",
+                           handler->all_pending_, /* GCancellable */
+                           OnAdapterProxyCreatedThunk,
+                           CancellableWrap(handler->all_pending_, handler));
+
+  g_dbus_proxy_new_for_bus(G_BUS_TYPE_SYSTEM,
+                           G_DBUS_PROXY_FLAGS_NONE,
+                           NULL, /* GDBusInterfaceInfo */
+                           "org.bluez",
+                           path,
+                           "org.bluez.Service",
+                           handler->all_pending_, /* GCancellable */
+                           OnServiceProxyCreatedThunk,
+                           CancellableWrap(handler->all_pending_, handler));
+}
+
 void BluetoothContext::OnGotAdapterProperties(GObject*, GAsyncResult* res) {
   GError* error = 0;
   GVariant* result = g_dbus_proxy_call_finish(adapter_proxy_, res, &error);
@@ -238,6 +268,9 @@ void BluetoothContext::OnGotAdapterProperties(GObject*, GAsyncResult* res) {
   GVariant* value;
   GVariantIter* it;
   g_variant_get(result, "(a{sv})", &it);
+
+  picojson::value::object o;
+  o["cmd"] = picojson::value("AdapterUpdated");
 
   while (g_variant_iter_loop(it, "{sv}", &key, &value)) {
     if (!strcmp(key, "Devices")) {
@@ -266,13 +299,17 @@ void BluetoothContext::OnGotAdapterProperties(GObject*, GAsyncResult* res) {
         adapter_info_[key] = std::string(g_variant_get_string(value, NULL));
       else
         adapter_info_[key] = g_variant_print(value, false);
+
+      o[key] = picojson::value(adapter_info_[key]);
     }
   }
+
+  PostMessage(picojson::value(o));
 
   // We didn't have the information when getDefaultAdapter was called,
   // replying now.
   if (!default_adapter_reply_id_.empty()) {
-    picojson::value::object o;
+    o.clear();
 
     o["reply_id"] = picojson::value(default_adapter_reply_id_);
     default_adapter_reply_id_.clear();
@@ -283,33 +320,47 @@ void BluetoothContext::OnGotAdapterProperties(GObject*, GAsyncResult* res) {
     SetSyncReply(picojson::value(o));
   }
 
+  auto map_it = callbacks_map_.find("Powered");
+  if (map_it != callbacks_map_.end()) {
+    o.clear();
+
+    o["cmd"] = picojson::value("");
+    o["reply_id"] = picojson::value(callbacks_map_["Powered"]);
+    o["error"] = picojson::value(static_cast<double>(0));
+
+    PostMessage(picojson::value(o));
+
+    callbacks_map_.erase("Powered");
+  }
+
   g_variant_iter_free(it);
 }
 
 void BluetoothContext::OnAdapterPropertySet(std::string property, GAsyncResult* res) {
   GError* error = 0;
+  auto it = callbacks_map_.find(property);
+
+  if (it == callbacks_map_.end())
+    return;
+
   GVariant* result = g_dbus_proxy_call_finish(adapter_proxy_, res, &error);
 
-  // We should only reply to the PostMessage here if an error happened when
-  // changing the property. For replying to the successful property change
-  // we wait until BluetoothContext::OnSignal receives the related PropertyChange
-  // signal, so we avoid that our JavaScript context calls the onsuccess return
-  // callback before the property was actually updated on the adapter.
+  picojson::value::object o;
+  o["cmd"] = picojson::value("");
+  o["reply_id"] = picojson::value(callbacks_map_[property]);
+
   if (!result) {
     g_printerr("\n\nError Got DefaultAdapter Property SET: %s\n", error->message);
     g_error_free(error);
-    picojson::value::object o;
-    o["cmd"] = picojson::value("");
-    o["reply_id"] = picojson::value(callbacks_map_[property]);
-
     // No matter the error info here, BlueZ4's documentation says the only
     // error that can be raised here is org.bluez.Error.InvalidArguments.
     o["error"] = picojson::value(static_cast<double>(1));
-    PostMessage(picojson::value(o));
-
-    callbacks_map_.erase(property);
-    return;
+  } else {
+    o["error"] = picojson::value(static_cast<double>(0));
   }
+
+  PostMessage(picojson::value(o));
+  callbacks_map_.erase(property);
 
   g_variant_unref(result);
 }
@@ -353,8 +404,88 @@ void BluetoothContext::OnManagerCreated(GObject*, GAsyncResult* res) {
   }
 
   g_dbus_proxy_call(manager_proxy_, "DefaultAdapter", NULL,
-                    G_DBUS_CALL_FLAGS_NONE, 5000, all_pending_, OnGotDefaultAdapterPathThunk,
+                    G_DBUS_CALL_FLAGS_NONE, 5000, all_pending_,
+                    OnGotDefaultAdapterPathThunk,
                     CancellableWrap(all_pending_, this));
+
+  g_signal_connect(manager_proxy_, "g-signal",
+                   G_CALLBACK(BluetoothContext::OnManagerSignal), this);
+}
+
+// static
+void BluetoothContext::OnBluetoothServiceAppeared(GDBusConnection* connection,
+                                                  const char* name,
+                                                  const char* name_owner,
+                                                  void* user_data) {
+  BluetoothContext* handler = reinterpret_cast<BluetoothContext*>(user_data);
+
+
+  g_dbus_proxy_new_for_bus(G_BUS_TYPE_SYSTEM,
+                           G_DBUS_PROXY_FLAGS_NONE,
+                           NULL, /* GDBusInterfaceInfo */
+                           "org.bluez",
+                           "/",
+                           "org.bluez.Manager",
+                           handler->all_pending_, /* GCancellable */
+                           OnManagerCreatedThunk,
+                           CancellableWrap(handler->all_pending_, handler));
+}
+
+// static
+void BluetoothContext::OnBluetoothServiceVanished(GDBusConnection* connection,
+                                                  const char* name,
+                                                  void* user_data) {
+  BluetoothContext* handler = reinterpret_cast<BluetoothContext*>(user_data);
+
+  if (handler->manager_proxy_) {
+    g_object_unref(handler->manager_proxy_);
+    handler->manager_proxy_ = 0;
+  }
+
+  if (handler->adapter_proxy_) {
+    g_object_unref(handler->adapter_proxy_);
+    handler->adapter_proxy_ = 0;
+  }
+}
+
+void BluetoothContext::AdapterSetPowered(const picojson::value& msg) {
+  bool powered = msg.get("value").get<bool>();
+  int error = 0;
+
+#if defined(TIZEN_MOBILE)
+  if (powered)
+    error = bt_adapter_enable();
+  else
+    error = bt_adapter_disable();
+#else
+
+  OnAdapterPropertySetData* property_set_callback_data_ =
+      new OnAdapterPropertySetData;
+  property_set_callback_data_->property = std::string("Powered");
+  property_set_callback_data_->bt_context = this;
+  property_set_callback_data_->cancellable = all_pending_;
+
+  g_dbus_proxy_call(adapter_proxy_, "SetProperty",
+                    g_variant_new("(sv)", "Powered",
+                                  g_variant_new("b", powered)),
+                    G_DBUS_CALL_FLAGS_NONE, 5000, all_pending_,
+                    OnAdapterPropertySetThunk,
+                    property_set_callback_data_);
+#endif
+
+  // Reply right away in case of error, or powered off.
+  if (error || powered == false) {
+    picojson::value::object o;
+
+    o["cmd"] = picojson::value("");
+    o["reply_id"] = msg.get("reply_id");
+    o["error"] = picojson::value(static_cast<double>(error));
+
+    PostMessage(picojson::value(o));
+    return;
+  }
+
+  callbacks_map_["Powered"] = msg.get("reply_id").to_str();
 }
 
 void BluetoothContext::OnGotDefaultAdapterPath(GObject*, GAsyncResult* res) {
@@ -482,6 +613,8 @@ BluetoothContext::~BluetoothContext() {
   for (it = known_devices_.begin(); it != known_devices_.end(); ++it)
     g_object_unref(it->second);
 
+  g_bus_unwatch_name(name_watch_id_);
+
 #if defined(TIZEN_MOBILE)
     bt_deinitialize();
 #endif
@@ -499,18 +632,21 @@ void BluetoothContext::PlatformInitialize() {
 
   all_pending_ = new_cancellable();
 
-  g_dbus_proxy_new_for_bus(G_BUS_TYPE_SYSTEM,
-      G_DBUS_PROXY_FLAGS_NONE,
-      NULL, /* GDBusInterfaceInfo */
-      "org.bluez",
-      "/",
-      "org.bluez.Manager",
-      all_pending_, /* GCancellable */
-      OnManagerCreatedThunk,
-      CancellableWrap(all_pending_, this));
+  name_watch_id_ = g_bus_watch_name(G_BUS_TYPE_SYSTEM, "org.bluez",
+                                    G_BUS_NAME_WATCHER_FLAGS_NONE,
+                                    OnBluetoothServiceAppeared,
+                                    OnBluetoothServiceVanished,
+                                    this, NULL);
 }
 
 void BluetoothContext::HandleGetDefaultAdapter(const picojson::value& msg) {
+  if (!adapter_proxy_ && adapter_info_.empty()) {
+    // Initialize with a dummy value, so the client is able to have an adapter
+    // in which to call setPowered(). The correct value will be retrieved when
+    // bluetoothd appears, and an AdapterUpdated() message will be sent.
+    adapter_info_["Address"] = "00:00:00:00:00";
+  }
+
   // We still don't have the information. It was requested during
   // initialization, so it should arrive eventually.
   if (adapter_info_.empty()) {
@@ -548,37 +684,46 @@ void BluetoothContext::DeviceFound(std::string address, GVariantIter* properties
 
 void BluetoothContext::HandleSetAdapterProperty(const picojson::value& msg) {
   std::string property = msg.get("property").to_str();
+  GVariant* value;
 
-  GVariant* value = 0;
-  if (property == "Name")
-    value = g_variant_new("s", msg.get("value").to_str().c_str());
-  else if (property == "Discoverable") {
-    value = g_variant_new("b", msg.get("value").get<bool>());
+  // We handle the Powered property differently because we may have to do
+  // different things depending on the platform on which we are running.
+  if (property == "Powered") {
+    AdapterSetPowered(msg);
+    return;
+  }
 
+  if (property == "Name") {
+    GVariant* name = g_variant_new("s", msg.get("value").to_str().c_str());
+    value = g_variant_new("(sv)", property.c_str(), name);
+    goto done;
+  }
+
+  if (property == "Discoverable") {
     if (msg.contains("timeout")) {
       const guint32 timeout = static_cast<guint32>(msg.get("timeout").get<double>());
-      g_dbus_proxy_call(adapter_proxy_, "SetProperty",
-                        g_variant_new("(sv)", "DiscoverableTimeout",
-                                      g_variant_new("u", timeout)),
-                        G_DBUS_CALL_FLAGS_NONE, 5000, all_pending_, NULL,
-                        CancellableWrap(all_pending_, NULL));
+      GVariant* disc_timeout = g_variant_new("u", timeout);
+      value = g_variant_new("(sv)", "DiscoverableTimeout", disc_timeout);
+      goto done;
     }
-  } else if (property == "Powered")
-    value = g_variant_new("b", msg.get("value").get<bool>());
 
-  assert(value);
+    GVariant* discoverable = g_variant_new("b", msg.get("value").get<bool>());
+    value = g_variant_new("(sv)", property.c_str(), discoverable);
+    goto done;
+  }
 
-  callbacks_map_[property] = msg.get("reply_id").to_str();
-
+done:
   OnAdapterPropertySetData* property_set_callback_data_ =
       new OnAdapterPropertySetData;
   property_set_callback_data_->property = property;
   property_set_callback_data_->bt_context = this;
   property_set_callback_data_->cancellable = all_pending_;
 
-  g_dbus_proxy_call(adapter_proxy_, "SetProperty",
-                    g_variant_new("(sv)", property.c_str(), value),
-                    G_DBUS_CALL_FLAGS_NONE, 5000, all_pending_, OnAdapterPropertySetThunk,
+  callbacks_map_[property] = msg.get("reply_id").to_str();
+
+  g_dbus_proxy_call(adapter_proxy_, "SetProperty", value,
+                    G_DBUS_CALL_FLAGS_NONE, 5000, all_pending_,
+                    OnAdapterPropertySetThunk,
                     property_set_callback_data_);
 }
 

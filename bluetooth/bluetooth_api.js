@@ -54,7 +54,39 @@ function Adapter() {
   this.sockets = [];
 }
 
-Adapter.prototype.serviceNotAvailable = function(errorCallback) {
+
+var signature_to_type = { 'n': 'number',
+                          'f': 'function',
+                          'b': 'boolean',
+                          's': 'string',
+                          'o': 'object'
+                        };
+
+// Returns if the passed arguments match the signature.
+function validateArguments(signature, args) {
+  var full_args = Array.prototype.slice.call(args);
+
+  // After '?' everything is optional.
+  var mandatory_len = signature.indexOf('?') === -1 ? signature.length : signature.indexOf('?');
+
+  if (full_args.length < mandatory_len)
+    return false;
+
+  // Mandatory arguments.
+  for (var i = 0; i < mandatory_len; i++)
+    if (typeof full_args[i] !== signature_to_type[signature[i]])
+      return false;
+
+  // Optional args may be null.
+  for (var i = mandatory_len; i < full_args.length && i < signature.length - 1; i++)
+    if (full_args[i] !== null
+        && typeof full_args[i] !== signature_to_type[signature[i + 1]])
+      return false;
+
+  return true;
+}
+
+Adapter.prototype.checkServiceAvailability = function(errorCallback) {
   if (adapter.isReady && defaultAdapter.powered)
     return false;
 
@@ -62,6 +94,7 @@ Adapter.prototype.serviceNotAvailable = function(errorCallback) {
     var error = new tizen.WebAPIError(tizen.WebAPIException.SERVICE_NOT_AVAILABLE_ERR);
     errorCallback(error);
   }
+
   return true;
 };
 
@@ -124,14 +157,15 @@ var handleDeviceFound = function(msg) {
 
   // FIXME(jeez): we are not returning a deep copy so we can keep
   // the devices up-to-date. We have to find a better way to handle this.
-  if (is_new && msg.found_on_discovery)
+  if (is_new && msg.found_on_discovery && adapter.discovery_callbacks.ondevicefound)
     adapter.discovery_callbacks.ondevicefound(device);
 };
 
 var handleDiscoveryFinished = function() {
   // FIXME(jeez): we are not returning a deep copy so we can keep
   // the devices up-to-date. We have to find a better way to handle this.
-  adapter.discovery_callbacks.onfinished(adapter.found_devices);
+  if (typeof adapter.discovery_callbacks.onfinished === 'function')
+    adapter.discovery_callbacks.onfinished(adapter.found_devices);
 
   adapter.found_devices = [];
   adapter.discovery_callbacks = {};
@@ -174,6 +208,8 @@ var handleAdapterUpdated = function(msg) {
     _addConstProperty(defaultAdapter, 'visible',
         (msg.Discoverable == 'true') ? true : false);
   }
+
+  defaultAdapter.isReady = true;
 };
 
 var handleRFCOMMSocketAccept = function(msg) {
@@ -202,7 +238,7 @@ var handleSocketHasData = function(msg) {
     if (socket.socket_fd === msg.socket_fd) {
       socket.data = msg.data;
 
-      if (socket.onmessage && typeof socket.onmessage == 'function')
+      if (socket.onmessage && typeof socket.onmessage === 'function')
         socket.onmessage();
 
       socket.data = [];
@@ -215,7 +251,7 @@ var handleSocketClosed = function(msg) {
   for (var i in adapter.sockets) {
     var socket = adapter.sockets[i];
     if (socket.socket_fd === msg.socket_fd) {
-      if (socket.onclose && typeof socket.onmessage == 'function')
+      if (socket.onclose && typeof socket.onmessage === 'function')
         socket.onclose();
 
       _addConstProperty(socket, "isConnected", false);
@@ -371,20 +407,12 @@ function BluetoothAdapter() {
 }
 
 BluetoothAdapter.prototype.setName = function(name, successCallback, errorCallback) {
-  if (adapter.serviceNotAvailable(errorCallback))
-    return;
-
-  if (typeof name !== 'string' ||
-      (successCallback && typeof successCallback !== 'function') ||
-      (errorCallback && typeof errorCallback !== 'function')) {
-    if (errorCallback) {
-      var error = new tizen.WebAPIError(tizen.WebAPIException.INVALID_VALUES_ERR);
-      errorCallback(error);
-    }
-
+  if (!validateArguments('s?ff', arguments)) {
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
-    return;
   }
+
+  if (adapter.checkServiceAvailability(errorCallback))
+    return;
 
   var msg = {
     'cmd': 'SetAdapterProperty',
@@ -403,38 +431,54 @@ BluetoothAdapter.prototype.setName = function(name, successCallback, errorCallba
       return;
     }
 
+    _addConstProperty(defaultAdapter, 'name', name);
+
     if (successCallback)
       successCallback();
   });
 };
 
 BluetoothAdapter.prototype.setPowered = function(state, successCallback, errorCallback) {
-  // FIXME: Until there is a proper solution for the problem that the adapter disappears
-  // from the USB bus when it is powered down, we can only work around this issue, this
-  // is the simplest one.
-  if (state && defaultAdapter.powered && successCallback && typeof successCallback === 'function') {
+  if (!validateArguments('b?ff', arguments)) {
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+  }
+
+  if ((state === defaultAdapter.powered) && successCallback) {
     successCallback();
     return;
   }
 
-  throw new tizen.WebAPIException(tizen.WebAPIException.NOT_SUPPORTED_ERR);
+  var msg = {
+    'cmd': 'SetAdapterProperty',
+    'property': 'Powered',
+    'value': state
+  };
+
+  postMessage(msg, function(result) {
+    if (result.error != 0) {
+      if (errorCallback) {
+        var error = new tizen.WebAPIError(tizen.WebAPIException.INVALID_VALUES_ERR);
+        errorCallback(error);
+        return;
+      }
+
+      throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+    }
+
+    _addConstProperty(defaultAdapter, 'powered', state);
+
+    if (successCallback)
+      successCallback();
+  });
 };
 
 BluetoothAdapter.prototype.setVisible = function(mode, successCallback, errorCallback, timeout) {
-  if (adapter.serviceNotAvailable(errorCallback))
-    return;
-
-  if (typeof mode !== 'boolean' ||
-      (successCallback && typeof successCallback !== 'function') ||
-      (errorCallback && typeof errorCallback !== 'function')) {
-    if (errorCallback) {
-      var error = new tizen.WebAPIError(tizen.WebAPIException.INVALID_VALUES_ERR);
-      errorCallback(error);
-    }
-
+  if (!validateArguments('b?ffn', arguments)) {
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
-    return;
   }
+
+  if (adapter.checkServiceAvailability(errorCallback))
+    return;
 
   if (timeout === undefined || typeof timeout !== 'number' || timeout < 0)
     timeout = 180; // According to tizen.bluetooth documentation.
@@ -457,19 +501,20 @@ BluetoothAdapter.prototype.setVisible = function(mode, successCallback, errorCal
       return;
     }
 
+    _addConstProperty(defaultAdapter, 'visible', mode);
+
     if (successCallback)
       successCallback();
   });
 };
 
 BluetoothAdapter.prototype.discoverDevices = function(discoverySuccessCallback, errorCallback) {
-  if (adapter.serviceNotAvailable(errorCallback))
-    return;
-
-  if ((discoverySuccessCallback && typeof discoverySuccessCallback !== 'object') ||
-      (errorCallback && typeof errorCallback !== 'function')) {
+  if (!validateArguments('o?f', arguments)) {
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
   }
+
+  if (adapter.checkServiceAvailability(errorCallback))
+    return;
 
   var msg = {
     'cmd': 'DiscoverDevices'
@@ -484,18 +529,19 @@ BluetoothAdapter.prototype.discoverDevices = function(discoverySuccessCallback, 
     }
 
     adapter.discovery_callbacks = discoverySuccessCallback;
-    discoverySuccessCallback.onstarted();
+
+    if (discoverySuccessCallback && typeof discoverySuccessCallback.onstarted === 'function')
+      discoverySuccessCallback.onstarted();
   });
 };
 
 BluetoothAdapter.prototype.stopDiscovery = function(successCallback, errorCallback) {
-  if (adapter.serviceNotAvailable(errorCallback))
-    return;
-
-  if ((successCallback && typeof successCallback !== 'function') ||
-      (errorCallback && typeof errorCallback !== 'function')) {
+  if (!validateArguments('?ff', arguments)) {
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
   }
+
+  if (adapter.checkServiceAvailability(errorCallback))
+    return;
 
   var msg = {
     'cmd': 'StopDiscovery'
@@ -515,13 +561,12 @@ BluetoothAdapter.prototype.stopDiscovery = function(successCallback, errorCallba
 };
 
 BluetoothAdapter.prototype.getKnownDevices = function(deviceArraySuccessCallback, errorCallback) {
-  if (adapter.serviceNotAvailable(errorCallback))
-    return;
-
-  if ((deviceArraySuccessCallback && typeof deviceArraySuccessCallback !== 'function') ||
-      (errorCallback && typeof errorCallback !== 'function')) {
+  if (!validateArguments('f?f', arguments)) {
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
   }
+
+  if (adapter.checkServiceAvailability(errorCallback))
+    return;
 
   // FIXME(jeez): we are not returning a deep copy so we can keep
   // the devices up-to-date. We have to find a better way to handle this.
@@ -529,17 +574,12 @@ BluetoothAdapter.prototype.getKnownDevices = function(deviceArraySuccessCallback
 };
 
 BluetoothAdapter.prototype.getDevice = function(address, deviceSuccessCallback, errorCallback) {
-  if (adapter.serviceNotAvailable(errorCallback))
+  if (!validateArguments('sf?f', arguments)) {
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+  }
+
+  if (adapter.checkServiceAvailability(errorCallback))
     return;
-
-  if ((deviceSuccessCallback && typeof deviceSuccessCallback !== 'function') ||
-      (errorCallback && typeof errorCallback !== 'function')) {
-    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
-  }
-
-  if (typeof address !== 'string') {
-    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
-  }
 
   var index = adapter.indexOfDevice(adapter.known_devices, address);
   if (index == -1) {
@@ -552,17 +592,12 @@ BluetoothAdapter.prototype.getDevice = function(address, deviceSuccessCallback, 
 };
 
 BluetoothAdapter.prototype.createBonding = function(address, successCallback, errorCallback) {
-  if (adapter.serviceNotAvailable(errorCallback))
-    return;
-
-  if (typeof address !== 'string' ||
-      (successCallback && typeof successCallback !== 'function') ||
-      (errorCallback && typeof errorCallback !== 'function')) {
-    if (errorCallback) {
-      var error = new tizen.WebAPIError(tizen.WebAPIException.TYPE_MISMATCH_ERR);
-      errorCallback(error);
-    }
+  if (!validateArguments('sf?f', arguments)) {
+    throw new tizen.WebAPIError(tizen.WebAPIException.TYPE_MISMATCH_ERR);
   }
+
+  if (adapter.checkServiceAvailability(errorCallback))
+    return;
 
   var msg = {
     'cmd': 'CreateBonding',
@@ -597,17 +632,12 @@ BluetoothAdapter.prototype.createBonding = function(address, successCallback, er
 };
 
 BluetoothAdapter.prototype.destroyBonding = function(address, successCallback, errorCallback) {
-  if (adapter.serviceNotAvailable(errorCallback))
-    return;
-
-  if (typeof address !== 'string' ||
-      (successCallback && typeof successCallback !== 'function') ||
-      (errorCallback && typeof errorCallback !== 'function')) {
-    if (errorCallback) {
-      var error = new tizen.WebAPIError(tizen.WebAPIException.TYPE_MISMATCH_ERR);
-      errorCallback(error);
-    }
+  if (!validateArguments('s?ff', arguments)) {
+    throw new tizen.WebAPIError(tizen.WebAPIException.TYPE_MISMATCH_ERR);
   }
+
+  if (adapter.checkServiceAvailability(errorCallback))
+    return;
 
   var msg = {
     'cmd': 'DestroyBonding',
@@ -645,20 +675,12 @@ BluetoothAdapter.prototype.destroyBonding = function(address, successCallback, e
 
 BluetoothAdapter.prototype.registerRFCOMMServiceByUUID =
     function(uuid, name, serviceSuccessCallback, errorCallback) {
-  if (adapter.serviceNotAvailable(errorCallback))
-    return;
-
-  if (typeof uuid !== 'string' ||
-      typeof name !== 'string' ||
-      (serviceSuccessCallback && typeof serviceSuccessCallback !== 'function') ||
-      (errorCallback && typeof errorCallback !== 'function')) {
-    if (errorCallback) {
-      var error = new tizen.WebAPIError(tizen.WebAPIException.TYPE_MISMATCH_ERR);
-      errorCallback(error);
-    }
+  if (!validateArguments('ssf?f', arguments)) {
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
-    return;
   }
+
+  if (adapter.checkServiceAvailability(errorCallback))
+    return;
 
   var msg = {
     'cmd': 'RFCOMMListen',
@@ -706,7 +728,7 @@ function BluetoothDevice(msg) {
     return;
   }
 
-  _addConstProperty(this, 'name', msg.Name);
+  _addConstProperty(this, 'name', msg.Alias);
   _addConstProperty(this, 'address', msg.Address);
 
   _addConstProperty(this, 'deviceClass', new BluetoothClass());
@@ -854,16 +876,12 @@ function BluetoothServiceHandler(name, uuid, msg) {
   }
 };
 BluetoothServiceHandler.prototype.unregister = function(successCallback, errorCallback) {
-  if (adapter.serviceNotAvailable(errorCallback))
-    return;
-
-  if ((successCallback && typeof successCallback !== 'function')
-      || (errorCallback && typeof errorCallback !== 'function')) {
-    if (errorCallback) {
-      var error = new tizen.WebAPIError(tizen.WebAPIException.TYPE_MISMATCH_ERR);
-      errorCallback(error);
-    }
+  if (!validateArguments('?ff', arguments)) {
+    throw new tizen.WebAPIError(tizen.WebAPIException.TYPE_MISMATCH_ERR);
   }
+
+  if (adapter.checkServiceAvailability(errorCallback))
+    return;
 
   var msg = {
     'cmd': 'UnregisterServer',
