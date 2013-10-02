@@ -2,10 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "power/power_context.h"
+#include "power/power_instance_desktop.h"
 
 #include <iostream>
 #include <fstream>
+#include <string>
 #include "common/picojson.h"
 
 #define DEVICE "/sys/class/backlight/acpi_video0"
@@ -43,12 +44,12 @@ static void writeInt(const char* pathname, int value) {
 
 void OnScreenProxyCreatedThunk(GObject* source, GAsyncResult* res,
                                gpointer data) {
-  PowerContext* context = static_cast<PowerContext*>(data);
+  PowerInstanceDesktop* instance = static_cast<PowerInstanceDesktop*>(data);
   // Returns 0 in case of failure.
-  context->screen_proxy_ = g_dbus_proxy_new_for_bus_finish(res, /* error */ 0);
+  instance->screen_proxy_ = g_dbus_proxy_new_for_bus_finish(res, /* error */ 0);
 }
 
-void PowerContext::PlatformInitialize() {
+PowerInstanceDesktop::PowerInstanceDesktop() {
   kMaxBrightness = readInt(DEVICE "/max_brightness");
 
   g_dbus_proxy_new_for_bus(G_BUS_TYPE_SESSION,
@@ -62,12 +63,66 @@ void PowerContext::PlatformInitialize() {
       this);
 }
 
-void PowerContext::PlatformUninitialize() {
+PowerInstanceDesktop::~PowerInstanceDesktop() {
   if (screen_proxy_)
     g_object_unref(screen_proxy_);
 }
 
-void PowerContext::HandleRequest(const picojson::value& msg) {
+void PowerInstanceDesktop::HandleMessage(const char* message) {
+  picojson::value v;
+
+  std::string err;
+  picojson::parse(v, message, message + strlen(message), &err);
+  if (!err.empty()) {
+    std::cout << "Ignoring message.\n";
+    return;
+  }
+
+  std::string cmd = v.get("cmd").to_str();
+  if (cmd == "PowerRequest") {
+    HandleRequest(v);
+  } else if (cmd == "PowerRelease") {
+    HandleRelease(v);
+  } else if (cmd == "PowerSetScreenBrightness") {
+    // value of -1 means restore to default value.
+    HandleSetScreenBrightness(v);
+  } else if (cmd == "PowerSetScreenEnabled") {
+    HandleSetScreenEnabled(v);
+  } else {
+    std::cout << "ASSERT NOT REACHED.\n";
+  }
+}
+
+void PowerInstanceDesktop::HandleSyncMessage(const char* message) {
+  picojson::value v;
+
+  std::string err;
+  picojson::parse(v, message, message + strlen(message), &err);
+  if (!err.empty()) {
+    std::cout << "Ignoring message.\n";
+    return;
+  }
+
+  std::string cmd = v.get("cmd").to_str();
+  if (cmd == "PowerGetScreenBrightness") {
+    HandleGetScreenBrightness();
+  }  else if (cmd == "PowerGetScreenState") {
+    HandleGetScreenState();
+  } else {
+    std::cout << "ASSERT NOT REACHED.\n";
+  }
+}
+
+void PowerInstanceDesktop::OnScreenStateChanged(ResourceState state) {
+  picojson::value::object o;
+  o["cmd"] = picojson::value("ScreenStateChanged");
+  o["state"] = picojson::value(static_cast<double>(state));
+
+  picojson::value v(o);
+  PostMessage(v.serialize().c_str());
+}
+
+void PowerInstanceDesktop::HandleRequest(const picojson::value& msg) {
   std::string resource = msg.get("resource").to_str();
   ResourceState state = static_cast<ResourceState>(
       msg.get("state").get<double>());
@@ -84,11 +139,12 @@ void PowerContext::HandleRequest(const picojson::value& msg) {
   }
 }
 
-void PowerContext::HandleRelease(const picojson::value& msg) {
+void PowerInstanceDesktop::HandleRelease(const picojson::value& msg) {
   std::string resource = msg.get("resource").to_str();
 }
 
-void PowerContext::HandleSetScreenBrightness(const picojson::value& msg) {
+void PowerInstanceDesktop::HandleSetScreenBrightness(
+    const picojson::value& msg) {
   double value = msg.get("value").get<double>();
 
   // Attempt using the GNOME SettingsDaemon service.
@@ -107,7 +163,7 @@ void PowerContext::HandleSetScreenBrightness(const picojson::value& msg) {
   writeInt(DEVICE "/brightness", value * kMaxBrightness);
 }
 
-void PowerContext::HandleGetScreenBrightness() {
+void PowerInstanceDesktop::HandleGetScreenBrightness() {
   char brightnessAsString[32] = "0.0";
 
   double value = readInt(DEVICE "/brightness");
@@ -115,17 +171,17 @@ void PowerContext::HandleGetScreenBrightness() {
     snprintf(brightnessAsString, sizeof(brightnessAsString),
              "%g", value / kMaxBrightness);
 
-  api_->SetSyncReply(brightnessAsString);
+  SendSyncReply(brightnessAsString);
 }
 
-void PowerContext::HandleSetScreenEnabled(const picojson::value& msg) {
+void PowerInstanceDesktop::HandleSetScreenEnabled(const picojson::value& msg) {
   bool isEnabled = msg.get("value").get<bool>();
 }
 
-void PowerContext::HandleGetScreenState() {
+void PowerInstanceDesktop::HandleGetScreenState() {
   picojson::value::object o;
   o["state"] = picojson::value(
-      static_cast<double>(PowerContext::SCREEN_NORMAL));
+      static_cast<double>(SCREEN_NORMAL));
   picojson::value v(o);
-  api_->SetSyncReply(v.serialize().c_str());
+  SendSyncReply(v.serialize().c_str());
 }
