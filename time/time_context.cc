@@ -68,6 +68,8 @@ void TimeContext::HandleSyncMessage(const char* message) {
     o = HandleToString(v, TimeContext::TIME_FORMAT);
   else if (cmd == "ToString")
     o = HandleToString(v, TimeContext::DATETIME_FORMAT);
+  else if (cmd == "GetTimeFormat")
+    o = HandleGetTimeFormat(v);
 
   if (o.empty())
     o["error"] = picojson::value(true);
@@ -288,6 +290,28 @@ const picojson::value::object TimeContext::HandleToString(
 
   return o;
 }
+
+const picojson::value::object TimeContext::HandleGetTimeFormat(
+  const picojson::value& msg) {
+  picojson::value::object o;
+
+  UnicodeString timeFormat = getDateTimeFormat(TimeContext::TIME_FORMAT, true);
+
+  timeFormat = timeFormat.findAndReplace("H", "h");
+  timeFormat = timeFormat.findAndReplace("a", "ap");
+
+  timeFormat = timeFormat.findAndReplace("hh", "h");
+  timeFormat = timeFormat.findAndReplace("mm", "m");
+  timeFormat = timeFormat.findAndReplace("ss", "s");
+
+  std::string result = "";
+  timeFormat.toUTF8String(result);
+
+  o["value"] = picojson::value(result);
+
+  return o;
+}
+
 
 UnicodeString TimeContext::getDateTimeFormat(DateTimeFormatType type,
                                              bool bLocale) {

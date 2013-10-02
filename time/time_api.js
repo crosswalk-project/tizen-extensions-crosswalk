@@ -29,7 +29,7 @@ exports.getDateFormat = function(shortformat) {
 };
 
 exports.getTimeFormat = function() {
-  return 'h:m:s';
+  return _sendSyncMessage('GetTimeFormat').value;
 };
 
 exports.isLeapYear = function(year) {

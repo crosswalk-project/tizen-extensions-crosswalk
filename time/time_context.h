@@ -46,6 +46,8 @@ class TimeContext {
      HandleGetDSTTransition(const picojson::value& msg);
   const picojson::value::object
      HandleToString(const picojson::value& msg, DateTimeFormatType type);
+  const picojson::value::object
+     HandleGetTimeFormat(const picojson::value& msg);
 
   UnicodeString getDateTimeFormat(DateTimeFormatType type, bool bLocale);
 
