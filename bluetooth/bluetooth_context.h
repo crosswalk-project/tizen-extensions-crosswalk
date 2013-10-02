@@ -163,6 +163,20 @@ class BluetoothContext {
   static void OnDeviceSignal(GDBusProxy* proxy, gchar* sender_name, gchar* signal,
       GVariant* parameters, gpointer user_data);
 
+  static void OnManagerSignal(GDBusProxy* proxy, gchar* sender_name, gchar* signal,
+      GVariant* parameters, gpointer user_data);
+
+  static void OnBluetoothServiceAppeared(GDBusConnection* connection,
+                                         const char* name,
+                                         const char* name_owner,
+                                         gpointer user_data);
+
+  static void OnBluetoothServiceVanished(GDBusConnection* connection,
+                                         const char* name,
+                                         gpointer user_data);
+
+  void AdapterSetPowered(const picojson::value& msg);
+
   void DeviceFound(std::string address, GVariantIter* properties);
 
   static gboolean OnSocketHasData(GSocket* client, GIOCondition cond,
@@ -180,6 +194,7 @@ class BluetoothContext {
 
   GSocketListener *rfcomm_listener_;
 
+  guint name_watch_id_;
 #endif
 };
 
