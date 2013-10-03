@@ -26,7 +26,6 @@ cpplint.py --filter="$FILTERS" $(find \
                                ! -name 'XW_Extension.h' \
                                ! -name 'XW_Extension_SyncMessage.h' \
                                ! -name 'picojson.*' \
-                               ! -path './bluetooth/*' \
                                ! -path './download/*' \
                                \( -name '*.h' -o -name '*.cc' \) )
 

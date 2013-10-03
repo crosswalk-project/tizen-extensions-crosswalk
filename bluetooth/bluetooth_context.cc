@@ -2,12 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "bluetooth/bluetooth_context.h"
-#include "common/picojson.h"
-
 #if defined(TIZEN_MOBILE)
 #include <bluetooth.h>
 #endif
+
+#include "bluetooth/bluetooth_context.h"
+#include "common/picojson.h"
 
 int32_t XW_Initialize(XW_Extension extension, XW_GetInterface get_interface) {
 #if defined(TIZEN_MOBILE)
@@ -79,18 +79,22 @@ void BluetoothContext::HandleSyncMessage(const char* message) {
 
 void BluetoothContext::HandleDiscoverDevices(const picojson::value& msg) {
   discover_callback_id_ = msg.get("reply_id").to_str();
-  if (adapter_proxy_)
-    g_dbus_proxy_call(adapter_proxy_, "StartDiscovery", NULL,
-                      G_DBUS_CALL_FLAGS_NONE, 20000, NULL, OnDiscoveryStartedThunk,
-                      CancellableWrap(all_pending_, this));
+  if (adapter_proxy_) {
+    g_dbus_proxy_call(
+        adapter_proxy_, "StartDiscovery", NULL,
+        G_DBUS_CALL_FLAGS_NONE, 20000, NULL, OnDiscoveryStartedThunk,
+        CancellableWrap(all_pending_, this));
+  }
 }
 
 void BluetoothContext::HandleStopDiscovery(const picojson::value& msg) {
   stop_discovery_callback_id_ = msg.get("reply_id").to_str();
-  if (adapter_proxy_)
-    g_dbus_proxy_call(adapter_proxy_, "StopDiscovery", NULL,
-                      G_DBUS_CALL_FLAGS_NONE, 20000, NULL, OnDiscoveryStoppedThunk,
-                      CancellableWrap(all_pending_, this));
+  if (adapter_proxy_) {
+    g_dbus_proxy_call(
+        adapter_proxy_, "StopDiscovery", NULL,
+        G_DBUS_CALL_FLAGS_NONE, 20000, NULL, OnDiscoveryStoppedThunk,
+        CancellableWrap(all_pending_, this));
+  }
 }
 
 void BluetoothContext::OnDiscoveryStarted(GObject*, GAsyncResult* res) {
@@ -104,7 +108,7 @@ void BluetoothContext::OnDiscoveryStarted(GObject*, GAsyncResult* res) {
 
   int errorCode = 0;
   if (!result) {
-    g_printerr ("Error discovering: %s\n", error->message);
+    g_printerr("Error discovering: %s\n", error->message);
     g_error_free(error);
     errorCode = 1;
   }
@@ -124,7 +128,7 @@ void BluetoothContext::OnDiscoveryStopped(GObject* source, GAsyncResult* res) {
 
   int errorCode = 0;
   if (!result) {
-    g_printerr ("Error discovering: %s\n", error->message);
+    g_printerr("Error discovering: %s\n", error->message);
     g_error_free(error);
     errorCode = 1;
   }
