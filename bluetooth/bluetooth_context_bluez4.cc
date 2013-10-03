@@ -692,8 +692,6 @@ void BluetoothContext::DeviceFound(std::string address,
 
 void BluetoothContext::HandleSetAdapterProperty(const picojson::value& msg) {
   std::string property = msg.get("property").to_str();
-  GVariant* value;
-
   // We handle the Powered property differently because we may have to do
   // different things depending on the platform on which we are running.
   if (property == "Powered") {
@@ -701,6 +699,7 @@ void BluetoothContext::HandleSetAdapterProperty(const picojson::value& msg) {
     return;
   }
 
+  GVariant* value;
   if (property == "Name") {
     GVariant* name = g_variant_new("s", msg.get("value").to_str().c_str());
     value = g_variant_new("(sv)", property.c_str(), name);
