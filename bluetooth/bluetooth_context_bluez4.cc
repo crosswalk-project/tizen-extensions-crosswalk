@@ -704,9 +704,7 @@ void BluetoothContext::HandleSetAdapterProperty(const picojson::value& msg) {
     GVariant* name = g_variant_new("s", msg.get("value").to_str().c_str());
     value = g_variant_new("(sv)", property.c_str(), name);
     goto done;
-  }
-
-  if (property == "Discoverable") {
+  } else if (property == "Discoverable") {
     if (msg.contains("timeout")) {
       const guint32 timeout =
           static_cast<guint32>(msg.get("timeout").get<double>());
@@ -718,6 +716,9 @@ void BluetoothContext::HandleSetAdapterProperty(const picojson::value& msg) {
     GVariant* discoverable = g_variant_new("b", msg.get("value").get<bool>());
     value = g_variant_new("(sv)", property.c_str(), discoverable);
     goto done;
+  } else {
+    // Unhandled property.
+    return;
   }
 
  done:
