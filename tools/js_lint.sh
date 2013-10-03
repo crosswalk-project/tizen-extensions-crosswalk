@@ -15,4 +15,4 @@ if [ $# -eq 0 ]; then
    exit 1
 fi
 
-gjslint --strict --nojsdoc --max_line_length 100 $1
+gjslint --strict --nojsdoc --max_line_length 100 --unix_mode $1
