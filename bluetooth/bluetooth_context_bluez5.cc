@@ -118,8 +118,7 @@ void BluetoothContext::OnAdapterProxyCreated(GObject*, GAsyncResult* res) {
   g_strfreev(properties);
 }
 
-void BluetoothContext::CacheManagedObject(gpointer data, gpointer user_data)
-{
+void BluetoothContext::CacheManagedObject(gpointer data, gpointer user_data) {
   GDBusObject* object = static_cast<GDBusObject*>(data);
   GDBusInterface* interface = g_dbus_object_get_interface(object,
       "org.bluez.Device1");
@@ -194,7 +193,8 @@ void BluetoothContext::PlatformInitialize() {
       this);
 }
 
-picojson::value BluetoothContext::HandleGetDefaultAdapter(const picojson::value& msg) {
+picojson::value BluetoothContext::HandleGetDefaultAdapter(
+    const picojson::value& msg) {
   if (adapter_info_.empty())
     return picojson::value();
 
@@ -236,8 +236,7 @@ GDBusProxy* BluetoothContext::CreateDeviceProxy(GAsyncResult* res) {
 }
 
 static void getPropertiesFromProxy(GDBusProxy* deviceProxy,
-    picojson::value::object& o)
-{
+    picojson::value::object& o) {
   char** property_names = g_dbus_proxy_get_cached_property_names(deviceProxy);
   for (int i = 0; property_names && property_names[i]; i++) {
     GVariant* value = g_dbus_proxy_get_cached_property(deviceProxy,
