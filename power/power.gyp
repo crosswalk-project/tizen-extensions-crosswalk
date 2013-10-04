@@ -7,6 +7,8 @@
       'target_name': 'tizen_power',
       'type': 'loadable_module',
       'sources': [
+        'mobile/power_event_source.cc',
+        'mobile/power_event_source.h',
         'power_api.js',
         'power_extension.cc',
         'power_extension.h',
