@@ -128,10 +128,10 @@ exports.getScreenBrightness = function() {
   var brightness = parseFloat(sendSyncMessage({
     'cmd': 'PowerGetScreenBrightness'
   }));
+  if (defaultScreenBrightness === undefined)
+    defaultScreenBrightness = brightness;
   return brightness;
 };
-
-defaultScreenBrightness = exports.getScreenBrightness();
 
 exports.setScreenBrightness = function(brightness) {
   // Validate permission to 'power'.
@@ -158,6 +158,9 @@ exports.isScreenOn = function() {
 exports.restoreScreenBrightness = function() {
   // Validate permission to 'power'.
   // throw new WebAPIException(SECURITY_ERR);
+
+  if (defaultScreenBrightness === undefined)
+    exports.getScreenBrightness();
 
   if (defaultScreenBrightness < 0 || defaultScreenBrightness > 1)
     throw new tizen.WebAPIException(tizen.WebAPIException.UNKNOWN_ERR);
