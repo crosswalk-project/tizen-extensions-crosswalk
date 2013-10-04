@@ -28,7 +28,7 @@ common::Instance* PowerExtension::CreateInstance() {
 #if defined(GENERIC_DESKTOP)
   return new PowerInstanceDesktop;
 #elif defined(TIZEN_MOBILE)
-  return new PowerInstanceMobile;
+  return new PowerInstanceMobile(&power_event_source_);
 #endif
   return NULL;
 }

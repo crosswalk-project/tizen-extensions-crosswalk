@@ -8,20 +8,24 @@
 #include <power.h>
 #include "common/extension.h"
 #include "power/power_types.h"
+#include "power/mobile/power_event_source.h"
 
 namespace picojson {
 class value;
 }
 
 class PowerInstanceMobile
-    : public common::Instance {
+    : public common::Instance, public PowerEventListener {
  public:
-  PowerInstanceMobile();
+  explicit PowerInstanceMobile(PowerEventSource* event_source);
+  ~PowerInstanceMobile();
 
   void OnScreenStateChanged(ResourceState state);
-  void OnPlatformScreenStateChanged(power_state_e pstate);
 
  private:
+  // PowerEventListener implementation.
+  void OnPowerStateChanged(power_state_e state);
+
   // common::Instance implementation.
   virtual void HandleMessage(const char* msg);
   virtual void HandleSyncMessage(const char* msg);
@@ -34,6 +38,7 @@ class PowerInstanceMobile
 
   bool pending_screen_state_change_;
   bool pending_screen_state_reply_;
+  PowerEventSource* event_source_;
 };
 
 #endif  // POWER_POWER_INSTANCE_MOBILE_H_
