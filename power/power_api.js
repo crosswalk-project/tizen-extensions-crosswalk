@@ -5,7 +5,10 @@
 // FIXME: A lot of these methods should throw NOT_SUPPORTED_ERR on desktop.
 // There is no easy way to do verify which methods are supported yet.
 
+// Save the latest screenState value. We use this to pass the previous
+// state when calling the listener.
 var screenState = undefined;
+
 var defaultScreenBrightness = undefined;
 var screenStateChangedListener;
 
@@ -55,8 +58,6 @@ extension.setMessageListener(function(msg) {
   var m = JSON.parse(msg);
   if (m.cmd == 'ScreenStateChanged') {
     var newState = m.state;
-    if (screenState == undefined)
-      getScreenState();
     if (screenState !== newState) {
       callListener(screenState, newState);
       screenState = newState;
@@ -116,12 +117,24 @@ exports.setScreenStateChangeListener = function(listener) {
   // FIXME: According to docs, it should throw INVALID_VALUES_ERR if input
   // parameters contain an invalid value. Verify the Tizen 2.x impl.
 
+  // This will cache an initial value, that is necessary to ensure we
+  // always have a previous value.
+  getScreenState();
+
   screenStateChangedListener = listener;
+  postMessage({
+    'cmd': 'SetListenToScreenStateChange',
+    'value': true
+  });
 };
 
 exports.unsetScreenStateChangeListener = function() {
   // No permission validation.
   screenStateChangedListener = null;
+  postMessage({
+    'cmd': 'SetListenToScreenStateChange',
+    'value': false
+  });
 };
 
 exports.getScreenBrightness = function() {
