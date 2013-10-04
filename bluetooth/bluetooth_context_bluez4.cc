@@ -956,6 +956,28 @@ void BluetoothContext::OnGotDeviceProperties(
   PostMessage(v);
 }
 
+void BluetoothContext::HandleSocketWriteData(const picojson::value& msg) {
+  int fd = static_cast<int>(msg.get("socket_fd").get<double>());
+  auto it = sockets_.begin();
+  gssize len = 0;
+
+  for (; it != sockets_.end(); ++it) {
+    GSocket *socket = *it;
+
+    if (g_socket_get_fd(socket) == fd) {
+      std::string data = msg.get("data").to_str();
+
+      len = g_socket_send(socket, data.c_str(), data.length(), NULL, NULL);
+      break;
+    }
+  }
+
+  picojson::value::object o;
+  o["size"] = picojson::value(static_cast<double>(len));
+
+  SetSyncReply(picojson::value(o));
+}
+
 void BluetoothContext::HandleCloseSocket(const picojson::value& msg) {
   int fd = static_cast<int>(msg.get("socket_fd").get<double>());
   std::vector<GSocket*>::iterator it = sockets_.begin();
