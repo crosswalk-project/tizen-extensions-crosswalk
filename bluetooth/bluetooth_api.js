@@ -805,7 +805,7 @@ BluetoothDevice.prototype._updateProperties = function(device) {
 function BluetoothSocket(uuid, peer, msg) {
   _addConstProperty(this, 'uuid', uuid);
   _addConstProperty(this, 'peer', peer);
-  _addConstProperty(this, 'state', this.BluetoothSocketState.OPEN);
+  _addConstProperty(this, 'state', BluetoothSocketState.OPEN);
   this.onclose = null;
   this.onmessage = null;
   this.data = [];
