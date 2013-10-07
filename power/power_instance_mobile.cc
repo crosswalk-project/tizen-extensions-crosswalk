@@ -12,13 +12,16 @@
 
 #include "common/picojson.h"
 
-void OnPlatformStateChanged(power_state_e state, void *user_data);
-
-PowerInstanceMobile::PowerInstanceMobile() {
+PowerInstanceMobile::PowerInstanceMobile(PowerEventSource* event_source)
+    : event_source_(event_source) {
   pending_screen_state_change_ = false;
   pending_screen_state_reply_ = false;
-  // Hook up for changes.
-  power_set_changed_cb(OnPlatformStateChanged, this);
+
+  event_source_->AddListener(this);
+}
+
+PowerInstanceMobile::~PowerInstanceMobile() {
+  event_source_->RemoveListener(this);
 }
 
 ResourceType getResourceType(const picojson::value& msg,
@@ -103,7 +106,7 @@ void PowerInstanceMobile::OnScreenStateChanged(ResourceState state) {
   PostMessage(v.serialize().c_str());
 }
 
-void PowerInstanceMobile::OnPlatformScreenStateChanged(power_state_e pstate) {
+void PowerInstanceMobile::OnPowerStateChanged(power_state_e pstate) {
   ResourceState state = toResourceState(pstate);
   pending_screen_state_change_ = false;
   OnScreenStateChanged(state);
@@ -114,11 +117,6 @@ void PowerInstanceMobile::OnPlatformScreenStateChanged(power_state_e pstate) {
     pending_screen_state_reply_ = false;
     SendSyncReply(v.serialize().c_str());
   }
-}
-
-void OnPlatformStateChanged(power_state_e pstate, void *data) {
-  PowerInstanceMobile* self = static_cast<PowerInstanceMobile*>(data);
-  self->OnPlatformScreenStateChanged(pstate);
 }
 
 void PowerInstanceMobile::HandleRequest(const picojson::value& msg) {
@@ -174,7 +172,7 @@ void PowerInstanceMobile::HandleRelease(const picojson::value& msg) {
       power_unlock_state(POWER_STATE_NORMAL);
       device_set_brightness_from_settings(0);
       power_state_e pstate = power_get_state();
-      OnPlatformStateChanged(pstate, this);
+      OnPowerStateChanged(pstate);
       break;
     }
     case CPU: {
