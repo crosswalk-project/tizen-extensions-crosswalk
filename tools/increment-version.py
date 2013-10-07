@@ -63,6 +63,7 @@ def Main():
 
   if options.release_type == 'canary':
     replacements = {
+      'VERSION': r'(MINOR=)(\d+)',
       'packaging/tizen-extensions-crosswalk.spec': r'(Version:\s+\d+\.)(\d+)',
     }
     IncrementVersions(replacements)
