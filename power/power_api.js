@@ -5,8 +5,12 @@
 // FIXME: A lot of these methods should throw NOT_SUPPORTED_ERR on desktop.
 // There is no easy way to do verify which methods are supported yet.
 
+// Save the latest screenState value. We use this to pass the previous
+// state when calling the listener.
 var screenState = undefined;
+
 var defaultScreenBrightness = undefined;
+var screenStateChangedListener;
 
 var resources = {
   'SCREEN': {
@@ -26,13 +30,12 @@ var resources = {
   }
 };
 
-var listeners = [];
-function callListeners(oldState, newState) {
-  var previousState = Object.keys(resources['SCREEN'].states)[oldState];
-  var changedState = Object.keys(resources['SCREEN'].states)[newState];
-  listeners.forEach(function(listener) {
-    listener(previousState, changedState);
-  });
+function callListener(oldState, newState) {
+  if (screenStateChangedListener == null)
+    return;
+  var previousState = resources.SCREEN.states[oldState];
+  var changedState = resources.SCREEN.states[newState];
+  screenStateChangedListener(oldState, newState);
 }
 
 var postMessage = function(msg) {
@@ -55,10 +58,8 @@ extension.setMessageListener(function(msg) {
   var m = JSON.parse(msg);
   if (m.cmd == 'ScreenStateChanged') {
     var newState = m.state;
-    if (screenState == undefined)
-      getScreenState();
     if (screenState !== newState) {
-      callListeners(screenState, newState);
+      callListener(screenState, newState);
       screenState = newState;
     }
   }
@@ -116,22 +117,34 @@ exports.setScreenStateChangeListener = function(listener) {
   // FIXME: According to docs, it should throw INVALID_VALUES_ERR if input
   // parameters contain an invalid value. Verify the Tizen 2.x impl.
 
-  listeners.push(listener);
+  // This will cache an initial value, that is necessary to ensure we
+  // always have a previous value.
+  getScreenState();
+
+  screenStateChangedListener = listener;
+  postMessage({
+    'cmd': 'SetListenToScreenStateChange',
+    'value': true
+  });
 };
 
 exports.unsetScreenStateChangeListener = function() {
   // No permission validation.
-  listeners = [];
+  screenStateChangedListener = null;
+  postMessage({
+    'cmd': 'SetListenToScreenStateChange',
+    'value': false
+  });
 };
 
 exports.getScreenBrightness = function() {
   var brightness = parseFloat(sendSyncMessage({
     'cmd': 'PowerGetScreenBrightness'
   }));
+  if (defaultScreenBrightness === undefined)
+    defaultScreenBrightness = brightness;
   return brightness;
 };
-
-defaultScreenBrightness = exports.getScreenBrightness();
 
 exports.setScreenBrightness = function(brightness) {
   // Validate permission to 'power'.
@@ -158,6 +171,9 @@ exports.isScreenOn = function() {
 exports.restoreScreenBrightness = function() {
   // Validate permission to 'power'.
   // throw new WebAPIException(SECURITY_ERR);
+
+  if (defaultScreenBrightness === undefined)
+    exports.getScreenBrightness();
 
   if (defaultScreenBrightness < 0 || defaultScreenBrightness > 1)
     throw new tizen.WebAPIException(tizen.WebAPIException.UNKNOWN_ERR);
