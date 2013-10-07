@@ -13,7 +13,8 @@
 #include "common/picojson.h"
 
 PowerInstanceMobile::PowerInstanceMobile(PowerEventSource* event_source)
-    : event_source_(event_source) {
+    : js_listening_to_state_change_(false),
+      event_source_(event_source) {
   pending_screen_state_change_ = false;
   pending_screen_state_reply_ = false;
 
@@ -72,6 +73,8 @@ void PowerInstanceMobile::HandleMessage(const char* message) {
     HandleSetScreenBrightness(v);
   } else if (cmd == "PowerSetScreenEnabled") {
     HandleSetScreenEnabled(v);
+  } else if (cmd == "SetListenToScreenStateChange") {
+    HandleSetListenToScreenStateChange(v);
   } else {
     std::cout << "ASSERT NOT REACHED.\n";
   }
@@ -97,7 +100,11 @@ void PowerInstanceMobile::HandleSyncMessage(const char* message) {
   }
 }
 
-void PowerInstanceMobile::OnScreenStateChanged(ResourceState state) {
+void PowerInstanceMobile::DispatchScreenStateChangedToJS(
+    ResourceState state) {
+  if (!js_listening_to_state_change_)
+    return;
+
   picojson::value::object o;
   o["cmd"] = picojson::value("ScreenStateChanged");
   o["state"] = picojson::value(static_cast<double>(state));
@@ -109,7 +116,8 @@ void PowerInstanceMobile::OnScreenStateChanged(ResourceState state) {
 void PowerInstanceMobile::OnPowerStateChanged(power_state_e pstate) {
   ResourceState state = toResourceState(pstate);
   pending_screen_state_change_ = false;
-  OnScreenStateChanged(state);
+  DispatchScreenStateChangedToJS(state);
+
   if (pending_screen_state_reply_) {
     picojson::value::object o;
     o["state"] = picojson::value(static_cast<double>(state));
@@ -240,4 +248,23 @@ void PowerInstanceMobile::HandleSetScreenEnabled(const picojson::value& msg) {
     return;
   }
   pending_screen_state_change_ = true;
+}
+
+namespace {
+
+bool GetBoolFromJSONValue(const picojson::value& v, bool* result) {
+  if (!result || !v.is<bool>())
+    return false;
+  *result = v.get<bool>();
+  return true;
+}
+
+}  // namespace
+
+void PowerInstanceMobile::HandleSetListenToScreenStateChange(
+    const picojson::value& msg) {
+  bool listening = false;
+  if (!GetBoolFromJSONValue(msg.get("value"), &listening))
+    return;
+  js_listening_to_state_change_ = listening;
 }
