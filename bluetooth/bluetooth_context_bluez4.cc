@@ -860,10 +860,11 @@ void BluetoothContext::OnServiceAddRecord(GObject* object, GAsyncResult* res) {
     o["server_fd"] = picojson::value(static_cast<double>(sk));
     o["sdp_handle"] = picojson::value(static_cast<double>(handle));
     o["channel"] = picojson::value(static_cast<double>(rfcomm_get_channel(sk)));
+
+    g_variant_unref(result);
   }
 
   callbacks_map_.erase("RFCOMMListen");
-  g_variant_unref(result);
 
   PostMessage(picojson::value(o));
 }
@@ -954,6 +955,28 @@ void BluetoothContext::OnGotDeviceProperties(
 
   picojson::value v(o);
   PostMessage(v);
+}
+
+void BluetoothContext::HandleSocketWriteData(const picojson::value& msg) {
+  int fd = static_cast<int>(msg.get("socket_fd").get<double>());
+  auto it = sockets_.begin();
+  gssize len = 0;
+
+  for (; it != sockets_.end(); ++it) {
+    GSocket *socket = *it;
+
+    if (g_socket_get_fd(socket) == fd) {
+      std::string data = msg.get("data").to_str();
+
+      len = g_socket_send(socket, data.c_str(), data.length(), NULL, NULL);
+      break;
+    }
+  }
+
+  picojson::value::object o;
+  o["size"] = picojson::value(static_cast<double>(len));
+
+  SetSyncReply(picojson::value(o));
 }
 
 void BluetoothContext::HandleCloseSocket(const picojson::value& msg) {

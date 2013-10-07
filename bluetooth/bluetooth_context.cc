@@ -75,6 +75,8 @@ void BluetoothContext::HandleSyncMessage(const char* message) {
   std::string cmd = v.get("cmd").to_str();
   if (cmd == "GetDefaultAdapter")
     HandleGetDefaultAdapter(v);
+  else if (cmd == "SocketWriteData")
+    HandleSocketWriteData(v);
 }
 
 void BluetoothContext::HandleDiscoverDevices(const picojson::value& msg) {
