@@ -860,10 +860,11 @@ void BluetoothContext::OnServiceAddRecord(GObject* object, GAsyncResult* res) {
     o["server_fd"] = picojson::value(static_cast<double>(sk));
     o["sdp_handle"] = picojson::value(static_cast<double>(handle));
     o["channel"] = picojson::value(static_cast<double>(rfcomm_get_channel(sk)));
+
+    g_variant_unref(result);
   }
 
   callbacks_map_.erase("RFCOMMListen");
-  g_variant_unref(result);
 
   PostMessage(picojson::value(o));
 }
