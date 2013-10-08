@@ -13,10 +13,12 @@
 typedef std::vector<NetworkBearerSelectionRequest*> RequestList;
 typedef std::map<std::string, RequestList> ProfileMap;
 
+namespace {
+
 static ProfileMap g_pending_requests;
 
-static void add_pending_request(connection_profile_h profile,
-                                NetworkBearerSelectionRequest* request) {
+void add_pending_request(connection_profile_h profile,
+                         NetworkBearerSelectionRequest* request) {
   char* profile_name;
   connection_profile_get_name(profile, &profile_name);
   ProfileMap::iterator iter = g_pending_requests.find(profile_name);
@@ -32,7 +34,7 @@ static void add_pending_request(connection_profile_h profile,
   free(profile_name);
 }
 
-static void connection_opened_callback(connection_error_e result, void* data) {
+void connection_opened_callback(connection_error_e result, void* data) {
   if (result == CONNECTION_ERROR_NONE)
     return;
 
@@ -56,8 +58,8 @@ static void connection_opened_callback(connection_error_e result, void* data) {
   g_pending_requests.erase(map_iter);
 }
 
-static void profile_state_changed_callback(connection_profile_state_e state,
-                                           void* data) {
+void profile_state_changed_callback(connection_profile_state_e state,
+                                    void* data) {
   connection_profile_h profile = static_cast<connection_profile_h>(data);
 
   char* profile_name;
@@ -83,6 +85,8 @@ static void profile_state_changed_callback(connection_profile_state_e state,
     g_pending_requests.erase(map_iter);
   }
 }
+
+}  // namespace
 
 NetworkBearerSelectionConnection::NetworkBearerSelectionConnection()
     : is_valid_(false) {
