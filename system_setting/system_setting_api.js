@@ -31,16 +31,18 @@ extension.setMessageListener(function(message) {
 });
 
 exports.setProperty = function(type, proposedPath, successCallback, errorCallback) {
-  if (typeof type !== 'string' || typeof proposedPath !== 'string') {
+  if (typeof type !== 'string' || !(type in systemSettingTypes))
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
-  }
-  if (!systemSettingTypes.hasOwnProperty(type) || !successCallback) {
-    throw new tizen.WebAPIException(tizen.WebAPIException.INVALID_VALUES_ERR);
-  }
-  if (typeof (successCallback) !== 'function' ||
-      (errorCallback && typeof (errorCallback) !== 'function')) {
+
+  if (typeof proposedPath !== 'string')
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
-  }
+
+  if (typeof (successCallback) !== 'function')
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+
+  if (arguments.length == 4 && typeof (errorCallback) !== 'function')
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+
   var id = (_next_reply_id++).toString();
   _callbacks[id] = [successCallback, errorCallback];
   extension.postMessage(JSON.stringify({
@@ -52,13 +54,15 @@ exports.setProperty = function(type, proposedPath, successCallback, errorCallbac
 };
 
 exports.getProperty = function(type, successCallback, errorCallback) {
-  if (!successCallback) {
-    throw new tizen.WebAPIException(tizen.WebAPIException.INVALID_VALUES_ERR);
-  }
-  if (typeof type !== 'string' || typeof (successCallback) !== 'function' ||
-      (errorCallback && typeof (errorCallback) !== 'function')) {
+  if (typeof (type) !== 'string' || !(type in systemSettingTypes))
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
-  }
+
+  if (typeof (successCallback) !== 'function')
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+
+  if (arguments.length == 3 && typeof (errorCallback) !== 'function')
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+
   var id = (_next_reply_id++).toString();
   _callbacks[id] = [successCallback, errorCallback];
   extension.postMessage(JSON.stringify({
