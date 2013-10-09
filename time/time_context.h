@@ -37,7 +37,7 @@ class TimeContext {
   const picojson::value::object
      HandleGetAvailableTimeZones(const picojson::value& msg);
   const picojson::value::object
-     HandleGetTimeZoneRawOffset(const picojson::value& msg);
+     HandleGetTimeZoneOffset(const picojson::value& msg);
   const picojson::value::object
      HandleGetTimeZoneAbbreviation(const picojson::value& msg);
   const picojson::value::object
@@ -46,6 +46,8 @@ class TimeContext {
      HandleGetDSTTransition(const picojson::value& msg);
   const picojson::value::object
      HandleToString(const picojson::value& msg, DateTimeFormatType type);
+  const picojson::value::object
+     HandleGetTimeFormat(const picojson::value& msg);
 
   UnicodeString getDateTimeFormat(DateTimeFormatType type, bool bLocale);
 
