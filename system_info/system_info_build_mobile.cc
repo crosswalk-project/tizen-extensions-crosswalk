@@ -11,6 +11,8 @@
 
 #include "common/picojson.h"
 
+const std::string SysInfoBuild::name_ = "BUILD";
+
 void SysInfoBuild::Get(picojson::value& error,
                        picojson::value& data) {
   // model and manufacturer
@@ -111,13 +113,7 @@ gboolean SysInfoBuild::OnUpdateTimeout(gpointer user_data) {
         picojson::value("BUILD"));
     system_info::SetPicoJsonObjectValue(output, "data", data);
 
-    std::string result = output.serialize();
-    const char* result_as_cstr = result.c_str();
-    AutoLock lock(&(instance->events_list_mutex_));
-    for (SystemInfoEventsList::iterator it = build_events_.begin();
-         it != build_events_.end(); it++) {
-      (*it)->PostMessage(result_as_cstr);
-    }
+    instance->PostMessageToListeners(output);;
   }
 
   return TRUE;

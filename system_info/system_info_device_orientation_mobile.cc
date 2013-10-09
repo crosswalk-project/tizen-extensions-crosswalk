@@ -4,6 +4,8 @@
 
 #include "system_info/system_info_device_orientation.h"
 
+const std::string SysInfoDeviceOrientation::name_ = "DEVICE_ORIENTATION";
+
 void SysInfoDeviceOrientation::Get(picojson::value& error,
                                    picojson::value& data) {
   SetStatus();
@@ -55,12 +57,7 @@ void SysInfoDeviceOrientation::SendUpdate() {
       picojson::value("DEVICE_ORIENTATION"));
   system_info::SetPicoJsonObjectValue(output, "data", data);
 
-  std::string result = output.serialize();
-  const char* result_as_cstr = result.c_str();
-  AutoLock lock(&events_list_mutex_);
-  for (SystemInfoEventsList::iterator it = device_orientation_events_.begin();
-       it != device_orientation_events_.end(); it++)
-    (*it)->PostMessage(result_as_cstr);
+  PostMessageToListeners(output);
 }
 
 std::string SysInfoDeviceOrientation::ToOrientationStatusString(
@@ -139,11 +136,11 @@ void SysInfoDeviceOrientation::OnAutoRotationChanged(keynode_t* node,
   orientation->SendUpdate();
 }
 
-void SysInfoDeviceOrientation::StartListening(ContextAPI* api) {
-  AutoLock lock(&events_list_mutex_);
-  device_orientation_events_.push_back(api);
+void SysInfoDeviceOrientation::AddListener(ContextAPI* api) {
+  AutoLock lock(&listeners_mutex_);
+  listeners_.push_back(api);
 
-  if (device_orientation_events_.size() > 1)
+  if (listeners_.size() > 1)
     return;
 
   vconf_notify_key_changed(VCONFKEY_SETAPPL_AUTO_ROTATE_SCREEN_BOOL,
@@ -167,11 +164,11 @@ void SysInfoDeviceOrientation::StartListening(ContextAPI* api) {
   }
 }
 
-void SysInfoDeviceOrientation::StopListening(ContextAPI* api) {
-  AutoLock lock(&events_list_mutex_);
-  device_orientation_events_.remove(api);
+void SysInfoDeviceOrientation::RemoveListener(ContextAPI* api) {
+  AutoLock lock(&listeners_mutex_);
+  listeners_.remove(api);
 
-  if (!device_orientation_events_.empty())
+  if (!listeners_.empty())
     return;
 
   vconf_ignore_key_changed(VCONFKEY_SETAPPL_AUTO_ROTATE_SCREEN_BOOL,

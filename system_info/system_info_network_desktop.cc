@@ -20,7 +20,6 @@ const char sDeviceInterface[] = "org.freedesktop.NetworkManager.Device";
 SysInfoNetwork::SysInfoNetwork()
     : type_(SYSTEM_INFO_NETWORK_UNKNOWN) {
   PlatformInitialize();
-  pthread_mutex_init(&events_list_mutex_, NULL);
 }
 
 void SysInfoNetwork::PlatformInitialize() {
@@ -39,14 +38,10 @@ void SysInfoNetwork::PlatformInitialize() {
       this);
 }
 
-SysInfoNetwork::~SysInfoNetwork() {
-  pthread_mutex_destroy(&events_list_mutex_);
+void SysInfoNetwork::AddListener(ContextAPI* api) {
 }
 
-void SysInfoNetwork::StartListening(ContextAPI* api) {
-}
-
-void SysInfoNetwork::StopListening(ContextAPI* api) {
+void SysInfoNetwork::RemoveListener(ContextAPI* api) {
 }
 
 void SysInfoNetwork::OnNetworkManagerCreated(GObject*, GAsyncResult* res) {
@@ -228,13 +223,7 @@ void SysInfoNetwork::SendUpdate(guint new_device_type) {
       picojson::value("NETWORK"));
   system_info::SetPicoJsonObjectValue(output, "data", data);
 
-  std::string result = output.serialize();
-  const char* result_as_cstr = result.c_str();
-  AutoLock lock(&events_list_mutex_);
-  for (SystemInfoEventsList::iterator it = network_events_.begin();
-       it != network_events_.end(); it++) {
-    (*it)->PostMessage(result_as_cstr);
-  }
+  PostMessageToListeners(output);
 }
 
 void SysInfoNetwork::OnNetworkManagerSignal(GDBusProxy* proxy,

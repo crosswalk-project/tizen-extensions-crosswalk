@@ -18,21 +18,16 @@
 #include "common/utils.h"
 #include "system_info/system_info_utils.h"
 
-class SysInfoSim {
+class SysInfoSim : public SysInfoObject {
  public:
-  static SysInfoSim& GetSysInfoSim() {
+  static SysInfoObject& GetInstance() {
     static SysInfoSim instance;
     return instance;
   }
-  ~SysInfoSim() {
-    for (SystemInfoEventsList::iterator it = sim_events_.begin();
-         it != sim_events_.end(); it++)
-      StopListening(*it);
-    pthread_mutex_destroy(&events_list_mutex_);
-  }
+  ~SysInfoSim() {}
   void Get(picojson::value& error, picojson::value& data);
-  void StartListening(ContextAPI* api);
-  void StopListening(ContextAPI* api);
+  void AddListener(ContextAPI* api);
+  void RemoveListener(ContextAPI* api);
 
   enum SystemInfoSimState {
     SYSTEM_INFO_SIM_ABSENT = 0,
@@ -53,6 +48,8 @@ class SysInfoSim {
   static void OnSimStateChanged(sim_state_e state, void *user_data);
 #endif
 
+  static const std::string name_;
+
  private:
   explicit SysInfoSim()
       : state_(SYSTEM_INFO_SIM_UNKNOWN),
@@ -62,9 +59,7 @@ class SysInfoSim {
         mcc_(0),
         mnc_(0),
         msin_(""),
-        spn_("") {
-    pthread_mutex_init(&events_list_mutex_, NULL);
-  }
+        spn_("") {}
 
 #if defined(TIZEN_MOBILE)
   bool QuerySIMStatus();
@@ -90,7 +85,6 @@ class SysInfoSim {
   unsigned int mnc_;
   std::string msin_;
   std::string spn_;
-  pthread_mutex_t events_list_mutex_;
 
   DISALLOW_COPY_AND_ASSIGN(SysInfoSim);
 };

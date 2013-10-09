@@ -4,6 +4,8 @@
 
 #include "system_info/system_info_network.h"
 
+const std::string SysInfoNetwork::name_ = "NETWORK";
+
 void SysInfoNetwork::Get(picojson::value& error,
                          picojson::value& data) {
   if (!Update(error)) {

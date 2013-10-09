@@ -37,16 +37,18 @@ enum SystemInfoNetworkType {
   void METHOD(SENDER, ARG0);
 #endif
 
-class SysInfoNetwork {
+class SysInfoNetwork : public SysInfoObject {
  public:
-  static SysInfoNetwork& GetSysInfoNetwork() {
+  static SysInfoObject& GetInstance() {
     static SysInfoNetwork instance;
     return instance;
   }
   ~SysInfoNetwork();
   void Get(picojson::value& error, picojson::value& data);
-  void StartListening(ContextAPI* api);
-  void StopListening(ContextAPI* api);
+  void AddListener(ContextAPI* api);
+  void RemoveListener(ContextAPI* api);
+
+  static const std::string name_;
 
  private:
   explicit SysInfoNetwork();
@@ -57,7 +59,6 @@ class SysInfoNetwork {
   std::string ToNetworkTypeString(SystemInfoNetworkType type);
 
   SystemInfoNetworkType type_;
-  pthread_mutex_t events_list_mutex_;
 
 #if defined(GENERIC_DESKTOP)
   G_CALLBACK_1(OnNetworkManagerCreated, GObject*, GAsyncResult*);

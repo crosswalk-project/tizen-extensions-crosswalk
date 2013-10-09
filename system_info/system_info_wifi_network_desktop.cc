@@ -22,7 +22,6 @@ SysInfoWifiNetwork::SysInfoWifiNetwork()
       ssid_(""),
       status_("OFF") {
   PlatformInitialize();
-  pthread_mutex_init(&events_list_mutex_, NULL);
 }
 
 void SysInfoWifiNetwork::PlatformInitialize() {
@@ -43,12 +42,8 @@ void SysInfoWifiNetwork::PlatformInitialize() {
       this);
 }
 
-SysInfoWifiNetwork::~SysInfoWifiNetwork() {
-  pthread_mutex_destroy(&events_list_mutex_);
-}
-
-void SysInfoWifiNetwork::StartListening(ContextAPI* api) { }
-void SysInfoWifiNetwork::StopListening(ContextAPI* api) { }
+void SysInfoWifiNetwork::AddListener(ContextAPI* api) { }
+void SysInfoWifiNetwork::RemoveListener(ContextAPI* api) { }
 
 void SysInfoWifiNetwork::SetData(picojson::value& data) {
   system_info::SetPicoJsonObjectValue(data, "status",

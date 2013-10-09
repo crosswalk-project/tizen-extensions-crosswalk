@@ -13,22 +13,25 @@
 #include <vconf-keys.h>
 #endif
 
+#include <string>
+
 #include "common/extension_adapter.h"
 #include "common/picojson.h"
 #include "common/utils.h"
 #include "system_info/system_info_utils.h"
 
-class SysInfoBattery {
+class SysInfoBattery : public SysInfoObject {
  public:
-  static SysInfoBattery& GetSysInfoBattery() {
+  static SysInfoObject& GetInstance() {
     static SysInfoBattery instance;
     return instance;
   }
 
-  ~SysInfoBattery();
   void Get(picojson::value& error, picojson::value& data);
-  void StartListening(ContextAPI* api);
-  void StopListening(ContextAPI* api);
+  void AddListener(ContextAPI* api);
+  void RemoveListener(ContextAPI* api);
+
+  static const std::string name_;
 
  private:
   explicit SysInfoBattery();
@@ -50,7 +53,6 @@ class SysInfoBattery {
 
   double level_;
   bool charging_;
-  pthread_mutex_t events_list_mutex_;
 
   DISALLOW_COPY_AND_ASSIGN(SysInfoBattery);
 };

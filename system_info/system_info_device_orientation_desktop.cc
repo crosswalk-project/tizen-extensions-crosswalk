@@ -4,11 +4,13 @@
 
 #include "system_info/system_info_device_orientation.h"
 
+const std::string SysInfoDeviceOrientation::name_ = "DEVICE_ORIENTATION";
+
 void SysInfoDeviceOrientation::Get(picojson::value& error,
                                    picojson::value& data) {
   system_info::SetPicoJsonObjectValue(error, "message",
       picojson::value("Device Orientation is not supported on desktop."));
 }
 
-void SysInfoDeviceOrientation::StartListening(ContextAPI* api) { }
-void SysInfoDeviceOrientation::StopListening(ContextAPI* api) { }
+void SysInfoDeviceOrientation::AddListener(ContextAPI* api) { }
+void SysInfoDeviceOrientation::RemoveListener(ContextAPI* api) { }

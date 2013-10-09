@@ -20,13 +20,11 @@ SysInfoStorage::SysInfoStorage()
     : timeout_cb_id_(0) {
   udev_ = udev_new();
   units_ = picojson::value(picojson::array(0));
-  pthread_mutex_init(&events_list_mutex_, NULL);
 }
 
 SysInfoStorage::~SysInfoStorage() {
   if (udev_)
     udev_unref(udev_);
-  pthread_mutex_destroy(&events_list_mutex_);
 }
 
 bool SysInfoStorage::Update(picojson::value& error) {

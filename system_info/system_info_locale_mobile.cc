@@ -8,15 +8,17 @@
 
 #include "common/picojson.h"
 
-SysInfoLocale::SysInfoLocale() {
-  pthread_mutex_init(&events_list_mutex_, NULL);
-}
+const std::string SysInfoLocale::name_ = "LOCALE";
 
-void SysInfoLocale::StartListening(ContextAPI* api) {
-  AutoLock lock(&events_list_mutex_);
-  local_events_.push_back(api);
+SysInfoLocale::SysInfoLocale() {}
 
-  if (local_events_.size() > 1)
+SysInfoLocale::~SysInfoLocale() {}
+
+void SysInfoLocale::AddListener(ContextAPI* api) {
+  AutoLock lock(&listeners_mutex_);
+  listeners_.push_back(api);
+
+  if (listeners_.size() > 1)
     return;
 
   vconf_notify_key_changed(VCONFKEY_REGIONFORMAT,
@@ -25,11 +27,11 @@ void SysInfoLocale::StartListening(ContextAPI* api) {
       static_cast<vconf_callback_fn>(OnLanguageChanged), this);
 }
 
-void SysInfoLocale::StopListening(ContextAPI* api) {
-  AutoLock lock(&events_list_mutex_);
-  local_events_.remove(api);
+void SysInfoLocale::RemoveListener(ContextAPI* api) {
+  AutoLock lock(&listeners_mutex_);
+  listeners_.remove(api);
 
-  if (!local_events_.empty())
+  if (!listeners_.empty())
     return;
 
   vconf_ignore_key_changed(VCONFKEY_REGIONFORMAT,
@@ -102,13 +104,7 @@ void SysInfoLocale::Update() {
       picojson::value("LOCALE"));
   system_info::SetPicoJsonObjectValue(output, "data", data);
 
-  std::string result = output.serialize();
-  const char* result_as_cstr = result.c_str();
-  AutoLock lock(&events_list_mutex_);
-  for (SystemInfoEventsList::iterator it = local_events_.begin();
-       it != local_events_.end(); it++) {
-    (*it)->PostMessage(result_as_cstr);
-  }
+  PostMessageToListeners(output);
 }
 
 bool SysInfoLocale::GetLanguage() {
