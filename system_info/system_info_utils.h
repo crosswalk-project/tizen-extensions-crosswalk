@@ -51,7 +51,12 @@ void SetPicoJsonObjectValue(picojson::value& obj,
                             const picojson::value& val);
 std::string GetPropertyFromFile(const std::string& file_path,
                                 const std::string& key);
-bool IsExist(const char* path);
+inline bool PathExists(const char* path) {
+  return 0 == access(path, F_OK);
+}
+inline bool ParseBoolean(std::string str) {
+  return str == "true" ? true : false;
+}
 
 }  // namespace system_info
 
