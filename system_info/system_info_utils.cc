@@ -79,8 +79,4 @@ std::string GetPropertyFromFile(const std::string& file_path,
   return "";
 }
 
-bool IsExist(const char* path) {
-  return 0 == access(path, F_OK);
-}
-
 }  // namespace system_info
