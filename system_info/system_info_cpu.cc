@@ -82,8 +82,11 @@ bool SysInfoCpu::UpdateLoad() {
   unsigned long long total; //NOLINT
   unsigned long long used; //NOLINT
 
-  fscanf(fp, "%*s %llu %llu %llu %llu %llu %llu %llu",
-         &user, &nice, &system, &idle, &iowait, &irq, &softirq);
+  if (fscanf(fp, "%*s %llu %llu %llu %llu %llu %llu %llu",
+             &user, &nice, &system, &idle, &iowait, &irq, &softirq) != 7) {
+      fclose(fp);
+      return false;
+  }
   fclose(fp);
 
   // The algorithm here can be found at:
