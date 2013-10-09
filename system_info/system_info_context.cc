@@ -359,7 +359,7 @@ void SystemInfoContext::HandleGetCapabilities() {
   system_info_get_value_bool(SYSTEM_INFO_KEY_SPEECH_RECOGNITION_SUPPORTED, &b);
   o["speechRecognition"] = picojson::value(b);
 
-  b = system_info::IsExist("/usr/lib/libtts.so");
+  b = system_info::PathExists("/usr/lib/libtts.so");
   o["speechSynthesis"] = picojson::value(b);
 
   sensor_is_supported(SENSOR_ACCELEROMETER, &b);
@@ -404,16 +404,16 @@ void SystemInfoContext::HandleGetCapabilities() {
   sensor_awake_is_supported(SENSOR_MOTION_TILT, &b);
   o["tiltmeterWakeup"] = picojson::value(b);
 
-  b = system_info::IsExist("/usr/lib/libsqlite3.so.0");
+  b = system_info::PathExists("/usr/lib/libsqlite3.so.0");
   o["dataEncryption"] = picojson::value(b);
 
   system_info_get_value_bool(SYSTEM_INFO_KEY_GRAPHICS_HWACCEL_SUPPORTED, &b);
   o["graphicsAcceleration"] = picojson::value(b);
 
-  b = system_info::IsExist("/usr/bin/pushd");
+  b = system_info::PathExists("/usr/bin/pushd");
   o["push"] = picojson::value(b);
 
-  b = system_info::IsExist("/usr/bin/telephony-daemon");
+  b = system_info::PathExists("/usr/bin/telephony-daemon");
   o["telephony"] = picojson::value(b);
 
   system_info_get_value_bool(SYSTEM_INFO_KEY_MMS_SUPPORTED, &b);
@@ -427,7 +427,7 @@ void SystemInfoContext::HandleGetCapabilities() {
           sSystemInfoFilePath,
           "http://tizen.org/feature/screen.coordinate_system.size.normal");
   o["screenSizeNormal"] =
-      picojson::value(screensize_normal == "true" ? true : false);
+      picojson::value(system_info::ParseBoolean(screensize_normal));
 
   int height;
   int width;
@@ -451,13 +451,13 @@ void SystemInfoContext::HandleGetCapabilities() {
   else
     o["shellAppWidget"] = picojson::value(false);
 
-  b = system_info::IsExist("/usr/lib/osp/libarengine.so");
+  b = system_info::PathExists("/usr/lib/osp/libarengine.so");
   o["visionImageRecognition"] = picojson::value(b);
   o["visionQrcodeGeneration"] = picojson::value(b);
   o["visionQrcodeRecognition"] = picojson::value(b);
   o["visionFaceRecognition"] = picojson::value(b);
 
-  b = system_info::IsExist("/usr/bin/smartcard-daemon");
+  b = system_info::PathExists("/usr/bin/smartcard-daemon");
   o["secureElement"] = picojson::value(b);
 
   std::string osp_compatible =
@@ -465,7 +465,7 @@ void SystemInfoContext::HandleGetCapabilities() {
           sSystemInfoFilePath,
           "http://tizen.org/feature/platform.native.osp_compatible");
   o["nativeOspCompatible"] =
-      picojson::value(osp_compatible == "true" ? true : false);
+      picojson::value(system_info::ParseBoolean(osp_compatible));
 
   // FIXME(halton): Not supported until Tizen 2.2
   o["profile"] = picojson::value("MOBILE_WEB");
