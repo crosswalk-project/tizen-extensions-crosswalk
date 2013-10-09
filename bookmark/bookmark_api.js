@@ -20,6 +20,18 @@ function defineReadOnlyProperty(object, key, value) {
   });
 }
 
+function _sendSyncMessage(cmd, id, title, url, parent_id, type) {
+  var msg = {
+    'cmd': cmd,
+    'id': Number(id),
+    'title': title,
+    'url': url,
+    'parent_id': Number(parent_id),
+    'type': Number(type)
+  };
+  return JSON.parse(extension.internal.sendSyncMessage(JSON.stringify(msg)));
+}
+
 defineReadOnlyProperty(tizen, 'BookmarkItem', function(title, url) {
   // FIXME(cmarcelo): This is a best effort to ensure that this function is
   // called as a constructor only. We may need to implement some native
@@ -49,11 +61,11 @@ function isBookmarkType(object) {
 
 // The provider object is used by the public API functions to get the
 // actual data. See implementation below.
-var provider = new FakeBookmarkProvider();
+var provider = new BookmarkProvider();
 
 exports.get = function(parentFolder, recursive) {
   if (arguments.length == 0 || parentFolder === null) {
-    return recursive ? provider.getFolderRecursive(0) : provider.getFolder(0);
+    return provider.getFolderItems(provider.getRootID(), recursive);
   }
 
   if (!(parentFolder instanceof tizen.BookmarkFolder))
@@ -62,11 +74,7 @@ exports.get = function(parentFolder, recursive) {
   if (parentFolder._id == null)
     throw new tizen.WebAPIException(tizen.WebAPIException.NOT_FOUND_ERR);
 
-  var result;
-  if (recursive)
-    result = provider.getFolderRecursive(parentFolder._id);
-  else
-    result = provider.getFolder(parentFolder._id);
+  var result = provider.getFolderItems(parentFolder._id, recursive);
 
   if (result == null)
     throw new tizen.WebAPIException(tizen.WebAPIException.NOT_FOUND_ERR);
@@ -84,7 +92,7 @@ exports.add = function(bookmark, parentFolder) {
     if (bookmark._id != null)
       throw new tizen.WebAPIException(tizen.WebAPIException.INVALID_VALUES_ERR);
 
-    if (!provider.addToFolder(bookmark, 0))
+    if (!provider.addToFolder(bookmark, provider.getRootID()))
       throw new tizen.WebAPIException(tizen.WebAPIException.INVALID_VALUES_ERR);
     return;
   }
@@ -116,125 +124,87 @@ exports.remove = function(bookmark) {
 // Implementation of BookmarkProvider. It contains the operations needed by the
 // public API functions. We refer to the folders here by their IDs in many
 // functions.
-//
-// TODO(cmarcelo): This is a FAKE BOOKMARK PROVIDER, that do not query/store the
-// bookmark data in the real database. It should be replaced with an appropriate
-// provider that communicates to the native side of the extension.
 
-function FakeBookmarkProvider() {
-  this.next_id = 1;
-  this.folders = {};
-  this.folders[0] = {
-    bookmark: null,
-    contents: []
-  };
-  this.urls = {};
-}
+function BookmarkProvider() {}
 
-function containsWithTitle(array, title) {
-  var i;
-  for (i = 0; i < array.length; i++) {
-    if (array[i].title === title)
-      return true;
-  }
-  return false;
-}
+BookmarkProvider.prototype.addToFolder = function(bookmark, parentID) {
+  var isBookmarkFolder = bookmark instanceof tizen.BookmarkFolder;
+  var item = _sendSyncMessage('AddBookmark', null, bookmark.title, bookmark.url,
+                              parentID, isBookmarkFolder ? 1 : 0);
 
-FakeBookmarkProvider.prototype.addToFolder = function(bookmark, parentID) {
-  var parent = this.folders[parentID];
-  var isBookmarkItem = bookmark instanceof tizen.BookmarkItem;
-  if (!parent)
+  if (item.error)
     return false;
 
-  if (isBookmarkItem && this.urls[bookmark.url])
-    return false;
-
-  if (containsWithTitle(parent.contents, bookmark.title))
-    return false;
-
-  v8tools.forceSetProperty(bookmark, 'parent', parent.bookmark);
-  v8tools.forceSetProperty(bookmark, '_id', this.next_id);
-  this.next_id += 1;
-  parent.contents.push(bookmark);
-  if (isBookmarkItem)
-    this.urls[bookmark.url] = true;
-
-  if (bookmark instanceof tizen.BookmarkFolder) {
-    this.folders[bookmark._id] = {
-      bookmark: bookmark,
-      contents: []
-    };
-  }
+  v8tools.forceSetProperty(bookmark, '_id', item.id);
+  v8tools.forceSetProperty(bookmark, 'parent', this.getFolder(parentID));
 
   return true;
 };
 
-FakeBookmarkProvider.prototype.getFolder = function(id) {
-  var parent = this.folders[id];
-  if (!parent)
+BookmarkProvider.prototype.getFolder = function(id) {
+  if (arguments.length == 0 || id <= 0)
     return null;
 
-  var result = [];
-  var folder = parent.contents;
-  var i;
-
-  for (i = 0; i < folder.length; i++)
-    result.push(folder[i]);
-  return result;
-};
-
-FakeBookmarkProvider.prototype.getFolderRecursive = function(id) {
-  var parent = this.folders[id];
-  if (!parent)
+  // root folder might have any ID number (not only 0)
+  if (id == this.getRootID())
     return null;
 
+  var folder = _sendSyncMessage('GetFolder', id);
+
+  var obj = new tizen.BookmarkFolder(folder.value[0].title);
+  v8tools.forceSetProperty(obj, '_id', folder.value[0].id);
+  v8tools.forceSetProperty(obj, 'parent', this.getFolder(folder.value[0].folder_id));
+
+  return obj;
+};
+
+BookmarkProvider.prototype.getFolderItems = function(id, recursive) {
+  var folder = _sendSyncMessage('GetFolderItems', id);
+
+  var item;
   var result = [];
-  var folder = parent.contents;
-  var i;
-
-  for (i = 0; i < folder.length; i++) {
-    result.push(folder[i]);
-    if (folder[i] instanceof tizen.BookmarkFolder)
-      Array.prototype.push.apply(result, this.getFolderRecursive(folder[i]._id));
-  }
-
-  return result;
-};
-
-FakeBookmarkProvider.prototype.removeAll = function() {
-  var root = this.folders[0].contents.slice();
-  var i;
-
-  for (i = 0; i < root.length; i++) {
-    this.removeBookmark(root[i]);
-  }
-};
-
-FakeBookmarkProvider.prototype.removeBookmark = function(bookmark) {
-  var i;
-  var id = bookmark._id;
-
-  if (bookmark instanceof tizen.BookmarkFolder) {
-    var children = this.folders[id].contents.splice();
-    for (i = 0; i < children; i++)
-      this.removeBookmark(children[i]);
-  } else {
-    delete this.urls[bookmark.url];
-  }
-
-  var folder;
-  if (bookmark.parent == null)
-    folder = this.folders[0];
-  else
-    folder = this.folders[bookmark.parent._id];
-
-  v8tools.forceSetProperty(bookmark, 'parent', undefined);
-  v8tools.forceSetProperty(bookmark, '_id', null);
-
-  for (i = 0; i < folder.contents.length; i++) {
-    if (bookmark === folder.contents[i]) {
-      folder.contents.splice(i, 1);
-      break;
+  var len = folder.value.length;
+  for (var i = 0; item = folder.value[i], i < len; i++) {
+    if (item.is_folder == 0) {
+      var obj = new tizen.BookmarkItem(item.title, item.address);
+      v8tools.forceSetProperty(obj, '_id', item.id);
+      v8tools.forceSetProperty(obj, 'parent', this.getFolder(item.folder_id));
+      result.push(obj);
+    } else {
+      var obj = new tizen.BookmarkFolder(item.title);
+      v8tools.forceSetProperty(obj, '_id', item.id);
+      v8tools.forceSetProperty(obj, 'parent', this.getFolder(item.folder_id));
+      result.push(obj);
+      if (recursive)
+        result = result.concat(this.getFolderItems(item.id, true));
     }
   }
+
+  return result;
+};
+
+BookmarkProvider.prototype.removeAll = function() {
+  if (_sendSyncMessage('RemoveAll').error)
+    throw new tizen.WebAPIException(tizen.WebAPIException.SECURITY_ERR);
+};
+
+BookmarkProvider.prototype.removeBookmark = function(bookmark) {
+  if (_sendSyncMessage('RemoveBookmark', bookmark._id).error) {
+    throw new tizen.WebAPIException(tizen.WebAPIException.SECURITY_ERR);
+    return null;
+  }
+
+  v8tools.forceSetProperty(bookmark, '_id', null);
+  v8tools.forceSetProperty(bookmark, 'parent', undefined);
+};
+
+BookmarkProvider.prototype.getRootID = function() {
+  var rootID = _sendSyncMessage('GetRootID');
+
+  if (rootID.error) {
+    throw new tizen.WebAPIException(tizen.WebAPIException.SECURITY_ERR);
+    return null;
+  }
+
+  return Number(rootID.value);
 };
