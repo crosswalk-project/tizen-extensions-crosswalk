@@ -407,8 +407,8 @@ void SystemInfoContext::HandleGetCapabilities() {
   b = system_info::IsExist("/usr/lib/libsqlite3.so.0");
   o["dataEncryption"] = picojson::value(b);
 
-  // FIXME(halton): find which key reflect this prop
-  o["graphicsAcceleration"] = picojson::value(false);
+  system_info_get_value_bool(SYSTEM_INFO_KEY_GRAPHICS_HWACCEL_SUPPORTED, &b);
+  o["graphicsAcceleration"] = picojson::value(b);
 
   b = system_info::IsExist("/usr/bin/pushd");
   o["push"] = picojson::value(b);
@@ -422,8 +422,12 @@ void SystemInfoContext::HandleGetCapabilities() {
   system_info_get_value_bool(SYSTEM_INFO_KEY_SMS_SUPPORTED, &b);
   o["telephonySms"] = picojson::value(b);
 
-  // FIXME(halton): find which key reflect this prop
-  o["screenSizeNormal"] = picojson::value(false);
+  std::string screensize_normal =
+      system_info::GetPropertyFromFile(
+          sSystemInfoFilePath,
+          "http://tizen.org/feature/screen.coordinate_system.size.normal");
+  o["screenSizeNormal"] =
+      picojson::value(screensize_normal == "true" ? true : false);
 
   int height;
   int width;
@@ -437,8 +441,9 @@ void SystemInfoContext::HandleGetCapabilities() {
     o["screenSize720_1280"] = picojson::value(true);
   }
 
-  // FIXME(halton): find which key reflect this prop
-  o["autoRotation"] = picojson::value(false);
+  system_info_get_value_bool(SYSTEM_INFO_KEY_FEATURE_AUTO_ROTATION_SUPPORTED,
+                             &b);
+  o["autoRotation"] = picojson::value(b);
 
   pkgmgrinfo_pkginfo_h handle;
   if (pkgmgrinfo_pkginfo_get_pkginfo("gi2qxenosh", &handle) == PMINFO_R_OK)
