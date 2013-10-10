@@ -178,6 +178,32 @@ void NetworkBearerSelectionConnection::RequestRouteToHost(
   request_ptr->Failure();
 }
 
+void NetworkBearerSelectionConnection::ReleaseRouteToHost(
+    NetworkBearerSelectionRequest* request) {
+  std::unique_ptr<NetworkBearerSelectionRequest> request_ptr(request);
+
+  if (!is_valid()) {
+    request_ptr->Failure();
+    return;
+  }
+
+  connection_profile_h profile =
+      GetProfileForNetworkType(request_ptr->network_type());
+  if (!profile) {
+    request_ptr->Failure();
+    return;
+  }
+
+  // FIXME(tmpsantos): Tizen runtime implements the "release route" by simply
+  // disconnecting the network interface. We are doing the same here for
+  // compatibility, but it is obviously wrong.
+  if (connection_close_profile(
+          connection_, profile, dummy_callback, NULL) == CONNECTION_ERROR_NONE)
+    request_ptr->Success();
+  else
+    request_ptr->Failure();
+}
+
 connection_profile_h NetworkBearerSelectionConnection::GetProfileForNetworkType(
     NetworkType network_type) {
   // FIXME(tmpsantos): I'm not really sure if we should really map the UNKNOWN
