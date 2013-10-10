@@ -164,7 +164,7 @@ exports.getPropertyValue = function(prop, successCallback, errorCallback) {
   if (typeof successCallback !== 'function')
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
 
-  if (arguments.length == 3 && errorCallback != null && (typeof errorCallback !== 'function'))
+  if (arguments.length == 3 && errorCallback !== null && (typeof errorCallback !== 'function'))
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
 
   _getPropertyValue(prop, function(error, data) {
@@ -195,7 +195,7 @@ exports.addPropertyValueChangeListener = function(prop, successCallback, option)
   if (typeof successCallback !== 'function')
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
 
-  if (arguments.length == 3 && option != null && (typeof option !== 'object'))
+  if (arguments.length == 3 && option !== null && (typeof option !== 'object'))
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
 
   if (!_hasListener(prop)) {
