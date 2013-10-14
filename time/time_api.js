@@ -77,22 +77,22 @@ tizen.TimeDuration = function(length, unit) {
   if (!this || this.constructor != tizen.TimeDuration)
     throw new TypeError;
 
-  this.length = length || 0;
-  this.unit = unit || 'MSECS';
+  var length_ = length || 0;
+  var unit_ = unit || 'MSECS';
 
   Object.defineProperty(this, 'length', {
     get: function() {
-      return length; },
+      return length_; },
     set: function(NewValue) {
       if (NewValue != null)
-        length = NewValue; }});
+        length_ = NewValue; }});
 
   Object.defineProperty(this, 'unit', {
     get: function() {
-      return unit; },
+      return unit_; },
     set: function(NewValue) {
       if (TimeDurationUnit.indexOf(NewValue) >= 0)
-        unit = NewValue; }});
+        unit_ = NewValue; }});
 
   if (TimeDurationUnit.indexOf(this.unit) == -1)
     this.unit = 'MSECS';
