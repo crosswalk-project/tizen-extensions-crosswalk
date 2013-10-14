@@ -93,7 +93,7 @@ class DownloadContext {
   // FullDestPath = HomePath + DestPath
   // TODO(hdq): This depends on filesystem api?
   const std::string GetFullDestinationPath(const std::string destination) const;
-  const std::string GetRealLocation(const std::string& destination) const;
+  const std::string GetActualFolder(const std::string& destination) const;
 
   bool GetDownloadID(const picojson::value& msg,
                      int& downloadID, DownloadArgs** args);
