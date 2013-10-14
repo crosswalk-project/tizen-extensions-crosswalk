@@ -10,6 +10,7 @@
       'dependencies': [
         'bluetooth/bluetooth.gyp:*',
         'bookmark/bookmark.gyp:*',
+        'device_capabilities/device_capabilities.gyp:*',
         'filesystem/filesystem.gyp:*',
         'network_bearer_selection/network_bearer_selection.gyp:*',
         'notification/notification.gyp:*',
