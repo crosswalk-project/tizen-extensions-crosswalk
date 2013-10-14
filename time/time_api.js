@@ -77,7 +77,7 @@ tizen.TimeDuration = function(length, unit) {
   if (!this || this.constructor != tizen.TimeDuration)
     throw new TypeError;
 
-  var length_ = length || 0;
+  var length_ = Math.floor(length) || 0;
   var unit_ = unit || 'MSECS';
 
   Object.defineProperty(this, 'length', {
@@ -85,7 +85,7 @@ tizen.TimeDuration = function(length, unit) {
       return length_; },
     set: function(NewValue) {
       if (NewValue != null)
-        length_ = NewValue; }});
+        length_ = Math.floor(NewValue); }});
 
   Object.defineProperty(this, 'unit', {
     get: function() {
@@ -112,6 +112,7 @@ function getMultiplier(unit) {
 
 function makeMillisecondsDurationObject(length) {
   var dayInMsecs = _hourInMilliseconds * 24;
+  length = Math.floor(length);
 
   if ((length % dayInMsecs) == 0)
     return new tizen.TimeDuration(length / dayInMsecs, 'DAYS');
