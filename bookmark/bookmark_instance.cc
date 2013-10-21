@@ -73,11 +73,11 @@ static bool bookmark_foreach_get_cb(favorites_bookmark_entry_s* item,
   favorites_bookmark_entry_s* item_cp = new favorites_bookmark_entry_s();
   memcpy(item_cp, item, sizeof(favorites_bookmark_entry_s));
 
-  item_cp->title = reinterpret_cast<char*>(::operator new (PATH_MAX));
+  item_cp->title = reinterpret_cast<char*>(::operator new(PATH_MAX));
   snprintf(item_cp->title, PATH_MAX, "%s", item->title);
 
   if (!item->is_folder) {
-    item_cp->address = reinterpret_cast<char*>(::operator new (PATH_MAX));
+    item_cp->address = reinterpret_cast<char*>(::operator new(PATH_MAX));
     snprintf(item_cp->address, PATH_MAX, "%s", item->address);
   }
 
