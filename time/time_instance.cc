@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include "time/time_instance.h"
+
 #if defined(TIZEN_MOBILE)
 #include <vconf.h>
 #endif
@@ -11,7 +13,6 @@
 #include <memory>
 #include <cerrno>
 
-#include "time/time_context.h"
 #include "common/picojson.h"
 
 #include "unicode/timezone.h"
@@ -27,18 +28,13 @@ const int _hourInMilliseconds = 3600000;
 
 }  // namespace
 
-DEFINE_XWALK_EXTENSION(TimeContext)
+TimeInstance::TimeInstance() {}
 
-const char TimeContext::name[] = "tizen.time";
+TimeInstance::~TimeInstance() {}
 
-// This will be generated from time_api.js.
-extern const char kSource_time_api[];
+void TimeInstance::HandleMessage(const char* message) {}
 
-const char* TimeContext::GetJavaScript() {
-  return kSource_time_api;
-}
-
-void TimeContext::HandleSyncMessage(const char* message) {
+void TimeInstance::HandleSyncMessage(const char* message) {
   picojson::value v;
 
   std::string err;
@@ -63,21 +59,21 @@ void TimeContext::HandleSyncMessage(const char* message) {
   else if (cmd == "GetDSTTransition")
     o = HandleGetDSTTransition(v);
   else if (cmd == "ToDateString")
-    o = HandleToString(v, TimeContext::DATE_FORMAT);
+    o = HandleToString(v, TimeInstance::DATE_FORMAT);
   else if (cmd == "ToTimeString")
-    o = HandleToString(v, TimeContext::TIME_FORMAT);
+    o = HandleToString(v, TimeInstance::TIME_FORMAT);
   else if (cmd == "ToString")
-    o = HandleToString(v, TimeContext::DATETIME_FORMAT);
+    o = HandleToString(v, TimeInstance::DATETIME_FORMAT);
   else if (cmd == "GetTimeFormat")
     o = HandleGetTimeFormat(v);
 
   if (o.empty())
     o["error"] = picojson::value(true);
 
-  SetSyncReply(picojson::value(o));
+  SendSyncReply(picojson::value(o).serialize().c_str());
 }
 
-const picojson::value::object TimeContext::HandleGetLocalTimeZone(
+const picojson::value::object TimeInstance::HandleGetLocalTimeZone(
   const picojson::value& msg) {
   picojson::value::object o;
 
@@ -92,7 +88,7 @@ const picojson::value::object TimeContext::HandleGetLocalTimeZone(
   return o;
 }
 
-const picojson::value::object TimeContext::HandleGetAvailableTimeZones(
+const picojson::value::object TimeInstance::HandleGetAvailableTimeZones(
   const picojson::value& msg) {
   picojson::value::object o;
 
@@ -120,7 +116,7 @@ const picojson::value::object TimeContext::HandleGetAvailableTimeZones(
   return o;
 }
 
-const picojson::value::object TimeContext::HandleGetTimeZoneOffset(
+const picojson::value::object TimeInstance::HandleGetTimeZoneOffset(
   const picojson::value& msg) {
   picojson::value::object o;
 
@@ -154,7 +150,7 @@ const picojson::value::object TimeContext::HandleGetTimeZoneOffset(
   return o;
 }
 
-const picojson::value::object TimeContext::HandleGetTimeZoneAbbreviation(
+const picojson::value::object TimeInstance::HandleGetTimeZoneAbbreviation(
   const picojson::value& msg) {
   picojson::value::object o;
 
@@ -194,7 +190,7 @@ const picojson::value::object TimeContext::HandleGetTimeZoneAbbreviation(
   return o;
 }
 
-const picojson::value::object TimeContext::HandleIsDST(
+const picojson::value::object TimeInstance::HandleIsDST(
   const picojson::value& msg) {
   picojson::value::object o;
 
@@ -221,7 +217,7 @@ const picojson::value::object TimeContext::HandleIsDST(
   return o;
 }
 
-const picojson::value::object TimeContext::HandleGetDSTTransition(
+const picojson::value::object TimeInstance::HandleGetDSTTransition(
   const picojson::value& msg) {
   picojson::value::object o;
 
@@ -248,7 +244,7 @@ const picojson::value::object TimeContext::HandleGetDSTTransition(
   return o;
 }
 
-const picojson::value::object TimeContext::HandleToString(
+const picojson::value::object TimeInstance::HandleToString(
   const picojson::value& msg, DateTimeFormatType format) {
   picojson::value::object o;
 
@@ -291,11 +287,11 @@ const picojson::value::object TimeContext::HandleToString(
   return o;
 }
 
-const picojson::value::object TimeContext::HandleGetTimeFormat(
+const picojson::value::object TimeInstance::HandleGetTimeFormat(
   const picojson::value& msg) {
   picojson::value::object o;
 
-  UnicodeString timeFormat = getDateTimeFormat(TimeContext::TIME_FORMAT, true);
+  UnicodeString timeFormat = getDateTimeFormat(TimeInstance::TIME_FORMAT, true);
 
   timeFormat = timeFormat.findAndReplace("H", "h");
   timeFormat = timeFormat.findAndReplace("a", "ap");
@@ -313,7 +309,7 @@ const picojson::value::object TimeContext::HandleGetTimeFormat(
 }
 
 
-UnicodeString TimeContext::getDateTimeFormat(DateTimeFormatType type,
+UnicodeString TimeInstance::getDateTimeFormat(DateTimeFormatType type,
                                              bool bLocale) {
   UErrorCode ec = U_ZERO_ERROR;
   std::unique_ptr<DateTimePatternGenerator> dateTimepattern(
@@ -353,8 +349,4 @@ UnicodeString TimeContext::getDateTimeFormat(DateTimeFormatType type,
   }
 
   return pattern;
-}
-
-void TimeContext::SetSyncReply(picojson::value v) {
-  api_->SetSyncReply(v.serialize().c_str());
 }

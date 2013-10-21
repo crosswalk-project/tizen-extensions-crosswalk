@@ -2,35 +2,29 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef TIME_TIME_CONTEXT_H_
-#define TIME_TIME_CONTEXT_H_
+#ifndef TIME_TIME_INSTANCE_H_
+#define TIME_TIME_INSTANCE_H_
 
-#include "common/extension_adapter.h"
+#include "common/extension.h"
 #include "common/picojson.h"
-
 #include "unicode/unistr.h"
 
-class TimeContext {
+class TimeInstance : public common::Instance {
  public:
-  explicit TimeContext(ContextAPI* api)
-     : api_(api) {
-  }
-
-  // ExtensionAdapter implementation.
-  static const char name[];
-  static const char* GetJavaScript();
-  void HandleMessage(const char*) {}
-  void HandleSyncMessage(const char* message);
+  TimeInstance();
+  virtual ~TimeInstance();
 
  private:
-  enum DateTimeFormatType {
-      TIME_FORMAT,
-      DATE_FORMAT,
-      DATE_SHORT_FORMAT,
-      DATETIME_FORMAT
-  };
+  // common::Instance implementation.
+  virtual void HandleMessage(const char* msg);
+  virtual void HandleSyncMessage(const char* msg);
 
-  void SetSyncReply(picojson::value v);
+  enum DateTimeFormatType {
+    TIME_FORMAT,
+    DATE_FORMAT,
+    DATE_SHORT_FORMAT,
+    DATETIME_FORMAT
+  };
 
   const picojson::value::object
      HandleGetLocalTimeZone(const picojson::value& msg);
@@ -50,8 +44,6 @@ class TimeContext {
      HandleGetTimeFormat(const picojson::value& msg);
 
   UnicodeString getDateTimeFormat(DateTimeFormatType type, bool bLocale);
-
-  ContextAPI* api_;
 };
 
-#endif  // TIME_TIME_CONTEXT_H_
+#endif  // TIME_TIME_INSTANCE_H_
