@@ -48,21 +48,13 @@ class FilesystemContext {
         std::string& reply);
   void HandleFileStreamClose(const picojson::value& msg, std::string& reply);
   void HandleFileStreamRead(const picojson::value& msg, std::string& reply);
-  void HandleFileStreamReadBytes(const picojson::value& msg,
-        std::string& reply);
-  void HandleFileStreamReadBase64(const picojson::value& msg,
-        std::string& reply);
   void HandleFileStreamWrite(const picojson::value& msg, std::string& reply);
-  void HandleFileStreamWriteBytes(const picojson::value& msg,
-        std::string& reply);
-  void HandleFileStreamWriteBase64(const picojson::value& msg,
-        std::string& reply);
   void HandleFileCreateDirectory(const picojson::value& msg,
         std::string& reply);
   void HandleFileCreateFile(const picojson::value& msg, std::string& reply);
+  void HandleFileGetURI(const picojson::value& msg, std::string& reply);
   void HandleFileResolve(const picojson::value& msg, std::string& reply);
   void HandleFileStat(const picojson::value& msg, std::string& reply);
-  void HandleFileGetFullPath(const picojson::value& msg, std::string& reply);
 
   /* Sync message helpers */
   bool IsKnownFileDescriptor(int fd);
