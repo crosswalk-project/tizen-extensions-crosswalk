@@ -36,5 +36,5 @@ void NetworkBearerSelectionContextMobile::OnReleaseRouteToHost(
     return;
   }
 
-  PostMessage(request->cmd(), NO_ERROR, false, request->reply_id());
+  connection_->ReleaseRouteToHost(request);
 }

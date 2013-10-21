@@ -14,6 +14,7 @@ class NetworkBearerSelectionConnection {
   ~NetworkBearerSelectionConnection();
 
   void RequestRouteToHost(NetworkBearerSelectionRequest* request);
+  void ReleaseRouteToHost(NetworkBearerSelectionRequest* request);
 
   bool is_valid() { return is_valid_; }
 
