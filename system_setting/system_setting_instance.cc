@@ -2,30 +2,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "system_setting/system_setting_context.h"
+#include "system_setting/system_setting_instance.h"
 
 #include <string>
 #include "common/picojson.h"
 
-DEFINE_XWALK_EXTENSION(SystemSettingContext);
+SystemSettingInstance::SystemSettingInstance() {}
 
-SystemSettingContext::SystemSettingContext(ContextAPI* api)
-    : api_(api) {}
+SystemSettingInstance::~SystemSettingInstance() {}
 
-SystemSettingContext::~SystemSettingContext() {
-  delete api_;
-}
-
-const char SystemSettingContext::name[] = "tizen.systemsetting";
-
-// This will be generated from system_setting_api.js.
-extern const char kSource_system_setting_api[];
-
-const char* SystemSettingContext::GetJavaScript() {
-  return kSource_system_setting_api;
-}
-
-void SystemSettingContext::HandleMessage(const char* message) {
+void SystemSettingInstance::HandleMessage(const char* message) {
   picojson::value v;
 
   std::string err;
@@ -44,9 +30,9 @@ void SystemSettingContext::HandleMessage(const char* message) {
     std::cout << "ASSERT NOT REACHED. \n";
 }
 
-void SystemSettingContext::OnPropertyHandled(const char* reply_id,
-                                             const char* value,
-                                             int ret) {
+void SystemSettingInstance::OnPropertyHandled(const char* reply_id,
+                                              const char* value,
+                                              int ret) {
   picojson::value::object o;
   o["_reply_id"] = picojson::value(reply_id);
   if (value)
@@ -54,5 +40,5 @@ void SystemSettingContext::OnPropertyHandled(const char* reply_id,
   o["_error"] = picojson::value(static_cast<double>(ret));
 
   picojson::value v(o);
-  api_->PostMessage(v.serialize().c_str());
+  PostMessage(v.serialize().c_str());
 }

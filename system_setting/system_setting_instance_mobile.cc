@@ -2,13 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "system_setting/system_setting_context.h"
+#include "system_setting/system_setting_instance.h"
 
 #include <system_settings.h>
 #include <vconf.h>
 #include "common/picojson.h"
 
-void SystemSettingContext::HandleSetProperty(const picojson::value& msg) {
+void SystemSettingInstance::HandleSetProperty(const picojson::value& msg) {
   SystemSettingType type = static_cast<SystemSettingType>
     (msg.get("_type").get<double>());
   const char* value = msg.get("_file").to_str().c_str();
@@ -36,7 +36,7 @@ void SystemSettingContext::HandleSetProperty(const picojson::value& msg) {
   OnPropertyHandled(reply_id, value, ret);
 }
 
-void SystemSettingContext::HandleGetProperty(const picojson::value& msg) {
+void SystemSettingInstance::HandleGetProperty(const picojson::value& msg) {
   SystemSettingType type = static_cast<SystemSettingType>
     (msg.get("_type").get<double>());
   const char* reply_id = msg.get("_reply_id").to_str().c_str();
