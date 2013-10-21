@@ -2,25 +2,19 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SYSTEM_SETTING_SYSTEM_SETTING_CONTEXT_H_
-#define SYSTEM_SETTING_SYSTEM_SETTING_CONTEXT_H_
+#ifndef SYSTEM_SETTING_SYSTEM_SETTING_INSTANCE_H_
+#define SYSTEM_SETTING_SYSTEM_SETTING_INSTANCE_H_
 
-#include "common/extension_adapter.h"
+#include "common/extension.h"
 
 namespace picojson {
 class value;
 }
 
-class SystemSettingContext {
+class SystemSettingInstance : public common::Instance {
  public:
-  explicit SystemSettingContext(ContextAPI* api);
-  ~SystemSettingContext();
-
-  // ExtensionAdapter implementation.
-  static const char name[];
-  static const char* GetJavaScript();
-  void HandleMessage(const char* message);
-  void HandleSyncMessage(const char* message) {}
+  SystemSettingInstance();
+  virtual ~SystemSettingInstance();
 
  private:
   enum SystemSettingType {
@@ -30,11 +24,12 @@ class SystemSettingContext {
     NOTIFICATION_EMAIL = 3,
   };
 
+  // common::Instance implementation.
+  void HandleMessage(const char* message);
+
   void HandleSetProperty(const picojson::value& msg);
   void HandleGetProperty(const picojson::value& msg);
   void OnPropertyHandled(const char* reply_id, const char* value, int ret);
-
-  ContextAPI* api_;
 };
 
-#endif  // SYSTEM_SETTING_SYSTEM_SETTING_CONTEXT_H_
+#endif  // SYSTEM_SETTING_SYSTEM_SETTING_INSTANCE_H_
