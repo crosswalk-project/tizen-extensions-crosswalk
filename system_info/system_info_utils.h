@@ -7,6 +7,7 @@
 
 #include <libudev.h>
 #include <pthread.h>
+#include <unistd.h>
 
 #include <list>
 #include <string>
