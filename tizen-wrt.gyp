@@ -9,7 +9,6 @@
       'type': 'none',
       'dependencies': [
         'bluetooth/bluetooth.gyp:*',
-        'bookmark/bookmark.gyp:*',
         'filesystem/filesystem.gyp:*',
         'network_bearer_selection/network_bearer_selection.gyp:*',
         'notification/notification.gyp:*',
@@ -23,6 +22,7 @@
         [ 'extension_host_os == "mobile"', {
           'dependencies': [
             'download/download.gyp:*',
+            'bookmark/bookmark.gyp:*',
           ],
         }],
       ],
