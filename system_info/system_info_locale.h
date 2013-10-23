@@ -18,21 +18,18 @@
 #include "common/utils.h"
 #include "system_info/system_info_utils.h"
 
-class SysInfoLocale {
+class SysInfoLocale : public SysInfoObject {
  public:
-  static SysInfoLocale& GetSysInfoLocale() {
+  static SysInfoObject& GetInstance() {
     static SysInfoLocale instance;
     return instance;
   }
-  ~SysInfoLocale() {
-    for (SystemInfoEventsList::iterator it = local_events_.begin();
-         it != local_events_.end(); it++)
-      StopListening(*it);
-    pthread_mutex_destroy(&events_list_mutex_);
-  }
+  ~SysInfoLocale();
   void Get(picojson::value& error, picojson::value& data);
-  void StartListening(ContextAPI* api);
-  void StopListening(ContextAPI* api);
+  void AddListener(ContextAPI* api);
+  void RemoveListener(ContextAPI* api);
+
+  static const std::string name_;
 
  private:
   explicit SysInfoLocale();
@@ -41,7 +38,6 @@ class SysInfoLocale {
 
   std::string language_;
   std::string country_;
-  pthread_mutex_t events_list_mutex_;
 
 #if defined(GENERIC_DESKTOP)
   static gboolean OnUpdateTimeout(gpointer user_data);

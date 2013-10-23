@@ -24,28 +24,23 @@ enum SystemInfoDeviceOrientationStatus {
   LANDSCAPE_SECONDARY,
 };
 
-class SysInfoDeviceOrientation {
+class SysInfoDeviceOrientation : public SysInfoObject {
  public:
-  static SysInfoDeviceOrientation& GetSysInfoDeviceOrientation() {
+  static SysInfoObject& GetInstance() {
     static SysInfoDeviceOrientation instance;
     return instance;
   }
-  ~SysInfoDeviceOrientation() {
-    for (SystemInfoEventsList::iterator it = device_orientation_events_.begin();
-         it != device_orientation_events_.end(); it++)
-      StopListening(*it);
-    pthread_mutex_destroy(&events_list_mutex_);
-  }
+  ~SysInfoDeviceOrientation() {}
   void Get(picojson::value& error, picojson::value& data);
-  void StartListening(ContextAPI* api);
-  void StopListening(ContextAPI* api);
+  void AddListener(ContextAPI* api);
+  void RemoveListener(ContextAPI* api);
+
+  static const std::string name_;
 
  private:
   explicit SysInfoDeviceOrientation()
       : status_(PORTRAIT_PRIMARY),
-        sensorHandle_(0) {
-    pthread_mutex_init(&events_list_mutex_, NULL);
-  }
+        sensorHandle_(0) {}
 
 #if defined(TIZEN_MOBILE)
   void SetStatus();
@@ -64,7 +59,6 @@ class SysInfoDeviceOrientation {
   SystemInfoDeviceOrientationStatus status_;
   bool isAutoRotation_;
   int sensorHandle_;
-  pthread_mutex_t events_list_mutex_;
 
   DISALLOW_COPY_AND_ASSIGN(SysInfoDeviceOrientation);
 };

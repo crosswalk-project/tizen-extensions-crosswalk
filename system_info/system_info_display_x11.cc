@@ -18,15 +18,15 @@
   #error "Unsupported platform"
 #endif
 
+const std::string SysInfoDisplay::name_ = "DISPLAY";
+
 SysInfoDisplay::SysInfoDisplay()
     : resolution_width_(0),
       resolution_height_(0),
       physical_width_(0.0),
       physical_height_(0.0),
       brightness_(0.0),
-      timeout_cb_id_(0) {
-  pthread_mutex_init(&events_list_mutex_, NULL);
-}
+      timeout_cb_id_(0) {}
 
 void SysInfoDisplay::Get(picojson::value& error,
                          picojson::value& data) {
@@ -120,13 +120,7 @@ gboolean SysInfoDisplay::OnUpdateTimeout(gpointer user_data) {
         picojson::value("DISPLAY"));
     system_info::SetPicoJsonObjectValue(output, "data", data);
 
-    std::string result = output.serialize();
-    const char* result_as_cstr = result.c_str();
-    AutoLock lock(&(instance->events_list_mutex_));
-    for (SystemInfoEventsList::iterator it = display_events_.begin();
-         it != display_events_.end(); it++) {
-      (*it)->PostMessage(result_as_cstr);
-    }
+    instance->PostMessageToListeners(output);
   }
 
   return TRUE;

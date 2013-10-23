@@ -27,16 +27,18 @@
   void METHOD(SENDER, ARG0);
 #endif
 
-class SysInfoWifiNetwork {
+class SysInfoWifiNetwork : public SysInfoObject {
  public:
-  static SysInfoWifiNetwork& GetSysInfoWifiNetwork() {
+  static SysInfoObject& GetInstance() {
     static SysInfoWifiNetwork instance;
     return instance;
   }
   ~SysInfoWifiNetwork();
   void Get(picojson::value& error, picojson::value& data);
-  void StartListening(ContextAPI* api);
-  void StopListening(ContextAPI* api);
+  void AddListener(ContextAPI* api);
+  void RemoveListener(ContextAPI* api);
+
+  static const std::string name_;
 
  private:
   explicit SysInfoWifiNetwork();
@@ -51,7 +53,6 @@ class SysInfoWifiNetwork {
   std::string ipv6_address_;
   std::string ssid_;
   std::string status_;
-  pthread_mutex_t events_list_mutex_;
 
 #if defined(GENERIC_DESKTOP)
   G_CALLBACK_WIFI(OnAccessPointCreated, GObject*, GAsyncResult*);

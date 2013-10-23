@@ -10,31 +10,28 @@
 #include <vconf-keys.h>
 #endif
 
+#include <string>
+
 #include "common/extension_adapter.h"
 #include "common/picojson.h"
 #include "common/utils.h"
 #include "system_info/system_info_utils.h"
 
-class SysInfoPeripheral {
+class SysInfoPeripheral : public SysInfoObject {
  public:
-  static SysInfoPeripheral& GetSysInfoPeripheral() {
+  static SysInfoObject& GetInstance() {
     static SysInfoPeripheral instance;
     return instance;
   }
-  ~SysInfoPeripheral() {
-    for (SystemInfoEventsList::iterator it = peripheral_events_.begin();
-         it != peripheral_events_.end(); it++)
-      StopListening(*it);
-    pthread_mutex_destroy(&events_list_mutex_);
-  }
+  ~SysInfoPeripheral() {}
   void Get(picojson::value& error, picojson::value& data);
-  void StartListening(ContextAPI* api);
-  void StopListening(ContextAPI* api);
+  void AddListener(ContextAPI* api);
+  void RemoveListener(ContextAPI* api);
+
+  static const std::string name_;
 
  private:
-  explicit SysInfoPeripheral() {
-    pthread_mutex_init(&events_list_mutex_, NULL);
-  }
+  explicit SysInfoPeripheral() {}
 
 #if defined(TIZEN_MOBILE)
   void SetWFD(int wfd);
@@ -50,7 +47,6 @@ class SysInfoPeripheral {
   bool is_video_output_;
   int wfd_;
   int hdmi_;
-  pthread_mutex_t events_list_mutex_;
 
   DISALLOW_COPY_AND_ASSIGN(SysInfoPeripheral);
 };

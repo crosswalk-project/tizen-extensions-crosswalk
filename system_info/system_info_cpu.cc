@@ -7,6 +7,8 @@
 #include <stdio.h>
 #include <string>
 
+const std::string SysInfoCpu::name_ = "CPU";
+
 void SysInfoCpu::Get(picojson::value& error,
                      picojson::value& data) {
   if (!UpdateLoad()) {
@@ -35,21 +37,15 @@ gboolean SysInfoCpu::OnUpdateTimeout(gpointer user_data) {
     system_info::SetPicoJsonObjectValue(output, "prop", picojson::value("CPU"));
     system_info::SetPicoJsonObjectValue(output, "data", data);
 
-    std::string result = output.serialize();
-    const char* result_as_cstr = result.c_str();
-    AutoLock lock(&(instance->events_list_mutex_));
-    for (SystemInfoEventsList::iterator it = cpu_events_.begin();
-         it != cpu_events_.end(); it++) {
-      (*it)->PostMessage(result_as_cstr);
-    }
+    instance->PostMessageToListeners(output);
   }
 
   return TRUE;
 }
 
-void SysInfoCpu::StartListening(ContextAPI* api) {
-  AutoLock lock(&events_list_mutex_);
-  cpu_events_.push_back(api);
+void SysInfoCpu::AddListener(ContextAPI* api) {
+  AutoLock lock(&listeners_mutex_);
+  listeners_.push_back(api);
   if (timeout_cb_id_ == 0) {
     timeout_cb_id_ = g_timeout_add(system_info::default_timeout_interval,
                                    SysInfoCpu::OnUpdateTimeout,
@@ -57,10 +53,10 @@ void SysInfoCpu::StartListening(ContextAPI* api) {
   }
 }
 
-void SysInfoCpu::StopListening(ContextAPI* api) {
-  AutoLock lock(&events_list_mutex_);
-  cpu_events_.remove(api);
-  if (cpu_events_.empty() && timeout_cb_id_ > 0) {
+void SysInfoCpu::RemoveListener(ContextAPI* api) {
+  AutoLock lock(&listeners_mutex_);
+  listeners_.remove(api);
+  if (listeners_.empty() && timeout_cb_id_ > 0) {
     g_source_remove(timeout_cb_id_);
     timeout_cb_id_ = 0;
   }

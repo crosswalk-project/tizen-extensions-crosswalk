@@ -10,12 +10,13 @@
 
 #include "common/picojson.h"
 
+const std::string SysInfoBattery::name_ = "BATTERY";
+
 SysInfoBattery::SysInfoBattery()
     : level_(0.0),
       charging_(false),
       timeout_cb_id_(0) {
   udev_ = udev_new();
-  pthread_mutex_init(&events_list_mutex_, NULL);
 }
 
 SysInfoBattery::~SysInfoBattery() {
@@ -23,13 +24,12 @@ SysInfoBattery::~SysInfoBattery() {
     udev_unref(udev_);
   if (timeout_cb_id_ > 0)
     g_source_remove(timeout_cb_id_);
-  pthread_mutex_destroy(&events_list_mutex_);
 }
 
-void SysInfoBattery::StartListening(ContextAPI* api) {
+void SysInfoBattery::AddListener(ContextAPI* api) {
   // FIXME(halton): Use udev D-Bus interface to monitor.
-  AutoLock lock(&events_list_mutex_);
-  battery_events_.push_back(api);
+  AutoLock lock(&listeners_mutex_);
+  system_events_list_.push_back(api);
   if (timeout_cb_id_ == 0) {
     timeout_cb_id_ = g_timeout_add(system_info::default_timeout_interval,
                                    SysInfoBattery::OnUpdateTimeout,
@@ -37,9 +37,9 @@ void SysInfoBattery::StartListening(ContextAPI* api) {
   }
 }
 
-void SysInfoBattery::StopListening(ContextAPI* api) {
-  AutoLock lock(&events_list_mutex_);
-  battery_events_.remove(api);
+void SysInfoBattery::RemoveListener(ContextAPI* api) {
+  AutoLock lock(&listeners_mutex_);
+  system_events_list_.remove(api);
   if (battery_events_.empty() && timeout_cb_id_ > 0) {
     g_source_remove(timeout_cb_id_);
     timeout_cb_id_ = 0;
@@ -125,13 +125,7 @@ gboolean SysInfoBattery::OnUpdateTimeout(gpointer user_data) {
         picojson::value("BATTERY"));
     system_info::SetPicoJsonObjectValue(output, "data", data);
 
-    std::string result = output.serialize();
-    const char* result_as_cstr = result.c_str();
-    AutoLock lock(&(instance->events_list_mutex_));
-    for (SystemInfoEventsList::iterator it = battery_events_.begin();
-         it != battery_events_.end(); it++) {
-      (*it)->PostMessage(result_as_cstr);
-    }
+    PostMessageToListeners(output);
   }
 
   return TRUE;

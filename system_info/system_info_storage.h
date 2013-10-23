@@ -16,16 +16,18 @@
 #include "common/utils.h"
 #include "system_info/system_info_utils.h"
 
-class SysInfoStorage {
+class SysInfoStorage : public SysInfoObject {
  public:
-  static SysInfoStorage& GetSysInfoStorage() {
+  static SysInfoObject& GetInstance() {
     static SysInfoStorage instance;
     return instance;
   }
   ~SysInfoStorage();
   void Get(picojson::value& error, picojson::value& data);
-  void StartListening(ContextAPI* api);
-  void StopListening(ContextAPI* api);
+  void AddListener(ContextAPI* api);
+  void RemoveListener(ContextAPI* api);
+
+  static const std::string name_;
 
  private:
   explicit SysInfoStorage();
@@ -34,7 +36,6 @@ class SysInfoStorage {
 
   int timeout_cb_id_;
   picojson::value units_;
-  pthread_mutex_t events_list_mutex_;
 
 #if defined(GENERIC_DESKTOP)
   void GetDetails(const std::string& mnt_fsname,

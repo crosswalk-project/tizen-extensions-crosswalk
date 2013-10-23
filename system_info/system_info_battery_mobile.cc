@@ -8,19 +8,11 @@
 
 #include "common/picojson.h"
 
+const std::string SysInfoBattery::name_ = "BATTERY";
+
 SysInfoBattery::SysInfoBattery()
     : level_(0.0),
-      charging_(false) {
-  pthread_mutex_init(&events_list_mutex_, NULL);
-}
-
-SysInfoBattery::~SysInfoBattery() {
-  for (SystemInfoEventsList::iterator it = battery_events_.begin();
-       it != battery_events_.end(); it++) {
-    StopListening(*it);
-  }
-  pthread_mutex_destroy(&events_list_mutex_);
-}
+      charging_(false) {}
 
 void SysInfoBattery::Get(picojson::value& error,
                          picojson::value& data) {
@@ -52,13 +44,7 @@ bool SysInfoBattery::Update(picojson::value& error) {
       picojson::value("BATTERY"));
   system_info::SetPicoJsonObjectValue(output, "data", data);
 
-  std::string result = output.serialize();
-  const char* result_as_cstr = result.c_str();
-  AutoLock lock(&events_list_mutex_);
-  for (SystemInfoEventsList::iterator it = battery_events_.begin();
-       it != battery_events_.end(); it++) {
-    (*it)->PostMessage(result_as_cstr);
-  }
+  PostMessageToListeners(output);
   return true;
 }
 
@@ -101,11 +87,11 @@ void SysInfoBattery::OnIsChargingChanged(keynode_t* node, void* user_data) {
   battery->UpdateCharging(charging);
 }
 
-void SysInfoBattery::StartListening(ContextAPI* api) {
-  AutoLock lock(&events_list_mutex_);
-  battery_events_.push_back(api);
+void SysInfoBattery::AddListener(ContextAPI* api) {
+  AutoLock lock(&listeners_mutex_);
+  listeners_.push_back(api);
 
-  if (battery_events_.size() > 1)
+  if (listeners_.size() > 1)
     return;
 
   vconf_notify_key_changed(VCONFKEY_SYSMAN_BATTERY_CAPACITY,
@@ -114,11 +100,11 @@ void SysInfoBattery::StartListening(ContextAPI* api) {
       (vconf_callback_fn)OnIsChargingChanged, this);
 }
 
-void SysInfoBattery::StopListening(ContextAPI* api) {
-  AutoLock lock(&events_list_mutex_);
-  battery_events_.remove(api);
+void SysInfoBattery::RemoveListener(ContextAPI* api) {
+  AutoLock lock(&listeners_mutex_);
+  listeners_.remove(api);
 
-  if (!battery_events_.empty())
+  if (!listeners_.empty())
     return;
 
   vconf_ignore_key_changed(VCONFKEY_SYSMAN_BATTERY_CAPACITY,

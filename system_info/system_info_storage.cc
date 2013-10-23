@@ -6,6 +6,8 @@
 
 #include "common/picojson.h"
 
+const std::string SysInfoStorage::name_ = "STORAGE";
+
 void SysInfoStorage::Get(picojson::value& error,
                          picojson::value& data) {
   if (!Update(error)) {
@@ -51,22 +53,16 @@ gboolean SysInfoStorage::OnUpdateTimeout(gpointer user_data) {
         picojson::value("STORAGE"));
     system_info::SetPicoJsonObjectValue(output, "data", data);
 
-    std::string result = output.serialize();
-    const char* result_as_cstr = result.c_str();
-    AutoLock lock(&(instance->events_list_mutex_));
-    for (SystemInfoEventsList::iterator it = storage_events_.begin();
-         it != storage_events_.end(); it++) {
-      (*it)->PostMessage(result_as_cstr);
-    }
+    instance->PostMessageToListeners(output);
   }
 
   return TRUE;
 }
 
-void SysInfoStorage::StartListening(ContextAPI* api) {
+void SysInfoStorage::AddListener(ContextAPI* api) {
   // FIXME(halton): Use udev D-Bus interface to monitor.
-  AutoLock lock(&events_list_mutex_);
-  storage_events_.push_back(api);
+  AutoLock lock(&listeners_mutex_);
+  listeners_.push_back(api);
   if (timeout_cb_id_ == 0) {
     timeout_cb_id_ = g_timeout_add(system_info::default_timeout_interval,
                                    SysInfoStorage::OnUpdateTimeout,
@@ -74,10 +70,10 @@ void SysInfoStorage::StartListening(ContextAPI* api) {
   }
 }
 
-void SysInfoStorage::StopListening(ContextAPI* api) {
-  AutoLock lock(&events_list_mutex_);
-  storage_events_.remove(api);
-  if (storage_events_.empty() && timeout_cb_id_ > 0) {
+void SysInfoStorage::RemoveListener(ContextAPI* api) {
+  AutoLock lock(&listeners_mutex_);
+  listeners_.remove(api);
+  if (listeners_.empty() && timeout_cb_id_ > 0) {
     g_source_remove(timeout_cb_id_);
     timeout_cb_id_ = 0;
   }

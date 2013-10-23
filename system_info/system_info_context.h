@@ -5,20 +5,17 @@
 #ifndef SYSTEM_INFO_SYSTEM_INFO_CONTEXT_H_
 #define SYSTEM_INFO_SYSTEM_INFO_CONTEXT_H_
 
+#include <map>
+#include <string>
+#include <utility>
+
 #include "common/extension_adapter.h"
 #include "common/picojson.h"
-#include "system_info/system_info_battery.h"
-#include "system_info/system_info_build.h"
-#include "system_info/system_info_cellular_network.h"
-#include "system_info/system_info_cpu.h"
-#include "system_info/system_info_device_orientation.h"
-#include "system_info/system_info_display.h"
-#include "system_info/system_info_locale.h"
-#include "system_info/system_info_network.h"
-#include "system_info/system_info_peripheral.h"
-#include "system_info/system_info_sim.h"
-#include "system_info/system_info_storage.h"
-#include "system_info/system_info_wifi_network.h"
+#include "system_info/system_info_utils.h"
+
+typedef std::map<std::string, SysInfoObject&> SysInfoClassMap;
+typedef SysInfoClassMap::iterator classes_iterator;
+typedef std::pair<std::string, SysInfoObject&> SysInfoClassPair;
 
 namespace picojson {
 class value;
@@ -32,8 +29,10 @@ class SystemInfoContext {
   // ExtensionAdapter implementation.
   static const char name[];
   static const char* GetJavaScript();
+  static SysInfoClassMap classes_;
   void HandleMessage(const char* message);
   void HandleSyncMessage(const char* message);
+  static void InstancesMapInitialize();
 
  private:
   void HandleGetPropertyValue(const picojson::value& input,
@@ -48,19 +47,9 @@ class SystemInfoContext {
       o[prop] = picojson::value(val);
   }
 
+  template <class T>
+  static void RegisterClass();
   ContextAPI* api_;
-  SysInfoBattery& battery_;
-  SysInfoBuild& build_;
-  SysInfoCellularNetwork& cellular_network_;
-  SysInfoCpu& cpu_;
-  SysInfoDeviceOrientation& device_orientation_;
-  SysInfoDisplay& display_;
-  SysInfoLocale& locale_;
-  SysInfoNetwork& network_;
-  SysInfoPeripheral& peripheral_;
-  SysInfoSim& sim_;
-  SysInfoStorage& storage_;
-  SysInfoWifiNetwork& wifi_network_;
 };
 
 #endif  // SYSTEM_INFO_SYSTEM_INFO_CONTEXT_H_

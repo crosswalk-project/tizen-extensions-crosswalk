@@ -7,29 +7,30 @@
 
 #include <glib.h>
 
+#include <string>
+
 #include "common/extension_adapter.h"
 #include "common/picojson.h"
 #include "common/utils.h"
 #include "system_info/system_info_utils.h"
 
-class SysInfoDisplay {
+class SysInfoDisplay : public SysInfoObject {
  public:
-  static SysInfoDisplay& GetSysInfoDisplay() {
+  static SysInfoObject& GetInstance() {
     static SysInfoDisplay instance;
     return instance;
   }
   ~SysInfoDisplay() {
     if (timeout_cb_id_ > 0)
       g_source_remove(timeout_cb_id_);
-    pthread_mutex_destroy(&events_list_mutex_);
   }
   // Get support
   void Get(picojson::value& error, picojson::value& data);
   // Listerner support
-  inline void StartListening(ContextAPI* api) {
+  inline void AddListener(ContextAPI* api) {
     // FIXME(halton): Use Xlib event or D-Bus interface to monitor.
-    AutoLock lock(&events_list_mutex_);
-    display_events_.push_back(api);
+    AutoLock lock(&listeners_mutex_);
+    listeners_.push_back(api);
 
     if (timeout_cb_id_ == 0) {
       timeout_cb_id_ = g_timeout_add(system_info::default_timeout_interval,
@@ -37,14 +38,16 @@ class SysInfoDisplay {
                                      static_cast<gpointer>(this));
     }
   }
-  inline void StopListening(ContextAPI* api) {
-    AutoLock lock(&events_list_mutex_);
-    display_events_.remove(api);
-    if (display_events_.empty() && timeout_cb_id_ > 0) {
+  inline void RemoveListener(ContextAPI* api) {
+    AutoLock lock(&listeners_mutex_);
+    listeners_.remove(api);
+    if (listeners_.empty() && timeout_cb_id_ > 0) {
       g_source_remove(timeout_cb_id_);
       timeout_cb_id_ = 0;
     }
   }
+
+  static const std::string name_;
 
  private:
   explicit SysInfoDisplay();
@@ -60,7 +63,6 @@ class SysInfoDisplay {
   double physical_height_;
   double brightness_;
   int timeout_cb_id_;
-  pthread_mutex_t events_list_mutex_;
 
   DISALLOW_COPY_AND_ASSIGN(SysInfoDisplay);
 };

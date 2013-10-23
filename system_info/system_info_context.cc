@@ -14,47 +14,60 @@
 #include <string>
 
 #include "common/picojson.h"
+#include "system_info/system_info_battery.h"
+#include "system_info/system_info_build.h"
+#include "system_info/system_info_cellular_network.h"
+#include "system_info/system_info_cpu.h"
+#include "system_info/system_info_device_orientation.h"
+#include "system_info/system_info_display.h"
+#include "system_info/system_info_locale.h"
+#include "system_info/system_info_network.h"
+#include "system_info/system_info_peripheral.h"
+#include "system_info/system_info_sim.h"
+#include "system_info/system_info_storage.h"
 #include "system_info/system_info_utils.h"
-
-namespace {
+#include "system_info/system_info_wifi_network.h"
 
 const char* sSystemInfoFilePath = "/usr/etc/system-info.ini";
 
-}  // namespace
-
-DEFINE_XWALK_EXTENSION(SystemInfoContext);
-
-SystemInfoContext::SystemInfoContext(ContextAPI* api)
-    : api_(api),
-      battery_(SysInfoBattery::GetSysInfoBattery()),
-      build_(SysInfoBuild::GetSysInfoBuild()),
-      cellular_network_(
-          SysInfoCellularNetwork::GetSysInfoCellularNetwork()),
-      cpu_(SysInfoCpu::GetSysInfoCpu()),
-      device_orientation_(
-          SysInfoDeviceOrientation::GetSysInfoDeviceOrientation()),
-      display_(SysInfoDisplay::GetSysInfoDisplay()),
-      locale_(SysInfoLocale::GetSysInfoLocale()),
-      network_(SysInfoNetwork::GetSysInfoNetwork()),
-      peripheral_(SysInfoPeripheral::GetSysInfoPeripheral()),
-      sim_(SysInfoSim::GetSysInfoSim()),
-      storage_(SysInfoStorage::GetSysInfoStorage()),
-      wifi_network_(SysInfoWifiNetwork::GetSysInfoWifiNetwork()) {
+template <class T>
+void SystemInfoContext::RegisterClass() {
+  SystemInfoContext::classes_.insert(SysInfoClassPair(T::name_ , T::GetInstance()));
 }
 
+void SystemInfoContext::InstancesMapInitialize() {
+  RegisterClass<SysInfoBattery>();
+  RegisterClass<SysInfoBuild>();
+  RegisterClass<SysInfoCellularNetwork>();
+  RegisterClass<SysInfoCpu>();
+  RegisterClass<SysInfoDeviceOrientation>();
+  RegisterClass<SysInfoDisplay>();
+  RegisterClass<SysInfoLocale>();
+  RegisterClass<SysInfoNetwork>();
+  RegisterClass<SysInfoPeripheral>();
+  RegisterClass<SysInfoSim>();
+  RegisterClass<SysInfoStorage>();
+  RegisterClass<SysInfoWifiNetwork>();
+}
+
+int32_t XW_Initialize(XW_Extension extension, XW_GetInterface get_interface) {
+  SystemInfoContext::InstancesMapInitialize();
+  return ExtensionAdapter<SystemInfoContext>::Initialize(extension,
+                                                         get_interface);
+}
+
+SysInfoClassMap SystemInfoContext::classes_;
+
+SystemInfoContext::SystemInfoContext(ContextAPI* api)
+    : api_(api) {}
+
 SystemInfoContext::~SystemInfoContext() {
-  cpu_.StopListening(api_);
-  wifi_network_.StopListening(api_);
-  peripheral_.StopListening(api_);
-  network_.StopListening(api_);
-  storage_.StopListening(api_);
-  sim_.StopListening(api_);
-  locale_.StopListening(api_);
-  display_.StopListening(api_);
-  device_orientation_.StopListening(api_);
-  cellular_network_.StopListening(api_);
-  build_.StopListening(api_);
-  battery_.StopListening(api_);
+  for (classes_iterator it = classes_.begin();
+       it != classes_.end();
+       it++) {
+    (it->second).RemoveListener(api_);
+  }
+
   delete api_;
 }
 
@@ -78,34 +91,13 @@ void SystemInfoContext::HandleGetPropertyValue(const picojson::value& input,
 
   system_info::SetPicoJsonObjectValue(error, "message", picojson::value(""));
   std::string prop = input.get("prop").to_str();
+  classes_iterator it= classes_.find(prop);
 
-  if (prop == "BATTERY") {
-    battery_.Get(error, data);
-  } else if (prop == "CPU") {
-    cpu_.Get(error, data);
-  } else if (prop == "STORAGE") {
-    storage_.Get(error, data);
-  } else if (prop == "DISPLAY") {
-    display_.Get(error, data);
-  } else if (prop == "DEVICE_ORIENTATION") {
-    device_orientation_.Get(error, data);
-  } else if (prop == "BUILD") {
-    build_.Get(error, data);
-  } else if (prop == "LOCALE") {
-    locale_.Get(error, data);
-  } else if (prop == "NETWORK") {
-    network_.Get(error, data);
-  } else if (prop == "WIFI_NETWORK") {
-    wifi_network_.Get(error, data);
-  } else if (prop == "CELLULAR_NETWORK") {
-    cellular_network_.Get(error, data);
-  } else if (prop == "SIM") {
-    sim_.Get(error, data);
-  } else if (prop == "PERIPHERAL") {
-    peripheral_.Get(error, data);
-  } else {
+  if (it == classes_.end()) {
     system_info::SetPicoJsonObjectValue(error, "message",
-        picojson::value("Not supported property " + prop));
+        picojson::value("Property not supported: " + prop));
+  } else {
+    (it->second).Get(error, data);
   }
 
   if (!error.get("message").to_str().empty()) {
@@ -120,61 +112,19 @@ void SystemInfoContext::HandleGetPropertyValue(const picojson::value& input,
 
 void SystemInfoContext::HandleStartListening(const picojson::value& input) {
   std::string prop = input.get("prop").to_str();
+  classes_iterator it= classes_.find(prop);
 
-  if (prop == "BATTERY") {
-    battery_.StartListening(api_);
-  } else if (prop == "CPU") {
-    cpu_.StartListening(api_);
-  } else if (prop == "STORAGE") {
-    storage_.StartListening(api_);
-  } else if (prop == "DISPLAY") {
-    display_.StartListening(api_);
-  } else if (prop == "DEVICE_ORIENTATION") {
-    device_orientation_.StartListening(api_);
-  } else if (prop == "BUILD") {
-    build_.StartListening(api_);
-  } else if (prop == "LOCALE") {
-    locale_.StartListening(api_);
-  } else if (prop == "NETWORK") {
-    network_.StartListening(api_);
-  } else if (prop == "WIFI_NETWORK") {
-    wifi_network_.StartListening(api_);
-  } else if (prop == "CELLULAR_NETWORK") {
-    cellular_network_.StartListening(api_);
-  } else if (prop == "SIM") {
-    sim_.StartListening(api_);
-  } else if (prop == "PERIPHERAL") {
-    peripheral_.StartListening(api_);
+  if (it != classes_.end()) {
+    (it->second).AddListener(api_);
   }
 }
 
 void SystemInfoContext::HandleStopListening(const picojson::value& input) {
   std::string prop = input.get("prop").to_str();
+  classes_iterator it= classes_.find(prop);
 
-  if (prop == "BATTERY") {
-    battery_.StopListening(api_);
-  } else if (prop == "CPU") {
-    cpu_.StopListening(api_);
-  } else if (prop == "STORAGE") {
-    storage_.StopListening(api_);
-  } else if (prop == "DISPLAY") {
-    display_.StopListening(api_);
-  } else if (prop == "DEVICE_ORIENTATION") {
-    device_orientation_.StopListening(api_);
-  } else if (prop == "BUILD") {
-    build_.StopListening(api_);
-  } else if (prop == "LOCALE") {
-    locale_.StopListening(api_);
-  } else if (prop == "NETWORK") {
-    network_.StopListening(api_);
-  } else if (prop == "WIFI_NETWORK") {
-    wifi_network_.StopListening(api_);
-  } else if (prop == "CELLULAR_NETWORK") {
-    cellular_network_.StopListening(api_);
-  } else if (prop == "SIM") {
-    sim_.StopListening(api_);
-  } else if (prop == "PERIPHERAL") {
-    peripheral_.StopListening(api_);
+  if (it != classes_.end()) {
+    (it->second).RemoveListener(api_);
   }
 }
 

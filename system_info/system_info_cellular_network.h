@@ -17,27 +17,21 @@
 #include "common/utils.h"
 #include "system_info/system_info_utils.h"
 
-class SysInfoCellularNetwork {
+class SysInfoCellularNetwork : public SysInfoObject {
  public:
-  static SysInfoCellularNetwork& GetSysInfoCellularNetwork() {
+  static SysInfoObject& GetInstance() {
     static SysInfoCellularNetwork instance;
     return instance;
   }
-  ~SysInfoCellularNetwork() {
-    for (SystemInfoEventsList::iterator it = cellular_events_.begin();
-         it != cellular_events_.end(); it++) {
-      StopListening(*it);
-    }
-    pthread_mutex_destroy(&events_list_mutex_);
-  }
+  ~SysInfoCellularNetwork() {}
   void Get(picojson::value& error, picojson::value& data);
-  void StartListening(ContextAPI* api);
-  void StopListening(ContextAPI* api);
+  void AddListener(ContextAPI* api);
+  void RemoveListener(ContextAPI* api);
+
+  static const std::string name_;
 
  private:
-  explicit SysInfoCellularNetwork() {
-    pthread_mutex_init(&events_list_mutex_, NULL);
-  }
+  explicit SysInfoCellularNetwork() {}
 
 #if defined(TIZEN_MOBILE)
   void SendUpdate();
@@ -80,7 +74,6 @@ class SysInfoCellularNetwork {
   bool isRoaming_;
   bool isFlightMode_;
   std::string imei_;
-  pthread_mutex_t events_list_mutex_;
 
   DISALLOW_COPY_AND_ASSIGN(SysInfoCellularNetwork);
 };

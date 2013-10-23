@@ -9,7 +9,6 @@
 SysInfoNetwork::SysInfoNetwork()
     : type_(SYSTEM_INFO_NETWORK_UNKNOWN),
       connection_handle_(NULL) {
-  pthread_mutex_init(&events_list_mutex_, NULL);
   PlatformInitialize();
 }
 
@@ -19,28 +18,23 @@ void SysInfoNetwork::PlatformInitialize() {
 }
 
 SysInfoNetwork::~SysInfoNetwork() {
-  for (SystemInfoEventsList::iterator it = network_events_.begin();
-       it != network_events_.end(); it++) {
-    StopListening(*it);
-  }
   if (connection_handle_)
     free(connection_handle_);
-  pthread_mutex_destroy(&events_list_mutex_);
 }
 
-void SysInfoNetwork::StartListening(ContextAPI* api) {
-  AutoLock lock(&events_list_mutex_);
-  network_events_.push_back(api);
-  if (connection_handle_ && network_events_.size() == 1) {
+void SysInfoNetwork::AddListener(ContextAPI* api) {
+  AutoLock lock(&listeners_mutex_);
+  listeners_.push_back(api);
+  if (connection_handle_ && listeners_.size() == 1) {
     connection_set_type_changed_cb(connection_handle_,
                                    OnTypeChanged, this);
   }
 }
 
-void SysInfoNetwork::StopListening(ContextAPI* api) {
-  AutoLock lock(&events_list_mutex_);
-  network_events_.remove(api);
-  if (network_events_.empty() && connection_handle_) {
+void SysInfoNetwork::RemoveListener(ContextAPI* api) {
+  AutoLock lock(&listeners_mutex_);
+  listeners_.remove(api);
+  if (listeners_.empty() && connection_handle_) {
     connection_unset_type_changed_cb(connection_handle_);
   }
 }
@@ -127,11 +121,5 @@ void SysInfoNetwork::OnTypeChanged(connection_type_e type, void* user_data) {
       picojson::value("NETWORK"));
   system_info::SetPicoJsonObjectValue(output, "data", data);
 
-  std::string result = output.serialize();
-  const char* result_as_cstr = result.c_str();
-  AutoLock lock(&(network->events_list_mutex_));
-  for (SystemInfoEventsList::iterator it = network_events_.begin();
-       it != network_events_.end(); it++) {
-    (*it)->PostMessage(result_as_cstr);
-  }
+  network->PostMessageToListeners(output);
 }

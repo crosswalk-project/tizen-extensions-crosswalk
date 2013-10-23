@@ -7,6 +7,8 @@
 #include <net_connection.h>
 #include <system_info.h>
 
+const std::string SysInfoCellularNetwork::name_ = "CELLULAR_NETWORK";
+
 void SysInfoCellularNetwork::SetCellStatus() {
   int cell_status = 0;
 
@@ -175,13 +177,7 @@ void SysInfoCellularNetwork::SendUpdate() {
       picojson::value("CELLULAR_NETWORK"));
   system_info::SetPicoJsonObjectValue(output, "data", data);
 
-  std::string result = output.serialize();
-  const char* result_as_cstr = result.c_str();
-  AutoLock lock(&events_list_mutex_);
-  for (SystemInfoEventsList::iterator it = cellular_events_.begin();
-       it != cellular_events_.end(); it++) {
-    (*it)->PostMessage(result_as_cstr);
-  }
+  PostMessageToListeners(output);
 }
 
 void SysInfoCellularNetwork::UpdateCellStatus(int status) {
@@ -311,11 +307,11 @@ void SysInfoCellularNetwork::OnFlightModeChanged(keynode_t* node,
   cellular->UpdateFlightMode(flight_mode);
 }
 
-void SysInfoCellularNetwork::StartListening(ContextAPI* api) {
-  AutoLock lock(&events_list_mutex_);
-  cellular_events_.push_back(api);
+void SysInfoCellularNetwork::AddListener(ContextAPI* api) {
+  AutoLock lock(&listeners_mutex_);
+  listeners_.push_back(api);
 
-  if (cellular_events_.size() > 1)
+  if (listeners_.size() > 1)
     return;
 
   vconf_notify_key_changed(VCONFKEY_3G_ENABLE,
@@ -332,11 +328,11 @@ void SysInfoCellularNetwork::StartListening(ContextAPI* api) {
       (vconf_callback_fn)OnFlightModeChanged, this);
 }
 
-void SysInfoCellularNetwork::StopListening(ContextAPI* api) {
-  AutoLock lock(&events_list_mutex_);
-  cellular_events_.remove(api);
+void SysInfoCellularNetwork::RemoveListener(ContextAPI* api) {
+  AutoLock lock(&listeners_mutex_);
+  listeners_.remove(api);
 
-  if (!cellular_events_.empty())
+  if (!listeners_.empty())
     return;
 
   vconf_ignore_key_changed(VCONFKEY_3G_ENABLE,
