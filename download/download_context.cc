@@ -46,6 +46,11 @@ DownloadContext::~DownloadContext() {
 
 const char DownloadContext::name[] = "tizen.download";
 
+const char* DownloadContext::entry_points[] = {
+  "tizen.DownloadRequest",
+  NULL
+};
+
 // This will be generated from download_api.js.
 extern const char kSource_download_api[];
 

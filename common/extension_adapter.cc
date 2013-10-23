@@ -5,6 +5,7 @@
 #include "common/extension_adapter.h"
 
 #include <iostream>
+#include "common/XW_Extension_EntryPoints.h"
 
 namespace {
 
@@ -13,6 +14,7 @@ XW_Extension g_extension = 0;
 const XW_CoreInterface* g_core = NULL;
 const XW_MessagingInterface* g_messaging = NULL;
 const XW_Internal_SyncMessagingInterface* g_sync_messaging = NULL;
+const XW_Internal_EntryPointsInterface* g_entry_points = NULL;
 
 }  // namespace
 
@@ -22,6 +24,7 @@ int32_t InitializeExtension(XW_Extension extension,
                             XW_GetInterface get_interface,
                             const char* name,
                             const char* api,
+                            const char** entry_points,
                             XW_CreatedInstanceCallback created,
                             XW_DestroyedInstanceCallback destroyed,
                             XW_HandleMessageCallback handle_message,
@@ -61,6 +64,15 @@ int32_t InitializeExtension(XW_Extension extension,
     return XW_ERROR;
   }
   g_sync_messaging->Register(extension, handle_sync_message);
+
+  g_entry_points = reinterpret_cast<const XW_Internal_EntryPointsInterface*>(
+      get_interface(XW_INTERNAL_ENTRY_POINTS_INTERFACE));
+  if (!g_entry_points) {
+    std::cerr << "NOTE: Entry points interface not available in this version "
+              << "of Crosswalk, ignoring entry point data for extensions.\n";
+  } else {
+    g_entry_points->SetExtraJSEntryPoints(extension, entry_points);
+  }
 
   return XW_OK;
 }

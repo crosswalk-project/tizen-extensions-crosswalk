@@ -72,6 +72,7 @@ SystemInfoContext::~SystemInfoContext() {
 }
 
 const char SystemInfoContext::name[] = "tizen.systeminfo";
+const char* SystemInfoContext::entry_points[] = { NULL };
 
 // This will be generated from system_info_api.js.
 extern const char kSource_system_info_api[];

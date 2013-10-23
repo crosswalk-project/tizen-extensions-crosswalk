@@ -27,6 +27,8 @@ BluetoothContext::BluetoothContext(ContextAPI* api)
 
 const char BluetoothContext::name[] = "tizen.bluetooth";
 
+const char* BluetoothContext::entry_points[] = { NULL };
+
 extern const char kSource_bluetooth_api[];
 
 const char* BluetoothContext::GetJavaScript() {
