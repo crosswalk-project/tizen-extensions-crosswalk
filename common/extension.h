@@ -18,6 +18,7 @@
 
 #include "common/XW_Extension.h"
 #include "common/XW_Extension_SyncMessage.h"
+#include "common/XW_Extension_EntryPoints.h"
 
 namespace common {
 
@@ -42,6 +43,7 @@ class Extension {
   // These should be called in the subclass constructor.
   void SetExtensionName(const char* name);
   void SetJavaScriptAPI(const char* api);
+  void SetExtraJSEntryPoints(const char** entry_points);
 
   virtual Instance* CreateInstance();
 

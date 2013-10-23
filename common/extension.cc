@@ -15,6 +15,7 @@ XW_Extension g_xw_extension = 0;
 const XW_CoreInterface* g_core = NULL;
 const XW_MessagingInterface* g_messaging = NULL;
 const XW_Internal_SyncMessagingInterface* g_sync_messaging = NULL;
+const XW_Internal_EntryPointsInterface* g_entry_points = NULL;
 
 bool InitializeInterfaces(XW_GetInterface get_interface) {
   g_core = reinterpret_cast<const XW_CoreInterface*>(
@@ -39,6 +40,13 @@ bool InitializeInterfaces(XW_GetInterface get_interface) {
     std::cerr <<
         "Can't initialize extension: error getting SyncMessaging interface.\n";
     return false;
+  }
+
+  g_entry_points = reinterpret_cast<const XW_Internal_EntryPointsInterface*>(
+      get_interface(XW_INTERNAL_ENTRY_POINTS_INTERFACE));
+  if (!g_entry_points) {
+    std::cerr << "NOTE: Entry points interface not available in this version "
+              << "of Crosswalk, ignoring entry point data for extensions.\n";
   }
 
   return true;
@@ -82,6 +90,11 @@ void Extension::SetExtensionName(const char* name) {
 
 void Extension::SetJavaScriptAPI(const char* api) {
   g_core->SetJavaScriptAPI(g_xw_extension, api);
+}
+
+void Extension::SetExtraJSEntryPoints(const char** entry_points) {
+  if (g_entry_points)
+    g_entry_points->SetExtraJSEntryPoints(g_xw_extension, entry_points);
 }
 
 Instance* Extension::CreateInstance() {

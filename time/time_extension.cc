@@ -16,6 +16,13 @@ extern const char kSource_time_api[];
 TimeExtension::TimeExtension() {
   SetExtensionName("tizen.time");
   SetJavaScriptAPI(kSource_time_api);
+
+  const char* entry_points[] = {
+    "tizen.TZDate",
+    "tizen.TimeDuration",
+    NULL
+  };
+  SetExtraJSEntryPoints(entry_points);
 }
 
 TimeExtension::~TimeExtension() {}
