@@ -32,7 +32,8 @@ const char* sSystemInfoFilePath = "/usr/etc/system-info.ini";
 
 template <class T>
 void SystemInfoContext::RegisterClass() {
-  SystemInfoContext::classes_.insert(SysInfoClassPair(T::name_ , T::GetInstance()));
+  SystemInfoContext::classes_.insert(SysInfoClassPair(T::name_ ,
+                                                      T::GetInstance()));
 }
 
 void SystemInfoContext::InstancesMapInitialize() {
