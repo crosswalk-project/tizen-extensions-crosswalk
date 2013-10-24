@@ -14,13 +14,7 @@ struct Context {
   std::vector<favorites_bookmark_entry_s*> folders;
 };
 
-BookmarkInstance::BookmarkInstance() {
-#if defined(TIZEN_MOBILE)
-  int count;
-  favorites_bookmark_get_count(&count);
-  printf("Bookmark count = %d\n", count);
-#endif
-}
+BookmarkInstance::BookmarkInstance() {}
 
 BookmarkInstance::~BookmarkInstance() {}
 
