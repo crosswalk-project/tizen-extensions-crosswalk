@@ -21,6 +21,8 @@
 SysInfoDisplay::SysInfoDisplay()
     : resolution_width_(0),
       resolution_height_(0),
+      dots_per_inch_width_(0),
+      dots_per_inch_height_(0),
       physical_width_(0.0),
       physical_height_(0.0),
       brightness_(0.0),
@@ -146,8 +148,13 @@ void SysInfoDisplay::SetData(picojson::value& data) {
       picojson::value(physical_height_));
 
   // dpi = N * 25.4 pixels / M inch
+  dots_per_inch_width_ = physical_width_ == 0 ? 0 :
+      static_cast<unsigned long>((resolution_width_ * 25.4) / physical_width_); // NOLINT
+  dots_per_inch_height_ = physical_height_ == 0 ? 0 :
+      static_cast<unsigned long>((resolution_height_ * 25.4) / physical_height_); // NOLINT
+
   system_info::SetPicoJsonObjectValue(data, "dotsPerInchWidth",
-      picojson::value((resolution_width_ * 25.4) / physical_width_));
+      picojson::value(static_cast<double>(dots_per_inch_width_)));
   system_info::SetPicoJsonObjectValue(data, "dotsPerInchHeight",
-      picojson::value((resolution_width_ * 25.4) / physical_width_));
+      picojson::value(static_cast<double>(dots_per_inch_height_)));
 }

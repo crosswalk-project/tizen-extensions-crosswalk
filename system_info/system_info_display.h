@@ -56,6 +56,8 @@ class SysInfoDisplay {
 
   int resolution_width_;
   int resolution_height_;
+  unsigned long dots_per_inch_width_; // NOLINT
+  unsigned long dots_per_inch_height_; // NOLINT
   double physical_width_;
   double physical_height_;
   double brightness_;
