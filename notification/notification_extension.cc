@@ -24,6 +24,13 @@ NotificationExtension::NotificationExtension() {
 #endif
   SetExtensionName("tizen.notification");
   SetJavaScriptAPI(kSource_notification_api);
+
+  const char* entry_points[] = {
+    "tizen.StatusNotification",
+    "tizen.NotificationDetailInfo",
+    NULL
+  };
+  SetExtraJSEntryPoints(entry_points);
 }
 
 NotificationExtension::~NotificationExtension() {}

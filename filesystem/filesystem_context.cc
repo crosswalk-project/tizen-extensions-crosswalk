@@ -52,6 +52,8 @@ FilesystemContext::~FilesystemContext() {
 
 const char FilesystemContext::name[] = "tizen.filesystem";
 
+const char* FilesystemContext::entry_points[] = { NULL };
+
 extern const char kSource_filesystem_api[];
 
 const char* FilesystemContext::GetJavaScript() {

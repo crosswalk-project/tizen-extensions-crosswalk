@@ -89,6 +89,7 @@ class BluetoothContext {
   // ExtensionAdapter implementation.
   static const char name[];
   static const char* GetJavaScript();
+  static const char* entry_points[];
   void HandleMessage(const char* message);
   void HandleSyncMessage(const char* message);
 

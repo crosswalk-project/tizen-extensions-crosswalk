@@ -13,13 +13,14 @@
 namespace internal {
 
 int32_t InitializeExtension(XW_Extension extension,
-                         XW_GetInterface get_interface,
-                         const char* name,
-                         const char* api,
-                         XW_CreatedInstanceCallback created,
-                         XW_DestroyedInstanceCallback destroyed,
-                         XW_HandleMessageCallback handle_message,
-                         XW_HandleSyncMessageCallback handle_sync_message);
+                            XW_GetInterface get_interface,
+                            const char* name,
+                            const char* api,
+                            const char** entry_points,
+                            XW_CreatedInstanceCallback created,
+                            XW_DestroyedInstanceCallback destroyed,
+                            XW_HandleMessageCallback handle_message,
+                            XW_HandleSyncMessageCallback handle_sync_message);
 
 void PostMessage(XW_Instance instance, const char* message);
 void SetSyncReply(XW_Instance instance, const char* reply);
@@ -65,7 +66,7 @@ template <class T>
 int32_t ExtensionAdapter<T>::Initialize(XW_Extension extension,
                                         XW_GetInterface get_interface) {
   return internal::InitializeExtension(
-      extension, get_interface, T::name, T::GetJavaScript(),
+      extension, get_interface, T::name, T::GetJavaScript(), T::entry_points,
       DidCreateInstance, DidDestroyInstance, HandleMessage, HandleSyncMessage);
 }
 

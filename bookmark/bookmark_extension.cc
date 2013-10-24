@@ -16,6 +16,13 @@ extern const char kSource_bookmark_api[];
 BookmarkExtension::BookmarkExtension() {
   SetExtensionName("tizen.bookmark");
   SetJavaScriptAPI(kSource_bookmark_api);
+
+  const char* entry_points[] = {
+    "tizen.BookmarkItem",
+    "tizen.BookmarkFolder",
+    NULL
+  };
+  SetExtraJSEntryPoints(entry_points);
 }
 
 BookmarkExtension::~BookmarkExtension() {}

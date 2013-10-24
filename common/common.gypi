@@ -48,6 +48,7 @@
       'extension_adapter.h',
       'XW_Extension.h',
       'XW_Extension_SyncMessage.h',
+      'XW_Extension_EntryPoints.h',
       'picojson.h',
       'utils.h',
     ],
