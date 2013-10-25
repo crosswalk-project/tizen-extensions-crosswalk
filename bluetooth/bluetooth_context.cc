@@ -130,17 +130,15 @@ void BluetoothContext::OnDiscoveryStopped(GObject* source, GAsyncResult* res) {
   GError* error = 0;
   GVariant* result = g_dbus_proxy_call_finish(adapter_proxy_, res, &error);
 
-  int errorCode = 0;
   if (!result) {
     g_printerr("Error discovering: %s\n", error->message);
     g_error_free(error);
-    errorCode = 1;
   }
 
   picojson::value::object o;
   o["cmd"] = picojson::value("");
   o["reply_id"] = picojson::value(stop_discovery_callback_id_);
-  o["error"] = picojson::value(static_cast<double>(errorCode));
+  o["error"] = picojson::value(static_cast<double>(0));
   picojson::value v(o);
   PostMessage(v);
 }
