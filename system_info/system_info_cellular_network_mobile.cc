@@ -307,13 +307,7 @@ void SysInfoCellularNetwork::OnFlightModeChanged(keynode_t* node,
   cellular->UpdateFlightMode(flight_mode);
 }
 
-void SysInfoCellularNetwork::AddListener(ContextAPI* api) {
-  AutoLock lock(&listeners_mutex_);
-  listeners_.push_back(api);
-
-  if (listeners_.size() > 1)
-    return;
-
+void SysInfoCellularNetwork::StartListening() {
   vconf_notify_key_changed(VCONFKEY_3G_ENABLE,
       (vconf_callback_fn)OnCellStatusChanged, this);
   vconf_notify_key_changed(VCONFKEY_NETWORK_IP,
@@ -328,13 +322,7 @@ void SysInfoCellularNetwork::AddListener(ContextAPI* api) {
       (vconf_callback_fn)OnFlightModeChanged, this);
 }
 
-void SysInfoCellularNetwork::RemoveListener(ContextAPI* api) {
-  AutoLock lock(&listeners_mutex_);
-  listeners_.remove(api);
-
-  if (!listeners_.empty())
-    return;
-
+void SysInfoCellularNetwork::StopListening() {
   vconf_ignore_key_changed(VCONFKEY_3G_ENABLE,
       (vconf_callback_fn)OnCellStatusChanged);
   vconf_ignore_key_changed(VCONFKEY_NETWORK_IP,

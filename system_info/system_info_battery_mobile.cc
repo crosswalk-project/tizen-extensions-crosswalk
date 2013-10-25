@@ -87,26 +87,14 @@ void SysInfoBattery::OnIsChargingChanged(keynode_t* node, void* user_data) {
   battery->UpdateCharging(charging);
 }
 
-void SysInfoBattery::AddListener(ContextAPI* api) {
-  AutoLock lock(&listeners_mutex_);
-  listeners_.push_back(api);
-
-  if (listeners_.size() > 1)
-    return;
-
+void SysInfoBattery::StartListening() {
   vconf_notify_key_changed(VCONFKEY_SYSMAN_BATTERY_CAPACITY,
       (vconf_callback_fn)OnLevelChanged, this);
   vconf_notify_key_changed(VCONFKEY_SYSMAN_BATTERY_CHARGE_NOW,
       (vconf_callback_fn)OnIsChargingChanged, this);
 }
 
-void SysInfoBattery::RemoveListener(ContextAPI* api) {
-  AutoLock lock(&listeners_mutex_);
-  listeners_.remove(api);
-
-  if (!listeners_.empty())
-    return;
-
+void SysInfoBattery::StopListening() {
   vconf_ignore_key_changed(VCONFKEY_SYSMAN_BATTERY_CAPACITY,
       (vconf_callback_fn)OnLevelChanged);
   vconf_ignore_key_changed(VCONFKEY_SYSMAN_BATTERY_CHARGE_NOW,

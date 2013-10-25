@@ -43,9 +43,7 @@ gboolean SysInfoCpu::OnUpdateTimeout(gpointer user_data) {
   return TRUE;
 }
 
-void SysInfoCpu::AddListener(ContextAPI* api) {
-  AutoLock lock(&listeners_mutex_);
-  listeners_.push_back(api);
+void SysInfoCpu::StartListening() {
   if (timeout_cb_id_ == 0) {
     timeout_cb_id_ = g_timeout_add(system_info::default_timeout_interval,
                                    SysInfoCpu::OnUpdateTimeout,
@@ -53,10 +51,8 @@ void SysInfoCpu::AddListener(ContextAPI* api) {
   }
 }
 
-void SysInfoCpu::RemoveListener(ContextAPI* api) {
-  AutoLock lock(&listeners_mutex_);
-  listeners_.remove(api);
-  if (listeners_.empty() && timeout_cb_id_ > 0) {
+void SysInfoCpu::StopListening() {
+  if (timeout_cb_id_ > 0) {
     g_source_remove(timeout_cb_id_);
     timeout_cb_id_ = 0;
   }

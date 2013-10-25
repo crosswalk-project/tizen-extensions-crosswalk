@@ -12,5 +12,5 @@ void SysInfoDeviceOrientation::Get(picojson::value& error,
       picojson::value("Device Orientation is not supported on desktop."));
 }
 
-void SysInfoDeviceOrientation::AddListener(ContextAPI* api) { }
-void SysInfoDeviceOrientation::RemoveListener(ContextAPI* api) { }
+void SysInfoDeviceOrientation::StartListening() { }
+void SysInfoDeviceOrientation::StopListening() { }

@@ -14,26 +14,14 @@ SysInfoLocale::SysInfoLocale() {}
 
 SysInfoLocale::~SysInfoLocale() {}
 
-void SysInfoLocale::AddListener(ContextAPI* api) {
-  AutoLock lock(&listeners_mutex_);
-  listeners_.push_back(api);
-
-  if (listeners_.size() > 1)
-    return;
-
+void SysInfoLocale::StartListening() {
   vconf_notify_key_changed(VCONFKEY_REGIONFORMAT,
       static_cast<vconf_callback_fn>(OnCountryChanged), this);
   vconf_notify_key_changed(VCONFKEY_LANGSET,
       static_cast<vconf_callback_fn>(OnLanguageChanged), this);
 }
 
-void SysInfoLocale::RemoveListener(ContextAPI* api) {
-  AutoLock lock(&listeners_mutex_);
-  listeners_.remove(api);
-
-  if (!listeners_.empty())
-    return;
-
+void SysInfoLocale::StopListening() {
   vconf_ignore_key_changed(VCONFKEY_REGIONFORMAT,
       static_cast<vconf_callback_fn>(OnCountryChanged));
   vconf_ignore_key_changed(VCONFKEY_LANGSET,

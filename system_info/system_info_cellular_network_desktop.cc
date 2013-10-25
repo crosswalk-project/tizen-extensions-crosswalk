@@ -12,5 +12,5 @@ void SysInfoCellularNetwork::Get(picojson::value& error,
       picojson::value("Cellular Network is not supported on desktop."));
 }
 
-void SysInfoCellularNetwork::AddListener(ContextAPI* api) { }
-void SysInfoCellularNetwork::RemoveListener(ContextAPI* api) { }
+void SysInfoCellularNetwork::StartListening() { }
+void SysInfoCellularNetwork::StopListening() { }

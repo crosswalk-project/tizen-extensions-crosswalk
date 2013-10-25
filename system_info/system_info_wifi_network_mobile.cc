@@ -40,10 +40,8 @@ SysInfoWifiNetwork::~SysInfoWifiNetwork() {
     free(connection_handle_);
 }
 
-void SysInfoWifiNetwork::AddListener(ContextAPI* api) {
-  AutoLock lock(&listeners_mutex_);
-  listeners_.push_back(api);
-  if (connection_handle_ && listeners_.size() == 1) {
+void SysInfoWifiNetwork::StartListening() {
+  if (connection_handle_) {
     connection_set_type_changed_cb(connection_handle_,
                                    OnTypeChanged, this);
     connection_set_ip_address_changed_cb(connection_handle_,
@@ -51,10 +49,8 @@ void SysInfoWifiNetwork::AddListener(ContextAPI* api) {
   }
 }
 
-void SysInfoWifiNetwork::RemoveListener(ContextAPI* api) {
-  AutoLock lock(&listeners_mutex_);
-  listeners_.remove(api);
-  if (connection_handle_ && listeners_.empty()) {
+void SysInfoWifiNetwork::StopListening() {
+  if (connection_handle_) {
     connection_unset_type_changed_cb(connection_handle_);
     connection_unset_ip_address_changed_cb(connection_handle_);
   }

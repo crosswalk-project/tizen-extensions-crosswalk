@@ -9,9 +9,9 @@
 
 #include <string>
 
-#include "common/extension_adapter.h"
 #include "common/picojson.h"
 #include "common/utils.h"
+#include "system_info/system_info_instance.h"
 #include "system_info/system_info_utils.h"
 
 class SysInfoCpu : public SysInfoObject {
@@ -28,8 +28,8 @@ class SysInfoCpu : public SysInfoObject {
   void Get(picojson::value& error, picojson::value& data);
 
   // Listerner support
-  void AddListener(ContextAPI* api);
-  void RemoveListener(ContextAPI* api);
+  void StartListening();
+  void StopListening();
 
   static const std::string name_;
 

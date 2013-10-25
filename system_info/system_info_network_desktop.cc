@@ -38,10 +38,10 @@ void SysInfoNetwork::PlatformInitialize() {
       this);
 }
 
-void SysInfoNetwork::AddListener(ContextAPI* api) {
+void SysInfoNetwork::StartListening() {
 }
 
-void SysInfoNetwork::RemoveListener(ContextAPI* api) {
+void SysInfoNetwork::StopListening() {
 }
 
 void SysInfoNetwork::OnNetworkManagerCreated(GObject*, GAsyncResult* res) {
