@@ -52,6 +52,7 @@ function Adapter() {
   this.isReady = false;
   this.service_handlers = [];
   this.sockets = [];
+  this.change_listener = null;
 }
 
 
@@ -74,7 +75,7 @@ function validateArguments(signature, args) {
 
   // Mandatory arguments.
   for (var i = 0; i < mandatory_len; i++) {
-    if (typeof full_args[i] !== signature_to_type[signature[i]])
+    if (typeof full_args[i] !== signature_to_type[signature[i]] || full_args[i] === null)
       return false;
   }
 
@@ -83,6 +84,29 @@ function validateArguments(signature, args) {
     if (full_args[i] !== null && typeof full_args[i] !== signature_to_type[signature[i + 1]])
       return false;
   }
+
+  return true;
+}
+
+function validateObject(object, signature, attributes) {
+  for (var i = 0; i < signature.length; i++) {
+    if (object.hasOwnProperty(attributes[i]) &&
+        typeof object[attributes[i]] !== signature_to_type[signature[i]]) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function validateAddress(address) {
+  if (typeof address !== 'string')
+    return false;
+
+  var regExp = /([\dA-F][\dA-F]:){5}[\dA-F][\dA-F]/i;
+
+  if (!address.match(regExp))
+    return false;
 
   return true;
 }
@@ -197,17 +221,33 @@ var handleDeviceUpdated = function(msg) {
 };
 
 var handleAdapterUpdated = function(msg) {
-  if (msg.Name)
+  var listener = adapter.change_listener;
+
+  if (msg.Name) {
     _addConstProperty(defaultAdapter, 'name', msg.Name);
+    if (listener && listener.onnamechanged) {
+      adapter.change_listener.onnamechanged(msg.Name);
+    }
+  }
+
   if (msg.Address)
     _addConstProperty(defaultAdapter, 'address', msg.Address);
+
   if (msg.Powered) {
-    _addConstProperty(defaultAdapter, 'powered',
-        (msg.Powered == 'true') ? true : false);
+    var powered = (msg.Powered === 'true') ? true : false;
+    _addConstProperty(defaultAdapter, 'powered', powered);
+    if (defaultAdapter.powered !== powered && listener && listener.onstatechanged) {
+      adapter.change_listener.onstatechanged(powered);
+    }
   }
+
   if (msg.Discoverable) {
-    _addConstProperty(defaultAdapter, 'visible',
-        (msg.Discoverable == 'true') ? true : false);
+    var visibility = (msg.Discoverable === 'true') ? true : false;
+
+    if (defaultAdapter.visible !== visibility && listener && listener.onvisibilitychanged) {
+      adapter.change_listener.onvisibilitychanged(visibility);
+    }
+    _addConstProperty(defaultAdapter, 'visible', visibility);
   }
 
   defaultAdapter.isReady = true;
@@ -514,6 +554,11 @@ BluetoothAdapter.prototype.discoverDevices = function(discoverySuccessCallback, 
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
   }
 
+  if (!validateObject(discoverySuccessCallback, 'ffff',
+                      ['onstarted', 'ondevicefound', 'ondevicedisappeared', 'onfinished'])) {
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+  }
+
   if (adapter.checkServiceAvailability(errorCallback))
     return;
 
@@ -531,7 +576,7 @@ BluetoothAdapter.prototype.discoverDevices = function(discoverySuccessCallback, 
 
     adapter.discovery_callbacks = discoverySuccessCallback;
 
-    if (discoverySuccessCallback && typeof discoverySuccessCallback.onstarted === 'function')
+    if (discoverySuccessCallback && discoverySuccessCallback.onstarted)
       discoverySuccessCallback.onstarted();
   });
 };
@@ -579,6 +624,10 @@ BluetoothAdapter.prototype.getDevice = function(address, deviceSuccessCallback, 
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
   }
 
+  if (!validateAddress(address)) {
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+  }
+
   if (adapter.checkServiceAvailability(errorCallback))
     return;
 
@@ -595,6 +644,10 @@ BluetoothAdapter.prototype.getDevice = function(address, deviceSuccessCallback, 
 BluetoothAdapter.prototype.createBonding = function(address, successCallback, errorCallback) {
   if (!validateArguments('sf?f', arguments)) {
     throw new tizen.WebAPIError(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+  }
+
+  if (!validateAddress(address)) {
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
   }
 
   if (adapter.checkServiceAvailability(errorCallback))
@@ -635,6 +688,10 @@ BluetoothAdapter.prototype.createBonding = function(address, successCallback, er
 BluetoothAdapter.prototype.destroyBonding = function(address, successCallback, errorCallback) {
   if (!validateArguments('s?ff', arguments)) {
     throw new tizen.WebAPIError(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+  }
+
+  if (!validateAddress(address)) {
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
   }
 
   if (adapter.checkServiceAvailability(errorCallback))
@@ -709,6 +766,23 @@ BluetoothAdapter.prototype.registerRFCOMMServiceByUUID =
       serviceSuccessCallback(service);
     }
   });
+};
+
+BluetoothAdapter.prototype.setChangeListener = function(listener) {
+  if (!validateArguments('o', arguments)) {
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+  }
+
+  if (!validateObject(listener, 'fff',
+                      ['onstatechanged', 'onnamechanged', 'onvisibilitychanged'])) {
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+  }
+
+  adapter.change_listener = listener;
+};
+
+BluetoothAdapter.prototype.unsetChangeListener = function() {
+  adapter.change_listener = null;
 };
 
 var _deviceClassMask = {
