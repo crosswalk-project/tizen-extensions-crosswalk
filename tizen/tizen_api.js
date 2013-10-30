@@ -37,7 +37,7 @@ var errors = {
 
   // Error codes for these errors are not really defined anywhere.
   '100': { type: 'INVALID_VALUES_ERR', name: 'InvalidValuesError', message: '' },
-  '101': { type: 'IO_ERR', name: 'IoError', message: '' },
+  '101': { type: 'IO_ERR', name: 'IOError', message: '' },
   '102': { type: 'PERMISSION_DENIED_ERR', name: 'Permission_deniedError', message: '' },
   '103': { type: 'SERVICE_NOT_AVAILABLE_ERR', name: 'ServiceNotAvailableError', message: '' }
 };
