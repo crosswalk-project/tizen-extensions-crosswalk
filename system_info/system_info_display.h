@@ -9,9 +9,9 @@
 
 #include <string>
 
-#include "common/extension_adapter.h"
 #include "common/picojson.h"
 #include "common/utils.h"
+#include "system_info/system_info_instance.h"
 #include "system_info/system_info_utils.h"
 
 class SysInfoDisplay : public SysInfoObject {
@@ -27,21 +27,16 @@ class SysInfoDisplay : public SysInfoObject {
   // Get support
   void Get(picojson::value& error, picojson::value& data);
   // Listerner support
-  inline void AddListener(ContextAPI* api) {
+  inline void StartListening() {
     // FIXME(halton): Use Xlib event or D-Bus interface to monitor.
-    AutoLock lock(&listeners_mutex_);
-    listeners_.push_back(api);
-
     if (timeout_cb_id_ == 0) {
       timeout_cb_id_ = g_timeout_add(system_info::default_timeout_interval,
                                      SysInfoDisplay::OnUpdateTimeout,
                                      static_cast<gpointer>(this));
     }
   }
-  inline void RemoveListener(ContextAPI* api) {
-    AutoLock lock(&listeners_mutex_);
-    listeners_.remove(api);
-    if (listeners_.empty() && timeout_cb_id_ > 0) {
+  inline void StopListening() {
+    if (timeout_cb_id_ > 0) {
       g_source_remove(timeout_cb_id_);
       timeout_cb_id_ = 0;
     }

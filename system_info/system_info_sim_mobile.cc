@@ -143,18 +143,12 @@ std::string SysInfoSim::ToSimStateString(SystemInfoSimState state) {
   return ret;
 }
 
-void SysInfoSim::AddListener(ContextAPI* api) {
-  AutoLock lock(&listeners_mutex_);
-  listeners_.push_back(api);
-  if (listeners_.size() == 1)
-    sim_set_state_changed_cb(OnSimStateChanged, this);
+void SysInfoSim::StartListening() {
+  sim_set_state_changed_cb(OnSimStateChanged, this);
 }
 
-void SysInfoSim::RemoveListener(ContextAPI* api) {
-  AutoLock lock(&listeners_mutex_);
-  listeners_.remove(api);
-  if (listeners_.empty())
-    sim_unset_state_changed_cb();
+void SysInfoSim::StopListening() {
+  sim_unset_state_changed_cb();
 }
 
 SysInfoSim::SystemInfoSimState SysInfoSim::GetSystemInfoSIMState

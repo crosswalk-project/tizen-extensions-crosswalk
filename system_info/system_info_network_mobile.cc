@@ -22,19 +22,15 @@ SysInfoNetwork::~SysInfoNetwork() {
     free(connection_handle_);
 }
 
-void SysInfoNetwork::AddListener(ContextAPI* api) {
-  AutoLock lock(&listeners_mutex_);
-  listeners_.push_back(api);
-  if (connection_handle_ && listeners_.size() == 1) {
+void SysInfoNetwork::StartListening() {
+  if (connection_handle_) {
     connection_set_type_changed_cb(connection_handle_,
                                    OnTypeChanged, this);
   }
 }
 
-void SysInfoNetwork::RemoveListener(ContextAPI* api) {
-  AutoLock lock(&listeners_mutex_);
-  listeners_.remove(api);
-  if (listeners_.empty() && connection_handle_) {
+void SysInfoNetwork::StopListening() {
+  if (connection_handle_) {
     connection_unset_type_changed_cb(connection_handle_);
   }
 }

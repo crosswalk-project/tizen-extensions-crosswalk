@@ -42,8 +42,8 @@ void SysInfoWifiNetwork::PlatformInitialize() {
       this);
 }
 
-void SysInfoWifiNetwork::AddListener(ContextAPI* api) { }
-void SysInfoWifiNetwork::RemoveListener(ContextAPI* api) { }
+void SysInfoWifiNetwork::StartListening() { }
+void SysInfoWifiNetwork::StopListening() { }
 
 void SysInfoWifiNetwork::SetData(picojson::value& data) {
   system_info::SetPicoJsonObjectValue(data, "status",

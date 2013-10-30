@@ -136,13 +136,7 @@ void SysInfoDeviceOrientation::OnAutoRotationChanged(keynode_t* node,
   orientation->SendUpdate();
 }
 
-void SysInfoDeviceOrientation::AddListener(ContextAPI* api) {
-  AutoLock lock(&listeners_mutex_);
-  listeners_.push_back(api);
-
-  if (listeners_.size() > 1)
-    return;
-
+void SysInfoDeviceOrientation::StartListening() {
   vconf_notify_key_changed(VCONFKEY_SETAPPL_AUTO_ROTATE_SCREEN_BOOL,
       (vconf_callback_fn)OnAutoRotationChanged, this);
 
@@ -164,13 +158,7 @@ void SysInfoDeviceOrientation::AddListener(ContextAPI* api) {
   }
 }
 
-void SysInfoDeviceOrientation::RemoveListener(ContextAPI* api) {
-  AutoLock lock(&listeners_mutex_);
-  listeners_.remove(api);
-
-  if (!listeners_.empty())
-    return;
-
+void SysInfoDeviceOrientation::StopListening() {
   vconf_ignore_key_changed(VCONFKEY_SETAPPL_AUTO_ROTATE_SCREEN_BOOL,
       (vconf_callback_fn)OnAutoRotationChanged);
 

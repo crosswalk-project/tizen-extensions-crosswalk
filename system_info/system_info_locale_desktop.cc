@@ -20,9 +20,7 @@ SysInfoLocale::SysInfoLocale()
 
 SysInfoLocale::~SysInfoLocale() {}
 
-void SysInfoLocale::AddListener(ContextAPI* api) {
-  AutoLock lock(&listeners_mutex_);
-  system_events_list_.push_back(api);
+void SysInfoLocale::StartListening() {
   if (timeout_cb_id_ == 0) {
     timeout_cb_id_ = g_timeout_add(system_info::default_timeout_interval,
                                    SysInfoLocale::OnUpdateTimeout,
@@ -30,10 +28,8 @@ void SysInfoLocale::AddListener(ContextAPI* api) {
   }
 }
 
-void SysInfoLocale::RemoveListener(ContextAPI* api) {
-  AutoLock lock(&listeners_mutex_);
-  system_events_list_.remove(api);
-  if (system_events_list_.empty() && timeout_cb_id_ > 0) {
+void SysInfoLocale::StopListening() {
+  if (timeout_cb_id_ > 0) {
     g_source_remove(timeout_cb_id_);
     timeout_cb_id_ = 0;
   }
