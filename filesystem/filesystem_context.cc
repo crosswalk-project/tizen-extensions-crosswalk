@@ -743,30 +743,45 @@ int DecodeOne(char c) {
 
 std::string ConvertFrom(std::string input) {
   std::string decoded;
-  size_t input_len = input.length();
+  int input_len = input.length(), decoded_bits = 0, c, i;
 
   if (input_len % 4)
     return input;
 
-  for (size_t i = 0; i < input_len;) {
-    int c0 = DecodeOne(input[i++]);
-    int c1 = DecodeOne(input[i++]);
+  for (i = 0; i < input_len;) {
+    c = input[i++];
+    if (c == '=')
+      break;
+    if (c > 255)
+      continue;
+    int decoded_byte = DecodeOne(c);
+    if (decoded_byte < 0)
+      continue;
 
-    if (c0 < 0 || c1 < 0)
+    decoded_bits |= decoded_byte;
+
+    if (i % 4 == 0) {
+      decoded.push_back(static_cast<char>(decoded_bits >> 16));
+      decoded.push_back(static_cast<char>(decoded_bits >> 8));
+      decoded.push_back(static_cast<char>(decoded_bits));
+      decoded_bits = 0;
+    } else {
+      decoded_bits <<= 6;
+    }
+  }
+
+  if (c == '=') {
+    switch (input_len - i) {
+    case 0:
       return input;
-
-    int c2 = DecodeOne(input[i++]);
-    int c3 = DecodeOne(input[i++]);
-
-    if (c2 < 0 && c3 < 0)
-      return input;
-
-    decoded.push_back(c0 << 2 | c1 >> 4);
-    if (c2 < 0)
-      decoded.push_back(((c1 & 15) << 4) | (c2 >> 2));
-    if (c3 < 0)
-      decoded.push_back(((c2 & 3) << 6) | c3);
-    i += 3;
+    case 1:
+      decoded.push_back(static_cast<char>(decoded_bits >> 10));
+      break;
+    case 2:
+      decoded.push_back(static_cast<char>(decoded_bits >> 16));
+      decoded.push_back(static_cast<char>(decoded_bits >> 8));
+      break;
+    }
   }
 
   return decoded;
