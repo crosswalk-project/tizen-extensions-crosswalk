@@ -10,12 +10,19 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <iconv.h>
+
+#include <utility>
 
 DEFINE_XWALK_EXTENSION(FilesystemContext)
 
 namespace {
 const unsigned kDefaultFileMode = 0755;
 const std::string kDefaultPath = "/opt/usr/media";
+unsigned int lastStreamId = 0;
+// FIXME(ricardotk): This needs another approach, kMaxSize is a palliative
+// solution.
+const unsigned kMaxSize = 64 * 1024;
 
 bool IsWritable(const struct stat& st) {
   if (st.st_mode & S_IWOTH)
@@ -46,11 +53,13 @@ FilesystemContext::FilesystemContext(ContextAPI* api)
   : api_(api) {}
 
 FilesystemContext::~FilesystemContext() {
-  std::set<int>::iterator it;
+  FStreamMap::iterator it;
 
-  for (it = known_file_descriptors_.begin();
-        it != known_file_descriptors_.end(); it++)
-    close(*it);
+  for (it = fstream_map_.begin(); it != fstream_map_.end(); it++) {
+    std::fstream* fs = it->second;
+    fs->close();
+    delete(fs);
+  }
 }
 
 const char FilesystemContext::name[] = "tizen.filesystem";
@@ -216,25 +225,25 @@ void FilesystemContext::HandleFileOpenStream(const picojson::value& msg) {
   }
 
   std::string mode = msg.get("mode").to_str();
-  int mode_for_open = 0;
+  std::ios_base::openmode open_mode = std::ios_base::binary;
   if (mode == "a") {
-    mode_for_open = O_APPEND;
+    open_mode |= (std::ios_base::app | std::ios_base::out);
   } else if (mode == "w") {
-    mode_for_open = O_TRUNC | O_WRONLY | O_CREAT;
+    open_mode |= std::ios_base::out;
   } else if (mode == "rw") {
-    mode_for_open = O_RDWR | O_CREAT;
+    open_mode |= (std::ios_base::in | std::ios_base::out);
   } else if (mode == "r") {
-    mode_for_open = O_RDONLY;
+    open_mode |= std::ios_base::in;
   } else {
-    PostAsyncErrorReply(msg, INVALID_VALUES_ERR);
+    PostAsyncErrorReply(msg, TYPE_MISMATCH_ERR);
     return;
   }
 
-  std::string encoding;
+  std::string encoding = "";
   if (msg.contains("encoding"))
     encoding = msg.get("encoding").to_str();
-  if (!encoding.empty() && encoding != "UTF-8") {
-    PostAsyncErrorReply(msg, INVALID_VALUES_ERR);
+  if (!encoding.empty() && (encoding != "UTF-8" && encoding != "ISO-8859-1")) {
+    PostAsyncErrorReply(msg, TYPE_MISMATCH_ERR);
     return;
   }
 
@@ -244,17 +253,42 @@ void FilesystemContext::HandleFileOpenStream(const picojson::value& msg) {
   }
 
   std::string real_path = GetRealPath(msg.get("fullPath").to_str());
-
-  int fd = open(real_path.c_str(), mode_for_open, kDefaultFileMode);
-  if (fd < 0) {
+  char* real_path_cstr = realpath(real_path.c_str(), NULL);
+  if (!real_path_cstr) {
+    free(real_path_cstr);
     PostAsyncErrorReply(msg, IO_ERR);
-  } else {
-    known_file_descriptors_.insert(fd);
-
-    picojson::value::object o;
-    o["fileDescriptor"] = picojson::value(static_cast<double>(fd));
-    PostAsyncSuccessReply(msg, o);
+    return;
   }
+
+  struct stat st;
+  if (stat(real_path_cstr, &st) < 0) {
+    free(real_path_cstr);
+    PostAsyncErrorReply(msg, IO_ERR);
+    return;
+  }
+
+  if (S_ISDIR(st.st_mode)) {
+    free(real_path_cstr);
+    PostAsyncErrorReply(msg, IO_ERR);
+    return;
+  }
+
+  std::fstream* fs = new std::fstream(real_path_cstr, open_mode);
+  if (!(*fs) || !fs->is_open()) {
+    free(real_path_cstr);
+    PostAsyncErrorReply(msg, INVALID_VALUES_ERR);
+    return;
+  }
+  free(real_path_cstr);
+
+  fstream_map_[lastStreamId] = fs;
+
+  picojson::value::object o;
+  o["streamID"] = picojson::value(static_cast<double>(lastStreamId));
+  o["encoding"] = picojson::value(encoding);
+  lastStreamId++;
+
+  PostAsyncSuccessReply(msg, o);
 }
 
 static bool RecursiveDeleteDirectory(const std::string& path) {
@@ -606,6 +640,10 @@ void FilesystemContext::HandleSyncMessage(const char* message) {
     HandleFileResolve(v, reply);
   else if (cmd == "FileStat")
     HandleFileStat(v, reply);
+  else if (cmd == "FileStreamStat")
+    HandleFileStreamStat(v, reply);
+  else if (cmd == "FileStreamSetPosition")
+    HandleFileStreamSetPosition(v, reply);
   else
     std::cout << "Ignoring unknown command: " << cmd;
 
@@ -630,8 +668,23 @@ void FilesystemContext::HandleFileSystemManagerGetMaxPathLength(
   SetSyncSuccess(reply, max_path_len_str);
 }
 
-bool FilesystemContext::IsKnownFileDescriptor(int fd) {
-  return known_file_descriptors_.find(fd) != known_file_descriptors_.end();
+bool FilesystemContext::IsKnownFileStream(const picojson::value& msg) {
+  if (!msg.contains("streamID"))
+    return false;
+  unsigned int key = msg.get("streamID").get<double>();
+
+  return fstream_map_.find(key) != fstream_map_.end();
+}
+
+std::fstream* FilesystemContext::GetFileStream(unsigned int key) {
+  FStreamMap::iterator it = fstream_map_.find(key);
+  if (it == fstream_map_.end())
+    return NULL;
+  std::fstream* fs = it->second;
+
+  if (fs->is_open())
+    return fs;
+  return NULL;
 }
 
 void FilesystemContext::SetSyncError(std::string& output,
@@ -677,16 +730,19 @@ void FilesystemContext::SetSyncSuccess(std::string& reply,
 
 void FilesystemContext::HandleFileStreamClose(const picojson::value& msg,
       std::string& reply) {
-  if (!msg.contains("fileDescriptor")) {
+  if (!msg.contains("streamID")) {
     SetSyncError(reply, INVALID_VALUES_ERR);
     return;
   }
-  int fd = msg.get("fileDescriptor").get<double>();
+  unsigned int key = msg.get("streamID").get<double>();
 
-  if (IsKnownFileDescriptor(fd)) {
-    close(fd);
-    known_file_descriptors_.erase(fd);
+  FStreamMap::iterator it = fstream_map_.find(key);
+  if (it != fstream_map_.end()) {
+    std::fstream* fs = it->second;
+    if (fs->is_open())
+      fs->close();
   }
+  fstream_map_.erase(key);
 
   SetSyncSuccess(reply);
 }
@@ -743,77 +799,135 @@ int DecodeOne(char c) {
 
 std::string ConvertFrom(std::string input) {
   std::string decoded;
-  size_t input_len = input.length();
+  int input_len = input.length(), decoded_bits = 0, c, i;
 
   if (input_len % 4)
     return input;
 
-  for (size_t i = 0; i < input_len;) {
-    int c0 = DecodeOne(input[i++]);
-    int c1 = DecodeOne(input[i++]);
+  for (i = 0; i < input_len;) {
+    c = input[i++];
+    if (c == '=')
+      break;
+    if (c > 255)
+      continue;
+    int decoded_byte = DecodeOne(c);
+    if (decoded_byte < 0)
+      continue;
 
-    if (c0 < 0 || c1 < 0)
+    decoded_bits |= decoded_byte;
+
+    if (i % 4 == 0) {
+      decoded.push_back(static_cast<char>(decoded_bits >> 16));
+      decoded.push_back(static_cast<char>(decoded_bits >> 8));
+      decoded.push_back(static_cast<char>(decoded_bits));
+      decoded_bits = 0;
+    } else {
+      decoded_bits <<= 6;
+    }
+  }
+
+  if (c == '=') {
+    switch (input_len - i) {
+    case 0:
       return input;
-
-    int c2 = DecodeOne(input[i++]);
-    int c3 = DecodeOne(input[i++]);
-
-    if (c2 < 0 && c3 < 0)
-      return input;
-
-    decoded.push_back(c0 << 2 | c1 >> 4);
-    if (c2 < 0)
-      decoded.push_back(((c1 & 15) << 4) | (c2 >> 2));
-    if (c3 < 0)
-      decoded.push_back(((c2 & 3) << 6) | c3);
-    i += 3;
+    case 1:
+      decoded.push_back(static_cast<char>(decoded_bits >> 10));
+      break;
+    case 2:
+      decoded.push_back(static_cast<char>(decoded_bits >> 16));
+      decoded.push_back(static_cast<char>(decoded_bits >> 8));
+      break;
+    }
   }
 
   return decoded;
 }
 
 }  // namespace base64
+
+std::string ConvertCharacterEncoding(const char* from_encoding,
+                                     const char* to_encoding, char* buffer,
+                                     size_t buffer_len) {
+  iconv_t cd = iconv_open(from_encoding, to_encoding);
+
+  char converted[kMaxSize];
+  char *converted_buffer = converted;
+  size_t converted_len = sizeof(converted) - 1;
+
+  do {
+    if (iconv(cd, &buffer, &buffer_len, &converted_buffer, &converted_len)
+        == (size_t) -1) {
+      iconv_close(cd);
+      return "";
+    }
+  } while (buffer_len > 0 && converted_len > 0);
+  *converted_buffer = 0;
+
+  iconv_close(cd);
+
+  return std::string(converted, converted_len);
+}
+
 }  // namespace
 
 void FilesystemContext::HandleFileStreamRead(const picojson::value& msg,
       std::string& reply) {
-  if (!msg.contains("fileDescriptor")) {
-    SetSyncError(reply, INVALID_VALUES_ERR);
+  if (!IsKnownFileStream(msg)) {
+    SetSyncError(reply, IO_ERR);
     return;
   }
-  int fd = msg.get("fileDescriptor").get<double>();
+  unsigned int key = msg.get("streamID").get<double>();
 
-  if (!IsKnownFileDescriptor(fd)) {
+  std::streamsize count;
+  if (msg.contains("count"))
+    count = msg.get("count").get<double>();
+  else
+    count = kMaxSize;
+
+  std::fstream* fs = GetFileStream(key);
+  if (!fs) {
     SetSyncError(reply, IO_ERR);
     return;
   }
 
-  unsigned char_count;
-  const unsigned kMaxSize = 64 * 1024;
-  if (!msg.contains("count")) {
-    char_count = kMaxSize;
-  } else {
-    char_count = msg.get("count").get<double>();
-    if (char_count > kMaxSize) {
-      SetSyncError(reply, IO_ERR);
-      return;
+  std::streampos initial_pos = fs->tellg();
+  char buffer[kMaxSize] = { 0 };
+  fs->read(buffer, count);
+  fs->clear();
+  std::streampos bytes_read = fs->tellg() - initial_pos;
+
+  if (fs->bad() || (strlen(buffer) == 0 && bytes_read <= 0)) {
+    fs->clear();
+    SetSyncError(reply, IO_ERR);
+    return;
+  }
+
+  if (msg.get("type").to_str() == "Bytes") {
+    picojson::value::array a;
+
+    for (int i = 0; i < bytes_read; i++) {
+      if (+buffer[i] != 0)
+        a.push_back(picojson::value(static_cast<double>(buffer[i])));
     }
-  }
 
-  char buffer[kMaxSize];
-  ssize_t read_bytes = read(fd, buffer, char_count);
-  if (read_bytes < 0) {
-    SetSyncError(reply, IO_ERR);
+    picojson::value v(a);
+    SetSyncSuccess(reply, v);
     return;
   }
+
+  std::string buffer_as_string;
+  if (msg.get("encoding").to_str() == "ISO-8859-1")
+    buffer_as_string = ConvertCharacterEncoding("ISO_8859-1", "UTF-8", buffer,
+                                                bytes_read);
+  else
+    buffer_as_string = std::string(buffer, bytes_read);
 
   if (msg.get("type").to_str() == "Base64") {
-    std::string base64_contents = base64::ConvertTo(reply);
-    SetSyncSuccess(reply, base64_contents);
+    std::string base64_buffer = base64::ConvertTo(buffer_as_string);
+    SetSyncSuccess(reply, base64_buffer);
     return;
   }
 
-  std::string buffer_as_string = std::string(buffer, read_bytes);
   SetSyncSuccess(reply, buffer_as_string);
 }
 
@@ -823,27 +937,41 @@ void FilesystemContext::HandleFileStreamWrite(const picojson::value& msg,
     SetSyncError(reply, INVALID_VALUES_ERR);
     return;
   }
-  if (!msg.contains("fileDescriptor")) {
-    SetSyncError(reply, INVALID_VALUES_ERR);
+
+  if (!IsKnownFileStream(msg)) {
+    SetSyncError(reply, IO_ERR);
     return;
   }
+  unsigned int key = msg.get("streamID").get<double>();
 
-  int fd = msg.get("fileDescriptor").get<double>();
-  if (!IsKnownFileDescriptor(fd)) {
+  std::fstream* fs = GetFileStream(key);
+  if (!fs) {
     SetSyncError(reply, IO_ERR);
     return;
   }
 
   std::string buffer;
-  if (msg.get("type").to_str() == "Base64")
+  if (msg.get("type").to_str() == "Bytes") {
+    picojson::array a = msg.get("data").get<picojson::array>();
+    for (picojson::array::iterator iter = a.begin(); iter != a.end(); ++iter)
+      buffer.append<int>(1, (*iter).get<double>());
+  } else if (msg.get("type").to_str() == "Base64") {
     buffer = base64::ConvertFrom(msg.get("data").to_str());
-  else
+  } else {
     buffer = msg.get("data").to_str();
+  }
 
-  if (write(fd, buffer.c_str(), buffer.length()) < 0) {
+  // FIXME(ricardotk): get default platform encoding mode and compare.
+  if (msg.get("encoding").to_str() == "ISO-8859-1")
+    buffer = ConvertCharacterEncoding("ISO_8859-1", "UTF-8",
+                                                &buffer[0], buffer.length());
+
+  if (!((*fs) << buffer)) {
+    fs->clear();
     SetSyncError(reply, IO_ERR);
     return;
   }
+  fs->flush();
 
   SetSyncSuccess(reply);
 }
@@ -1004,4 +1132,77 @@ void FilesystemContext::HandleFileStat(const picojson::value& msg,
 
   picojson::value v(o);
   SetSyncSuccess(reply, v);
+}
+
+void FilesystemContext::HandleFileStreamStat(const picojson::value& msg,
+      std::string& reply) {
+  if (!IsKnownFileStream(msg)) {
+    SetSyncError(reply, IO_ERR);
+    return;
+  }
+  unsigned int key = msg.get("streamID").get<double>();
+
+  std::fstream* fs = GetFileStream(key);
+  if (!fs) {
+    SetSyncError(reply, IO_ERR);
+    return;
+  }
+
+  std::streampos bytes_read = -1;
+  if (!fs->eof()) {
+    std::streampos initial_pos = fs->tellg();
+    char buffer[kMaxSize] = { 0 };
+    fs->read(buffer, kMaxSize);
+    bytes_read = fs->tellg() - initial_pos;
+    if (fs->bad()) {
+      fs->clear();
+      SetSyncError(reply, IO_ERR);
+      return;
+    }
+    // Recover the position.
+    fs->clear();
+    fs->seekg(initial_pos);
+    if (fs->bad()) {
+      fs->clear();
+      SetSyncError(reply, IO_ERR);
+      return;
+    }
+  }
+
+  picojson::value::object o;
+  o["position"] = picojson::value(static_cast<double>(fs->tellg()));
+  o["eof"] = picojson::value(fs->eof());
+  o["bytesAvailable"] = picojson::value(static_cast<double>(bytes_read));
+
+  picojson::value v(o);
+  SetSyncSuccess(reply, v);
+}
+
+void FilesystemContext::HandleFileStreamSetPosition(const picojson::value& msg,
+      std::string& reply) {
+  if (!msg.contains("position")) {
+    SetSyncError(reply, INVALID_VALUES_ERR);
+    return;
+  }
+  if (!IsKnownFileStream(msg)) {
+    SetSyncError(reply, IO_ERR);
+    return;
+  }
+  unsigned int key = msg.get("streamID").get<double>();
+
+  std::fstream* fs = GetFileStream(key);
+  if (!fs) {
+    SetSyncError(reply, IO_ERR);
+    return;
+  }
+
+  int position = msg.get("position").get<double>();
+  fs->seekg(position);
+  if (fs->bad()) {
+    fs->clear();
+    SetSyncError(reply, IO_ERR);
+    return;
+  }
+
+  SetSyncSuccess(reply);
 }

@@ -7,6 +7,9 @@
 
 #include <set>
 #include <string>
+#include <map>
+#include <fstream>
+#include <iostream>
 
 #include "common/extension_adapter.h"
 #include "common/picojson.h"
@@ -55,9 +58,13 @@ class FilesystemContext {
   void HandleFileGetURI(const picojson::value& msg, std::string& reply);
   void HandleFileResolve(const picojson::value& msg, std::string& reply);
   void HandleFileStat(const picojson::value& msg, std::string& reply);
+  void HandleFileStreamStat(const picojson::value& msg, std::string& reply);
+  void HandleFileStreamSetPosition(const picojson::value& msg,
+                                   std::string& reply);
 
   /* Sync message helpers */
-  bool IsKnownFileDescriptor(int fd);
+  bool IsKnownFileStream(const picojson::value& msg);
+  std::fstream* GetFileStream(unsigned int key);
   bool CopyAndRenameSanityChecks(const picojson::value& msg,
         const std::string& from, const std::string& to, bool overwrite);
   void SetSyncError(std::string& output, WebApiAPIErrors error_type);
@@ -66,7 +73,8 @@ class FilesystemContext {
   void SetSyncSuccess(std::string& reply, picojson::value& output);
 
   ContextAPI* api_;
-  std::set<int> known_file_descriptors_;
+  typedef std::map <unsigned int, std::fstream*> FStreamMap;
+  FStreamMap fstream_map_;
 };
 
 #endif  // FILESYSTEM_FILESYSTEM_CONTEXT_H_
