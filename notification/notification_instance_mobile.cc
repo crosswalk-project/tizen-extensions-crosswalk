@@ -18,7 +18,7 @@ void NotificationSetText(notification_h notification,
       notification, type, text.c_str(), NULL, NOTIFICATION_VARIABLE_TYPE_NONE);
 }
 
-void FillNotificationHandle(notification_h n, const NotificationParameters& p) {
+bool FillNotificationHandle(notification_h n, const NotificationParameters& p) {
   NotificationSetText(n, NOTIFICATION_TEXT_TYPE_TITLE, p.title);
   NotificationSetText(n, NOTIFICATION_TEXT_TYPE_CONTENT, p.content);
 
@@ -29,6 +29,15 @@ void FillNotificationHandle(notification_h n, const NotificationParameters& p) {
       notification_set_size(n, p.progress_value);
     }
   }
+
+  if (!p.background_image_path.empty()) {
+    if (notification_set_image(n, NOTIFICATION_IMAGE_TYPE_BACKGROUND,
+                               p.background_image_path.c_str())
+        != NOTIFICATION_ERROR_NONE)
+      return false;
+  }
+
+  return true;
 }
 
 const char kSerializedNull[] = "null";
@@ -73,7 +82,10 @@ void NotificationInstanceMobile::HandlePost(const picojson::value& msg) {
     type = NOTIFICATION_TYPE_NOTI;
 
   notification_h notification = manager_->CreateNotification(type);
-  FillNotificationHandle(notification, params);
+  if (!FillNotificationHandle(notification, params)) {
+    SendSyncReply(kSerializedNull);
+    return;
+  }
 
   int id = manager_->PostNotification(notification, this);
   if (!id) {

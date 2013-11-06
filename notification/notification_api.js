@@ -17,7 +17,8 @@ var NOTIFICATION_PROPERTIES = [
   'title',
   'content',
   'progressType',
-  'progressValue'
+  'progressValue',
+  'backgroundImagePath'
 ];
 
 function extractNotificationProperties(notification) {

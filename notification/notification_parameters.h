@@ -19,6 +19,8 @@ struct NotificationParameters {
 
   std::string progress_type;
   int progress_value;
+
+  std::string background_image_path;
 };
 
 NotificationParameters ReadNotificationParameters(const picojson::value& v);

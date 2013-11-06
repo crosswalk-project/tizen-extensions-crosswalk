@@ -18,5 +18,7 @@ NotificationParameters ReadNotificationParameters(const picojson::value& v) {
     params.progress_value = v.get("progressValue").get<double>();
   }
 
+  params.background_image_path = v.get("backgroundImagePath").to_str();
+
   return params;
 }
