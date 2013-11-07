@@ -22,6 +22,13 @@ bool FillNotificationHandle(notification_h n, const NotificationParameters& p) {
   NotificationSetText(n, NOTIFICATION_TEXT_TYPE_TITLE, p.title);
   NotificationSetText(n, NOTIFICATION_TEXT_TYPE_CONTENT, p.content);
 
+  if (!p.icon_path.empty()) {
+    if (notification_set_image(n, NOTIFICATION_IMAGE_TYPE_ICON,
+                               p.icon_path.c_str())
+        != NOTIFICATION_ERROR_NONE)
+      return false;
+  }
+
   if (p.status_type == "PROGRESS") {
     if (p.progress_type == "PERCENTAGE") {
       notification_set_progress(n, p.progress_value / 100.0);

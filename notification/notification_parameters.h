@@ -17,6 +17,8 @@ struct NotificationParameters {
   std::string title;
   std::string content;
 
+  std::string icon_path;
+
   std::string progress_type;
   int progress_value;
 

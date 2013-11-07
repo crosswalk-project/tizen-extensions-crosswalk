@@ -16,6 +16,7 @@ var NOTIFICATION_PROPERTIES = [
   'statusType',
   'title',
   'content',
+  'iconPath',
   'progressType',
   'progressValue',
   'backgroundImagePath'
