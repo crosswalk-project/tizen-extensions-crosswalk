@@ -37,6 +37,13 @@ bool FillNotificationHandle(notification_h n, const NotificationParameters& p) {
     }
   }
 
+  if (!p.sub_icon_path.empty()) {
+    if (notification_set_image(n, NOTIFICATION_IMAGE_TYPE_ICON_SUB,
+                               p.sub_icon_path.c_str())
+        != NOTIFICATION_ERROR_NONE)
+      return false;
+  }
+
   if (!p.background_image_path.empty()) {
     if (notification_set_image(n, NOTIFICATION_IMAGE_TYPE_BACKGROUND,
                                p.background_image_path.c_str())

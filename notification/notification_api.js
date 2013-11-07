@@ -19,6 +19,7 @@ var NOTIFICATION_PROPERTIES = [
   'iconPath',
   'progressType',
   'progressValue',
+  'subIconPath',
   'backgroundImagePath'
 ];
 
