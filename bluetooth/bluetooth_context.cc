@@ -135,9 +135,13 @@ void BluetoothContext::OnDiscoveryStopped(GObject* source, GAsyncResult* res) {
     g_error_free(error);
   }
 
+  if (stop_discovery_callback_id_.empty())
+    return;
+
   picojson::value::object o;
   o["cmd"] = picojson::value("");
   o["reply_id"] = picojson::value(stop_discovery_callback_id_);
+  stop_discovery_callback_id_.clear();
   o["error"] = picojson::value(static_cast<double>(0));
   picojson::value v(o);
   PostMessage(v);
