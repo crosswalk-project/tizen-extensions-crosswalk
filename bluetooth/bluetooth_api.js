@@ -601,7 +601,9 @@ BluetoothAdapter.prototype.stopDiscovery = function(successCallback, errorCallba
       return;
     }
 
-    successCallback();
+    if (successCallback)
+      successCallback();
+
     handleDiscoveryFinished();
   });
 };
