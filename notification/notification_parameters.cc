@@ -24,5 +24,9 @@ NotificationParameters ReadNotificationParameters(const picojson::value& v) {
 
   params.background_image_path = v.get("backgroundImagePath").to_str();
 
+  picojson::array t = v.get("thumbnails").get<picojson::array>();
+  for (picojson::array::iterator iter = t.begin(); iter != t.end(); ++iter)
+    params.thumbnails.push_back((*iter).to_str());
+
   return params;
 }
