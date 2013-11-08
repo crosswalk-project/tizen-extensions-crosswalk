@@ -25,6 +25,10 @@ struct NotificationParameters {
 
   std::string sub_icon_path;
 
+  std::string led_color;
+  uint64_t led_on_period;
+  uint64_t led_off_period;
+
   std::string background_image_path;
   std::vector<std::string> thumbnails;
 };

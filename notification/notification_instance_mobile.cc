@@ -6,6 +6,8 @@
 
 #include <iostream>
 #include <vector>
+#include <algorithm>
+#include <sstream>
 #include "common/picojson.h"
 #include "notification/notification_parameters.h"
 #include "notification/picojson_helpers.h"
@@ -20,6 +22,17 @@ void NotificationSetText(notification_h notification,
       notification, type, text.c_str(), NULL, NOTIFICATION_VARIABLE_TYPE_NONE);
 }
 
+bool IsColorFormat(const std::string& color) {
+  if (color.length() != 7 || color.compare(0, 1, "#"))
+    return false;
+
+  for (size_t i = 1 ; i < color.length() ; i++) {
+    if (!isxdigit(color[i]))
+      return false;
+  }
+  return true;
+}
+
 bool SetImage(notification_h n, notification_image_type_e type,
               const std::string& imagePath) {
   char* oldImgPath = NULL;
@@ -31,6 +44,27 @@ bool SetImage(notification_h n, notification_image_type_e type,
 
   if (notification_set_image(n, type, imagePath.c_str())
       != NOTIFICATION_ERROR_NONE)
+    return false;
+  return true;
+}
+
+bool SetLedColor(notification_h n, const std::string& ledColor) {
+  std::string color = ledColor;
+  notification_led_op_e type = NOTIFICATION_LED_OP_OFF;
+  std::transform(color.begin(), color.end(), color.begin(), ::tolower);
+  int ledColorNum = 0;
+
+  if (IsColorFormat(color)) {
+    std::stringstream stream;
+
+    stream << std::hex << color.substr(1, color.length());
+    stream >> ledColorNum;
+
+    if (ledColorNum)
+      type = NOTIFICATION_LED_OP_ON_CUSTOM_COLOR;
+  }
+
+  if (notification_set_led(n, type, ledColorNum) != NOTIFICATION_ERROR_NONE)
     return false;
   return true;
 }
@@ -81,6 +115,17 @@ bool FillNotificationHandle(notification_h n, const NotificationParameters& p) {
 
   if (!p.sub_icon_path.empty()) {
     if (!SetImage(n, NOTIFICATION_IMAGE_TYPE_ICON_SUB, p.sub_icon_path))
+      return false;
+  }
+
+  if (!p.led_color.empty()) {
+    if (!SetLedColor(n, p.led_color))
+      return false;
+  }
+
+  if (p.led_on_period || p.led_off_period) {
+    if (notification_set_led_time_period(n, p.led_on_period, p.led_off_period)
+        != NOTIFICATION_ERROR_NONE)
       return false;
   }
 

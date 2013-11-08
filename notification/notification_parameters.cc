@@ -17,10 +17,14 @@ NotificationParameters ReadNotificationParameters(const picojson::value& v) {
 
   if (params.status_type == "PROGRESS") {
     GetStringFromJSONValue(v.get("progressType"), &params.progress_type);
-    params.progress_value = v.get("progressValue").get<double>();
+    GetULongFromJSONValue(v.get("progressValue"), &params.progress_value);
   }
 
   GetStringFromJSONValue(v.get("subIconPath"), &params.sub_icon_path);
+
+  GetStringFromJSONValue(v.get("ledColor"), &params.led_color);
+  GetULongFromJSONValue(v.get("ledOnPeriod"), &params.led_on_period);
+  GetULongFromJSONValue(v.get("ledOffPeriod"), &params.led_off_period);
 
   GetStringFromJSONValue(v.get("backgroundImagePath"),
                          &params.background_image_path);

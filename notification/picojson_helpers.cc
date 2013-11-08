@@ -35,3 +35,9 @@ void GetStringFromJSONValue(const picojson::value& v, std::string* result) {
   }
   *result = v.to_str();
 }
+
+void GetULongFromJSONValue(const picojson::value& v, uint64_t* result) {
+  if (!result || !v.is<double>())
+    return;
+  *result = v.get<double>();
+}
