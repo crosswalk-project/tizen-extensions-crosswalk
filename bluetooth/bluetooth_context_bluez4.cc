@@ -262,6 +262,7 @@ void BluetoothContext::OnGotAdapterProperties(GObject*, GAsyncResult* res) {
   GVariant* result = g_dbus_proxy_call_finish(adapter_proxy_, res, &error);
 
   if (!result) {
+    AdapterSendGetDefaultAdapterReply();
     g_printerr("\n\nError Got DefaultAdapter Properties: %s\n", error->message);
     g_error_free(error);
     return;
@@ -309,19 +310,7 @@ void BluetoothContext::OnGotAdapterProperties(GObject*, GAsyncResult* res) {
 
   PostMessage(picojson::value(o));
 
-  // We didn't have the information when getDefaultAdapter was called,
-  // replying now.
-  if (!default_adapter_reply_id_.empty()) {
-    o.clear();
-
-    o["reply_id"] = picojson::value(default_adapter_reply_id_);
-    default_adapter_reply_id_.clear();
-
-    is_js_context_initialized_ = true;
-
-    AdapterInfoToValue(o);
-    SetSyncReply(picojson::value(o));
-  }
+  AdapterSendGetDefaultAdapterReply();
 
   auto map_it = callbacks_map_.find("Powered");
   if (map_it != callbacks_map_.end()) {
@@ -375,6 +364,7 @@ void BluetoothContext::OnAdapterProxyCreated(GObject*, GAsyncResult* res) {
   adapter_proxy_ = g_dbus_proxy_new_for_bus_finish(res, &error);
 
   if (!adapter_proxy_) {
+    AdapterSendGetDefaultAdapterReply();
     g_printerr("\n\n## adapter_proxy_ creation error: %s\n", error->message);
     g_error_free(error);
     return;
@@ -404,6 +394,7 @@ void BluetoothContext::OnManagerCreated(GObject*, GAsyncResult* res) {
   manager_proxy_ = g_dbus_proxy_new_for_bus_finish(res, &err);
 
   if (!manager_proxy_) {
+    AdapterSendGetDefaultAdapterReply();
     g_printerr("## Manager Proxy creation error: %s\n", err->message);
     g_error_free(err);
     return;
@@ -425,6 +416,8 @@ void BluetoothContext::OnBluetoothServiceAppeared(GDBusConnection* connection,
                                                   void* user_data) {
   BluetoothContext* handler = reinterpret_cast<BluetoothContext*>(user_data);
 
+  if (handler->manager_proxy_)
+    return;
 
   g_dbus_proxy_new_for_bus(G_BUS_TYPE_SYSTEM,
                            G_DBUS_PROXY_FLAGS_NONE,
@@ -452,6 +445,8 @@ void BluetoothContext::OnBluetoothServiceVanished(GDBusConnection* connection,
     g_object_unref(handler->adapter_proxy_);
     handler->adapter_proxy_ = 0;
   }
+
+  handler->AdapterSendGetDefaultAdapterReply();
 }
 
 void BluetoothContext::AdapterSetPowered(const picojson::value& msg) {
@@ -499,6 +494,7 @@ void BluetoothContext::OnGotDefaultAdapterPath(GObject*, GAsyncResult* res) {
   GVariant* result = g_dbus_proxy_call_finish(manager_proxy_, res, &error);
 
   if (!result) {
+    AdapterSendGetDefaultAdapterReply();
     g_printerr("\n\nError Got DefaultAdapter Path: %s\n", error->message);
     g_error_free(error);
     return;
@@ -644,34 +640,28 @@ void BluetoothContext::PlatformInitialize() {
                                     OnBluetoothServiceAppeared,
                                     OnBluetoothServiceVanished,
                                     this, NULL);
+
+  g_dbus_proxy_new_for_bus(G_BUS_TYPE_SYSTEM,
+                           G_DBUS_PROXY_FLAGS_DO_NOT_AUTO_START,
+                           NULL, /* GDBusInterfaceInfo */
+                           "org.bluez",
+                           "/",
+                           "org.bluez.Manager",
+                           all_pending_, /* GCancellable */
+                           OnManagerCreatedThunk,
+                           CancellableWrap(all_pending_, this));
 }
 
 void BluetoothContext::HandleGetDefaultAdapter(const picojson::value& msg) {
-  if (!adapter_proxy_ && adapter_info_.empty()) {
-    // Initialize with a dummy value, so the client is able to have an adapter
-    // in which to call setPowered(). The correct value will be retrieved when
-    // bluetoothd appears, and an AdapterUpdated() message will be sent.
-    adapter_info_["Address"] = "00:00:00:00:00";
-  }
+  default_adapter_reply_id_ = msg.get("reply_id").to_str();
 
   // We still don't have the information. It was requested during
   // initialization, so it should arrive eventually.
   if (adapter_info_.empty()) {
-    default_adapter_reply_id_ = msg.get("reply_id").to_str();
     return;
   }
 
-  picojson::value::object o;
-
-  o["reply_id"] = picojson::value(msg.get("reply_id").to_str());
-  AdapterInfoToValue(o);
-
-  // This is the JS API entry point, so we should clean our message queue
-  // on the next PostMessage call.
-  if (!is_js_context_initialized_)
-    is_js_context_initialized_ = true;
-
-  SetSyncReply(picojson::value(o));
+  AdapterSendGetDefaultAdapterReply();
 }
 
 void BluetoothContext::DeviceFound(std::string address,

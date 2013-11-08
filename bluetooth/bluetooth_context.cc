@@ -155,8 +155,9 @@ void BluetoothContext::FlushPendingMessages() {
 void BluetoothContext::AdapterInfoToValue(picojson::value::object& o) {
   o["cmd"] = picojson::value("");
 
+  // Sending a dummy adapter, so JS can call setPowered(true) on it.
   if (adapter_info_.empty()) {
-    o["error"] = picojson::value(static_cast<double>(1));
+    o["address"] = picojson::value("00:00:00:00:00");
     return;
   }
 
@@ -170,6 +171,24 @@ void BluetoothContext::AdapterInfoToValue(picojson::value::object& o) {
   o["visible"] = picojson::value(visible);
 
   o["error"] = picojson::value(static_cast<double>(0));
+}
+
+void BluetoothContext::AdapterSendGetDefaultAdapterReply() {
+  if (default_adapter_reply_id_.empty())
+    return;
+
+  picojson::value::object o;
+  o["reply_id"] = picojson::value(default_adapter_reply_id_);
+  AdapterInfoToValue(o);
+
+  // This is the JS API entry point, so we should clean our message queue
+  // on the next PostMessage call.
+  if (!is_js_context_initialized_)
+    is_js_context_initialized_ = true;
+
+  SetSyncReply(picojson::value(o));
+
+  default_adapter_reply_id_.clear();
 }
 
 void BluetoothContext::PostMessage(picojson::value v) {
