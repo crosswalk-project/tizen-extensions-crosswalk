@@ -5,11 +5,13 @@
 #include "notification/notification_instance_mobile.h"
 
 #include <iostream>
+#include <vector>
 #include "common/picojson.h"
 #include "notification/notification_parameters.h"
 #include "notification/picojson_helpers.h"
 
 namespace {
+const unsigned kMaxThumbnailLength = 4;
 
 void NotificationSetText(notification_h notification,
                          notification_text_type_e type,
@@ -18,9 +20,16 @@ void NotificationSetText(notification_h notification,
       notification, type, text.c_str(), NULL, NOTIFICATION_VARIABLE_TYPE_NONE);
 }
 
-void FillNotificationHandle(notification_h n, const NotificationParameters& p) {
+bool FillNotificationHandle(notification_h n, const NotificationParameters& p) {
   NotificationSetText(n, NOTIFICATION_TEXT_TYPE_TITLE, p.title);
   NotificationSetText(n, NOTIFICATION_TEXT_TYPE_CONTENT, p.content);
+
+  if (!p.icon_path.empty()) {
+    if (notification_set_image(n, NOTIFICATION_IMAGE_TYPE_ICON,
+                               p.icon_path.c_str())
+        != NOTIFICATION_ERROR_NONE)
+      return false;
+  }
 
   if (p.status_type == "PROGRESS") {
     if (p.progress_type == "PERCENTAGE") {
@@ -29,6 +38,38 @@ void FillNotificationHandle(notification_h n, const NotificationParameters& p) {
       notification_set_size(n, p.progress_value);
     }
   }
+
+  if (!p.sub_icon_path.empty()) {
+    if (notification_set_image(n, NOTIFICATION_IMAGE_TYPE_ICON_SUB,
+                               p.sub_icon_path.c_str())
+        != NOTIFICATION_ERROR_NONE)
+      return false;
+  }
+
+  if (!p.background_image_path.empty()) {
+    if (notification_set_image(n, NOTIFICATION_IMAGE_TYPE_BACKGROUND,
+                               p.background_image_path.c_str())
+        != NOTIFICATION_ERROR_NONE)
+      return false;
+  }
+
+  if (!p.thumbnails.empty()) {
+    const notification_image_type_e thumbnailList[] = {
+      NOTIFICATION_IMAGE_TYPE_LIST_1,
+      NOTIFICATION_IMAGE_TYPE_LIST_2,
+      NOTIFICATION_IMAGE_TYPE_LIST_3,
+      NOTIFICATION_IMAGE_TYPE_LIST_4 };
+
+    for (unsigned i = 0; i < p.thumbnails.size(); i++) {
+      if (i < kMaxThumbnailLength) {
+        if (notification_set_image(n, thumbnailList[i], p.thumbnails[i].c_str())
+            != NOTIFICATION_ERROR_NONE)
+          return false;
+      }
+    }
+  }
+
+  return true;
 }
 
 const char kSerializedNull[] = "null";
@@ -73,7 +114,10 @@ void NotificationInstanceMobile::HandlePost(const picojson::value& msg) {
     type = NOTIFICATION_TYPE_NOTI;
 
   notification_h notification = manager_->CreateNotification(type);
-  FillNotificationHandle(notification, params);
+  if (!FillNotificationHandle(notification, params)) {
+    SendSyncReply(kSerializedNull);
+    return;
+  }
 
   int id = manager_->PostNotification(notification, this);
   if (!id) {

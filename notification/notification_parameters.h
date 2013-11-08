@@ -6,6 +6,7 @@
 #define NOTIFICATION_NOTIFICATION_PARAMETERS_H_
 
 #include <string>
+#include <vector>
 
 namespace picojson {
 class value;
@@ -17,8 +18,15 @@ struct NotificationParameters {
   std::string title;
   std::string content;
 
+  std::string icon_path;
+
   std::string progress_type;
   int progress_value;
+
+  std::string sub_icon_path;
+
+  std::string background_image_path;
+  std::vector<std::string> thumbnails;
 };
 
 NotificationParameters ReadNotificationParameters(const picojson::value& v);

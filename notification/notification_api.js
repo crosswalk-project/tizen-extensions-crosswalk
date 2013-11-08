@@ -16,8 +16,12 @@ var NOTIFICATION_PROPERTIES = [
   'statusType',
   'title',
   'content',
+  'iconPath',
   'progressType',
-  'progressValue'
+  'progressValue',
+  'subIconPath',
+  'backgroundImagePath',
+  'thumbnails'
 ];
 
 function extractNotificationProperties(notification) {
@@ -176,7 +180,8 @@ exports.post = function(notification) {
     console.log('tizen.notification.post(): notification ' + notification.id + ' already posted.');
     return;
   }
-  notificationCenter.postNotification(notification);
+  if (!notificationCenter.postNotification(notification))
+    throw new tizen.WebAPIException(tizen.WebAPIException.UNKNOWN_ERR);
 };
 
 exports.remove = function(notificationId) {
