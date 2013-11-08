@@ -20,14 +20,54 @@ void NotificationSetText(notification_h notification,
       notification, type, text.c_str(), NULL, NOTIFICATION_VARIABLE_TYPE_NONE);
 }
 
+bool SetImage(notification_h n, notification_image_type_e type,
+              const std::string& imagePath) {
+  char* oldImgPath = NULL;
+  if (notification_get_image(n, type, &oldImgPath) != NOTIFICATION_ERROR_NONE)
+    return false;
+
+  if (oldImgPath && imagePath == oldImgPath)
+      return true;
+
+  if (notification_set_image(n, type, imagePath.c_str())
+      != NOTIFICATION_ERROR_NONE)
+    return false;
+  return true;
+}
+
+bool SetThumbnail(notification_h n, const std::vector<std::string>& thumbs) {
+  const notification_image_type_e thumbnailList[] = {
+    NOTIFICATION_IMAGE_TYPE_LIST_1,
+    NOTIFICATION_IMAGE_TYPE_LIST_2,
+    NOTIFICATION_IMAGE_TYPE_LIST_3,
+    NOTIFICATION_IMAGE_TYPE_LIST_4 };
+
+  unsigned thumbsLength = thumbs.size();
+  if (thumbsLength > kMaxThumbnailLength)
+    thumbsLength = kMaxThumbnailLength;
+
+  for (unsigned i = 0; i < thumbsLength; i++) {
+    char* oldThumb = NULL;
+    if (notification_get_image(n, thumbnailList[i], &oldThumb)
+        != NOTIFICATION_ERROR_NONE)
+      return false;
+
+    if (oldThumb && thumbs[i] == oldThumb)
+        continue;
+
+    if (notification_set_image(n, thumbnailList[i], thumbs[i].c_str())
+        != NOTIFICATION_ERROR_NONE)
+      return false;
+  }
+  return true;
+}
+
 bool FillNotificationHandle(notification_h n, const NotificationParameters& p) {
   NotificationSetText(n, NOTIFICATION_TEXT_TYPE_TITLE, p.title);
   NotificationSetText(n, NOTIFICATION_TEXT_TYPE_CONTENT, p.content);
 
   if (!p.icon_path.empty()) {
-    if (notification_set_image(n, NOTIFICATION_IMAGE_TYPE_ICON,
-                               p.icon_path.c_str())
-        != NOTIFICATION_ERROR_NONE)
+    if (!SetImage(n, NOTIFICATION_IMAGE_TYPE_ICON, p.icon_path))
       return false;
   }
 
@@ -40,33 +80,19 @@ bool FillNotificationHandle(notification_h n, const NotificationParameters& p) {
   }
 
   if (!p.sub_icon_path.empty()) {
-    if (notification_set_image(n, NOTIFICATION_IMAGE_TYPE_ICON_SUB,
-                               p.sub_icon_path.c_str())
-        != NOTIFICATION_ERROR_NONE)
+    if (!SetImage(n, NOTIFICATION_IMAGE_TYPE_ICON_SUB, p.sub_icon_path))
       return false;
   }
 
   if (!p.background_image_path.empty()) {
-    if (notification_set_image(n, NOTIFICATION_IMAGE_TYPE_BACKGROUND,
-                               p.background_image_path.c_str())
-        != NOTIFICATION_ERROR_NONE)
+    if (!SetImage(n, NOTIFICATION_IMAGE_TYPE_BACKGROUND,
+                  p.background_image_path))
       return false;
   }
 
   if (!p.thumbnails.empty()) {
-    const notification_image_type_e thumbnailList[] = {
-      NOTIFICATION_IMAGE_TYPE_LIST_1,
-      NOTIFICATION_IMAGE_TYPE_LIST_2,
-      NOTIFICATION_IMAGE_TYPE_LIST_3,
-      NOTIFICATION_IMAGE_TYPE_LIST_4 };
-
-    for (unsigned i = 0; i < p.thumbnails.size(); i++) {
-      if (i < kMaxThumbnailLength) {
-        if (notification_set_image(n, thumbnailList[i], p.thumbnails[i].c_str())
-            != NOTIFICATION_ERROR_NONE)
-          return false;
-      }
-    }
+    if (!SetThumbnail(n, p.thumbnails))
+      return false;
   }
 
   return true;
