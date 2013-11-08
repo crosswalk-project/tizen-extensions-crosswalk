@@ -4,25 +4,26 @@
 
 #include "notification/notification_parameters.h"
 
-#include "common/picojson.h"
+#include "notification/picojson_helpers.h"
 
 NotificationParameters ReadNotificationParameters(const picojson::value& v) {
   NotificationParameters params;
-  params.status_type = v.get("statusType").to_str();
+  GetStringFromJSONValue(v.get("statusType"), &params.status_type);
 
-  params.title = v.get("title").to_str();
-  params.content = v.get("content").to_str();
+  GetStringFromJSONValue(v.get("title"), &params.title);
+  GetStringFromJSONValue(v.get("content"), &params.content);
 
-  params.icon_path = v.get("iconPath").to_str();
+  GetStringFromJSONValue(v.get("iconPath"), &params.icon_path);
 
   if (params.status_type == "PROGRESS") {
-    params.progress_type = v.get("progressType").to_str();
+    GetStringFromJSONValue(v.get("progressType"), &params.progress_type);
     params.progress_value = v.get("progressValue").get<double>();
   }
 
-  params.sub_icon_path = v.get("subIconPath").to_str();
+  GetStringFromJSONValue(v.get("subIconPath"), &params.sub_icon_path);
 
-  params.background_image_path = v.get("backgroundImagePath").to_str();
+  GetStringFromJSONValue(v.get("backgroundImagePath"),
+                         &params.background_image_path);
 
   picojson::array t = v.get("thumbnails").get<picojson::array>();
   for (picojson::array::iterator iter = t.begin(); iter != t.end(); ++iter)

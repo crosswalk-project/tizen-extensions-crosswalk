@@ -13,5 +13,6 @@ picojson::value ParseJSONMessage(const char* message);
 picojson::value JSONValueFromInt(int value);
 
 bool GetIntFromJSONValue(const picojson::value& v, int* result);
+void GetStringFromJSONValue(const picojson::value& v, std::string* result);
 
 #endif  // NOTIFICATION_PICOJSON_HELPERS_H_

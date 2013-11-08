@@ -25,3 +25,13 @@ bool GetIntFromJSONValue(const picojson::value& v, int* result) {
   *result = v.get<double>();
   return true;
 }
+
+void GetStringFromJSONValue(const picojson::value& v, std::string* result) {
+  if (!result)
+    return;
+  if (v.is<picojson::null>() || !v.is<std::string>()) {
+    *result = "";
+     return;
+  }
+  *result = v.to_str();
+}
