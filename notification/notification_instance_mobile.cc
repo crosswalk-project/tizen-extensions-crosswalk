@@ -48,6 +48,37 @@ bool SetImage(notification_h n, notification_image_type_e type,
   return true;
 }
 
+bool SetSound(notification_h n, const std::string& notificationType,
+              const std::string& soundPath) {
+  if (soundPath.empty() || soundPath == "null") {
+    notification_sound_type_e type = NOTIFICATION_SOUND_TYPE_DEFAULT;
+    if (notificationType == "ONGOING" || notificationType == "PROGRESS")
+      type = NOTIFICATION_SOUND_TYPE_NONE;
+
+    if (notification_set_sound(n, type, NULL) != NOTIFICATION_ERROR_NONE)
+      return false;
+    return true;
+  }
+
+  const char* oldSoundPath = NULL;
+  notification_sound_type_e type = NOTIFICATION_SOUND_TYPE_NONE;
+
+  if (notification_get_sound(n, &type, &oldSoundPath)
+      != NOTIFICATION_ERROR_NONE)
+    return false;
+
+  if (oldSoundPath && type == NOTIFICATION_SOUND_TYPE_USER_DATA) {
+    if (soundPath == oldSoundPath)
+      return true;
+  }
+
+  if (notification_set_sound(n, NOTIFICATION_SOUND_TYPE_USER_DATA,
+                             soundPath.c_str())
+      != NOTIFICATION_ERROR_NONE)
+    return false;
+  return true;
+}
+
 bool SetLedColor(notification_h n, const std::string& ledColor) {
   std::string color = ledColor;
   notification_led_op_e type = NOTIFICATION_LED_OP_OFF;
@@ -117,6 +148,9 @@ bool FillNotificationHandle(notification_h n, const NotificationParameters& p) {
     if (!SetImage(n, NOTIFICATION_IMAGE_TYPE_ICON_SUB, p.sub_icon_path))
       return false;
   }
+
+  if (!SetSound(n, p.status_type, p.sound_path))
+    return false;
 
   if (!p.led_color.empty()) {
     if (!SetLedColor(n, p.led_color))

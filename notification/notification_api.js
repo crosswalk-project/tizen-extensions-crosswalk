@@ -17,6 +17,7 @@ var NOTIFICATION_PROPERTIES = [
   'title',
   'content',
   'iconPath',
+  'soundPath',
   'progressType',
   'progressValue',
   'subIconPath',

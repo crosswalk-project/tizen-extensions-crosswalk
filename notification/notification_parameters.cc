@@ -15,6 +15,8 @@ NotificationParameters ReadNotificationParameters(const picojson::value& v) {
 
   GetStringFromJSONValue(v.get("iconPath"), &params.icon_path);
 
+  GetStringFromJSONValue(v.get("soundPath"), &params.sound_path);
+
   if (params.status_type == "PROGRESS") {
     GetStringFromJSONValue(v.get("progressType"), &params.progress_type);
     GetULongFromJSONValue(v.get("progressValue"), &params.progress_value);

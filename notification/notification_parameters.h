@@ -20,6 +20,8 @@ struct NotificationParameters {
 
   std::string icon_path;
 
+  std::string sound_path;
+
   std::string progress_type;
   uint64_t progress_value;
 
