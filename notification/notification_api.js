@@ -144,7 +144,7 @@ tizen.StatusNotification = function(statusType, title, dict) {
   this.title = title;
 
   defineReadOnlyProperty(this, 'id', undefined);
-  defineReadOnlyProperty(this, 'postedTime', null);
+  defineReadOnlyProperty(this, 'postedTime', undefined);
   defineReadOnlyProperty(this, 'type', 'STATUS');
 
   if (['SIMPLE', 'THUMBNAIL', 'ONGOING', 'PROGRESS'].indexOf(statusType) < -1)
