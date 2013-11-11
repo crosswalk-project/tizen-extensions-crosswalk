@@ -41,3 +41,9 @@ void GetULongFromJSONValue(const picojson::value& v, uint64_t* result) {
     return;
   *result = v.get<double>();
 }
+
+void GetBoolFromJSONValue(const picojson::value& v, bool* result) {
+  if (!result || !v.is<bool>())
+    return;
+  *result = v.evaluate_as_boolean();
+}

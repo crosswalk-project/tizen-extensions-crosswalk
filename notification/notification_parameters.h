@@ -21,6 +21,7 @@ struct NotificationParameters {
   std::string icon_path;
 
   std::string sound_path;
+  bool vibration;
 
   std::string progress_type;
   uint64_t progress_value;

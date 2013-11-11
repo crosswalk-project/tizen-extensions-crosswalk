@@ -18,6 +18,7 @@ var NOTIFICATION_PROPERTIES = [
   'content',
   'iconPath',
   'soundPath',
+  'vibration',
   'progressType',
   'progressValue',
   'subIconPath',

@@ -79,6 +79,29 @@ bool SetSound(notification_h n, const std::string& notificationType,
   return true;
 }
 
+bool SetVibration(notification_h n, const bool& vibration) {
+  notification_vibration_type_e type;
+  if (notification_get_vibration(n, &type,  NULL) != NOTIFICATION_ERROR_NONE)
+    return false;
+
+  bool isVibrating = false;
+  if (type == NOTIFICATION_VIBRATION_TYPE_DEFAULT
+      || type == NOTIFICATION_VIBRATION_TYPE_USER_DATA)
+    isVibrating = true;
+
+  if (isVibrating == vibration)
+    return true;
+
+  if (vibration)
+    type = NOTIFICATION_VIBRATION_TYPE_DEFAULT;
+  else
+    type = NOTIFICATION_VIBRATION_TYPE_NONE;
+
+  if (notification_set_vibration(n, type , NULL) != NOTIFICATION_ERROR_NONE)
+    return false;
+  return true;
+}
+
 bool SetLedColor(notification_h n, const std::string& ledColor) {
   std::string color = ledColor;
   notification_led_op_e type = NOTIFICATION_LED_OP_OFF;
@@ -150,6 +173,9 @@ bool FillNotificationHandle(notification_h n, const NotificationParameters& p) {
   }
 
   if (!SetSound(n, p.status_type, p.sound_path))
+    return false;
+
+  if (!SetVibration(n, p.vibration))
     return false;
 
   if (!p.led_color.empty()) {
