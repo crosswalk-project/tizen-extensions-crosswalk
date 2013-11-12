@@ -19,8 +19,8 @@ Source4:    %{_examples_package}
 Source5:    %{_system_info_demo_package}
 Source1001: %{name}.manifest
 
-BuildRequires: python
 BuildRequires: pkgconfig(appcore-common)
+BuildRequires: pkgconfig(bluez)
 BuildRequires: pkgconfig(capi-appfw-application)
 BuildRequires: pkgconfig(capi-network-bluetooth)
 BuildRequires: pkgconfig(capi-network-connection)
@@ -32,19 +32,19 @@ BuildRequires: pkgconfig(capi-system-sensor)
 BuildRequires: pkgconfig(capi-system-system-settings)
 BuildRequires: pkgconfig(capi-telephony-sim)
 BuildRequires: pkgconfig(capi-web-favorites)
-# Evas.h is required by capi-web-favorites.
-BuildRequires: pkgconfig(evas)
 BuildRequires: pkgconfig(capi-web-url-download)
 BuildRequires: pkgconfig(dbus-glib-1)
-BuildRequires: pkgconfig(bluez)
+BuildRequires: pkgconfig(evas) # Evas.h is required by capi-web-favorites.
 BuildRequires: pkgconfig(glib-2.0)
 BuildRequires: pkgconfig(libudev)
+BuildRequires: pkgconfig(message-port)
 BuildRequires: pkgconfig(notification)
 BuildRequires: pkgconfig(pkgmgr-info)
 BuildRequires: pkgconfig(pmapi)
+BuildRequires: pkgconfig(vconf)
 BuildRequires: pkgconfig(x11)
 BuildRequires: pkgconfig(xrandr)
-BuildRequires: pkgconfig(vconf)
+BuildRequires: python
 Requires:      crosswalk
 
 %description

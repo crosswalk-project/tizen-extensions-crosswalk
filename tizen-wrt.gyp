@@ -23,6 +23,7 @@
           'dependencies': [
             'download/download.gyp:*',
             'bookmark/bookmark.gyp:*',
+            'messageport/messageport.gyp:*',
           ],
         }],
       ],
