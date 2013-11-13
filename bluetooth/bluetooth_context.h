@@ -118,6 +118,8 @@ class BluetoothContext {
 
   void AdapterInfoToValue(picojson::value::object& o);
 
+  void AdapterSendGetDefaultAdapterReply();
+
   ContextAPI* api_;
   std::string discover_callback_id_;
   std::string stop_discovery_callback_id_;
