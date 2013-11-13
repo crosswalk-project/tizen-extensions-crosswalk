@@ -21,7 +21,7 @@ struct NotificationParameters {
   std::string icon_path;
 
   std::string progress_type;
-  int progress_value;
+  uint64_t progress_value;
 
   std::string sub_icon_path;
 
