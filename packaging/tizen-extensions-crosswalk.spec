@@ -34,7 +34,8 @@ BuildRequires: pkgconfig(capi-telephony-sim)
 BuildRequires: pkgconfig(capi-web-favorites)
 BuildRequires: pkgconfig(capi-web-url-download)
 BuildRequires: pkgconfig(dbus-glib-1)
-BuildRequires: pkgconfig(evas) # Evas.h is required by capi-web-favorites.
+# Evas.h is required by capi-web-favorites.
+BuildRequires: pkgconfig(evas)
 BuildRequires: pkgconfig(glib-2.0)
 BuildRequires: pkgconfig(libudev)
 BuildRequires: pkgconfig(message-port)
