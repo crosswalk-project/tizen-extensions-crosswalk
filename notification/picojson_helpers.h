@@ -8,26 +8,13 @@
 #include <string>
 #include "common/picojson.h"
 
-picojson::value ParseJSONMessage(const char* message) {
-  picojson::value result;
-  std::string err;
-  picojson::parse(result, message, message + strlen(message), &err);
-  if (!err.empty()) {
-    std::cerr << "Notification: error parsing JSON message '"
-              << err << "'\n";
-  }
-  return result;
-}
+picojson::value ParseJSONMessage(const char* message);
 
-picojson::value JSONValueFromInt(int value) {
-  return picojson::value(static_cast<double>(value));
-}
+picojson::value JSONValueFromInt(int value);
 
-bool GetIntFromJSONValue(const picojson::value& v, int* result) {
-  if (!result || !v.is<double>())
-    return false;
-  *result = v.get<double>();
-  return true;
-}
+bool GetIntFromJSONValue(const picojson::value& v, int* result);
+void GetStringFromJSONValue(const picojson::value& v, std::string* result);
+void GetULongFromJSONValue(const picojson::value& v, uint64_t* result);
+void GetBoolFromJSONValue(const picojson::value& v, bool* result);
 
 #endif  // NOTIFICATION_PICOJSON_HELPERS_H_

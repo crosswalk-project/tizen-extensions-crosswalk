@@ -17,9 +17,14 @@ var NOTIFICATION_PROPERTIES = [
   'title',
   'content',
   'iconPath',
+  'soundPath',
+  'vibration',
   'progressType',
   'progressValue',
   'subIconPath',
+  'ledColor',
+  'ledOnPeriod',
+  'ledOffPeriod',
   'backgroundImagePath',
   'thumbnails'
 ];
@@ -166,7 +171,7 @@ tizen.StatusNotification = function(statusType, title, dict) {
   this.subIconPath = dict.subIconPath || null;
   // FIXME(cmarcelo): enforce maximum of 2 elements in the array.
   this.detailInfo = dict.detailInfo || [];
-  this.ledColor = dict.ledColor;
+  this.ledColor = dict.ledColor || null;
   this.ledOnPeriod = dict.ledOnPeriod || 0;
   this.ledOffPeriod = dict.ledOffPeriod || 0;
   this.backgroundImagePath = dict.backgroundImagePath || null;
