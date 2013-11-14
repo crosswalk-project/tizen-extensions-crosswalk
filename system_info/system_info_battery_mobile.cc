@@ -14,6 +14,8 @@ SysInfoBattery::SysInfoBattery()
     : level_(0.0),
       charging_(false) {}
 
+SysInfoBattery::~SysInfoBattery() {}
+
 void SysInfoBattery::Get(picojson::value& error,
                          picojson::value& data) {
   int level = 0;
