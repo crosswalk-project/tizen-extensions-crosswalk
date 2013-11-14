@@ -121,7 +121,7 @@ gboolean SysInfoBattery::OnUpdateTimeout(gpointer user_data) {
         picojson::value("BATTERY"));
     system_info::SetPicoJsonObjectValue(output, "data", data);
 
-    PostMessageToListeners(output);
+    instance->PostMessageToListeners(output);
   }
 
   return TRUE;

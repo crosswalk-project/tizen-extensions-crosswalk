@@ -27,6 +27,7 @@ class SysInfoBattery : public SysInfoObject {
     return instance;
   }
 
+  ~SysInfoBattery();
   void Get(picojson::value& error, picojson::value& data);
   void StartListening();
   void StopListening();
