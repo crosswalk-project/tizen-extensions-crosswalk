@@ -15,6 +15,7 @@ picojson::value JSONValueFromInt(int value);
 bool GetIntFromJSONValue(const picojson::value& v, int* result);
 void GetStringFromJSONValue(const picojson::value& v, std::string* result);
 bool GetULongFromJSONValue(const picojson::value& v, uint64_t* result);
+bool GetLongFromJSONValue(const picojson::value& v, int64_t* result);
 void GetBoolFromJSONValue(const picojson::value& v, bool* result);
 
 #endif  // NOTIFICATION_PICOJSON_HELPERS_H_

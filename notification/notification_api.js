@@ -21,6 +21,7 @@ var NOTIFICATION_PROPERTIES = [
   'vibration',
   'progressType',
   'progressValue',
+  'number',
   'subIconPath',
   'ledColor',
   'ledOnPeriod',

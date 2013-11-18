@@ -23,6 +23,9 @@ NotificationParameters ReadNotificationParameters(const picojson::value& v) {
     GetULongFromJSONValue(v.get("progressValue"), &params.progress_value);
   }
 
+  if (!GetLongFromJSONValue(v.get("number"), &params.number))
+    params.number = 0;
+
   GetStringFromJSONValue(v.get("subIconPath"), &params.sub_icon_path);
 
   GetStringFromJSONValue(v.get("ledColor"), &params.led_color);

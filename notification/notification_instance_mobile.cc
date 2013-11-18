@@ -33,6 +33,22 @@ bool IsColorFormat(const std::string& color) {
   return true;
 }
 
+bool ConvertIntToString(const int64_t& number, std::string* result) {
+  std::stringstream stream;
+  stream << number;
+  if (stream.fail())
+    return false;
+  *result = stream.str();
+  return true;
+}
+
+bool ConvertStringToInt(const char* string, int64_t* result) {
+  *result = strtoll(string, NULL, 10);
+  if (errno == ERANGE)
+    return false;
+  return true;
+}
+
 bool SetImage(notification_h n, notification_image_type_e type,
               const std::string& imagePath) {
   char* oldImgPath = NULL;
@@ -102,6 +118,33 @@ bool SetVibration(notification_h n, const bool& vibration) {
   return true;
 }
 
+bool SetNumber(notification_h n, const int64_t& number) {
+  char *oldNumberStr = NULL;
+  if (notification_get_text(n, NOTIFICATION_TEXT_TYPE_EVENT_COUNT,
+                            &oldNumberStr)
+      != NOTIFICATION_ERROR_NONE)
+    return false;
+
+  if (oldNumberStr) {
+    int64_t oldNumber;
+    if (!ConvertStringToInt(oldNumberStr, &oldNumber))
+      return false;
+    if (number == oldNumber)
+      return true;
+  }
+
+  std::string numberStr;
+  if (!ConvertIntToString(number, &numberStr))
+    return false;
+
+  if (notification_set_text(n, NOTIFICATION_TEXT_TYPE_EVENT_COUNT,
+                            numberStr.c_str(), NULL,
+                            NOTIFICATION_VARIABLE_TYPE_NONE)
+      != NOTIFICATION_ERROR_NONE)
+    return false;
+  return true;
+}
+
 bool SetLedColor(notification_h n, const std::string& ledColor) {
   std::string color = ledColor;
   notification_led_op_e type = NOTIFICATION_LED_OP_OFF;
@@ -165,6 +208,11 @@ bool FillNotificationHandle(notification_h n, const NotificationParameters& p) {
     } else if (p.progress_type == "BYTE") {
       notification_set_size(n, p.progress_value);
     }
+  }
+
+  if (p.number) {
+    if (!SetNumber(n, p.number))
+      return false;
   }
 
   if (!p.sub_icon_path.empty()) {
