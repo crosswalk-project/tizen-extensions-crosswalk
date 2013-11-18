@@ -26,8 +26,10 @@ NotificationParameters ReadNotificationParameters(const picojson::value& v) {
   GetStringFromJSONValue(v.get("subIconPath"), &params.sub_icon_path);
 
   GetStringFromJSONValue(v.get("ledColor"), &params.led_color);
-  GetULongFromJSONValue(v.get("ledOnPeriod"), &params.led_on_period);
-  GetULongFromJSONValue(v.get("ledOffPeriod"), &params.led_off_period);
+  if (!GetULongFromJSONValue(v.get("ledOnPeriod"), &params.led_on_period))
+    params.led_on_period = 0;
+  if (!GetULongFromJSONValue(v.get("ledOffPeriod"), &params.led_off_period))
+    params.led_off_period = 0;
 
   GetStringFromJSONValue(v.get("backgroundImagePath"),
                          &params.background_image_path);
