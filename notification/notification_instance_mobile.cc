@@ -14,6 +14,7 @@
 
 namespace {
 const unsigned kMaxThumbnailLength = 4;
+const unsigned kMaxDetailInfoLength = 2;
 
 void NotificationSetText(notification_h notification,
                          notification_text_type_e type,
@@ -114,6 +115,46 @@ bool SetVibration(notification_h n, const bool& vibration) {
     type = NOTIFICATION_VIBRATION_TYPE_NONE;
 
   if (notification_set_vibration(n, type , NULL) != NOTIFICATION_ERROR_NONE)
+    return false;
+  return true;
+}
+
+bool SetText(notification_h n, notification_text_type_e type,
+             const std::string& text) {
+  char* oldText = NULL;
+  if (notification_get_text(n, type, &oldText)
+      != NOTIFICATION_ERROR_NONE)
+    return false;
+
+  if (oldText && text == oldText)
+    return true;
+
+  if (notification_set_text(n, type, text.c_str(), NULL,
+                            NOTIFICATION_VARIABLE_TYPE_NONE)
+      != NOTIFICATION_ERROR_NONE)
+    return false;
+  return true;
+}
+
+bool SetDetailInfoText(notification_h n,
+                       const notification_text_type_e info_type,
+                       const notification_text_type_e subinfo_type,
+                       const DetailInfo& detail) {
+  if (detail.is_null)
+    return true;
+  if (!SetText(n, info_type, detail.main_text))
+    return false;
+  if (!SetText(n, subinfo_type, detail.sub_text))
+    return false;
+  return true;
+}
+
+bool SetDetailInfo(notification_h n, const DetailInfo* details) {
+  if (!SetDetailInfoText(n, NOTIFICATION_TEXT_TYPE_INFO_1,
+                         NOTIFICATION_TEXT_TYPE_INFO_SUB_1, details[0]))
+    return false;
+  if (!SetDetailInfoText(n, NOTIFICATION_TEXT_TYPE_INFO_2,
+                         NOTIFICATION_TEXT_TYPE_INFO_SUB_2, details[1]))
     return false;
   return true;
 }
@@ -225,6 +266,12 @@ bool FillNotificationHandle(notification_h n, const NotificationParameters& p) {
 
   if (!SetVibration(n, p.vibration))
     return false;
+
+  if ((!p.detail_info[0].is_null || !p.detail_info[1].is_null) &&
+      p.status_type == "SIMPLE") {
+    if (!SetDetailInfo(n, p.detail_info))
+      return false;
+  }
 
   if (!p.led_color.empty()) {
     if (!SetLedColor(n, p.led_color))

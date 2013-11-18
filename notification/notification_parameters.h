@@ -12,6 +12,13 @@ namespace picojson {
 class value;
 }
 
+struct DetailInfo {
+  std::string main_text;
+  std::string sub_text;
+  bool is_null;
+  DetailInfo() : is_null(true) {}
+};
+
 struct NotificationParameters {
   std::string status_type;
 
@@ -29,6 +36,8 @@ struct NotificationParameters {
   int64_t number;
 
   std::string sub_icon_path;
+
+  DetailInfo detail_info[2];
 
   std::string led_color;
   uint64_t led_on_period;

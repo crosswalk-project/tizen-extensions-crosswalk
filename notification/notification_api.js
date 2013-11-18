@@ -12,6 +12,8 @@ var sendSyncMessage = function(msg) {
   return JSON.parse(extension.internal.sendSyncMessage(JSON.stringify(msg)));
 };
 
+function is_string(value) { return typeof(value) === 'string' || value instanceof String; }
+
 var NOTIFICATION_PROPERTIES = [
   'statusType',
   'title',
@@ -23,6 +25,7 @@ var NOTIFICATION_PROPERTIES = [
   'progressValue',
   'number',
   'subIconPath',
+  'detailInfo',
   'ledColor',
   'ledOnPeriod',
   'ledOffPeriod',
@@ -42,6 +45,16 @@ function extractNotificationProperties(notification) {
 
 function NotificationCenter() {
   this.postedNotifications = [];
+}
+
+function checkDetailInfo(detailInfo) {
+  if (detailInfo === undefined)
+    return [];
+
+  if ((detailInfo[0] !== undefined && !(detailInfo[0] instanceof tizen.NotificationDetailInfo)) ||
+      (detailInfo[1] !== undefined && !(detailInfo[1] instanceof tizen.NotificationDetailInfo)))
+    return [];
+  return detailInfo.length <= 2 ? detailInfo : detailInfo.slice(0, 2);
 }
 
 NotificationCenter.prototype.onNotificationRemoved = function(id) {
@@ -140,7 +153,8 @@ function defineNonNullableProperty(object, key) {
     set: function(k, NewValue) {
       if (NewValue != null)
         this[k] = NewValue;
-    }.bind(object, key + '_') });
+    }.bind(object, key + '_'),
+    enumerable: true });
 }
 
 tizen.NotificationDetailInfo = function(mainText, subText) {
@@ -149,6 +163,11 @@ tizen.NotificationDetailInfo = function(mainText, subText) {
   // the information that the function was called as a constructor.
   if (!this || this.constructor != tizen.NotificationDetailInfo)
     throw new TypeError;
+  if (!(is_string(mainText)))
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+
+  defineNonNullableProperty(this, 'mainText');
+
   this.mainText = mainText;
   this.subText = subText || null;
 };
@@ -181,8 +200,7 @@ tizen.StatusNotification = function(statusType, title, dict) {
   this.progressValue = dict.progressValue !== undefined ? dict.progressValue : null;
   this.number = dict.number || null;
   this.subIconPath = dict.subIconPath || null;
-  // FIXME(cmarcelo): enforce maximum of 2 elements in the array.
-  this.detailInfo = dict.detailInfo || [];
+  this.detailInfo = checkDetailInfo(dict.detailInfo);
   this.ledColor = dict.ledColor || null;
   this.ledOnPeriod_ = dict.ledOnPeriod || 0;
   this.ledOffPeriod_ = dict.ledOffPeriod || 0;
