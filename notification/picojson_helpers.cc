@@ -36,10 +36,18 @@ void GetStringFromJSONValue(const picojson::value& v, std::string* result) {
   *result = v.to_str();
 }
 
-void GetULongFromJSONValue(const picojson::value& v, uint64_t* result) {
+bool GetULongFromJSONValue(const picojson::value& v, uint64_t* result) {
   if (!result || !v.is<double>())
-    return;
+    return false;
   *result = v.get<double>();
+  return true;
+}
+
+bool GetLongFromJSONValue(const picojson::value& v, int64_t* result) {
+  if (!result || !v.is<double>())
+    return false;
+  *result = v.get<double>();
+  return true;
 }
 
 void GetBoolFromJSONValue(const picojson::value& v, bool* result) {

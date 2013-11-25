@@ -14,6 +14,7 @@
 
 namespace {
 const unsigned kMaxThumbnailLength = 4;
+const unsigned kMaxDetailInfoLength = 2;
 
 void NotificationSetText(notification_h notification,
                          notification_text_type_e type,
@@ -30,6 +31,22 @@ bool IsColorFormat(const std::string& color) {
     if (!isxdigit(color[i]))
       return false;
   }
+  return true;
+}
+
+bool ConvertIntToString(const int64_t& number, std::string* result) {
+  std::stringstream stream;
+  stream << number;
+  if (stream.fail())
+    return false;
+  *result = stream.str();
+  return true;
+}
+
+bool ConvertStringToInt(const char* string, int64_t* result) {
+  *result = strtoll(string, NULL, 10);
+  if (errno == ERANGE)
+    return false;
   return true;
 }
 
@@ -102,6 +119,73 @@ bool SetVibration(notification_h n, const bool& vibration) {
   return true;
 }
 
+bool SetText(notification_h n, notification_text_type_e type,
+             const std::string& text) {
+  char* oldText = NULL;
+  if (notification_get_text(n, type, &oldText)
+      != NOTIFICATION_ERROR_NONE)
+    return false;
+
+  if (oldText && text == oldText)
+    return true;
+
+  if (notification_set_text(n, type, text.c_str(), NULL,
+                            NOTIFICATION_VARIABLE_TYPE_NONE)
+      != NOTIFICATION_ERROR_NONE)
+    return false;
+  return true;
+}
+
+bool SetDetailInfoText(notification_h n,
+                       const notification_text_type_e info_type,
+                       const notification_text_type_e subinfo_type,
+                       const DetailInfo& detail) {
+  if (detail.is_null)
+    return true;
+  if (!SetText(n, info_type, detail.main_text))
+    return false;
+  if (!SetText(n, subinfo_type, detail.sub_text))
+    return false;
+  return true;
+}
+
+bool SetDetailInfo(notification_h n, const DetailInfo* details) {
+  if (!SetDetailInfoText(n, NOTIFICATION_TEXT_TYPE_INFO_1,
+                         NOTIFICATION_TEXT_TYPE_INFO_SUB_1, details[0]))
+    return false;
+  if (!SetDetailInfoText(n, NOTIFICATION_TEXT_TYPE_INFO_2,
+                         NOTIFICATION_TEXT_TYPE_INFO_SUB_2, details[1]))
+    return false;
+  return true;
+}
+
+bool SetNumber(notification_h n, const int64_t& number) {
+  char *oldNumberStr = NULL;
+  if (notification_get_text(n, NOTIFICATION_TEXT_TYPE_EVENT_COUNT,
+                            &oldNumberStr)
+      != NOTIFICATION_ERROR_NONE)
+    return false;
+
+  if (oldNumberStr) {
+    int64_t oldNumber;
+    if (!ConvertStringToInt(oldNumberStr, &oldNumber))
+      return false;
+    if (number == oldNumber)
+      return true;
+  }
+
+  std::string numberStr;
+  if (!ConvertIntToString(number, &numberStr))
+    return false;
+
+  if (notification_set_text(n, NOTIFICATION_TEXT_TYPE_EVENT_COUNT,
+                            numberStr.c_str(), NULL,
+                            NOTIFICATION_VARIABLE_TYPE_NONE)
+      != NOTIFICATION_ERROR_NONE)
+    return false;
+  return true;
+}
+
 bool SetLedColor(notification_h n, const std::string& ledColor) {
   std::string color = ledColor;
   notification_led_op_e type = NOTIFICATION_LED_OP_OFF;
@@ -167,6 +251,11 @@ bool FillNotificationHandle(notification_h n, const NotificationParameters& p) {
     }
   }
 
+  if (p.number) {
+    if (!SetNumber(n, p.number))
+      return false;
+  }
+
   if (!p.sub_icon_path.empty()) {
     if (!SetImage(n, NOTIFICATION_IMAGE_TYPE_ICON_SUB, p.sub_icon_path))
       return false;
@@ -177,6 +266,12 @@ bool FillNotificationHandle(notification_h n, const NotificationParameters& p) {
 
   if (!SetVibration(n, p.vibration))
     return false;
+
+  if ((!p.detail_info[0].is_null || !p.detail_info[1].is_null) &&
+      p.status_type == "SIMPLE") {
+    if (!SetDetailInfo(n, p.detail_info))
+      return false;
+  }
 
   if (!p.led_color.empty()) {
     if (!SetLedColor(n, p.led_color))
