@@ -131,6 +131,17 @@ function defineReadOnlyProperty(object, key, value) {
   });
 }
 
+function defineNonNullableProperty(object, key) {
+  Object.defineProperty(object, key, {
+    get: function(k) {
+      return this[k];
+    }.bind(object, key + '_'),
+    set: function(k, NewValue) {
+      if (NewValue != null)
+        this[k] = NewValue;
+    }.bind(object, key + '_') });
+}
+
 tizen.NotificationDetailInfo = function(mainText, subText) {
   // FIXME(cmarcelo): This is a best effort that covers the common
   // cases. Investigate whether we can implement a primitive natively to give us
@@ -146,10 +157,10 @@ tizen.StatusNotification = function(statusType, title, dict) {
   if (!this || this.constructor != tizen.StatusNotification)
     throw new TypeError;
 
-  this.title = title;
+  this.title_ = title;
 
   defineReadOnlyProperty(this, 'id', undefined);
-  defineReadOnlyProperty(this, 'postedTime', null);
+  defineReadOnlyProperty(this, 'postedTime', undefined);
   defineReadOnlyProperty(this, 'type', 'STATUS');
 
   if (['SIMPLE', 'THUMBNAIL', 'ONGOING', 'PROGRESS'].indexOf(statusType) < -1)
@@ -162,20 +173,26 @@ tizen.StatusNotification = function(statusType, title, dict) {
   this.content = dict.content || null;
   this.iconPath = dict.iconPath || null;
   this.soundPath = dict.soundPath || null;
-  this.vibration = Boolean(dict.vibration);
+  this.vibration_ = Boolean(dict.vibration);
   this.appControl = dict.appControl || null;
   this.appId = dict.appId !== undefined ? dict.appId : null;
-  this.progressType = dict.progressType || 'PERCENTAGE';
+  this.progressType_ = dict.progressType || 'PERCENTAGE';
   this.progressValue = dict.progressValue !== undefined ? dict.progressValue : null;
   this.number = dict.number || null;
   this.subIconPath = dict.subIconPath || null;
   // FIXME(cmarcelo): enforce maximum of 2 elements in the array.
   this.detailInfo = dict.detailInfo || [];
   this.ledColor = dict.ledColor || null;
-  this.ledOnPeriod = dict.ledOnPeriod || 0;
-  this.ledOffPeriod = dict.ledOffPeriod || 0;
+  this.ledOnPeriod_ = dict.ledOnPeriod || 0;
+  this.ledOffPeriod_ = dict.ledOffPeriod || 0;
   this.backgroundImagePath = dict.backgroundImagePath || null;
   this.thumbnails = dict.thumbnails || [];
+
+  defineNonNullableProperty(this, 'title');
+  defineNonNullableProperty(this, 'vibration');
+  defineNonNullableProperty(this, 'progressType');
+  defineNonNullableProperty(this, 'ledOnPeriod');
+  defineNonNullableProperty(this, 'ledOffPeriod');
 };
 
 exports.post = function(notification) {
