@@ -5,7 +5,7 @@
 %define _system_info_demo_package tizen-extensions-crosswalk-system-info-demo
 
 Name:       tizen-extensions-crosswalk
-Version:    0.22
+Version:    0.23
 Release:    0
 License:    BSD-3-Clause
 Group:      Development/Libraries
