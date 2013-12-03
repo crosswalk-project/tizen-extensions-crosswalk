@@ -242,7 +242,8 @@ exports.start = function(request, listener) {
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
   }
   requests[request.uid] = request;
-  if (typeof listener != 'undefined') {
+  if (listener !== null) {
+    ensureType(listener, 'object');
     exports.setListener(request.uid, listener);
   }
   postMessage({
