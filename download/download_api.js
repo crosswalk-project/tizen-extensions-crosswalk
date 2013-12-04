@@ -216,10 +216,20 @@ tizen.DownloadRequest = function(url, destination, fileName, networkType) {
     }
   });
 
+  var url_;
+  Object.defineProperty(this, 'url', {
+    get: function() { return this.url_; },
+    set: function(value) {
+      if (value != null) {
+        this.url_ = value;
+      }
+    }
+  });
+  this.url_ = url;
+
   if (!(this instanceof tizen.DownloadRequest)) {
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
   }
-  this.url = url;
   this.uid = ++currentUID;
   this.destination = asValidString(destination);
   this.fileName = asValidString(fileName);
