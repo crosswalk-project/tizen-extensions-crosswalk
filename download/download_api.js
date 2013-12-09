@@ -208,10 +208,8 @@ tizen.DownloadRequest = function(url, destination, fileName, networkType) {
   Object.defineProperty(this, 'networkType', {
     get: function() { return this.networkTypeValue; },
     set: function(type) {
-      if (type in AllowDownloadOnNetworkType) {
+      if (type === null || type in AllowDownloadOnNetworkType) {
         this.networkTypeValue = type;
-      } else {
-        throw new tizen.WebAPIException(tizen.WebAPIException.INVALID_VALUES_ERR);
       }
     }
   });
