@@ -68,7 +68,7 @@ exports.WebAPIException = function(code, message, name) {
 };
 
 for (var value in errors)
-  Object.defineProperty(tizen.WebAPIException, errors[value].type, { value: parseInt(value) });
+  Object.defineProperty(exports.WebAPIException, errors[value].type, { value: parseInt(value) });
 
 exports.WebAPIError = function(code, message, name) {
   var _code, _message, _name;
@@ -96,7 +96,7 @@ exports.WebAPIError = function(code, message, name) {
 };
 
 for (var value in errors)
-  Object.defineProperty(tizen.WebAPIError, errors[value].type, { value: value });
+  Object.defineProperty(exports.WebAPIError, errors[value].type, { value: value });
 
 // NOTE: Stubs for Application. These are needed for running TCT until
 // we have a proper Application API implementation.
