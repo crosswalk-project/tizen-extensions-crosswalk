@@ -18,6 +18,7 @@ Source3:    %{_bluetooth_demo_package}
 Source4:    %{_examples_package}
 Source5:    %{_system_info_demo_package}
 Source1001: %{name}.manifest
+Source1002: %{name}.rules
 
 BuildRequires: pkgconfig(appcore-common)
 BuildRequires: pkgconfig(bluez)
@@ -79,6 +80,7 @@ Tizen Web APIs system info demo implementation using Crosswalk.
 %setup -q
 
 cp %{SOURCE1001} .
+cp %{SOURCE1002} .
 cp %{SOURCE2} .
 cp %{SOURCE3} .
 cp %{SOURCE4} .
@@ -134,6 +136,9 @@ install -p -m 644 demos/system_info/css/*.css %{buildroot}%{_datarootdir}/%{name
 install -p -m 644 demos/system_info/js/*.js %{buildroot}%{_datarootdir}/%{name}/demos/system_info/js
 install -p -m 644 demos/system_info/images/*.png %{buildroot}%{_datarootdir}/%{name}/demos/system_info/images
 
+# SMACK Rules
+install -m 755 -D %{SOURCE1002} %{buildroot}/etc/smack/accesses.d/%{name}.rules
+
 # register to the package manager
 install -m 644 -D %{_examples_package}.xml %{buildroot}%{_manifestdir}/%{_examples_package}.xml
 install -m 644 -D %{_bluetooth_demo_package}.xml %{buildroot}%{_manifestdir}/%{_bluetooth_demo_package}.xml
@@ -147,6 +152,7 @@ install -p -D %{name}.png %{buildroot}%{_desktop_icondir}/%{_system_info_demo_pa
 # %license LICENSE
 %{_bindir}/%{name}
 %{_libdir}/%{name}/libtizen*.so
+/etc/smack/accesses.d/%{name}.rules
 
 %files -n %{_bluetooth_demo_package}
 %{_bindir}/%{_bluetooth_demo_package}
@@ -172,3 +178,9 @@ install -p -D %{name}.png %{buildroot}%{_desktop_icondir}/%{_system_info_demo_pa
 %{_datarootdir}/%{name}/demos/system_info/css/*.css
 %{_datarootdir}/%{name}/demos/system_info/js/*.js
 %{_datarootdir}/%{name}/demos/system_info/images/*.png
+
+
+%post
+# Load SMACK rules. We do it this way because T-E-C is a special case (not a
+# web app with an app id) and so we don't have to wait for the device to reboot.
+%{_bindir}/smackload /etc/smack/accesses.d/%{name}.rules
