@@ -5,6 +5,7 @@
 #include "common/extension.h"
 
 #include <assert.h>
+#include <string.h>
 #include <iostream>
 
 namespace {
@@ -16,6 +17,7 @@ const XW_CoreInterface* g_core = NULL;
 const XW_MessagingInterface* g_messaging = NULL;
 const XW_Internal_SyncMessagingInterface* g_sync_messaging = NULL;
 const XW_Internal_EntryPointsInterface* g_entry_points = NULL;
+const XW_Internal_RuntimeInterface* g_runtime = NULL;
 
 bool InitializeInterfaces(XW_GetInterface get_interface) {
   g_core = reinterpret_cast<const XW_CoreInterface*>(
@@ -47,6 +49,13 @@ bool InitializeInterfaces(XW_GetInterface get_interface) {
   if (!g_entry_points) {
     std::cerr << "NOTE: Entry points interface not available in this version "
               << "of Crosswalk, ignoring entry point data for extensions.\n";
+  }
+
+  g_runtime = reinterpret_cast<const XW_Internal_RuntimeInterface*>(
+      get_interface(XW_INTERNAL_RUNTIME_INTERFACE));
+  if (!g_runtime) {
+    std::cerr << "NOTE: Runtime interface not available in this version "
+              << "of Crosswalk.\n";
   }
 
   return true;
@@ -95,6 +104,17 @@ void Extension::SetJavaScriptAPI(const char* api) {
 void Extension::SetExtraJSEntryPoints(const char** entry_points) {
   if (g_entry_points)
     g_entry_points->SetExtraJSEntryPoints(g_xw_extension, entry_points);
+}
+
+void Extension::GetRuntimeVariableInternal(const char* key, char *value,
+    size_t value_len) {
+  if (!g_runtime) {
+    std::cerr << "Could not obtain browser variable.\n";
+    memcpy(value, "{\"error\": 1}", 1);
+    return;
+  }
+
+  g_runtime->GetRuntimeVariableString(g_xw_extension, key, value, value_len);
 }
 
 Instance* Extension::CreateInstance() {
