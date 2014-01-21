@@ -68,7 +68,7 @@ class Instance {
   void SendSyncReply(const char* reply);
 
   virtual void Initialize() {}
-  virtual void HandleMessage(const char* msg) = 0;
+  virtual void HandleMessage(const char* msg) {};
   virtual void HandleSyncMessage(const char* msg) {}
 
   XW_Instance xw_instance() const { return xw_instance_; }
