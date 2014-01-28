@@ -5,6 +5,8 @@
 #ifndef COMMON_EXTENSION_H_
 #define COMMON_EXTENSION_H_
 
+#include <unistd.h>
+
 // This is a C++ wrapper over Crosswalk Extension C API. It implements once the
 // boilerplate for the common case of mapping XW_Extension and XW_Instance to
 // objects of their own. The wrapper deals automatically with creating and
@@ -17,8 +19,9 @@
 // storage points for extension specific objects, use them for that.
 
 #include "common/XW_Extension.h"
-#include "common/XW_Extension_SyncMessage.h"
 #include "common/XW_Extension_EntryPoints.h"
+#include "common/XW_Extension_Runtime.h"
+#include "common/XW_Extension_SyncMessage.h"
 
 namespace common {
 
@@ -44,6 +47,7 @@ class Extension {
   void SetExtensionName(const char* name);
   void SetJavaScriptAPI(const char* api);
   void SetExtraJSEntryPoints(const char** entry_points);
+  void GetRuntimeVariableInternal(const char* key, char* value, size_t value_len);
 
   virtual Instance* CreateInstance();
 
@@ -68,7 +72,7 @@ class Instance {
   void SendSyncReply(const char* reply);
 
   virtual void Initialize() {}
-  virtual void HandleMessage(const char* msg) = 0;
+  virtual void HandleMessage(const char* msg) {};
   virtual void HandleSyncMessage(const char* msg) {}
 
   XW_Instance xw_instance() const { return xw_instance_; }

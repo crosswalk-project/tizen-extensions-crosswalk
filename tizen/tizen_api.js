@@ -101,7 +101,15 @@ for (var value in errors)
 // NOTE: Stubs for Application. These are needed for running TCT until
 // we have a proper Application API implementation.
 exports.application = {
-  getAppInfo: function() { return { id: 0 } }
+  getAppInfo: function() {
+    var appId = extension.internal.sendSyncMessage(JSON.stringify({
+      'cmd': 'GetRuntimeVariable',
+      'var': 'app_id'
+    }));
+    var json = JSON.parse(appId);
+    if (!json.error) return { id: json };
+    throw new WebAPIException;
+  }
 };
 
 exports.ApplicationControlData = function(key, value) {
