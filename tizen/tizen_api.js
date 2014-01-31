@@ -2,6 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+// Tizen API Specification:
+// https://developer.tizen.org/dev-guide/2.2.1/org.tizen.web.device.apireference/tizen/tizen.html
+
+
 // WARNING! This list should be in sync with the equivalent enum
 // located at tizen.h. Remember to update tizen.h if you change
 // something here.
@@ -39,7 +43,8 @@ var errors = {
   '100': { type: 'INVALID_VALUES_ERR', name: 'InvalidValuesError', message: '' },
   '101': { type: 'IO_ERR', name: 'IOError', message: 'IOError' },
   '102': { type: 'PERMISSION_DENIED_ERR', name: 'Permission_deniedError', message: '' },
-  '103': { type: 'SERVICE_NOT_AVAILABLE_ERR', name: 'ServiceNotAvailableError', message: '' }
+  '103': { type: 'SERVICE_NOT_AVAILABLE_ERR', name: 'ServiceNotAvailableError', message: '' },
+  '104': { type: 'DATABASE_ERR', name: 'DATABASE_ERR', message: '' }
 };
 
 exports.WebAPIException = function(code, message, name) {
@@ -116,3 +121,133 @@ exports.ApplicationControl = function(operation, uri, mime, category, data) {
   this.category = category;
   this.data = data || [];
 };
+
+// Tizen Filters
+
+// either AttributeFilter, AttributeRangeFilter, or CompositeFilter
+function is_tizen_filter(f) {
+  return (f instanceof tizen.AttributeFilter) ||
+         (f instanceof tizen.AttributeRangeFilter) ||
+         (f instanceof tizen.CompositeFilter);
+}
+
+// AbstractFilter (abstract base class)
+exports.AbstractFilter = function() {};
+
+// SortMode
+// [Constructor(DOMString attributeName, optional SortModeOrder? order)]
+// interface SortMode {
+//   attribute DOMString attributeName;
+//   attribute SortModeOrder order;
+// };
+exports.SortMode = function(attrName, order) {
+  if (!(typeof(attrName) === 'string' || attrname instanceof String) ||
+      order && (order != 'DESC' && order != 'ASC'))
+    throw new exports.WebAPIException(exports.WebAPIException.TYPE_MISMATCH_ERR);
+
+  Object.defineProperties(this, {
+    'attributeName': { writable: false, enumerable: true, value: attrName },
+    'order': { writable: false, enumerable: true, value: order || 'ASC' }
+  });
+};
+exports.SortMode.prototype.constructor = exports.SortMode;
+
+// AttributeFilter
+// [Constructor(DOMString attributeName, optional FilterMatchFlag? matchFlag,
+//              optional any matchValue)]
+// interface AttributeFilter : AbstractFilter {
+//   attribute DOMString attributeName;
+//   attribute FilterMatchFlag matchFlag;
+//   attribute any matchValue;
+// };
+
+var FilterMatchFlag = {
+  EXACTLY: 0,
+  FULLSTRING: 1,
+  CONTAINS: 2,
+  STARTSWITH: 3,
+  ENDSWITH: 4,
+  EXISTS: 5
+};
+
+exports.AttributeFilter = function(attrName, matchFlag, matchValue) {
+  if (this && this.constructor == exports.AttributeFilter &&
+      (typeof(attrName) === 'string' || attrname instanceof String) &&
+      matchFlag && matchFlag in FilterMatchFlag) {
+    Object.defineProperties(this, {
+      'attributeName': { writable: false, enumerable: true, value: attrName },
+      'matchFlag': {
+        writable: false,
+        enumerable: true,
+        value: matchValue !== undefined ? (matchFlag ? matchFlag : 'EXACTLY') : 'EXISTS'
+      },
+      'matchValue': {
+        writable: false,
+        enumerable: true,
+        value: matchValue === undefined ? null : matchValue
+      }
+    });
+  } else {
+    throw new exports.WebAPIException(exports.WebAPIException.TYPE_MISMATCH_ERR);
+  }
+};
+exports.AttributeFilter.prototype = new exports.AbstractFilter();
+exports.AttributeFilter.prototype.constructor = exports.AttributeFilter;
+
+
+// AttributeRangeFilter
+// [Constructor(DOMString attributeName, optional any initialValue,
+//              optional any endValue)]
+// interface AttributeRangeFilter : AbstractFilter {
+//   attribute DOMString attributeName;
+//   attribute any initialValue;
+//   attribute any endValue;
+// };
+exports.AttributeRangeFilter = function(attrName, start, end) {
+  if (!this || this.constructor != exports.AttributeRangeFilter ||
+      !(typeof(attrName) === 'string' || attrname instanceof String)) {
+    throw new exports.WebAPIException(exports.WebAPIException.TYPE_MISMATCH_ERR);
+  }
+
+  Object.defineProperties(this, {
+    'attributeName': { writable: true, enumerable: true, value: attrName },
+    'initialValue': {
+      writable: true,
+      enumerable: true,
+      value: start === undefined ? null : start },
+    'endValue': { writable: true, enumerable: true, value: end === undefined ? null : end }
+  });
+};
+exports.AttributeRangeFilter.prototype = new exports.AbstractFilter();
+exports.AttributeRangeFilter.prototype.constructor = exports.AttributeRangeFilter;
+
+
+// CompositeFilter
+// [Constructor(CompositeFilterType type, optional AbstractFilter[]? filters)]
+// interface CompositeFilter : AbstractFilter {
+//   attribute CompositeFilterType type;
+//   attribute AbstractFilter[] filters;
+// };
+
+var CompositeFilterType = { UNION: 0, INTERSECTION: 1 };
+
+exports.CompositeFilter = function(type, filters) {
+  if (!this || this.constructor != exports.CompositeFilter ||
+      !(type in CompositeFilterType) ||
+      filters && !(filters instanceof Array)) {
+    throw new exports.WebAPIException(exports.WebAPIException.TYPE_MISMATCH_ERR);
+  }
+
+  Object.defineProperties(this, {
+    'type': { writable: false, enumerable: true, value: type },
+    'filters': {
+      writable: false,
+      enumerable: true,
+      value: filters === undefined ? null : filters
+    }
+  });
+};
+exports.CompositeFilter.prototype = new exports.AbstractFilter();
+exports.CompositeFilter.prototype.constructor = exports.CompositeFilter;
+
+// end of Tizen filters

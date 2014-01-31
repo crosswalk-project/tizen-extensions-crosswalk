@@ -1,0 +1,405 @@
+<!--
+// Copyright (c) 2014 Intel Corporation. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+-->
+
+<html>
+<h1>Test Tizen Call History API</h1>
+<body>
+  <button id="all_btn"       onclick="readAll()"      >All      </button>
+  <button id="dialed_btn"    onclick="readDialed()"   >Dialed   </button>
+  <button id="received_btn"  onclick="readReceived()" >Received </button>
+  <button id="missed_btn"    onclick="readMissed()"   >Missed   </button>
+  <button id="missednew_btn" onclick="readMissedNew()">MissedNew</button>
+  <button id="blocked_btn"   onclick="readBlocked()"  >Blocked  </button>
+  <button id="rejected_btn"  onclick="readRejected()" >Rejected </button>
+  <button id="goback_btn"    onclick="goBack()"       >Back     </button>
+  <br>
+  <form>
+    <input type="checkbox" id="limit_chk">Limit:
+      <input type="text" size=5 id="limit_text">
+    <input type="checkbox" id="offset_chk">Offset:
+      <input type="text" size=5 id="offset_text">
+    <input type="checkbox" id="rparty_chk">With:
+      <input type="text" size=25 id="rparty_text">
+  </form>
+  <button id="clearscr_btn" onclick="clearScreen()" >Clear Screen</button>
+  <button id="removeall_btn" onclick="removeAll()"  >Remove All</button>
+  <button id="remove_btn" onclick="removeEntries()"  >Remove:</button>
+      <input type="text" size=5 id="remove_text">
+  <button id="addlistener_btn" onclick="addListener()" >Add listener</button>
+  <button id="removelistener_btn" onclick="removeListener()" >Remove listener
+  </button>
+  <br>
+  <textarea cols=80 rows=30 id="output"></textarea>
+</body>
+
+<!--
+///////////////////////////////////////////////////////////////////////////////
+// simulation of tizen environment on desktop
+- ->
+<script>
+var extension = function() {};
+extension.messageListeners = [];
+extension.message = "";
+extension.postMessage = function(msg) {
+    console.log("extension.postMessage(" + msg + ")");
+}
+extension.setMessageListener = function(fun) {
+    console.log("extension.setMessageListener(" + fun.toString() + ")");
+    extension.messageListeners.push(fun);
+}
+var exports = new Object();
+var tizen = new Object();
+
+tizen.WebAPIException = {};
+tizen.WebAPIError = {};
+
+</script>
+
+<script type="text/javascript" src="../tizen/tizen_api.js">
+</script>
+
+<script>
+  for(key in exports)
+   if(!tizen[key])
+    Object.defineProperty(tizen, key, {
+      configurable: false,
+      writable: false,
+      value: exports[key]
+    });
+</script>
+
+<script type="text/javascript" src="../callhistory/callhistory_api.js">
+</script>
+
+<script>
+tizen.callhistory = function() {};
+tizen.callhistory.find = exports.find;
+tizen.callhistory.remove = exports.remove;
+tizen.callhistory.removeBatch = exports.removeBatch;
+tizen.callhistory.removeAll = exports.removeAll;
+tizen.callhistory.addChangeListener = exports.addChangeListener;
+tizen.callhistory.removeChangeListener = exports.removeChangeListener;
+tizen.callhistory.SortMode = exports.SortMode;
+</script>
+<!- -
+///////////////////////////////////////////////////////////////////////////////
+// end of simulation of tizen environment
+-->
+
+<script>
+  var output = document.getElementById('output');
+  var filter = null;
+  var sortMode = null;
+  var limit = null;
+  var offset = null;
+  var lastSeenList = null;
+
+  // definitions for call direction
+  // temporary; the API should provide it
+  var str_dialed = 'DIALED';
+  var str_received = 'RECEIVED';
+  var str_missed = 'MISSED';
+  var str_missed_new = 'MISSEDNEW';
+  var str_rejected = 'REJECTED';
+  var str_blocked = 'BLOCKED';
+
+  function goBack() {
+    window.history.back();
+  }
+
+  function clearScreen() {
+    output.value = '';
+  }
+
+  function onException(error, text) {
+    var t = text == undefined ? '' : text;
+    print('\nException: ' + error.name +
+          '; ' + error.message + '; ' + t);
+  }
+
+  function onError(error) {
+    print('\nError: ' + error.message);
+  }
+
+  function printVal(thing, depth) {
+    var out, key;
+    if (thing instanceof Array) {
+      out = '[ ';
+      for (key in thing)
+        out += printVal(thing[key], depth + 1) + ', ';
+      out += ']';
+    } else if (thing instanceof Object) {
+      var tabs = '';
+      for (var i = 0; i < depth; i++)
+        tabs += '\t';
+      out = '\n' + tabs + '{';
+      for (key in thing) {
+        out += '\n' + tabs + '\t' + key + ': ' +
+               printVal(thing[key], depth + 1);
+      }
+      out += '\n' + tabs + '}';
+    } else {
+      out = thing;
+    }
+    return out;
+  }
+
+  function print(o) {
+    var output = document.getElementById('output');
+    if (output)
+      output.value += '\n' + printVal(o, 0);
+  }
+
+  function displayEntryList(array) {
+    var output = document.getElementById('output');
+    if (!output)
+      return;
+    output.value += '\nResults (count = ' + array.length + '): ' +
+                    printVal(array, 0);
+    if (array.length > 0)
+      lastSeenList = array;
+  }
+
+  function is_integer(value) {
+    return isFinite(value) && !isNaN(parseInt(value));
+  }
+  function getIntVal(name) {
+    var text = document.getElementById(name + '_text');
+    var count = parseInt(text.value);
+    if (isFinite(count) && !isNaN(count) && count >= 0)
+      return count;
+    return null;
+  }
+
+  function testLimit() {
+    limit = null;
+    var chkbox = document.getElementById('limit_chk');
+    if (chkbox.checked)
+      limit = getIntVal('limit');
+    if (limit)
+      print(', limit=' + limit);
+  }
+
+  function testOffset() {
+    offset = null;
+    var chkbox = document.getElementById('offset_chk');
+    if (chkbox.checked)
+      offset = getIntVal('offset');
+    if (offset)
+      print(', offset=' + offset);
+  }
+
+  function testRemotePartyFilter(dir) {
+    var rpartyValue = (document.getElementById('rparty_chk').checked ?
+                       document.getElementById('rparty_text').value : null);
+    filter = null;
+    var direction = '';
+    try {
+      if (rpartyValue) {
+        print(', with: ' + rpartyValue);
+        filter =
+            new tizen.AttributeFilter('remoteParties', 'ENDSWITH', rpartyValue);
+      }
+      if (dir) {
+        var dirFilter = new tizen.AttributeFilter('direction', 'EXACTLY', dir);
+        filter = filter ? new tizen.CompositeFilter('INTERSECTION',
+            [filter, dirFilter]) : dirFilter;
+      }
+    } catch (err) {
+      onException(err, 'failed to set up filters');
+    }
+  }
+
+  function setFilters(dir) {
+    testLimit();
+    testOffset();
+    testRemotePartyFilter(dir);
+
+    sortMode = null;
+    try {
+      sortMode = new tizen.SortMode('startTime', 'DESC');
+    } catch (err) {
+      onException(err, 'tizen.SortMode');
+    }
+  }
+
+  function query_and_display() {
+    try {
+      tizen.callhistory.find(displayEntryList,
+                             onError,
+                             filter,
+                             sortMode,
+                             limit,
+                             offset);
+    } catch (err) {
+      onException(err, 'tizen.callhistory.find');
+    }
+  }
+
+  function readAll()
+  {
+    clearScreen();
+    print('Reading all call history');
+    setFilters();
+    query_and_display();
+  }
+
+  function readDialed()
+  {
+    clearScreen();
+    print('Reading dialed calls');
+    setFilters(str_dialed);
+    query_and_display();
+  }
+
+  function readReceived()
+  {
+    clearScreen();
+    print('Reading received calls');
+    setFilters(str_received);
+    query_and_display();
+  }
+
+  function readMissed()
+  {
+    clearScreen();
+    print('Reading missed calls');
+    setFilters(str_missed);
+    query_and_display();
+  }
+
+  function readMissedNew()
+  {
+    clearScreen();
+    print('Reading missed calls');
+    setFilters(str_missed_new);
+    query_and_display();
+  }
+
+  function readBlocked()
+  {
+    clearScreen();
+    print('Reading blocked calls');
+    setFilters(str_blocked);
+    query_and_display();
+  }
+
+  function readRejected()
+  {
+    clearScreen();
+    print('Reading rejected calls');
+    setFilters(str_rejected);
+    query_and_display();
+  }
+
+  function removeAll() {
+    clearScreen();
+    print('Removing all call history');
+    try {
+      tizen.callhistory.removeAll(
+          function() { print('removeAll successful'); }, onError);
+    } catch (err) {
+      onException(err, 'tizen.callhistory.removeAll failed');
+    }
+  }
+
+  function removeEntries() {
+    clearScreen();
+    var count = getIntVal('remove');
+
+    try {
+      setFilters();
+      if (count == 1) {
+        print('Removing first entry from last results list');
+        if (!lastSeenList || lastSeenList.length < count) {
+          print('Empty results list; please press e.g. "All" first');
+          return;
+        }
+        for (var key in lastSeenList) {
+          if (count-- > 0) {
+            print('Invoking tizen.callhistory.remove()');
+            print('removing ' + lastSeenList[key]);
+            tizen.callhistory.remove(lastSeenList[key]);
+          }
+        }
+      } else if (count > 1) {
+        print('Removing ' + count + ' entries');
+        if (!lastSeenList || lastSeenList.length < count) {
+          print('Not enough records in last seen list; try pressing "All"');
+          return;
+        }
+        var batch = [];
+        for (var key in lastSeenList) {
+          if (count-- > 0)
+            batch.push(lastSeenList[key]);
+        }
+        print('Invoking tizen.callhistory.removeBatch()');
+        tizen.callhistory.removeBatch(batch,
+            function() { print('removeBatch successful'); }, onError);
+      } else
+        print('Invalid count, nothing removed');
+    } catch (err) {
+      onException(err);
+    }
+  }
+
+  function Listener() {}
+  Listener.prototype = {
+    onadded: function(list) {
+      print('[Event] entries added');
+      displayEntryList(list);
+    },
+    onchanged: function(list) {
+      print('[Event] entries changed');
+      displayEntryList(list);
+    },
+    onremoved: function(list) {
+      print('[Event] entries removed');
+      displayEntryList(list);
+    }
+  };
+
+  var listenerHandles = [];
+
+  function addListener() {
+    print('Adding listener...');
+    if (listenerHandles.length > 4) {
+      print('Max 4 listeners allowed');
+      return;
+    }
+    var obs = new Listener();
+    try {
+      var handle = tizen.callhistory.addChangeListener(obs);
+      listenerHandles.push(handle);
+      print('Added listener ' + handle);
+    } catch (err) {
+      onException(err, 'tizen.callhistory.addChangeListener not available');
+    }
+  }
+
+  function removeListener() {
+    print('Removing most recently added listener...');
+    if (listenerHandles.length == 0) {
+      print('No listeners.');
+      return;
+    }
+    try {
+      var handle = listenerHandles.pop(listenerHandles.length - 1);
+      tizen.callhistory.removeChangeListener(handle);
+      print('Removed listener ' + handle);
+    } catch (err) {
+      onException(err, 'tizen.callhistory.removeChangeListener not available');
+    }
+  }
+
+  print('Call History Test\n' + '\nNotes:\n' +
+      '  * Remove: before testing removing items, press "All" ' +
+      '  * Remove: testing with count = 1 uses tizen.callhistory.remove()\n' +
+      '  * Remove: testing with count > 1 uses tizen.callhistory.removeBatch()\n' +
+      '  * Use "Clear Screen" manually before adding/removing listeners'
+  );
+</script>
+</html>

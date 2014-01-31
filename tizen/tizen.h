@@ -46,6 +46,20 @@ enum WebApiAPIErrors {
   IO_ERR = 101,
   PERMISSION_DENIED_ERR = 102,
   SERVICE_NOT_AVAILABLE_ERR = 103,
+  DATABASE_ERR = 104,
 };
+
+#define STR_MATCH_EXACTLY        "EXACTLY"
+#define STR_MATCH_FULLSTRING     "FULLSTRING"
+#define STR_MATCH_CONTAINS       "CONTAINS"
+#define STR_MATCH_STARTSWITH     "STARTSWITH"
+#define STR_MATCH_ENDSWITH       "ENDSWITH"
+#define STR_MATCH_EXISTS         "EXISTS"
+
+#define STR_SORT_ASC             "ASC"
+#define STR_SORT_DESC            "DESC"
+
+#define STR_FILTEROP_OR          "UNION"
+#define STR_FILTEROP_AND         "INTERSECTION"
 
 #endif  // TIZEN_TIZEN_H_
