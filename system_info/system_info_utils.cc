@@ -10,7 +10,40 @@
 #include <algorithm>
 #include <fstream>
 
+namespace {
+
+const int kDuid_buffer_size = 100;
+const char kDuid_str_key[] = "http://tizen.org/system/duid";
+
+}  // namespace
+
 namespace system_info {
+
+char* GetDuidProperty() {
+  char *s = NULL;
+  FILE *fp = NULL;
+  static char duid[kDuid_buffer_size] = {0, };
+  size_t len = strlen(kDuid_str_key);
+  fp = fopen("/opt/usr/etc/system_info_cache.ini", "r");
+
+  if (fp) {
+    while (fgets(duid, kDuid_buffer_size - 1, fp)) {
+      if (strncmp(duid, kDuid_str_key, len) == 0) {
+        char* token = NULL;
+        char* ptr = NULL;
+        token = strtok_r(duid, "=\r\n", &ptr);
+        if (token != NULL) {
+            token = strtok_r(NULL, "=\r\n", &ptr);
+            if (token != NULL)
+              s = token;
+        }
+        break;
+      }
+    }
+    fclose(fp);
+  }
+  return s;
+}
 
 int ReadOneByte(const char* path) {
   FILE* fp = fopen(path, "r");

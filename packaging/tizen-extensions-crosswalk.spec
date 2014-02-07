@@ -37,6 +37,7 @@ BuildRequires: pkgconfig(dbus-glib-1)
 # Evas.h is required by capi-web-favorites.
 BuildRequires: pkgconfig(evas)
 BuildRequires: pkgconfig(glib-2.0)
+BuildRequires: pkgconfig(tapi)
 BuildRequires: pkgconfig(libudev)
 BuildRequires: pkgconfig(message-port)
 BuildRequires: pkgconfig(notification)
