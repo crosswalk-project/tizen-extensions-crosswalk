@@ -7,7 +7,7 @@
 Name:       tizen-extensions-crosswalk
 Version:    0.26
 Release:    0
-License:    BSD-3-Clause
+License:    BSD-3-Clause and Apache-2.0
 Group:      Development/Libraries
 Summary:    Tizen Web APIs implemented using Crosswalk
 URL:        https://github.com/otcshare/tizen-extensions-crosswalk

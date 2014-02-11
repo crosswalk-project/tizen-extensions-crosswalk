@@ -1,6 +1,21 @@
 // Copyright (c) 2013 Intel Corporation. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// Copyright (c) 2012 Samsung Electronics Co., Ltd.
+
+// Use of this source code is governed by a BSD-style license 
+// AND  Apache License, Version 2.0  that can be
+// found in the LICENSE & LICENSE.AL2 files.
+
+// you may not use this file except in compliance with theses Licenses.
+// You may obtain a copy of the APACHE License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 
 #include "system_info/system_info_instance.h"
 
