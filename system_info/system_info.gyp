@@ -26,6 +26,7 @@
               'capi-telephony-sim',
               'pkgmgr-info',
               'vconf',
+              'tapi',
             ]
           },
         }],

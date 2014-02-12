@@ -7,7 +7,7 @@
 Name:       tizen-extensions-crosswalk
 Version:    0.26
 Release:    0
-License:    BSD-3-Clause
+License:    BSD-3-Clause and Apache-2.0
 Group:      Development/Libraries
 Summary:    Tizen Web APIs implemented using Crosswalk
 URL:        https://github.com/otcshare/tizen-extensions-crosswalk
@@ -37,6 +37,7 @@ BuildRequires: pkgconfig(dbus-glib-1)
 # Evas.h is required by capi-web-favorites.
 BuildRequires: pkgconfig(evas)
 BuildRequires: pkgconfig(glib-2.0)
+BuildRequires: pkgconfig(tapi)
 BuildRequires: pkgconfig(libudev)
 BuildRequires: pkgconfig(message-port)
 BuildRequires: pkgconfig(notification)
