@@ -1,0 +1,224 @@
+<!DOCUMENT html>
+<!--
+Copyright (c) 2014 Intel Corporation. All rights reserved.
+Use of this source code is governed by a MIT-style license that can be
+found in the LICENSE file. 
+-->
+<html>
+  <head>
+    <meta charset='utf-8'/>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'/>
+    <meta name='copyright' content='(c) 2014 Intel'/>
+    <link href="css/ui-lightness/jquery-ui-1.10.4.custom.css" rel="stylesheet"/>
+    <!--link href="css/ui-lightness/jquery-ui-1.10.4.custom.min.css" rel="stylesheet"/-->
+    <link href="css/audiosystem.css" rel="stylesheet"/>
+    <script src="js/jquery.1.10.2.js"></script>
+    <script src="js/jquery.ui.1.10.4.custom.js"></script>
+    <script src="js/audiosystem.js"></script>
+
+    <title>Volume Settings</title>
+  </head>
+  <body>
+    <label class='info'>Failed to connect to audio system server.</label>
+    <!-- Minimized view -->
+    <div id='basic-view' style='display:none'>
+      <div id='slider' min='0' max='200'></div>
+      <label id='mute'><input id='mute' type='checkbox'/> Mute</label>
+      <button id='expand'>Expand</button>
+    </div>
+    <!-- Expanded View -->
+    <div id='tabs'>
+      <ul>
+        <li><a href="#main-controls">Main controls</a></li>
+        <li><a href="#volume-controls">Volume controls</a></li>
+        <li><a href="#devices">Devices</a></li>
+        <li><a href="#audio-streams">Streams</a></li>
+        <li><a href="#audio-groups">Audio Groups</a></li>
+      </ul>
+
+      <div id="main-controls">
+        <h3>Main Output</h3>
+        <div id='main-output'>
+          <label class="info">Main output volume control was not set.</label>
+          <table>
+            <colgroup>
+              <col style="width:20%">
+              <col style="width:80%">
+            </colgroup>
+            <tbody>
+            <tr>
+              <td><label class='label'>Name:</label>
+              <td><label id='label'></label></br>
+            </tr>  
+            <tr>
+              <td align='top'><label class='label'>Volume:</label>
+              <td>
+                <div class="ui-slider-wrapper ui-widget horizontal">
+                <div id='slider' min=0 max=200></div>
+                <input id='mute' type='checkbox'/><label for='mute'>Mute</label>
+                </div>
+              </td>
+             </tbody>
+          </table>
+        </div>
+        <h3>Main Input</h3>
+        <div id='main-input'>
+          <label class="info">Main input volume control was not set.</label>
+          <table>
+            <colgroup>
+              <col style="width:20%">
+              <col style="width:80%">
+            </colgroup>
+            <tbody>
+            <tr>
+              <td><label class='label'>Name:</label>
+              <td><label id='label'></label>
+            </tr>
+            <tr>
+              <td align='top'><label class='label'>Volume:</label>
+              <td>
+                <div id='slider' min=0 max=200></div>
+                <input id='mute' type='checkbox'/><label for='mute'>Mute</label>
+              </td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="volume-controls">
+        <div>
+          <label class="info">No volume controls found.</label>
+          <table>
+            <colgroup>
+              <col style="width:20%">
+              <col style="width:80%">
+            </colgroup>
+            <tr>
+              <td><label class='label'>Name: </label>
+              <td><select id='controls' style='border-width:2px'></select>
+            </tr>  
+            <tr>
+              <td align='top'><label class='label'>Volume:</label>
+              <td>
+                <div id='slider' min=0 max=200></div>
+                <input id='mute' type='checkbox'/><label for='mute'>Mute</label>
+              </td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      <div id="devices">
+        <h3>Output devices</h3>
+        <div id='output'>
+          <label class="info">No audio output device found.</label>
+          <table>
+            <colgroup>
+              <col style="width:20%">
+              <col style="width:80%">
+            </colgroup>
+            <tbody>
+            <tr>
+              <td><label class='label'>Device name: </label>
+              <td><select id='out_devices' style='border-width:3px'></select>
+            </tr>
+            <tr>
+              <td><label class='label'>Device type(s):</label>
+              <td><label id='types'></label>
+            </tr>  
+            <tr>
+              <td align='top'><label class='label'>Volume:</label>
+              <td>
+                <div id='slider' min=0 max=200></div>
+                <input id='mute' type='checkbox'/><label for='mute'>Mute</label>
+              </td>  
+            </tr>
+            </tbody>
+          </table>  
+        </div>
+        <h3>Input devices</h3>
+        <div id='input'>
+          <label class="info">No audio input device found.</label>
+          <table>
+            <colgroup>
+              <col style="width:20%">
+              <col style="width:80%">
+            </colgroup>
+            <tbody>
+            <tr>
+              <td><label class='label'>Device name: </label>
+              <td><select id='in_devices' style='border-width:3px;'></select>
+            </tr>
+            <tr>
+              <td><label class='label'>Device type(s):</label>
+              <td><label id='types'></label>
+            </tr>
+            <tr>
+              <td align='top'><label class='label'>Volume:</label>
+              <td>
+                <div id='slider' min=0 max=200></div>
+                <input id='mute' type='checkbox'/><label for='mute'>Mute</label>
+              </td>
+            </tr>
+            </tbody>
+          </table>  
+        </div>
+      </div> <!-- devices -->
+
+      <div id="audio-groups">
+        <div>
+          <label class="info">No aduio groups defined.</label>
+          <table>
+            <colgroup>
+              <col style="width:20%">
+              <col style="width:70%">
+            </colgroup>
+            <tr>
+              <td><label class='label'>Group:</label>
+              <td><select id='groups' style='border-width:3px;'></select>
+            </tr>
+            <tr>
+              <td align='top'><label class='label'>Volume:</label>
+              <td>
+                <div id='slider' min=0 max=200></div>
+                <input id='mute' type='checkbox'/><label for='mute'>Mute</label>
+              </td>
+            </tr>
+          </table>  
+        </div>
+      </div> <!-- audio-goups -->
+
+      <div id='audio-streams'>
+        <div style='padding-top:15px'>
+          <a class="info" href="#">No active aduio streams found.</a>
+          <table>
+            <colgroup>
+              <col style="width:20%">
+              <col style="width:80%">
+            </colgroup>
+            <tr>
+              <td><label class='label'>Name:</label>
+              <td><select id='streams' style='border-width:3px;'></select>
+            </tr>
+            <tr>
+              <td><label class='label'>Direction:</label>
+              <td><label id='direction'></label>
+            </tr>
+            <tr>
+              <td align='top'><label class='label'>Volume:</label>
+              <td>
+                <div id='slider' min=0 max=200></div>
+                <input id='mute' type='checkbox'/><label for='mute'>Mute</label>
+              </td>
+            </tr>
+          </table>  
+        </div>
+      </div> <!-- audio-streams -->
+ 
+    </div> <!-- tabs -->
+    <div class='footer'>
+      <p>(c) 2014 Intel
+    </div>
+  </body>
+</html>
