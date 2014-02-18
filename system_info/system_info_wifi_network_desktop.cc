@@ -24,6 +24,8 @@ SysInfoWifiNetwork::SysInfoWifiNetwork()
   PlatformInitialize();
 }
 
+SysInfoWifiNetwork::~SysInfoWifiNetwork() {}
+
 void SysInfoWifiNetwork::PlatformInitialize() {
   active_access_point_ = "";
   active_connection_ = "";
