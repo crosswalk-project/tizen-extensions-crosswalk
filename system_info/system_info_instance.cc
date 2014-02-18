@@ -1,7 +1,7 @@
 // Copyright (c) 2013 Intel Corporation. All rights reserved.
 // Copyright (c) 2012 Samsung Electronics Co., Ltd.
 
-// Use of this source code is governed by a BSD-style license 
+// Use of this source code is governed by a BSD-style license
 // AND  Apache License, Version 2.0  that can be
 // found in the LICENSE & LICENSE.AL2 files.
 
