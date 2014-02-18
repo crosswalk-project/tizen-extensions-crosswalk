@@ -22,6 +22,8 @@ SysInfoNetwork::SysInfoNetwork()
   PlatformInitialize();
 }
 
+SysInfoNetwork::~SysInfoNetwork() {}
+
 void SysInfoNetwork::PlatformInitialize() {
   active_connection_ = "";
   active_device_ = "";
