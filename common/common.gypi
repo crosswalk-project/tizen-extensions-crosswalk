@@ -3,6 +3,7 @@
     # If capi-system-power package exists, the host is considered to be Tizen Mobile.
     # Note, the spec file requires this package: BuildRequires: pkgconfig(capi-system-power).
     'extension_host_os%': '<!(pkg-config --exists capi-system-power; if [ $? = 0 ]; then echo mobile; else echo desktop; fi)',
+    'telephony_sim_available%': '<!(pkg-config --exists capi-telephony-sim; if [ $? = 0 ]; then echo true; else echo false; fi)',
     'extension_build_type%': '<(extension_build_type)',
     'extension_build_type%': 'Debug',
   },
@@ -18,6 +19,7 @@
       }],
       ['extension_host_os == "mobile"', { 'defines': ['TIZEN_MOBILE'] } ],
       ['extension_host_os == "desktop"', { 'defines': ['GENERIC_DESKTOP'] } ],
+      ['telephony_sim_available == "true"', { 'defines': ['SYSTEMINFO_SIM_ACCESS'] } ],
       ['extension_build_type== "Debug"', {
         'defines': ['_DEBUG', ],
         'cflags': [ '-O0', '-g', ],
