@@ -49,6 +49,8 @@
       'XW_Extension.h',
       'XW_Extension_SyncMessage.h',
       'XW_Extension_EntryPoints.h',
+      'XW_Extension_Runtime.h',
+      'XW_Extension_Permissions.h',
       'picojson.h',
       'utils.h',
     ],
