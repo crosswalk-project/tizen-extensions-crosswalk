@@ -19,6 +19,8 @@
 #include "common/XW_Extension.h"
 #include "common/XW_Extension_SyncMessage.h"
 #include "common/XW_Extension_EntryPoints.h"
+#include "common/XW_Extension_Runtime.h"
+#include "common/XW_Extension_Permissions.h"
 
 namespace common {
 
@@ -44,6 +46,10 @@ class Extension {
   void SetExtensionName(const char* name);
   void SetJavaScriptAPI(const char* api);
   void SetExtraJSEntryPoints(const char** entry_points);
+  bool RegisterPermissions(const char* perm_table);
+
+  // This API should be called in the message handler of extension
+  bool CheckAPIAccessControl(const char* api_name);
 
   virtual Instance* CreateInstance();
 

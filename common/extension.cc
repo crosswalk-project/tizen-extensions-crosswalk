@@ -16,6 +16,8 @@ const XW_CoreInterface* g_core = NULL;
 const XW_MessagingInterface* g_messaging = NULL;
 const XW_Internal_SyncMessagingInterface* g_sync_messaging = NULL;
 const XW_Internal_EntryPointsInterface* g_entry_points = NULL;
+const XW_Internal_RuntimeInterface* g_runtime = NULL;
+const XW_Internal_PermissionsInterface* g_permission = NULL;
 
 bool InitializeInterfaces(XW_GetInterface get_interface) {
   g_core = reinterpret_cast<const XW_CoreInterface*>(
@@ -47,6 +49,20 @@ bool InitializeInterfaces(XW_GetInterface get_interface) {
   if (!g_entry_points) {
     std::cerr << "NOTE: Entry points interface not available in this version "
               << "of Crosswalk, ignoring entry point data for extensions.\n";
+  }
+
+  g_runtime = reinterpret_cast<const XW_Internal_RuntimeInterface*>(
+      get_interface(XW_INTERNAL_RUNTIME_INTERFACE));
+  if (!g_runtime) {
+    std::cerr << "NOTE: runtime interface not available in this version "
+              << "of Crosswalk, ignoring runtime variables for extensions.\n";
+  }
+
+  g_permission = reinterpret_cast<const XW_Internal_PermissionsInterface*>(
+      get_interface(XW_INTERNAL_PERMISSIONS_INTERFACE));
+  if (!g_permission) {
+    std::cerr << "NOTE: permission interface not available in this version "
+      << "of Crosswalk, ignoring permission for extensions.\n";
   }
 
   return true;
@@ -95,6 +111,16 @@ void Extension::SetJavaScriptAPI(const char* api) {
 void Extension::SetExtraJSEntryPoints(const char** entry_points) {
   if (g_entry_points)
     g_entry_points->SetExtraJSEntryPoints(g_xw_extension, entry_points);
+}
+
+bool Extension::RegisterPermissions(const char* perm_table) {
+  if (g_permission)
+    g_pemission(g_xw_extension, perm_table);
+}
+
+bool Extension::CheckAPIAccessControl(const char* api_name) {
+  if (g_permission)
+    g_pemission(g_xw_extension, api_name);
 }
 
 Instance* Extension::CreateInstance() {
