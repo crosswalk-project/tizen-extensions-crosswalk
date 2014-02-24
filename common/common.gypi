@@ -6,6 +6,7 @@
     'telephony_sim_available%': '<!(pkg-config --exists capi-telephony-sim; if [ $? = 0 ]; then echo true; else echo false; fi)',
     'extension_build_type%': '<(extension_build_type)',
     'extension_build_type%': 'Debug',
+    'display_type%': 'x11',
   },
   'target_defaults': {
     'conditions': [
@@ -36,6 +37,12 @@
           '-fdata-sections',
           '-ffunction-sections',
         ],
+      }],
+      [ 'display_type != "wayland"', {
+        'sources/': [['exclude', '_wayland\\.cc$|wayland/']],
+      }],
+      [ 'display_type != "x11"', {
+        'sources/': [['exclude', '_x11\\.cc$|x11/']],
       }],
     ],
     'includes': [
