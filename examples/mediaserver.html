@@ -1,0 +1,191 @@
+<html>
+<head>
+<title>MediaServer example</title>
+</head>
+<body>
+
+<button onclick='scanNetwork()'>Scan for media servers</button>
+
+<div id='serverContainer'></div>
+<div id='mediaObjectsContainer'></div>
+
+<script>
+navigator.mediaServer.addEventListener('serverfound', onServerFound);
+navigator.mediaServer.addEventListener('serverlost', onServerLost);
+
+var servers = {};
+
+function scanNetwork() {
+  emptyContainer('serverContainer');
+  navigator.mediaServer.scanNetwork();
+}
+
+function getServerId() {
+  return document.getElementById('serverContainer').serverId;
+}
+
+function browseRootContainer(id) {
+  document.getElementById('serverContainer').serverId = id;
+  browseContainer(servers[id].root.id);
+}
+
+function browseContainer(id) {
+  emptyContainer('mediaObjectsContainer');
+  var server = servers[getServerId()];
+  server.browse(id, '', 0 , 0).then(listMediaObjects);
+ }
+
+function searchContainer(id) {
+  emptyContainer('mediaObjectsContainer');
+  document.getElementById('serverContainer').serverId = id;
+  var server = servers[id];
+  var selectedIndex = document.getElementById('searchParameter').selectedIndex;
+  var selectedParameter = document.getElementById('searchParameter').options[selectedIndex].text;
+  var searchValue = document.getElementById('searchField').value;
+  var query = selectedParameter + ' contains ' + '"' + searchValue + '"';
+  server.find(server.root.id, query, '', 0, 0).then(listMediaObjects);
+}
+
+function createContainer(id) {
+  document.getElementById('serverContainer').serverId = id;
+  var server = servers[id];
+  var title = document.getElementById('createContainerField').value;
+  server.createFolder(title).then(onContainerCreated, onCreateFailed);
+}
+
+function onContainerCreated(result) {
+  console.log("Folder successfully created!");
+}
+
+function onCreateFailed(err) {
+  console.log("Cannot create container!");
+}
+
+function upload(id) {
+  document.getElementById('serverContainer').serverId = id;
+  var server = servers[id];
+  var path = document.getElementById('uploadInputField').value;
+  server.upload(path).then(onUploadedComplete, onUploadFailure);
+}
+
+function onUploadedComplete(result) {
+  console.log("Uploaded file!");
+}
+
+function onUploadFailure(err) {
+  console.log("Upload failed!");
+}
+
+function listMediaObjects(response) {
+  var container = document.getElementById('mediaObjectsContainer');
+  for(var i = 0; i < response.length; i++) {
+    if(response[i].type === 'container')
+      addMediaContainerObject(response[i]);
+    else
+      addMediaItemObject(response[i]);
+  }
+}
+
+function addMediaContainerObject(obj) {
+  var container = document.getElementById('mediaObjectsContainer');
+  var newElement = document.createElement('button');
+  newElement.id = obj.id;
+  newElement.innerHTML = 'Browse  ' + obj.title;
+  newElement.setAttribute('onclick', 'browseContainer(this.id)');
+  container.appendChild(newElement);
+}
+
+function addMediaItemObject(obj) {
+  var container = document.getElementById('mediaObjectsContainer');
+  var newElement = document.createElement('div');
+  newElement.innerHTML = obj.title;
+  container.appendChild(newElement);
+
+  if (obj.type === 'image') {
+    var img = document.createElement('img');
+    img.setAttribute('src', obj.sourceUri);
+    img.setAttribute('height', obj.height);
+    img.setAttribute('width', obj.width);
+    container.appendChild(img);
+  } else if (obj.type === 'audio' || obj.type === 'music') {
+    var audio = document.createElement('audio');
+    audio.src = obj.sourceUri;
+    audio.controls=true;
+    container.appendChild(audio);
+  } else if (obj.type === 'video') {
+    var video = document.createElement('video');
+    video.src = obj.sourceUri;
+    video.controls = true;
+    container.appendChild(video);
+  }
+}
+
+function emptyContainer(id) {
+  var container = document.getElementById(id);
+  while(container.hasChildNodes())
+    container.removeChild(container.lastChild);
+}
+
+function onServerFound(event) {
+  var container = document.getElementById('serverContainer');
+  var browseButton = document.createElement('button');
+  servers[event.server.id] = event.server;
+  browseButton.id = event.server.id;
+  browseButton.innerHTML = 'Browse root container of ' + event.server.friendlyName;
+  browseButton.setAttribute('onclick', 'browseRootContainer(this.id)');
+  container.appendChild(browseButton);
+
+  var p = document.createElement('p')
+  var selectElement = document.createElement('select');
+  selectElement.id = 'searchParameter';
+  event.server.searchAttrs.forEach(function(searchAttr) {
+    var option = document.createElement('option');
+    option.text = searchAttr;
+    selectElement.add(option);
+  });
+
+  var label_search = document.createElement('Label');
+  var searchField = document.createElement('input');
+  searchField.id = 'searchField';
+  label_search.for = searchField.id;
+  label_search.innerHTML = 'Search server: ';
+  searchField.serverId = event.server.id;
+  searchField.setAttribute('onkeydown', 'if (event.keyCode == 13) searchContainer(this.serverId)');
+  p.appendChild(label_search);
+  p.appendChild(selectElement);
+  p.appendChild(searchField);
+
+  var label = document.createElement('Label');
+  var createContainerField = document.createElement('input');
+  createContainerField.id = 'createContainerField';
+  label.for = createContainerField.id;
+  label.innerHTML='Create container: ';
+  createContainerField.serverId = event.server.id;
+  createContainerField.setAttribute('onkeydown', 'if (event.keyCode == 13) createContainer(this.serverId)');
+  p.appendChild(document.createElement('br'));
+  p.appendChild(label);
+  p.appendChild(createContainerField);
+
+  var label_upload = document.createElement('Label');
+  var uploadInputField = document.createElement('input');
+  uploadInputField.id = 'uploadInputField';
+  uploadInputField.serverId = event.server.id;
+  label_upload.for = uploadInputField.id;
+  label_upload.innerHTML="Upload file: ";
+  uploadInputField.setAttribute('onkeydown', 'if (event.keyCode == 13) upload(this.serverId)');
+  p.appendChild(document.createElement('br'));
+  p.appendChild(label_upload);
+  p.appendChild(uploadInputField);
+
+  container.appendChild(p);
+}
+
+function onServerLost(event) {
+  var button = document.getElementById(event.id);
+  document.removeChild(button);
+}
+
+</script>
+
+</body>
+</html>

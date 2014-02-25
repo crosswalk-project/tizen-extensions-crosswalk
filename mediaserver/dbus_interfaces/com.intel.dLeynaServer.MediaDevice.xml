@@ -1,0 +1,127 @@
+<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"
+                      "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
+<!-- GDBus 2.32.4 -->
+<node>
+  <interface name="com.intel.dLeynaServer.MediaDevice">
+    <method name="UploadToAnyContainer">
+      <arg type="s" name="DisplayName" direction="in">
+      </arg>
+      <arg type="s" name="FilePath" direction="in">
+      </arg>
+      <arg type="u" name="UploadId" direction="out">
+      </arg>
+      <arg type="o" name="Path" direction="out">
+      </arg>
+    </method>
+    <method name="GetUploadStatus">
+      <arg type="u" name="UploadId" direction="in">
+      </arg>
+      <arg type="s" name="UploadStatus" direction="out">
+      </arg>
+      <arg type="t" name="Length" direction="out">
+      </arg>
+      <arg type="t" name="Total" direction="out">
+      </arg>
+    </method>
+    <method name="GetUploadIDs">
+      <arg type="au" name="Total" direction="out">
+      </arg>
+    </method>
+    <method name="CancelUpload">
+      <arg type="u" name="UploadId" direction="in">
+      </arg>
+    </method>
+    <method name="CreateContainerInAnyContainer">
+      <arg type="s" name="DisplayName" direction="in">
+      </arg>
+      <arg type="s" name="Type" direction="in">
+      </arg>
+      <arg type="as" name="ChildTypes" direction="in">
+      </arg>
+      <arg type="o" name="Path" direction="out">
+      </arg>
+    </method>
+    <method name="Cancel">
+    </method>
+    <method name="Wake">
+    </method>
+    <method name="GetIcon">
+      <arg type="s" name="RequestedMimeType" direction="in">
+      </arg>
+      <arg type="s" name="Resolution" direction="in">
+      </arg>
+      <arg type="ay" name="Bytes" direction="out">
+      </arg>
+      <arg type="s" name="MimeType" direction="out">
+      </arg>
+    </method>
+    <method name="BrowseObjects">
+      <arg type="ao" name="Objects" direction="in">
+      </arg>
+      <arg type="as" name="Filter" direction="in">
+      </arg>
+      <arg type="aa{sv}" name="Children" direction="out">
+      </arg>
+    </method>
+    <signal name="ContainerUpdateIDs">
+      <arg type="a(ou)" name="ContainerPathsIDs">
+      </arg>
+    </signal>
+    <signal name="Changed">
+      <arg type="aa{sv}" name="ChangedObjects">
+      </arg>
+    </signal>
+    <signal name="UploadUpdate">
+      <arg type="u" name="UploadId">
+      </arg>
+      <arg type="s" name="UploadStatus">
+      </arg>
+      <arg type="t" name="Length">
+      </arg>
+      <arg type="t" name="Total">
+      </arg>
+    </signal>
+    <property type="s" name="Location" access="read">
+    </property>
+    <property type="s" name="UDN" access="read">
+    </property>
+    <property type="s" name="DeviceType" access="read">
+    </property>
+    <property type="s" name="FriendlyName" access="read">
+    </property>
+    <property type="s" name="Manufacturer" access="read">
+    </property>
+    <property type="s" name="ManufacturerUrl" access="read">
+    </property>
+    <property type="s" name="ModelDescription" access="read">
+    </property>
+    <property type="s" name="ModelName" access="read">
+    </property>
+    <property type="s" name="ModelNumber" access="read">
+    </property>
+    <property type="s" name="ModelURL" access="read">
+    </property>
+    <property type="s" name="SerialNumber" access="read">
+    </property>
+    <property type="s" name="PresentationURL" access="read">
+    </property>
+    <property type="s" name="IconURL" access="read">
+    </property>
+    <property type="b" name="Sleeping" access="read">
+    </property>
+    <property type="a{sv}" name="DLNACaps" access="read">
+    </property>
+    <property type="as" name="SearchCaps" access="read">
+    </property>
+    <property type="as" name="SortCaps" access="read">
+    </property>
+    <property type="as" name="SortExtCaps" access="read">
+    </property>
+    <property type="a(ssao)" name="FeatureList" access="read">
+    </property>
+    <property type="u" name="SystemUpdateID" access="read">
+    </property>
+    <property type="s" name="ServiceResetToken" access="read">
+    </property>
+  </interface>
+</node>

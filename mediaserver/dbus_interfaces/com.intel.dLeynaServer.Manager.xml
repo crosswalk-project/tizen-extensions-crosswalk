@@ -1,0 +1,42 @@
+<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"
+                      "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
+<!-- GDBus 2.32.4 -->
+<node>
+  <interface name="com.intel.dLeynaServer.Manager">
+    <method name="GetVersion">
+      <arg type="s" name="Version" direction="out">
+      </arg>
+    </method>
+    <method name="Release">
+    </method>
+    <method name="GetServers">
+      <arg type="ao" name="Servers" direction="out">
+      </arg>
+    </method>
+    <method name="Rescan">
+    </method>
+    <method name="SetProtocolInfo">
+      <arg type="s" name="ProtocolInfo" direction="in">
+      </arg>
+    </method>
+    <method name="PreferLocalAddresses">
+      <arg type="b" name="Prefer" direction="in">
+      </arg>
+    </method>
+    <signal name="FoundServer">
+      <arg type="o" name="Path">
+      </arg>
+    </signal>
+    <signal name="LostServer">
+      <arg type="o" name="Path">
+      </arg>
+    </signal>
+    <property type="as" name="NeverQuit" access="readwrite">
+    </property>
+    <property type="as" name="WhiteListEntries" access="readwrite">
+    </property>
+    <property type="b" name="WhiteListEnabled" access="readwrite">
+    </property>
+  </interface>
+  <node name="server"/>
+</node>
