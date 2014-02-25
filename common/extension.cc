@@ -115,12 +115,14 @@ void Extension::SetExtraJSEntryPoints(const char** entry_points) {
 
 bool Extension::RegisterPermissions(const char* perm_table) {
   if (g_permission)
-    g_pemission(g_xw_extension, perm_table);
+    return g_permission->RegisterPermissions(g_xw_extension, perm_table);
+  return false;
 }
 
 bool Extension::CheckAPIAccessControl(const char* api_name) {
   if (g_permission)
-    g_pemission(g_xw_extension, api_name);
+    return g_permission->CheckAPIAccessControl(g_xw_extension, api_name);
+  return false;
 }
 
 Instance* Extension::CreateInstance() {

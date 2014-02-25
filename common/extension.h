@@ -16,6 +16,7 @@
 // script context associated with a frame in the page. These objects serves as
 // storage points for extension specific objects, use them for that.
 
+#include <sys/types.h>
 #include "common/XW_Extension.h"
 #include "common/XW_Extension_SyncMessage.h"
 #include "common/XW_Extension_EntryPoints.h"
