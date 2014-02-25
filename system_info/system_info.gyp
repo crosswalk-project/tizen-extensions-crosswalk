@@ -15,6 +15,18 @@
             ]
           },
         }],
+        [ 'telephony_sim_available == "true"', {
+          'variables': {
+            'packages': [
+              'capi-telephony-sim',
+            ]
+          },
+          'sources': [
+            'system_info_sim.h',
+            'system_info_sim_desktop.cc',
+            'system_info_sim_mobile.cc',
+          ]
+        }],
         [ 'extension_host_os == "mobile"', {
           'variables': {
             'packages': [
@@ -23,7 +35,6 @@
               'capi-system-info',
               'capi-system-runtime-info',
               'capi-system-sensor',
-              'capi-telephony-sim',
               'pkgmgr-info',
               'vconf',
               'tapi',
@@ -76,9 +87,6 @@
         'system_info_peripheral.h',
         'system_info_peripheral_desktop.cc',
         'system_info_peripheral_mobile.cc',
-        'system_info_sim.h',
-        'system_info_sim_desktop.cc',
-        'system_info_sim_mobile.cc',
         'system_info_storage.cc',
         'system_info_storage.h',
         'system_info_storage_desktop.cc',

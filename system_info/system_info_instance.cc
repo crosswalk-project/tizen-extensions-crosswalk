@@ -40,7 +40,9 @@
 #include "system_info/system_info_locale.h"
 #include "system_info/system_info_network.h"
 #include "system_info/system_info_peripheral.h"
+#if defined(SYSTEMINFO_SIM_ACCESS)
 #include "system_info/system_info_sim.h"
+#endif
 #include "system_info/system_info_storage.h"
 #include "system_info/system_info_utils.h"
 #include "system_info/system_info_wifi_network.h"
@@ -67,7 +69,9 @@ void SystemInfoInstance::InstancesMapInitialize() {
   RegisterClass<SysInfoLocale>();
   RegisterClass<SysInfoNetwork>();
   RegisterClass<SysInfoPeripheral>();
+#if defined(SYSTEMINFO_SIM_ACCESS)
   RegisterClass<SysInfoSim>();
+#endif
   RegisterClass<SysInfoStorage>();
   RegisterClass<SysInfoWifiNetwork>();
 }

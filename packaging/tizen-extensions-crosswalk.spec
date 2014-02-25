@@ -30,7 +30,11 @@ BuildRequires: pkgconfig(capi-system-power)
 BuildRequires: pkgconfig(capi-system-runtime-info)
 BuildRequires: pkgconfig(capi-system-sensor)
 BuildRequires: pkgconfig(capi-system-system-settings)
-BuildRequires: pkgconfig(capi-telephony-sim)
+# For IVI, it doesn't need sim package.
+%bcond_with ivi
+%if !%{with ivi}
+BuildRequires:  pkgconfig(capi-telephony-sim)
+%endif
 BuildRequires: pkgconfig(capi-web-favorites)
 BuildRequires: pkgconfig(capi-web-url-download)
 BuildRequires: pkgconfig(dbus-glib-1)
