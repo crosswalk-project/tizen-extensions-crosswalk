@@ -21,6 +21,7 @@
       'conditions': [
         [ 'extension_host_os == "mobile"', {
           'dependencies': [
+            'application/application.gyp:*',
             'download/download.gyp:*',
             'bookmark/bookmark.gyp:*',
             'messageport/messageport.gyp:*',

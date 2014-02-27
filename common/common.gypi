@@ -48,13 +48,13 @@
     'sources': [
       'extension_adapter.cc',
       'extension_adapter.h',
-      'XW_Extension.h',
-      'XW_Extension_SyncMessage.h',
-      'XW_Extension_EntryPoints.h',
-      'XW_Extension_Runtime.h',
-      'XW_Extension_Permissions.h',
       'picojson.h',
       'utils.h',
+      'XW_Extension.h',
+      'XW_Extension_EntryPoints.h',
+      'XW_Extension_Permissions.h',
+      'XW_Extension_Runtime.h',
+      'XW_Extension_SyncMessage.h',
     ],
     'cflags': [
       '-std=c++0x',

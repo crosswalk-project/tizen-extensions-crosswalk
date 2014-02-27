@@ -6,6 +6,7 @@
 
 #include <assert.h>
 #include <iostream>
+#include <vector>
 
 namespace {
 
@@ -127,6 +128,15 @@ bool Extension::CheckAPIAccessControl(const char* api_name) {
 
 Instance* Extension::CreateInstance() {
   return NULL;
+}
+
+std::string Extension::GetRuntimeVariable(const char* var_name, unsigned len) {
+  if (!g_runtime)
+    return "";
+
+  std::vector<char> res(len + 1, 0);
+  g_runtime->GetRuntimeVariableString(g_xw_extension, var_name, &res[0], len);
+  return std::string(res.begin(), res.end());
 }
 
 // static
