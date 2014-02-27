@@ -1,0 +1,65 @@
+<html>
+<h1>Hello, Tizen Application API!</h1>
+<body>
+<h2>NOTE: Application API must be run in an installed application!</h2>
+Input test app id: <input type="text" id="app_id" value="current app ID"></input>
+<input type="button" value="GetAppInfo" onclick="handleGetAppInfo()"></input>
+<br>
+<br>Application information:</br>
+<textarea id="app_info" rows="10" cols="64"></textarea>
+
+<br>
+<br>
+<input type="button" value="GetAppsInfo" onclick="handleGetAppsInfo()"></input>
+<br>
+<br>Applications ID:</br>
+<textarea id="apps_id" rows="10" cols="64"></textarea>
+
+<pre id="console"></pre>
+<script src="js/js-test-pre.js"></script>
+<script>
+function handleGetAppInfo() {
+  try {
+    var app_id = document.getElementById("app_id");
+    var info;
+    if (app_id.value === "current app ID")
+      info = tizen.application.getAppInfo();
+    else
+      info = tizen.application.getAppInfo(app_id.value);
+
+      var output = document.getElementById("app_info");
+      output.value += "id: " + info.id + "\n";
+      output.value += "name: " + info.name + "\n";
+      output.value += "iconPath: " + info.iconPath + "\n";
+      output.value += "version: " + info.version + "\n";
+      output.value += "show: " + info.show + "\n";
+      output.value += "categories: " + info.categories + "\n";
+      output.value += "installDate: " + info.installDate+ "\n";
+      output.value += "size: " + info.size + "\n";
+      output.value += "packageId: " + info.packageId + "\n";
+  } catch (err) {
+    debug(err.name);
+  }
+}
+
+function handleGetAppsInfo() {
+  try {
+    var output = document.getElementById("apps_id");
+    var onsuccess = function(apps) {
+      for (var i = 0; i < apps.length; i++) {
+        output.value += apps[i].id + "\n";
+      }
+    };
+
+    var onerror = function(error) {
+      output.value  += "Fail to get apps info: " + error.name;
+    };
+
+    tizen.application.getAppsInfo(onsuccess, onerror);    
+  } catch (err) {
+    debug(err.name);
+  }
+}
+</script>
+</body>
+</html>
