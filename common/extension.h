@@ -17,11 +17,14 @@
 // storage points for extension specific objects, use them for that.
 
 #include <sys/types.h>
+
+#include <string>
+
 #include "common/XW_Extension.h"
-#include "common/XW_Extension_SyncMessage.h"
 #include "common/XW_Extension_EntryPoints.h"
-#include "common/XW_Extension_Runtime.h"
 #include "common/XW_Extension_Permissions.h"
+#include "common/XW_Extension_Runtime.h"
+#include "common/XW_Extension_SyncMessage.h"
 
 namespace common {
 
@@ -53,6 +56,8 @@ class Extension {
   bool CheckAPIAccessControl(const char* api_name);
 
   virtual Instance* CreateInstance();
+
+  static std::string GetRuntimeVariable(const char* var_name, unsigned len);
 
  private:
   friend int32_t ::XW_Initialize(XW_Extension extension,

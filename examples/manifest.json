@@ -1,0 +1,10 @@
+{
+  "name": "Tizen Extension Crosswalk examples",
+  "version": "1.0",
+  "manifest_version": 1,
+  "app": {
+    "launch":{
+      "local_path": "index.html"
+    }
+  }
+}
