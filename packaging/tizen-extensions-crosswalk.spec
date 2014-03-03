@@ -36,8 +36,8 @@ BuildRequires: pkgconfig(capi-system-system-settings)
 %bcond_with ivi
 %if !%{with ivi}
 BuildRequires: pkgconfig(capi-telephony-sim)
-BuildRequires: pkgconfig(contacts-service2)
-BuildRequires: pkgconfig(libpcrecpp)
+#BuildRequires: pkgconfig(contacts-service2)
+#BuildRequires: pkgconfig(libpcrecpp)
 %endif
 BuildRequires: pkgconfig(capi-web-favorites)
 BuildRequires: pkgconfig(capi-web-url-download)
