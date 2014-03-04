@@ -1,3 +1,5 @@
+%bcond_with wayland
+
 %define _manifestdir /opt/share/packages
 %define _desktop_icondir /opt/share/icons/default/small
 %define _bluetooth_demo_package tizen-extensions-crosswalk-bluetooth-demo
@@ -51,8 +53,12 @@ BuildRequires: pkgconfig(pkgmgr)
 BuildRequires: pkgconfig(pkgmgr-info)
 BuildRequires: pkgconfig(pmapi)
 BuildRequires: pkgconfig(vconf)
+%if %{with wayland}
+BuildRequires: pkgconfig(wayland-client)
+%else
 BuildRequires: pkgconfig(x11)
 BuildRequires: pkgconfig(xrandr)
+%endif
 BuildRequires: python
 Requires:      crosswalk
 
@@ -98,6 +104,11 @@ export GYP_GENERATORS='make'
 ./tools/gyp/gyp \
 --depth=.       \
 -Dextension_build_type=Debug   \
+%if %{with wayland}
+-Ddisplay_type=wayland \
+%else
+-Ddisplay_type=x11 \
+%endif
 tizen-wrt.gyp
 
 make %{?_smp_mflags}

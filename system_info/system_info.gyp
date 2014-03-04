@@ -49,9 +49,6 @@
           'libudev',
         ]
       },
-      'ldflags': [
-        '-lX11',
-      ],
       'includes': [
         '../common/pkg-config.gypi',
       ],
@@ -72,6 +69,7 @@
         'system_info_device_orientation_desktop.cc',
         'system_info_device_orientation_mobile.cc',
         'system_info_display.h',
+        'system_info_display_wayland.cc',
         'system_info_display_x11.cc',
         'system_info_extension.cc',
         'system_info_extension.h',
