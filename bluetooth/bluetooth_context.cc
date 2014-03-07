@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#if defined(TIZEN_MOBILE)
+#if defined(TIZEN)
 #include <bluetooth.h>
 #endif
 
@@ -10,7 +10,7 @@
 #include "common/picojson.h"
 
 int32_t XW_Initialize(XW_Extension extension, XW_GetInterface get_interface) {
-#if defined(TIZEN_MOBILE)
+#if defined(TIZEN)
   int init = bt_initialize();
   if (init != BT_ERROR_NONE)
     g_printerr("\n\nCouldn't initialize Bluetooth module.");

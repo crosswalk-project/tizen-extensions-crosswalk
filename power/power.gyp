@@ -24,7 +24,7 @@
         '../common/pkg-config.gypi',
       ],
       'conditions': [
-        ['extension_host_os=="mobile"', {
+        ['tizen == 1', {
           'variables': {
             'packages': [
               'glib-2.0',

@@ -31,7 +31,7 @@
         [ 'extension_host_os == "desktop"', {
             'variables': { 'packages': ['libnotify'] },
         }],
-        [ 'extension_host_os == "mobile"', {
+        [ 'tizen == 1', {
             'variables': { 'packages': ['notification'] },
         }],
       ],

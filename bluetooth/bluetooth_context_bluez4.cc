@@ -4,7 +4,7 @@
 
 #include "bluetooth/bluetooth_context.h"
 
-#if defined(TIZEN_MOBILE)
+#if defined(TIZEN)
 #include <bluetooth.h>
 #endif
 
@@ -453,7 +453,7 @@ void BluetoothContext::AdapterSetPowered(const picojson::value& msg) {
   bool powered = msg.get("value").get<bool>();
   int error = 0;
 
-#if defined(TIZEN_MOBILE)
+#if defined(TIZEN)
   if (powered)
     error = bt_adapter_enable();
   else
@@ -618,7 +618,7 @@ BluetoothContext::~BluetoothContext() {
 
   g_bus_unwatch_name(name_watch_id_);
 
-#if defined(TIZEN_MOBILE)
+#if defined(TIZEN)
     bt_deinitialize();
 #endif
 }

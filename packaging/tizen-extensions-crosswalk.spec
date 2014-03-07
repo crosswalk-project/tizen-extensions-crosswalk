@@ -35,8 +35,7 @@ BuildRequires: pkgconfig(capi-system-runtime-info)
 BuildRequires: pkgconfig(capi-system-sensor)
 BuildRequires: pkgconfig(capi-system-system-settings)
 # For IVI, it doesn't need sim package.
-%bcond_with ivi
-%if !%{with ivi}
+%if "%{profile}" != "ivi"
 BuildRequires: pkgconfig(capi-telephony-sim)
 %endif
 BuildRequires: pkgconfig(capi-web-favorites)
@@ -101,15 +100,23 @@ cp %{SOURCE5} .
 %build
 
 export GYP_GENERATORS='make'
-./tools/gyp/gyp \
---depth=.       \
--Dextension_build_type=Debug   \
+GYP_OPTIONS="--depth=. -Dtizen=1 -Dextension_build_type=Debug"
+
 %if %{with wayland}
--Ddisplay_type=wayland \
+GYP_OPTIONS="$GYP_OPTIONS -Ddisplay_type=wayland"
 %else
--Ddisplay_type=x11 \
+GYP_OPTIONS="$GYP_OPTIONS -Ddisplay_type=x11"
 %endif
-tizen-wrt.gyp
+
+%if "%{profile}" == "mobile"
+GYP_OPTIONS="$GYP_OPTIONS -Dextension_host_os=mobile"
+%else
+%if "%{profile}" == "ivi"
+GYP_OPTIONS="$GYP_OPTIONS -Dextension_host_os=ivi"
+%endif
+%endif
+
+./tools/gyp/gyp $GYP_OPTIONS tizen-wrt.gyp
 
 make %{?_smp_mflags}
 

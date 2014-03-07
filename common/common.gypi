@@ -1,8 +1,7 @@
 {
   'variables': {
-    # If capi-system-power package exists, the host is considered to be Tizen Mobile.
-    # Note, the spec file requires this package: BuildRequires: pkgconfig(capi-system-power).
-    'extension_host_os%': '<!(pkg-config --exists capi-system-power; if [ $? = 0 ]; then echo mobile; else echo desktop; fi)',
+    'extension_host_os%': 'desktop',
+    'tizen%': '0',
     'telephony_sim_available%': '<!(pkg-config --exists capi-telephony-sim; if [ $? = 0 ]; then echo true; else echo false; fi)',
     'extension_build_type%': '<(extension_build_type)',
     'extension_build_type%': 'Debug',
@@ -18,7 +17,9 @@
         'sources/': [['exclude', '_desktop\\.cc$|desktop/']],
         'includes/': [['exclude', '_desktop\\.gypi$|desktop/']],
       }],
+      ['tizen == 1', { 'defines': ['TIZEN'] } ],
       ['extension_host_os == "mobile"', { 'defines': ['TIZEN_MOBILE'] } ],
+      ['extension_host_os == "ivi"', { 'defines': ['TIZEN_IVI'] } ],
       ['extension_host_os == "desktop"', { 'defines': ['GENERIC_DESKTOP'] } ],
       ['telephony_sim_available == "true"', { 'defines': ['SYSTEMINFO_SIM_ACCESS'] } ],
       ['extension_build_type== "Debug"', {

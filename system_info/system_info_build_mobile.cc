@@ -5,7 +5,7 @@
 #include "system_info/system_info_build.h"
 
 #include <stdlib.h>
-#if defined(TIZEN_MOBILE)
+#if defined(TIZEN)
 #include <system_info.h>
 #endif
 

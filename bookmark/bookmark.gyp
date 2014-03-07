@@ -21,7 +21,7 @@
 
       # Evas.h is used in favorites.h.
       'conditions': [
-        [ 'extension_host_os == "mobile"', {
+        [ 'tizen == 1', {
             'variables': { 'packages': ['capi-web-favorites', 'evas'] },
         }],
       ],

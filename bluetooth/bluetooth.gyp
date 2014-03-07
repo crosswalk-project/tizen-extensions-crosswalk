@@ -32,7 +32,7 @@
             'defines': ['BLUEZ_4'],
           }
         ],
-        [ 'extension_host_os == "mobile"', {
+        [ 'tizen == 1', {
             'variables': { 'packages': ['capi-network-bluetooth'] },
         }],
       ],

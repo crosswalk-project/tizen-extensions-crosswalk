@@ -5,7 +5,7 @@
 #ifndef SYSTEM_INFO_SYSTEM_INFO_SIM_H_
 #define SYSTEM_INFO_SYSTEM_INFO_SIM_H_
 
-#if defined(TIZEN_MOBILE)
+#if defined(TIZEN)
 #include <errno.h>
 #include <sim.h>
 #include <stdlib.h>
@@ -41,7 +41,7 @@ class SysInfoSim : public SysInfoObject {
     SYSTEM_INFO_SIM_UNKNOWN
   };
 
-#if defined(TIZEN_MOBILE)
+#if defined(TIZEN)
   typedef int (*SIMGetterFunction1)(char** out);
   typedef int (*SIMGetterFunction2)(char** out1, char** out2);
 
@@ -61,7 +61,7 @@ class SysInfoSim : public SysInfoObject {
         msin_(""),
         spn_("") {}
 
-#if defined(TIZEN_MOBILE)
+#if defined(TIZEN)
   bool QuerySIMStatus();
   bool QuerySIM(SIMGetterFunction1 getter,
                 std::string& member,

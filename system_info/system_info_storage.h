@@ -45,7 +45,7 @@ class SysInfoStorage : public SysInfoObject {
   std::string GetDevPathFromMountPath(const std::string& mnt_path);
 
   struct udev* udev_;
-#elif defined(TIZEN_MOBILE)
+#elif defined(TIZEN)
   bool GetInternal(picojson::value& error, picojson::value& unit);
   bool GetMMC(picojson::value& error, picojson::value& unit);
 #endif

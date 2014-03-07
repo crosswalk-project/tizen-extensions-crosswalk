@@ -6,7 +6,7 @@
 
 #if defined(GENERIC_DESKTOP)
 #include "power/power_instance_desktop.h"
-#elif defined(TIZEN_MOBILE)
+#elif defined(TIZEN)
 #include "power/power_instance_mobile.h"
 #endif
 
@@ -27,7 +27,7 @@ PowerExtension::~PowerExtension() {}
 common::Instance* PowerExtension::CreateInstance() {
 #if defined(GENERIC_DESKTOP)
   return new PowerInstanceDesktop;
-#elif defined(TIZEN_MOBILE)
+#elif defined(TIZEN)
   return new PowerInstanceMobile(&power_event_source_);
 #endif
   return NULL;

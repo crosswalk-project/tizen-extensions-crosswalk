@@ -13,7 +13,7 @@
 
 #if defined(GENERIC_DESKTOP)
   #define ACPI_BACKLIGHT_DIR "/sys/class/backlight/acpi_video0"
-#elif defined(TIZEN_MOBILE)
+#elif defined(TIZEN)
   #define ACPI_BACKLIGHT_DIR "/sys/class/backlight/psb-bl"
 #else
   #error "Unsupported platform"

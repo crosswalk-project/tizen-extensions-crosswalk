@@ -27,7 +27,7 @@
             'system_info_sim_mobile.cc',
           ]
         }],
-        [ 'extension_host_os == "mobile"', {
+        [ 'tizen == 1', {
           'variables': {
             'packages': [
               'appcore-common',

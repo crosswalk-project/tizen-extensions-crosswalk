@@ -7,7 +7,7 @@
 
 #include "common/extension.h"
 
-#if defined(TIZEN_MOBILE)
+#if defined(TIZEN)
 #include "power/mobile/power_event_source.h"
 #endif
 
@@ -20,7 +20,7 @@ class PowerExtension : public common::Extension {
   // common::Extension implementation.
   virtual common::Instance* CreateInstance();
 
-#if defined(TIZEN_MOBILE)
+#if defined(TIZEN)
   PowerEventSource power_event_source_;
 #endif
 };

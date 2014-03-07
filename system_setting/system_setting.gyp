@@ -18,7 +18,7 @@
         '../common/extension.cc',
       ],
       'conditions': [
-        ['extension_host_os=="mobile"', {
+        ['tizen == 1', {
           'includes': [
             '../common/pkg-config.gypi',
           ],
