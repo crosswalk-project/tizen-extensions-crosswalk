@@ -5,7 +5,7 @@
 #ifndef SYSTEM_INFO_SYSTEM_INFO_LOCALE_H_
 #define SYSTEM_INFO_SYSTEM_INFO_LOCALE_H_
 
-#if defined(TIZEN_MOBILE)
+#if defined(TIZEN)
 #include <vconf.h>
 #include <vconf-keys.h>
 #endif
@@ -43,7 +43,7 @@ class SysInfoLocale : public SysInfoObject {
   static gboolean OnUpdateTimeout(gpointer user_data);
 
   int timeout_cb_id_;
-#elif defined(TIZEN_MOBILE)
+#elif defined(TIZEN)
   static void OnCountryChanged(keynode_t* node, void* user_data);
   static void OnLanguageChanged(keynode_t* node, void* user_data);
   void Update();

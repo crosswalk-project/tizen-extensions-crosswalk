@@ -5,7 +5,7 @@
 #ifndef SYSTEM_INFO_SYSTEM_INFO_CELLULAR_NETWORK_H_
 #define SYSTEM_INFO_SYSTEM_INFO_CELLULAR_NETWORK_H_
 
-#if defined(TIZEN_MOBILE)
+#if defined(TIZEN)
 #include <vconf-keys.h>
 #include <vconf.h>
 #endif
@@ -33,7 +33,7 @@ class SysInfoCellularNetwork : public SysInfoObject {
  private:
   explicit SysInfoCellularNetwork() {}
 
-#if defined(TIZEN_MOBILE)
+#if defined(TIZEN)
   void SendUpdate();
   void SetData(picojson::value& data);
 

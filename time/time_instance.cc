@@ -4,7 +4,7 @@
 
 #include "time/time_instance.h"
 
-#if defined(TIZEN_MOBILE)
+#if defined(TIZEN)
 #include <vconf.h>
 #endif
 
@@ -329,7 +329,7 @@ UnicodeString TimeInstance::getDateTimeFormat(DateTimeFormatType type,
     if (type != TIME_FORMAT)
       skeleton = UDAT_YEAR_MONTH_WEEKDAY_DAY;
 
-#if defined(TIZEN_MOBILE)
+#if defined(TIZEN)
     int value = 0;
     if (vconf_get_int(VCONFKEY_REGIONFORMAT_TIME1224, &value) == -1)
       skeleton += "hhmmss";

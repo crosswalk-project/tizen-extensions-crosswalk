@@ -21,7 +21,7 @@
 
 #include <dlfcn.h>
 #include <stdlib.h>
-#if defined(TIZEN_MOBILE)
+#if defined(TIZEN)
 #include <pkgmgr-info.h>
 #include <sensors.h>
 #include <system_info.h>
@@ -166,7 +166,7 @@ void SystemInfoInstance::HandleSyncMessage(const char* message) {
 void SystemInfoInstance::HandleGetCapabilities() {
   picojson::value::object o;
 
-#if defined(TIZEN_MOBILE)
+#if defined(TIZEN)
   bool b;
   int i;
   char* s = NULL;

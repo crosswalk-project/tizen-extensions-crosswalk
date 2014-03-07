@@ -7,7 +7,7 @@
 
 #include "common/extension.h"
 
-#if defined(TIZEN_MOBILE)
+#if defined(TIZEN)
 #include "notification/mobile/notification_manager.h"
 #endif
 
@@ -20,7 +20,7 @@ class NotificationExtension : public common::Extension {
   // common::Extension implementation.
   virtual common::Instance* CreateInstance();
 
-#if defined(TIZEN_MOBILE)
+#if defined(TIZEN)
   NotificationManager manager_;
 #endif
 };

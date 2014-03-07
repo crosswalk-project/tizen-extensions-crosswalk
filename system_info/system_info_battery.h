@@ -8,7 +8,7 @@
 #include <glib.h>
 #include <libudev.h>
 
-#if defined(TIZEN_MOBILE)
+#if defined(TIZEN)
 #include <vconf.h>
 #include <vconf-keys.h>
 #endif
@@ -44,7 +44,7 @@ class SysInfoBattery : public SysInfoObject {
 
   udev* udev_;
   int timeout_cb_id_;
-#elif defined(TIZEN_MOBILE)
+#elif defined(TIZEN)
   void UpdateLevel(double level);
   void UpdateCharging(bool charging);
   static void OnLevelChanged(keynode_t* node, void* user_data);

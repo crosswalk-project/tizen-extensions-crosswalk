@@ -19,7 +19,7 @@
         'tizen/tizen.gyp:*',
       ],
       'conditions': [
-        [ 'extension_host_os == "mobile"', {
+        [ 'tizen == 1', {
           'dependencies': [
             'application/application.gyp:*',
             'download/download.gyp:*',
@@ -34,7 +34,7 @@
       'type': 'none',
 
       'conditions': [
-        [ 'extension_host_os == "mobile"', {
+        [ 'tizen == 1', {
           'actions': [
             {
               'variables': {

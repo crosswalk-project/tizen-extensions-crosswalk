@@ -7,7 +7,7 @@
 
 #if defined(GENERIC_DESKTOP)
 #include <gio/gio.h>
-#elif defined(TIZEN_MOBILE)
+#elif defined(TIZEN)
 #include <net_connection.h>
 #endif
 #include <string>
@@ -88,7 +88,7 @@ class SysInfoWifiNetwork : public SysInfoObject {
   std::string active_device_;
   std::string ipv6_config_;
   unsigned int ip_address_desktop_;
-#elif defined(TIZEN_MOBILE)
+#elif defined(TIZEN)
   bool GetIPv4Address();
   bool GetIPv6Address();
   bool GetSignalStrength();

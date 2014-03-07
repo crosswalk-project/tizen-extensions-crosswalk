@@ -5,7 +5,7 @@
 #ifndef SYSTEM_INFO_SYSTEM_INFO_DEVICE_ORIENTATION_H_
 #define SYSTEM_INFO_SYSTEM_INFO_DEVICE_ORIENTATION_H_
 
-#if defined(TIZEN_MOBILE)
+#if defined(TIZEN)
 #include <sensor.h>
 #include <vconf.h>
 #endif
@@ -42,7 +42,7 @@ class SysInfoDeviceOrientation : public SysInfoObject {
       : status_(PORTRAIT_PRIMARY),
         sensorHandle_(0) {}
 
-#if defined(TIZEN_MOBILE)
+#if defined(TIZEN)
   void SetStatus();
   bool SetAutoRotation();
   void SendUpdate();

@@ -7,7 +7,7 @@
 #if defined(GENERIC_DESKTOP)
 #include <libnotify/notify.h>
 #include "notification/notification_instance_desktop.h"
-#elif defined(TIZEN_MOBILE)
+#elif defined(TIZEN)
 #include "notification/notification_instance_mobile.h"
 #endif
 
@@ -38,7 +38,7 @@ NotificationExtension::~NotificationExtension() {}
 common::Instance* NotificationExtension::CreateInstance() {
 #if defined(GENERIC_DESKTOP)
   return new NotificationInstanceDesktop;
-#elif defined(TIZEN_MOBILE)
+#elif defined(TIZEN)
   return new NotificationInstanceMobile(&manager_);
 #endif
   return NULL;

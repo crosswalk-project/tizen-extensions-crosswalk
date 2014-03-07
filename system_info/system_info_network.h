@@ -7,7 +7,7 @@
 
 #if defined(GENERIC_DESKTOP)
 #include <gio/gio.h>
-#elif defined(TIZEN_MOBILE)
+#elif defined(TIZEN)
 #include <net_connection.h>
 #endif
 #include <string>
@@ -80,7 +80,7 @@ class SysInfoNetwork : public SysInfoObject {
   std::string active_connection_;
   std::string active_device_;
   guint device_type_;
-#elif defined(TIZEN_MOBILE)
+#elif defined(TIZEN)
   bool GetNetworkType();
   static void OnTypeChanged(connection_type_e type, void* user_data);
 

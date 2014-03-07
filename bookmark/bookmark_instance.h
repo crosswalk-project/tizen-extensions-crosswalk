@@ -5,7 +5,7 @@
 #ifndef BOOKMARK_BOOKMARK_INSTANCE_H_
 #define BOOKMARK_BOOKMARK_INSTANCE_H_
 
-#if defined(TIZEN_MOBILE)
+#if defined(TIZEN)
 #include <favorites.h>
 #endif
 

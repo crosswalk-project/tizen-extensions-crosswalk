@@ -5,7 +5,7 @@
 #ifndef SYSTEM_INFO_SYSTEM_INFO_PERIPHERAL_H_
 #define SYSTEM_INFO_SYSTEM_INFO_PERIPHERAL_H_
 
-#if defined(TIZEN_MOBILE)
+#if defined(TIZEN)
 #include <vconf.h>
 #include <vconf-keys.h>
 #endif
@@ -33,7 +33,7 @@ class SysInfoPeripheral : public SysInfoObject {
  private:
   explicit SysInfoPeripheral() {}
 
-#if defined(TIZEN_MOBILE)
+#if defined(TIZEN)
   void SetWFD(int wfd);
   void SetHDMI(int hdmi);
 
