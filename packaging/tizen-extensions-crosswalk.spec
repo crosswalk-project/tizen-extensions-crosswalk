@@ -38,6 +38,10 @@ BuildRequires: pkgconfig(capi-system-system-settings)
 %if "%{profile}" != "ivi"
 BuildRequires: pkgconfig(capi-telephony-sim)
 %endif
+%if "%{profile}" == "mobile"
+BuildRequires: pkgconfig(contacts-service2)
+BuildRequires: pkgconfig(libpcrecpp)
+%endif
 BuildRequires: pkgconfig(capi-web-favorites)
 BuildRequires: pkgconfig(capi-web-url-download)
 BuildRequires: pkgconfig(dbus-glib-1)

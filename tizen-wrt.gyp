@@ -22,8 +22,9 @@
         [ 'tizen == 1', {
           'dependencies': [
             'application/application.gyp:*',
-            'download/download.gyp:*',
             'bookmark/bookmark.gyp:*',
+            'callhistory/callhistory.gyp:*',
+            'download/download.gyp:*',
             'messageport/messageport.gyp:*',
           ],
         }],
