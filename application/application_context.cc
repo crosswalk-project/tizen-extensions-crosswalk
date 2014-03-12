@@ -6,7 +6,6 @@
 
 #include <app_manager.h>
 #include <memory>
-#include <tuple>
 
 #include "application/application_manager.h"
 

@@ -16,7 +16,8 @@ class ApplicationContext {
  public:
   static picojson::object* GetAllRunning(ApplicationManager* manager);
 
-  ApplicationContext(ApplicationManager* manager, const std::string& context_id);
+  ApplicationContext(ApplicationManager* manager,
+                     const std::string& context_id);
   ~ApplicationContext();
 
   std::string Serialize() const;
