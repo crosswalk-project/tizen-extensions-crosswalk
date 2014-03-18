@@ -175,10 +175,12 @@ install -p -D %{name}.png %{buildroot}%{_desktop_icondir}/%{_system_info_demo_pa
 %files
 # TODO(rakuco): This causes problems on 2.1 when creating the package.
 # %license LICENSE
+%defattr(-,root,root,-)
 %{_bindir}/%{name}
 %{_libdir}/%{name}/libtizen*.so
 
 %files -n %{_bluetooth_demo_package}
+%defattr(-,root,root,-)
 %{_bindir}/%{_bluetooth_demo_package}
 %{_manifestdir}/%{_bluetooth_demo_package}.xml
 %{_desktop_icondir}/%{_bluetooth_demo_package}.png
@@ -188,6 +190,7 @@ install -p -D %{name}.png %{buildroot}%{_desktop_icondir}/%{_system_info_demo_pa
 %{_datarootdir}/%{name}/demos/tizen/images/*.png
 
 %files -n %{_examples_package}
+%defattr(-,root,root,-)
 %{_bindir}/%{_examples_package}
 %{_manifestdir}/%{_examples_package}.xml
 %{_desktop_icondir}/%{_examples_package}.png
@@ -195,6 +198,7 @@ install -p -D %{name}.png %{buildroot}%{_desktop_icondir}/%{_system_info_demo_pa
 %{_datarootdir}/%{name}/examples/js/*.js
 
 %files -n %{_system_info_demo_package}
+%defattr(-,root,root,-)
 %{_bindir}/%{_system_info_demo_package}
 %{_manifestdir}/%{_system_info_demo_package}.xml
 %{_desktop_icondir}/%{_system_info_demo_package}.png
