@@ -1,0 +1,161 @@
+<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"
+                      "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
+<!-- GDBus 2.32.4 -->
+<node>
+  <interface name="org.gnome.UPnP.MediaContainer2">
+    <method name="ListChildren">
+      <arg type="u" name="Offset" direction="in">
+      </arg>
+      <arg type="u" name="Max" direction="in">
+      </arg>
+      <arg type="as" name="Filter" direction="in">
+      </arg>
+      <arg type="aa{sv}" name="Children" direction="out">
+      </arg>
+    </method>
+    <method name="ListChildrenEx">
+      <arg type="u" name="Offset" direction="in">
+      </arg>
+      <arg type="u" name="Max" direction="in">
+      </arg>
+      <arg type="as" name="Filter" direction="in">
+      </arg>
+      <arg type="s" name="SortBy" direction="in">
+      </arg>
+      <arg type="aa{sv}" name="Children" direction="out">
+      </arg>
+    </method>
+    <method name="ListContainers">
+      <arg type="u" name="Offset" direction="in">
+      </arg>
+      <arg type="u" name="Max" direction="in">
+      </arg>
+      <arg type="as" name="Filter" direction="in">
+      </arg>
+      <arg type="aa{sv}" name="Children" direction="out">
+      </arg>
+    </method>
+    <method name="ListContainersEx">
+      <arg type="u" name="Offset" direction="in">
+      </arg>
+      <arg type="u" name="Max" direction="in">
+      </arg>
+      <arg type="as" name="Filter" direction="in">
+      </arg>
+      <arg type="s" name="SortBy" direction="in">
+      </arg>
+      <arg type="aa{sv}" name="Children" direction="out">
+      </arg>
+    </method>
+    <method name="ListItems">
+      <arg type="u" name="Offset" direction="in">
+      </arg>
+      <arg type="u" name="Max" direction="in">
+      </arg>
+      <arg type="as" name="Filter" direction="in">
+      </arg>
+      <arg type="aa{sv}" name="Children" direction="out">
+      </arg>
+    </method>
+    <method name="ListItemsEx">
+      <arg type="u" name="Offset" direction="in">
+      </arg>
+      <arg type="u" name="Max" direction="in">
+      </arg>
+      <arg type="as" name="Filter" direction="in">
+      </arg>
+      <arg type="s" name="SortBy" direction="in">
+      </arg>
+      <arg type="aa{sv}" name="Children" direction="out">
+      </arg>
+    </method>
+    <method name="SearchObjects">
+      <arg type="s" name="Query" direction="in">
+      </arg>
+      <arg type="u" name="Offset" direction="in">
+      </arg>
+      <arg type="u" name="Max" direction="in">
+      </arg>
+      <arg type="as" name="Filter" direction="in">
+      </arg>
+      <arg type="aa{sv}" name="Children" direction="out">
+      </arg>
+    </method>
+    <method name="SearchObjectsEx">
+      <arg type="s" name="Query" direction="in">
+      </arg>
+      <arg type="u" name="Offset" direction="in">
+      </arg>
+      <arg type="u" name="Max" direction="in">
+      </arg>
+      <arg type="as" name="Filter" direction="in">
+      </arg>
+      <arg type="s" name="SortBy" direction="in">
+      </arg>
+      <arg type="aa{sv}" name="Children" direction="out">
+      </arg>
+      <arg type="u" name="TotalItems" direction="out">
+      </arg>
+    </method>
+    <method name="Upload">
+      <arg type="s" name="DisplayName" direction="in">
+      </arg>
+      <arg type="s" name="FilePath" direction="in">
+      </arg>
+      <arg type="u" name="UploadId" direction="out">
+      </arg>
+      <arg type="o" name="Path" direction="out">
+      </arg>
+    </method>
+    <method name="CreateContainer">
+      <arg type="s" name="DisplayName" direction="in">
+      </arg>
+      <arg type="s" name="Type" direction="in">
+      </arg>
+      <arg type="as" name="ChildTypes" direction="in">
+      </arg>
+      <arg type="o" name="Path" direction="out">
+      </arg>
+    </method>
+    <method name="GetCompatibleResource">
+      <arg type="s" name="ProtocolInfo" direction="in">
+      </arg>
+      <arg type="as" name="Filter" direction="in">
+      </arg>
+      <arg type="a{sv}" name="Properties" direction="out">
+      </arg>
+    </method>
+    <method name="CreateReference">
+      <arg type="o" name="Path" direction="in">
+      </arg>
+      <arg type="o" name="RefPath" direction="out">
+      </arg>
+    </method>
+    <property type="u" name="ChildCount" access="read">
+    </property>
+    <property type="b" name="Searchable" access="read">
+    </property>
+    <property type="a(sb)" name="CreateClasses" access="read">
+    </property>
+    <property type="u" name="ContainerUpdateID" access="read">
+    </property>
+    <property type="u" name="TotalDeletedChildCount" access="read">
+    </property>
+    <property type="aa{sv}" name="Resources" access="read">
+    </property>
+    <property type="as" name="URLs" access="read">
+    </property>
+    <property type="s" name="MIMEType" access="read">
+    </property>
+    <property type="s" name="DLNAProfile" access="read">
+    </property>
+    <property type="a{sb}" name="DLNAConversion" access="read">
+    </property>
+    <property type="a{sb}" name="DLNAOperation" access="read">
+    </property>
+    <property type="a{sb}" name="DLNAFlags" access="read">
+    </property>
+    <property type="x" name="Size" access="read">
+    </property>
+  </interface>
+</node>
