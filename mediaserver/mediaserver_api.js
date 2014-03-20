@@ -230,12 +230,21 @@ MediaServer.prototype.createFolder = function(folderName) {
   return createPromise(msg);
 };
 
+function createSortString(str) {
+  var sortString;
+  if (str.length) {
+    sortString = str.replace('ASC','+')
+    sortString = sortString.replace('DESC','-')
+  }
+  return sortString;
+}
+
 MediaServer.prototype.browse = function(containerId, sortMode, count, offset) {
   var msg = {
     'cmd': 'browse',
     'serverId': this.root.id,
     'containerId': containerId,
-    'sortMode': sortMode,
+    'sortMode': createSortString(sortMode),
     'count': count,
     'offset': offset
   };
@@ -249,7 +258,7 @@ MediaServer.prototype.find =
     'serverId': this.root.id,
     'containerId': containerId,
     'searchFilter': searchFilter,
-    'sortMode': sortMode,
+    'sortMode': createSortString(sortMode),
     'count': count,
     'offset': offset
   };

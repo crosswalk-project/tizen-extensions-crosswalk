@@ -32,8 +32,16 @@ function browseRootContainer(id) {
 function browseContainer(id) {
   emptyContainer('mediaObjectsContainer');
   var server = servers[getServerId()];
-  server.browse(id, '', 0 , 0).then(listMediaObjects);
+  server.browse(id, getSortOptions(), 0 , 0).then(listMediaObjects);
  }
+
+function getSortOptions() {
+  var sortParamIndex = document.getElementById('sortParameter').selectedIndex;
+  var sortParameter = document.getElementById('sortParameter').options[sortParamIndex].text;
+  var sortOptionIndex = document.getElementById('sortOptions').selectedIndex;
+  var sortOption = document.getElementById('sortOptions').options[sortOptionIndex].text
+  return sortOption + sortParameter;
+}
 
 function searchContainer(id) {
   emptyContainer('mediaObjectsContainer');
@@ -43,7 +51,7 @@ function searchContainer(id) {
   var selectedParameter = document.getElementById('searchParameter').options[selectedIndex].text;
   var searchValue = document.getElementById('searchField').value;
   var query = selectedParameter + ' contains ' + '"' + searchValue + '"';
-  server.find(server.root.id, query, '', 0, 0).then(listMediaObjects);
+  server.find(server.root.id, query, getSortOptions(), 0, 0).then(listMediaObjects);
 }
 
 function createContainer(id) {
@@ -154,6 +162,30 @@ function onServerFound(event) {
   p.appendChild(label_search);
   p.appendChild(selectElement);
   p.appendChild(searchField);
+  p.appendChild(document.createElement('br'));
+
+  var label_sort = document.createElement('Label');
+  var sortElement = document.createElement('select');
+  sortElement.id = 'sortParameter';
+  label_sort.for = sortElement.id;
+  label_sort.innerHTML = 'Sort by: ';
+  event.server.sortAttrs.forEach(function(sortAttr) {
+    var option = document.createElement('option');
+    option.text = sortAttr;
+    sortElement.add(option);
+  });
+
+  var sortOptions = document.createElement('select');
+  sortOptions.id = 'sortOptions';
+  var sortOptionASC = document.createElement('option');
+  var sortOptionDESC = document.createElement('option');
+  sortOptionASC.text = 'ASC';
+  sortOptionDESC.text = 'DESC';
+  sortOptions.add(sortOptionASC);
+  sortOptions.add(sortOptionDESC);
+  p.appendChild(label_sort);
+  p.appendChild(sortElement);
+  p.appendChild(sortOptions);
 
   var label = document.createElement('Label');
   var createContainerField = document.createElement('input');
