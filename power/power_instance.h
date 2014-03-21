@@ -2,13 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef POWER_POWER_INSTANCE_MOBILE_H_
-#define POWER_POWER_INSTANCE_MOBILE_H_
+#ifndef POWER_POWER_INSTANCE_H_
+#define POWER_POWER_INSTANCE_H_
 
 #include <power.h>
 #include "common/extension.h"
 #include "power/power_types.h"
-#include "power/mobile/power_event_source.h"
+#include "power/power_event_source.h"
 
 namespace picojson {
 class value;
@@ -44,4 +44,4 @@ class PowerInstanceMobile
   PowerEventSource* event_source_;
 };
 
-#endif  // POWER_POWER_INSTANCE_MOBILE_H_
+#endif  // POWER_POWER_INSTANCE_H_
