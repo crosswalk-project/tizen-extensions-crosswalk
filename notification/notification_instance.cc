@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "notification/notification_instance_mobile.h"
+#include "notification/notification_instance.h"
 
 #include <iostream>
 #include <vector>

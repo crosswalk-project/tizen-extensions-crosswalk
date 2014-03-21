@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "notification/mobile/notification_manager.h"
+#include "notification/notification_manager.h"
 
 NotificationManager::NotificationManager() {
   notification_register_detailed_changed_cb(
