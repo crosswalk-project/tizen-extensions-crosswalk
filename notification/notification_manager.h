@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef NOTIFICATION_MOBILE_NOTIFICATION_MANAGER_H_
-#define NOTIFICATION_MOBILE_NOTIFICATION_MANAGER_H_
+#ifndef NOTIFICATION_NOTIFICATION_MANAGER_H_
+#define NOTIFICATION_NOTIFICATION_MANAGER_H_
 
 #include <notification.h>
 #include <map>
@@ -71,4 +71,4 @@ class NotificationManager {
   IDMap id_map_;
 };
 
-#endif  // NOTIFICATION_MOBILE_NOTIFICATION_MANAGER_H_
+#endif  // NOTIFICATION_NOTIFICATION_MANAGER_H_
