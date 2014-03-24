@@ -42,6 +42,7 @@ BuildRequires: pkgconfig(libpcrecpp)
 %endif
 BuildRequires: pkgconfig(capi-web-favorites)
 BuildRequires: pkgconfig(capi-web-url-download)
+BuildRequires: pkgconfig(capi-content-media-content)
 BuildRequires: pkgconfig(dbus-glib-1)
 # Evas.h is required by capi-web-favorites.
 BuildRequires: pkgconfig(evas)

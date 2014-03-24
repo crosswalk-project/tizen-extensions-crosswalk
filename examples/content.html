@@ -1,0 +1,86 @@
+<html>
+<head>
+  <meta name="viewport" content="width=device-width">
+</head>
+
+<h1>Tizen Content API</h1>
+<body>
+<button onClick="handleUpdate()">Update</button>
+<button onClick="handleUpdateBatch()">Update Batch</button>
+<button onClick="handleGetDirectories()">Get Directories</button>
+<button onClick="handleFind()">Find</button>
+<button onClick="handleScanFile()">Scan File</button>
+
+<pre id="console"></pre>
+<script src="js/js-test-pre.js"></script>
+<script>
+
+function handleUpdate()
+{
+  try {
+    debug('tizen.content.update:');
+    tizen.content.update();
+  }
+  catch (err) {
+    debug(err.name);
+  }
+}
+
+function handleUpdateBatch()
+{
+  try {
+    debug('tizen.content.updateBatch:');
+    tizen.content.updateBatch();
+  }
+  catch (err) {
+    debug(err.name);
+  }
+}
+function handleGetDirectories()
+{
+  try {
+    debug('tizen.content.getDirectories:');
+    tizen.content.getDirectories(function(folders) {
+    for (var i = 0; i < folders.length; i++) {
+        debug(folders[i].title + ', ' + folders[i].directoryURI);
+      }    
+    }, 
+    function(err) {
+      debug(err.name);
+    });
+  }
+  catch (err) {
+    debug(err.name);
+  }
+}
+function handleFind()
+{
+  try {
+    debug('tizen.content.find:');
+    tizen.content.find(function(items) {
+      for (var i = 0; i < items.length; i++) {
+        debug(items[i].title + ', ' + items[i].mimeType + ', ' + items[i].contentURI);
+      }    
+    }, 
+    function(err) {
+      debug('find: error');
+    });
+  }
+  catch (err) {
+    debug(err.name);
+  }
+}
+function handleScanFile()
+{
+  try {
+    debug('tizen.content.scanFile:');
+    tizen.content.scanFile();
+  }
+  catch (err) {
+    debug(err.name);
+  }
+}
+
+</script>
+</body>
+</html>
