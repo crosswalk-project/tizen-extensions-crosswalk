@@ -13,13 +13,12 @@
 #include "common/picojson.h"
 
 namespace {
-
 std::string pathToURI(const std::string path) {
   static std::string scheme("file://");
 
   return scheme + path;
 }
-}
+}  // namespace
 
 unsigned ContentInstance::m_instanceCount = 0;
 
@@ -28,7 +27,7 @@ ContentInstance::ContentInstance() {
     std::cerr << "media_content_connect: error\n";
     return;
   }
-  m_instanceCount++;
+  ++m_instanceCount;
 }
 
 ContentInstance::~ContentInstance() {
@@ -98,7 +97,7 @@ void ContentInstance::HandleGetDirectoriesRequest(const picojson::value& msg) {
   ContentFolderList folderList;
   if (media_folder_foreach_folder_from_db(NULL,
           mediaFolderCallback,
-          reinterpret_cast<void *>(&folderList)) != MEDIA_CONTENT_ERROR_NONE) {
+          reinterpret_cast<void*>(&folderList)) != MEDIA_CONTENT_ERROR_NONE) {
     std::cerr << "media_folder_get_folder_count_from_db: error\n";
   } else {
     HandleGetDirectoriesReply(msg, &folderList);
@@ -107,10 +106,10 @@ void ContentInstance::HandleGetDirectoriesRequest(const picojson::value& msg) {
 
 void ContentInstance::HandleGetDirectoriesReply(const picojson::value& msg,
     ContentFolderList* folderList) {
-  const std::vector<ContentFolder *> &results = folderList->getAllItems();
+  const std::vector<ContentFolder*>& results = folderList->getAllItems();
   picojson::value::array folders;
 
-  for (unsigned int i = 0; i < results.size(); i++) {
+  for (unsigned i = 0; i < results.size(); i++) {
     ContentFolder* folder = results[i];
 
     picojson::value::object o;
@@ -134,7 +133,7 @@ bool ContentInstance::mediaFolderCallback(media_folder_h handle,
     return false;
 
   ContentFolderList* folderList =
-    reinterpret_cast<ContentFolderList *>(user_data);
+    reinterpret_cast<ContentFolderList*>(user_data);
 
   ContentFolder* folder = new ContentFolder;
   folder->init(handle);
@@ -149,7 +148,7 @@ void ContentInstance::HandleFindRequest(const picojson::value& msg) {
   ContentItemList itemList;
   if (media_info_foreach_media_from_db(NULL,
       mediaInfoCallback,
-      reinterpret_cast<ContentFolderList *>(&itemList))
+      reinterpret_cast<ContentFolderList*>(&itemList))
       != MEDIA_CONTENT_ERROR_NONE) {
     std::cerr << "media_info_foreach_media_from_db: error\n";
   } else {
@@ -160,7 +159,7 @@ void ContentInstance::HandleFindRequest(const picojson::value& msg) {
 void ContentInstance::HandleFindReply(
     const picojson::value& msg,
     ContentItemList* itemList) {
-  const std::vector<ContentItem *> &results = itemList->getAllItems();
+  const std::vector<ContentItem*> &results = itemList->getAllItems();
 
   picojson::value::array items;
 
