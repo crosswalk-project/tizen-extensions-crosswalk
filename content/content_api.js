@@ -81,7 +81,10 @@ ContentManager.prototype.getDirectories = function(onsuccess, onerror) {
 
         for (var i = 0; i < result.value.length; i++) {
           var folder = result.value[i];
-          var jsonFolder = new Folder(folder.directoryURI, folder.id, folder.storageType, folder.title);
+          var jsonFolder = new Folder(folder.directoryURI,
+              folder.id,
+              folder.storageType,
+              folder.title);
           folders.push(jsonFolder)
         }
         onsuccess(folders);
@@ -106,17 +109,17 @@ ContentManager.prototype.find = function(onsuccess, onerror, directoryId, filter
         for (var i = 0; i < result.value.length; i++) {
           var content = result.value[i];
           var jsonContent = new Content(content.id, 
-                  content.name, 
-                  content.type, 
-                  content.mimeType, 
-                  content.title, 
-                  content.contentURI, 
-                  content.thumnailURIs, 
-                  content.releaseDate, 
-                  content.modifiedDate, 
-                  content.size, 
-                  content.description, 
-                  content.rating);
+              content.name,
+              content.type,
+              content.mimeType,
+              content.title,
+              content.contentURI,
+              content.thumnailURIs,
+              content.releaseDate,
+              content.modifiedDate,
+              content.size,
+              content.description,
+              content.rating);
           contents.push(jsonContent);
         }     
         onsuccess(contents);
