@@ -7,7 +7,7 @@
 #if defined(GENERIC_DESKTOP)
 #include "power/power_instance_desktop.h"
 #elif defined(TIZEN)
-#include "power/power_instance.h"
+#include "power/power_instance_tizen.h"
 #endif
 
 common::Extension* CreateExtension() {

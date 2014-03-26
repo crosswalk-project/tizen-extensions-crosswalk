@@ -10,8 +10,12 @@
         'power_api.js',
         'power_extension.cc',
         'power_extension.h',
+        'power_event_source_tizen.cc',
+        'power_event_source_tizen.h',
         'power_instance_desktop.cc',
         'power_instance_desktop.h',
+        'power_instance_tizen.cc',
+        'power_instance_tizen.h',
         'power_types.h',
         '../common/extension.h',
         '../common/extension.cc',
@@ -30,12 +34,6 @@
               'vconf',
             ]
           },
-          'sources': [
-            'power_event_source.cc',
-            'power_event_source.h',
-            'power_instance.cc',
-            'power_instance.h',
-          ],
         }],
         ['extension_host_os == "desktop"', {
           'variables': {

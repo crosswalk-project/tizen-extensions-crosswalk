@@ -8,7 +8,7 @@
 #include "common/extension.h"
 
 #if defined(TIZEN)
-#include "power/power_event_source.h"
+#include "power/power_event_source_tizen.h"
 #endif
 
 class PowerExtension : public common::Extension {

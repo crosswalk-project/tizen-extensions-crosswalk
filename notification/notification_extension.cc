@@ -8,7 +8,7 @@
 #include <libnotify/notify.h>
 #include "notification/notification_instance_desktop.h"
 #elif defined(TIZEN)
-#include "notification/notification_instance.h"
+#include "notification/notification_instance_tizen.h"
 #endif
 
 common::Extension* CreateExtension() {
