@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef NETWORK_BEARER_SELECTION_NETWORK_BEARER_SELECTION_CONTEXT_MOBILE_H_
-#define NETWORK_BEARER_SELECTION_NETWORK_BEARER_SELECTION_CONTEXT_MOBILE_H_
+#ifndef NETWORK_BEARER_SELECTION_NETWORK_BEARER_SELECTION_CONTEXT_TIZEN_H_
+#define NETWORK_BEARER_SELECTION_NETWORK_BEARER_SELECTION_CONTEXT_TIZEN_H_
 
 #include "network_bearer_selection/network_bearer_selection_context.h"
 
@@ -22,4 +22,4 @@ class NetworkBearerSelectionContextMobile
   NetworkBearerSelectionConnection* connection_;
 };
 
-#endif  // NETWORK_BEARER_SELECTION_NETWORK_BEARER_SELECTION_CONTEXT_MOBILE_H_
+#endif  // NETWORK_BEARER_SELECTION_NETWORK_BEARER_SELECTION_CONTEXT_TIZEN_H_

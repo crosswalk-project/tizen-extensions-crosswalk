@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef NETWORK_BEARER_SELECTION_NETWORK_BEARER_SELECTION_CONNECTION_MOBILE_H_
-#define NETWORK_BEARER_SELECTION_NETWORK_BEARER_SELECTION_CONNECTION_MOBILE_H_
+#ifndef NETWORK_BEARER_SELECTION_NETWORK_BEARER_SELECTION_CONNECTION_TIZEN_H_
+#define NETWORK_BEARER_SELECTION_NETWORK_BEARER_SELECTION_CONNECTION_TIZEN_H_
 
 #include "network_bearer_selection/network_bearer_selection_context.h"
 #include <net_connection.h>
@@ -25,4 +25,4 @@ class NetworkBearerSelectionConnection {
   bool is_valid_;
 };
 
-#endif  // NETWORK_BEARER_SELECTION_NETWORK_BEARER_SELECTION_CONNECTION_MOBILE_H_
+#endif  // NETWORK_BEARER_SELECTION_NETWORK_BEARER_SELECTION_CONNECTION_TIZEN_H_

@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "network_bearer_selection/network_bearer_selection_connection_mobile.h"
+#include "network_bearer_selection/network_bearer_selection_connection_tizen.h"
 
 #include <arpa/inet.h>
 #include <netdb.h>

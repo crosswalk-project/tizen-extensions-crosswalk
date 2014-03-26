@@ -17,7 +17,12 @@
         'sources/': [['exclude', '_desktop\\.cc$|desktop/']],
         'includes/': [['exclude', '_desktop\\.gypi$|desktop/']],
       }],
-      ['tizen == 1', { 'defines': ['TIZEN'] } ],
+      ['tizen == 1', {
+        'defines': ['TIZEN']
+      }, {
+        'sources/': [['exclude', '_tizen\\.cc$|tizen/']],
+        'includes/': [['exclude', '_tizen\\.gypi$|tizen/']],
+      }],
       ['extension_host_os == "mobile"', { 'defines': ['TIZEN_MOBILE'] } ],
       ['extension_host_os == "ivi"', { 'defines': ['TIZEN_IVI'] } ],
       ['extension_host_os == "desktop"', { 'defines': ['GENERIC_DESKTOP'] } ],
