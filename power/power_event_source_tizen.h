@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef POWER_POWER_EVENT_SOURCE_H_
-#define POWER_POWER_EVENT_SOURCE_H_
+#ifndef POWER_POWER_EVENT_SOURCE_TIZEN_H_
+#define POWER_POWER_EVENT_SOURCE_TIZEN_H_
 
 #include <power.h>
 #include <list>
@@ -37,4 +37,4 @@ class PowerEventSource {
   std::list<PowerEventListener*> listeners_;
 };
 
-#endif  // POWER_POWER_EVENT_SOURCE_H_
+#endif  // POWER_POWER_EVENT_SOURCE_TIZEN_H_

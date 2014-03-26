@@ -8,7 +8,7 @@
 #include "common/extension.h"
 
 #if defined(TIZEN)
-#include "notification/notification_manager.h"
+#include "notification/notification_manager_tizen.h"
 #endif
 
 class NotificationExtension : public common::Extension {

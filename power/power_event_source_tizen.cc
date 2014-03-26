@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "power/power_event_source.h"
+#include "power/power_event_source_tizen.h"
 
 #include <algorithm>
 #include <functional>

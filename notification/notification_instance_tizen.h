@@ -2,13 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef NOTIFICATION_NOTIFICATION_INSTANCE_H_
-#define NOTIFICATION_NOTIFICATION_INSTANCE_H_
+#ifndef NOTIFICATION_NOTIFICATION_INSTANCE_TIZEN_H_
+#define NOTIFICATION_NOTIFICATION_INSTANCE_TIZEN_H_
 
 #include <string>
 #include <map>
 #include "common/extension.h"
-#include "notification/notification_manager.h"
+#include "notification/notification_manager_tizen.h"
 
 namespace picojson {
 class value;
@@ -36,4 +36,4 @@ class NotificationInstanceMobile
   NotificationManager* manager_;
 };
 
-#endif  // NOTIFICATION_NOTIFICATION_INSTANCE_H_
+#endif  // NOTIFICATION_NOTIFICATION_INSTANCE_TIZEN_H_

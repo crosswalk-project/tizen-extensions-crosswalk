@@ -13,6 +13,7 @@
         'system_setting_instance.cc',
         'system_setting_instance.h',
         'system_setting_instance_desktop.cc',
+        'system_setting_instance_tizen.cc',
         '../common/extension.h',
         '../common/extension.cc',
       ],
@@ -27,9 +28,6 @@
               'vconf',
             ]
           },
-          'sources': [
-            'system_setting_instance_impl.cc',
-          ],
           'includes': [
             '../common/pkg-config.gypi',
           ],
