@@ -18,7 +18,23 @@ DEFINE_XWALK_EXTENSION(FilesystemContext)
 
 namespace {
 const unsigned kDefaultFileMode = 0755;
-const std::string kDefaultPath = "/opt/usr/media";
+const char kDefaultPath[] = "/opt/usr/media";
+const char kPathCamera[] = "/opt/usr/media/Camera";
+const char kPathSounds[] = "/opt/usr/media/Sounds";
+const char kPathImages[] = "/opt/usr/media/Images";
+const char kPathVideos[] = "/opt/usr/media/Videos";
+const char kPathDownloads[] = "/opt/usr/media/Downloads";
+const char kPathDocuments[] = "/opt/usr/media/Documents";
+
+const char kInternalStorage[] = "internal";
+const char kRemovableStorage[] = "removable";
+
+const char kStorageTypeInternal[] = "INTERNAL";
+const char kStorageTypeExternal[] = "EXTERNAL";
+const char kStorageStateMounted[] = "MOUNTED";
+const char kStorageStateRemoved[] = "REMOVED";
+const char kStorageStateUnmountable[] = "UNMOUNTABLE";
+
 unsigned int lastStreamId = 0;
 // FIXME(ricardotk): This needs another approach, kMaxSize is a palliative
 // solution.
@@ -39,18 +55,28 @@ std::string JoinPath(const std::string& one, const std::string& another) {
   return one + "/" + another;
 }
 
-std::string GetRealPath(std::string fullPath) {
-  // In the realpath, the first char of the virtual root dir name is uppercase.
-  // downloads/foo.txt -> Downloads/foo.txt
-  return JoinPath(kDefaultPath,
-                  static_cast<char>(toupper(fullPath.at(0))) +
-                  fullPath.substr(1));
+bool makePath(const std::string& path) {
+  struct stat st;
+  if (stat(path.c_str(), &st) != 0)
+    return mkdir(path.c_str(), kDefaultFileMode) == 0;
+  return true;
 }
 
 };  // namespace
 
 FilesystemContext::FilesystemContext(ContextAPI* api)
-  : api_(api) {}
+    : api_(api) {
+  initialize();
+}
+
+void FilesystemContext::initialize() {
+  AddInternalStorage("camera", kPathCamera);
+  AddInternalStorage("music", kPathSounds);
+  AddInternalStorage("images", kPathImages);
+  AddInternalStorage("videos", kPathVideos);
+  AddInternalStorage("downloads", kPathDownloads);
+  AddInternalStorage("documents", kPathDocuments);
+}
 
 FilesystemContext::~FilesystemContext() {
   FStreamMap::iterator it;
@@ -165,9 +191,12 @@ void FilesystemContext::HandleFileSystemManagerResolve(
     PostAsyncErrorReply(msg, INVALID_VALUES_ERR);
     return;
   } else {
-    if (location == "music")
-      location = "sounds";
     real_path = GetRealPath(location);
+  }
+
+  if (real_path.empty()) {
+    PostAsyncErrorReply(msg, NOT_FOUND_ERR);
+    return;
   }
 
   char* real_path_cstr = realpath(real_path.c_str(), NULL);
@@ -204,18 +233,31 @@ void FilesystemContext::HandleFileSystemManagerResolve(
 
 void FilesystemContext::HandleFileSystemManagerGetStorage(
       const picojson::value& msg) {
-  // FIXME(leandro): This requires specific Tizen support.
-  // storage_foreach_device_supported(Manager::getSupportedDeviceCB,
-  //                                  &storageList);
-  PostAsyncErrorReply(msg, NOT_SUPPORTED_ERR);
+  storage_foreach_device_supported(OnStorageDeviceSupported, this);
+  Storages::const_iterator it = storages_.find(msg.get("label").to_str());
+
+  if (it == storages_.end()) {
+    PostAsyncErrorReply(msg, NOT_FOUND_ERR);
+    return;
+  }
+
+  picojson::object storage_object = it->second.toJSON(it->first);
+  PostAsyncSuccessReply(msg, storage_object);
 }
 
 void FilesystemContext::HandleFileSystemManagerListStorages(
       const picojson::value& msg) {
-  // FIXME(leandro): This requires specific Tizen support.
-  // storage_foreach_device_supported(Manager::getSupportedDeviceCB,
-  //                                  &storageList);
-  PostAsyncErrorReply(msg, NOT_SUPPORTED_ERR);
+  storage_foreach_device_supported(OnStorageDeviceSupported, this);
+  picojson::array storage_objects;
+  Storages::const_iterator it = storages_.begin();
+  while (it != storages_.end()) {
+    picojson::object storage_object = it->second.toJSON(it->first);
+    storage_objects.push_back(picojson::value(storage_object));
+    ++it;
+  }
+
+  picojson::value value(storage_objects);
+  PostAsyncSuccessReply(msg, value);
 }
 
 void FilesystemContext::HandleFileOpenStream(const picojson::value& msg) {
@@ -1205,4 +1247,120 @@ void FilesystemContext::HandleFileStreamSetPosition(const picojson::value& msg,
   }
 
   SetSyncSuccess(reply);
+}
+
+std::string FilesystemContext::GetRealPath(const std::string& fullPath) {
+  std::size_t pos = fullPath.find_first_of('/');
+  std::string virtual_root = fullPath;
+
+  if (pos != std::string::npos) {
+    virtual_root = fullPath.substr(0, pos);
+  }
+
+  Storages::const_iterator it = storages_.find(virtual_root);
+
+  if (it == storages_.end())
+    return std::string();
+
+  if (pos != std::string::npos)
+    return it->second.GetFullPath() + fullPath.substr(pos);
+
+  return it->second.GetFullPath();
+}
+
+void FilesystemContext::AddInternalStorage(
+    const std::string& label, const std::string& path) {
+  if (makePath(path))
+    storages_.insert(SorageLabelPair(label,
+                                     Storage(-1,
+                                             Storage::STORAGE_TYPE_INTERNAL,
+                                             Storage::STORAGE_STATE_MOUNTED,
+                                             path)));
+}
+
+void FilesystemContext::AddStorage(int id,
+                                   storage_type_e type,
+                                   storage_state_e state,
+                                   const std::string& path) {
+  std::string label;
+  if (type == STORAGE_TYPE_INTERNAL)
+    label = kInternalStorage + std::to_string(id);
+  else if (type == STORAGE_TYPE_EXTERNAL)
+    label = kRemovableStorage + std::to_string(id);
+
+  storages_.insert(SorageLabelPair(label,
+                                   Storage(id,
+                                           type,
+                                           state,
+                                           path)));
+  if (std::find(watched_storages_.begin(),
+                watched_storages_.end(), id) != watched_storages_.end()) {
+    watched_storages_.push_back(id);
+    storage_set_state_changed_cb(id, OnStorageStateChanged, this);
+  }
+}
+
+void FilesystemContext::NotifyStorageStateChanged(int id,
+                                                  storage_state_e state) {
+  for (Storages::iterator it = storages_.begin(); it != storages_.end(); ++it) {
+    if (it->second.GetId() == id) {
+      it->second.SetState(state);
+      picojson::object reply;
+      reply["storage"] = picojson::value(it->second.toJSON(it->first));
+      reply["cmd"] = picojson::value("storageChanged");
+      picojson::value value(reply);
+      api_->PostMessage(value.serialize().c_str());
+      break;
+    }
+  }
+}
+
+bool FilesystemContext::OnStorageDeviceSupported(
+    int id, storage_type_e type, storage_state_e state,
+    const char *path, void* user_data) {
+  reinterpret_cast<FilesystemContext*>(user_data)->AddStorage(
+      id, type, state, path);
+  return true;
+}
+
+void FilesystemContext::OnStorageStateChanged(
+    int id, storage_state_e state, void* user_data) {
+  reinterpret_cast<FilesystemContext*>(user_data)->NotifyStorageStateChanged(
+      id, state);
+}
+
+FilesystemContext::Storage::Storage(
+    int id, int type, int state, const std::string& fullpath)
+  : id_(id),
+    type_(type),
+    state_(state),
+    fullpath_(fullpath) { }
+
+picojson::object FilesystemContext::Storage::toJSON(
+    const std::string& label) const {
+  picojson::object storage_object;
+  storage_object["label"] = picojson::value(label);
+  storage_object["type"] = picojson::value(type());
+  storage_object["state"] = picojson::value(state());
+  return storage_object;
+}
+
+std::string FilesystemContext::Storage::type() const {
+  return (type_ == Storage::STORAGE_TYPE_INTERNAL) ? kStorageTypeInternal :
+      kStorageTypeExternal;
+}
+
+std::string FilesystemContext::Storage::state() const {
+  switch (state_) {
+  case Storage::STORAGE_STATE_MOUNTED:
+  case Storage::STORAGE_STATE_MOUNTED_READONLY:
+    return kStorageStateMounted;
+  case Storage::STORAGE_STATE_REMOVED:
+    return kStorageStateRemoved;
+  case Storage::STORAGE_STATE_UNMOUNTABLE:
+    return kStorageStateUnmountable;
+  default:
+    assert(!"Not reached");
+  }
+  return std::string();
 }

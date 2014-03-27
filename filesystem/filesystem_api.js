@@ -5,6 +5,9 @@
 var _callbacks = {};
 var _next_reply_id = 0;
 
+var _listeners = {};
+var _next_listener_id = 0;
+
 var getNextReplyId = function() {
   return _next_reply_id++;
 };
@@ -26,14 +29,18 @@ var postMessage = function(msg, callback) {
 
 extension.setMessageListener(function(json) {
   var msg = JSON.parse(json);
-  var reply_id = msg.reply_id;
-  var callback = _callbacks[reply_id];
-  if (typeof(callback) === 'function') {
-    callback(msg);
-    delete msg.reply_id;
-    delete _callbacks[reply_id];
+  if (msg.cmd === 'storageChanged') {
+    handleStorageChanged(msg);
   } else {
-    console.log('Invalid reply_id from Tizen Filesystem: ' + reply_id);
+    var reply_id = msg.reply_id;
+    var callback = _callbacks[reply_id];
+    if (typeof(callback) === 'function') {
+      callback(msg);
+      delete msg.reply_id;
+      delete _callbacks[reply_id];
+    } else {
+      console.log('Invalid reply_id from Tizen Filesystem: ' + reply_id);
+    }
   }
 });
 
@@ -105,12 +112,10 @@ FileSystemManager.prototype.getStorage = function(label, onsuccess, onerror) {
     cmd: 'FileSystemManagerGetStorage',
     label: label
   }, function(result) {
-    if (result.isError) {
-      if (onerror)
-        onerror(new tizen.WebAPIError(result.errorCode));
-      else if (onsuccess)
-        onsuccess(new FileSystemStorage(result.label, result.type, result.state));
-    }
+    if (result.isError)
+      onerror(new tizen.WebAPIError(result.errorCode));
+    else
+      onsuccess(new FileSystemStorage(result.label, result.type, result.state));
   });
 };
 
@@ -122,34 +127,48 @@ FileSystemManager.prototype.listStorages = function(onsuccess, onerror) {
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
 
   postMessage({
-    cmd: 'FileSystemManagerListStorages',
-    location: location,
-    mode: mode
+    cmd: 'FileSystemManagerListStorages'
   }, function(result) {
-    if (result.isError) {
-      if (onerror) {
+    if (result.isError)
         onerror(new tizen.WebAPIError(result.errorCode));
-      } else if (onsuccess) {
+    else {
         var storages = [];
-
-        for (var i = 0; i < result.storages.length; i++) {
-          var storage = results.storages[i];
+        for (var i = 0; i < result.value.length; i++) {
+          var storage = result.value[i];
           storages.push(new FileSystemStorage(storage.label, storage.type, storage.state));
         }
-
         onsuccess(storages);
-      }
     }
   });
 };
 
+function handleStorageChanged(msg) {
+  var storage = msg.storage;
+  _listeners.forEach(function(id) {
+    _listeners[id](new FileSystemStorage(storage.label, storage.type, storage.state))
+  });
+}
+
 FileSystemManager.prototype.addStorageStateChangeListener = function(onsuccess, onerror) {
-  /* FIXME(leandro): Implement this. */
-  onsuccess(0);
+  if (!(onsuccess instanceof Function))
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+  if (onerror !== null && !(onerror instanceof Function) &&
+      arguments.length > 1)
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+
+  _listeners[_next_listener_id] = onsuccess;
+  return _next_listener_id++;
 };
 
 FileSystemManager.prototype.removeStorageStateChangeListener = function(watchId) {
-  /* FIXME(leandro): Implement this. */
+  if (!(typeof(watchId) !== 'number'))
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+
+  var index = _listeners.indexOf(watchId);
+  if (~index)
+    _listeners.slice(index, 1);
+  else
+    throw new tizen.WebAPIException(tizen.WebAPIException.NOT_FOUND_ERR);
 };
 
 function FileFilter(name, startModified, endModified, startCreated, endCreated) {
