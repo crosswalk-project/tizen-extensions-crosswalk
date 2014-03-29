@@ -15,6 +15,8 @@ class SystemInfoExtension : public common::Extension {
  private:
   // common::Extension implementation.
   virtual common::Instance* CreateInstance();
+
+  bool initialized_;
 };
 
 #endif  // SYSTEM_INFO_SYSTEM_INFO_EXTENSION_H_
