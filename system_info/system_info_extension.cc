@@ -15,16 +15,20 @@ common::Extension* CreateExtension() {
 // This will be generated from system_info_api.js.
 extern const char kSource_system_info_api[];
 
-SystemInfoExtension::SystemInfoExtension() {
+SystemInfoExtension::SystemInfoExtension(): initialized_(false) {
   const char* entry_points[] = { NULL };
   SetExtraJSEntryPoints(entry_points);
   SetExtensionName("tizen.systeminfo");
   SetJavaScriptAPI(kSource_system_info_api);
-  SystemInfoInstance::InstancesMapInitialize();
 }
 
 SystemInfoExtension::~SystemInfoExtension() {}
 
 common::Instance* SystemInfoExtension::CreateInstance() {
+  if (!initialized_) {
+    SystemInfoInstance::InstancesMapInitialize();
+    initialized_ = true;
+  }
+
   return new SystemInfoInstance;
 }
