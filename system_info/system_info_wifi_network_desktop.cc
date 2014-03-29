@@ -407,7 +407,7 @@ void SysInfoWifiNetwork::UpdateSSID(GVariant* value) {
   gconstpointer g_pointer = g_variant_get_fixed_array(value, &length,
                                                       sizeof(guchar));
   char* ssid = new char[length + 1];
-  ssid = reinterpret_cast<char*>(const_cast<void*>(g_pointer));
+  strncpy(ssid, reinterpret_cast<char*>(const_cast<void*>(g_pointer)), length);
   ssid[length] = '\0';
   ssid_ = (ssid_ == std::string(ssid)) ? ssid_ : std::string(ssid);
   delete[] ssid;
