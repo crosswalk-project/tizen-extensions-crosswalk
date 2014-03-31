@@ -13,12 +13,14 @@
       },
       'sources': [
         'content_api.js',
-        'content_extension.h',
         'content_extension.cc',
-        'content_instance.h',
+        'content_extension.h',
+        'content_filter.cc',
+        'content_filter.h',
         'content_instance.cc',
-        '../common/extension.h',
+        'content_instance.h',
         '../common/extension.cc',
+        '../common/extension.h',
       ],
       'includes': [
         '../common/pkg-config.gypi',

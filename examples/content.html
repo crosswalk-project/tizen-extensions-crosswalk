@@ -5,37 +5,49 @@
 
 <h1>Tizen Content API</h1>
 <body>
-<button onClick="handleUpdate()">Update</button>
-<button onClick="handleUpdateBatch()">Update Batch</button>
+<button onClick="handleCleanConsole()">Clean</button>
 <button onClick="handleGetDirectories()">Get Directories</button>
 <button onClick="handleFind()">Find</button>
 <button onClick="handleScanFile()">Scan File</button>
+
+<div>
+  <h2>Attribute Filter</h2>
+  <select id="attribute-name">
+    <option value="type">type</option>
+    <option value="mimeType">mime</option>
+    <option value="title">title</option>
+    <option value="contentURI">uri</option>
+    <option value="thumbnailURIs">thumbnails</option>
+    <option value="size">size</option>
+    <option value="rating">rating</option>
+    <option value="artists">artist</option>
+    <option value="duration">duration</option>
+    <option value="width">width</option>
+    <option value="height">height</option>
+  </select>
+  <select id="match-flag">
+    <option value="EXACTLY">EXACTLY</option>
+    <option value="FULLSTRING">FULLSTRING</option>
+    <option value="CONTAINS">CONTAINS</option>
+    <option value="STARTSWITH">STARTSWITH</option>
+    <option value="ENDSWITH">ENDSWITH</option>
+    <option value="EXISTS">EXISTS</option>
+  </select>
+  <input id="match-value" type="text">
+
+</div>
 
 <pre id="console"></pre>
 <script src="js/js-test-pre.js"></script>
 <script>
 
-function handleUpdate()
+function handleCleanConsole()
 {
-  try {
-    debug('tizen.content.update:');
-    tizen.content.update();
-  }
-  catch (err) {
-    debug(err.name);
-  }
+  var el = document.getElementById("console");
+  while (el.firstChild)
+    el.removeChild(el.firstChild);
 }
 
-function handleUpdateBatch()
-{
-  try {
-    debug('tizen.content.updateBatch:');
-    tizen.content.updateBatch();
-  }
-  catch (err) {
-    debug(err.name);
-  }
-}
 function handleGetDirectories()
 {
   try {
@@ -55,16 +67,28 @@ function handleGetDirectories()
 }
 function handleFind()
 {
+  var filter = null;
+
+  var e = document.getElementById("attribute-name");
+  var attributeName = e.options[e.selectedIndex].value;
+  e = document.getElementById("match-flag");
+  var matchFlag = e.options[e.selectedIndex].value;
+  var matchValue = document.getElementById('match-value').value;
+
+  debug("Filter: " + attributeName + ' ' + matchFlag + ' ' + matchValue);
+  if (matchValue != "" || matchFlag == "EXISTS")
+    filter = new tizen.AttributeFilter(attributeName, matchFlag, matchValue);
+
   try {
     debug('tizen.content.find:');
     tizen.content.find(function(items) {
       for (var i = 0; i < items.length; i++) {
-        debug(items[i].title + ', ' + items[i].mimeType + ', ' + items[i].contentURI);
+        debug(items[i].title + ', ' + items[i].mimeType);
       }    
     }, 
     function(err) {
       debug('find: error');
-    });
+    }, null, filter);
   }
   catch (err) {
     debug(err.name);

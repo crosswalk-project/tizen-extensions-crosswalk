@@ -54,24 +54,20 @@ class ContentInstance : public common::Instance {
 
 class ContentFolder {
  public:
-  ContentFolder() {
-    modifiedDate_ = { 0 };
-  }
-  ~ContentFolder() {}
-
   void init(media_folder_h handle);
 
   // Getters & Getters
-  std::string id() const { return id_; }
+  const std::string& id() const { return id_; }
   void setID(const std::string& id) { id_ = id; }
-  std::string directoryURI() const { return directoryURI_; }
+  const std::string& directoryURI() const { return directoryURI_; }
   void setDirectoryURI(const std::string& uri) { directoryURI_ = uri; }
-  std::string title() const { return title_; }
+  const std::string& title() const { return title_; }
   void setTitle(const std::string& title) { title_ = title; }
-  std::string storageType() const { return storageType_; }
+  const std::string& storageType() const { return storageType_; }
   void setStorageType(const std::string& type) { storageType_ = type; }
-  time_t modifiedDate() const { return modifiedDate_; }
-  void setModifiedDate(time_t modifiedDate) { modifiedDate_ = modifiedDate; }
+  const std::string& modifiedDate() const { return modifiedDate_; }
+  void setModifiedDate(const std::string& modifiedDate) {
+    modifiedDate_ = modifiedDate; }
 
 #ifdef DEBUG
   void print(void);
@@ -82,46 +78,72 @@ class ContentFolder {
   std::string directoryURI_;
   std::string title_;
   std::string storageType_;
-  time_t modifiedDate_;
+  std::string modifiedDate_;
 };
 
 class ContentItem {
  public:
-  ContentItem() {
-    releaseDate_ = { 0 };
-    modifiedDate_ = { 0 };
-    size_ = 0;
-    rating_ = 0;
-  }
-  ~ContentItem() {}
+  ContentItem() : size_(0), rating_(0), bitrate_(0), trackNumber_(0),
+      duration_(0), width_(0), height_(0), latitude_(0), longitude_(0)
+  {}
 
   void init(media_info_h handle);
 
   // Getters & Setters
-  std::string id() const { return id_; }
+  const std::string& id() const { return id_; }
   void setID(const std::string& id) { id_ = id; }
-  const std::string name() const { return name_; }
+  const std::string& name() const { return name_; }
   void setName(const std::string& name) { name_ = name; }
-  std::string type() const { return type_; }
+  const std::string& type() const { return type_; }
   void setType(const std::string& type) { type_ = type;}
-  std::string mimeType() const { return mimeType_; }
+  const std::string& mimeType() const { return mimeType_; }
   void setMimeType(const std::string& mimeType) { mimeType_ = mimeType; }
-  std::string title() const { return title_; }
+  const std::string& title() const { return title_; }
   void setTitle(const std::string& title) { title_ = title;}
-  std::string contentURI() const { return contentURI_; }
+  const std::string& contentURI() const { return contentURI_; }
   void setContentURI(const std::string& uri) { contentURI_ = uri; }
-  std::string thumbnailURIs() const { return thumbnailURIs_; }
+  const std::string& thumbnailURIs() const { return thumbnailURIs_; }
   void setThumbnailURIs(const std::string& uris) { thumbnailURIs_ = uris; }
-  time_t releaseDate() const { return releaseDate_; }
-  void setReleaseDate(time_t releaseDate) { releaseDate_ = releaseDate; }
-  time_t modifiedDate() const { return modifiedDate_; }
-  void setModifiedDate(time_t modifiedDate) { modifiedDate_ = modifiedDate; }
+  const std::string& releaseDate() const { return releaseDate_; }
+  void setReleaseDate(const std::string releaseDate) {
+    releaseDate_ = releaseDate; }
+  const std::string& modifiedDate() const { return modifiedDate_; }
+  void setModifiedDate(const std::string& modifiedDate) {
+    modifiedDate_ = modifiedDate; }
   uint64_t size() const { return size_; }
   void setSize(const uint64_t size) { size_ = size; }
-  std::string description() const { return description_; }
+  const std::string& description() const { return description_; }
   void setDescription(const std::string& desc) { description_ = desc; }
   uint64_t rating() const { return rating_; }
   void setRating(uint64_t rating) { rating_ = rating; }
+  // type = AUDIO and VIDEO
+  const std::string& album() const { return album_; }
+  void setAlbum(const std::string& album) { album_ = album;}
+  const std::string& genres() const { return genres_; }
+  void setGenres(const std::string& genres) { genres_ = genres;}
+  const std::string& artists() const { return artists_; }
+  void setArtists(const std::string& artists) { artists_ = artists;}
+  const std::string& composer() const { return composer_; }
+  void setComposer(const std::string& composer) { composer_ = composer;}
+  const std::string& copyright() const { return copyright_; }
+  void setCopyright(const std::string& copyright) { copyright_ = copyright;}
+  uint64_t bitrate() const { return rating_; }
+  void setBitrate(uint64_t bitrate) { bitrate_ = bitrate; }
+  uint64_t trackNumber() const { return bitrate_; }
+  void setTrackNumber(uint64_t num) { trackNumber_ = num; }
+  int duration() const { return duration_; }
+  void setDuration(int duration) { duration_ = duration; }
+  // type = IMAGE
+  uint64_t width() const { return width_; }
+  void setWidth(uint64_t width) { width_ = width; }
+  uint64_t height() const { return height_; }
+  void setHeight(uint64_t height) { height_ = height; }
+  const std::string& orientation() const { return orientation_; }
+  void setOrientation(const std::string& orintatin) {orientation_ = orintatin;}
+  double latitude() const { return latitude_; }
+  void setLatitude(double latitude) { latitude_ = latitude; }
+  double longitude() const { return latitude_; }
+  void setLongitude(double latitude) { latitude_ = latitude; }
 
 #ifdef DEBUG
   void print(void);
@@ -135,11 +157,28 @@ class ContentItem {
   std::string title_;
   std::string contentURI_;
   std::string thumbnailURIs_;
-  time_t releaseDate_;
-  time_t modifiedDate_;
+  std::string releaseDate_;
+  std::string modifiedDate_;
   uint64_t size_;
   std::string description_;
   uint64_t rating_;
+
+  // type = AUDIO and VIDEO
+  std::string album_;
+  std::string genres_;
+  std::string artists_;
+  std::string composer_;
+  std::string copyright_;
+  uint64_t bitrate_;
+  uint16_t trackNumber_;
+  int duration_;
+
+  // type = IMAGE
+  uint64_t width_;
+  uint64_t height_;
+  double latitude_;
+  double longitude_;
+  std::string orientation_;
 };
 
 class ContentFolderList {
