@@ -309,7 +309,7 @@ void ContentItem::init(media_info_h handle) {
   if (media_info_get_rating(handle, &i) == MEDIA_CONTENT_ERROR_NONE)
     setRating(i);
 
-  uint64_t ll;
+  unsigned long long ll; // NOLINT
   if (media_info_get_size(handle, &ll) == MEDIA_CONTENT_ERROR_NONE)
     setSize(ll);
 
