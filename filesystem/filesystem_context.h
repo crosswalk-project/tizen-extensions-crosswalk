@@ -5,11 +5,15 @@
 #ifndef FILESYSTEM_FILESYSTEM_CONTEXT_H_
 #define FILESYSTEM_FILESYSTEM_CONTEXT_H_
 
+#include <app_storage.h>
+
 #include <set>
 #include <string>
 #include <map>
 #include <fstream>
 #include <iostream>
+#include <utility>
+#include <vector>
 
 #include "common/extension_adapter.h"
 #include "common/picojson.h"
@@ -28,6 +32,41 @@ class FilesystemContext {
   void HandleSyncMessage(const char* message);
 
  private:
+  class Storage {
+   public:
+    /* Mapped to storage_type_e */
+    enum StorageType {
+      STORAGE_TYPE_INTERNAL,
+      STORAGE_TYPE_EXTERNAL,
+    };
+
+    /* Mapped to storage_state_e */
+    enum StorageState {
+      STORAGE_STATE_UNMOUNTABLE = -2,
+      STORAGE_STATE_REMOVED = -1,
+      STORAGE_STATE_MOUNTED = 0,
+      STORAGE_STATE_MOUNTED_READONLY = 1,
+    };
+
+    Storage(int id, int type, int state, const std::string& fullpath);
+
+    picojson::object toJSON(const std::string& label) const;
+
+    std::string type() const;
+    std::string state() const;
+    int GetId() const { return id_; }
+    const std::string& GetFullPath() const { return fullpath_; }
+    void SetState(int state) { state_ = state; }
+
+   private:
+    int id_;
+    int type_;
+    int state_;
+    std::string fullpath_;
+  };
+
+  void initialize();
+
   /* Asynchronous messages */
   void HandleFileSystemManagerResolve(const picojson::value& msg);
   void HandleFileSystemManagerGetStorage(const picojson::value& msg);
@@ -72,9 +111,23 @@ class FilesystemContext {
   void SetSyncSuccess(std::string& reply, std::string& output);
   void SetSyncSuccess(std::string& reply, picojson::value& output);
 
+  std::string GetRealPath(const std::string& fullPath);
+  void AddInternalStorage(const std::string& label, const std::string& path);
+  void AddStorage(int storage, storage_type_e type, storage_state_e state,
+      const std::string& path);
+  void NotifyStorageStateChanged(int id, storage_state_e state);
+  static bool OnStorageDeviceSupported(int id, storage_type_e type,
+      storage_state_e state, const char *path, void *user_data);
+  static void OnStorageStateChanged(int id, storage_state_e state,
+      void *user_data);
+
   ContextAPI* api_;
   typedef std::map <unsigned int, std::fstream*> FStreamMap;
   FStreamMap fstream_map_;
+  typedef std::map<std::string, Storage> Storages;
+  typedef std::pair<std::string, Storage> SorageLabelPair;
+  Storages storages_;
+  std::vector<int> watched_storages_;
 };
 
 #endif  // FILESYSTEM_FILESYSTEM_CONTEXT_H_
