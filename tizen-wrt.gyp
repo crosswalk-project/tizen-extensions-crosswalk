@@ -14,6 +14,7 @@
         'network_bearer_selection/network_bearer_selection.gyp:*',
         'notification/notification.gyp:*',
         'power/power.gyp:*',
+        'speech/speech.gyp:*',
         'system_info/system_info.gyp:*',
         'system_setting/system_setting.gyp:*',
         'time/time.gyp:*',

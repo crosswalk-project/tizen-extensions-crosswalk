@@ -1,0 +1,19 @@
+<html>
+<head>
+<title>Speech Example</title>
+<script>
+function handleTextToSpeech() {
+  var currentText = document.getElementById("inputText").value;
+  var newText = tizen.speech.VocalizeString(currentText);
+  document.getElementById("inputText").value = newText;
+}
+</script>
+</head>
+<body>
+  <div name="input">
+    <div id="instructionLabel">Type in some text</div>
+      <input type="text" id="inputText"><br>
+      <button id="say" onClick="handleTextToSpeech()">Speak Out</button>
+  </div>
+</body>
+</html>
