@@ -68,6 +68,14 @@ var getFileParent = function(childPath) {
 
 function is_string(value) { return typeof(value) === 'string' || value instanceof String; }
 function is_integer(value) { return isFinite(value) && !isNaN(parseInt(value)); }
+function get_valid_mode(mode) {
+  if (mode == null)
+    return 'rw';
+  else if (mode === 'a' || mode === 'w' || mode === 'r' || mode === 'rw')
+    return mode;
+  else
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+}
 
 function FileSystemManager() {
   Object.defineProperty(this, 'maxPathLength', {
@@ -88,6 +96,8 @@ FileSystemManager.prototype.resolve = function(location, onsuccess,
   if (onerror !== null && !(onerror instanceof Function) &&
       arguments.length > 2)
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+
+  mode = get_valid_mode(mode);
 
   postMessage({
     cmd: 'FileSystemManagerResolve',
@@ -482,8 +492,8 @@ File.prototype.openStream = function(mode, onsuccess, onerror, encoding) {
       arguments.length > 2)
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
 
-  if (mode != 'a' && mode != 'w' && mode != 'r' && mode != 'rw')
-    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+  mode = get_valid_mode(mode);
+
   if ((arguments.length > 3 && is_string(encoding)) &&
       (encoding != 'UTF-8' && encoding != 'ISO-8859-1'))
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
