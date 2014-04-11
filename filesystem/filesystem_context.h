@@ -104,6 +104,7 @@ class FilesystemContext {
   /* Sync message helpers */
   bool IsKnownFileStream(const picojson::value& msg);
   std::fstream* GetFileStream(unsigned int key);
+  std::fstream* GetFileStream(unsigned int key, std::ios_base::openmode mode);
   bool CopyAndRenameSanityChecks(const picojson::value& msg,
         const std::string& from, const std::string& to, bool overwrite);
   void SetSyncError(std::string& output, WebApiAPIErrors error_type);
@@ -122,7 +123,8 @@ class FilesystemContext {
       void *user_data);
 
   ContextAPI* api_;
-  typedef std::map <unsigned int, std::fstream*> FStreamMap;
+  typedef std::pair<std::ios_base::openmode, std::fstream*> FStream;
+  typedef std::map<unsigned int, FStream> FStreamMap;
   FStreamMap fstream_map_;
   typedef std::map<std::string, Storage> Storages;
   typedef std::pair<std::string, Storage> SorageLabelPair;

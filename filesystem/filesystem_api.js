@@ -322,7 +322,7 @@ FileStream.prototype.write = function(stringData) {
 };
 
 FileStream.prototype.writeBytes = function(byteData) {
-  if (typeof(byteData) != 'array' || !(byteData instanceof Array))
+  if (!Array.isArray(byteData))
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
 
   var result = sendSyncMessage('FileStreamWrite', {

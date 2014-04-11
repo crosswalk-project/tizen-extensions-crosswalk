@@ -82,7 +82,7 @@ FilesystemContext::~FilesystemContext() {
   FStreamMap::iterator it;
 
   for (it = fstream_map_.begin(); it != fstream_map_.end(); it++) {
-    std::fstream* fs = it->second;
+    std::fstream* fs = it->second.second;
     fs->close();
     delete(fs);
   }
@@ -323,7 +323,7 @@ void FilesystemContext::HandleFileOpenStream(const picojson::value& msg) {
   }
   free(real_path_cstr);
 
-  fstream_map_[lastStreamId] = fs;
+  fstream_map_[lastStreamId] = FStream(open_mode, fs);
 
   picojson::value::object o;
   o["streamID"] = picojson::value(static_cast<double>(lastStreamId));
@@ -722,7 +722,23 @@ std::fstream* FilesystemContext::GetFileStream(unsigned int key) {
   FStreamMap::iterator it = fstream_map_.find(key);
   if (it == fstream_map_.end())
     return NULL;
-  std::fstream* fs = it->second;
+  std::fstream* fs = it->second.second;
+
+  if (fs->is_open())
+    return fs;
+  return NULL;
+}
+
+std::fstream* FilesystemContext::GetFileStream(unsigned int key,
+    std::ios_base::openmode mode) {
+  FStreamMap::iterator it = fstream_map_.find(key);
+  if (it == fstream_map_.end())
+    return NULL;
+
+  if ((it->second.first & mode) != mode)
+    return NULL;
+
+  std::fstream* fs = it->second.second;
 
   if (fs->is_open())
     return fs;
@@ -780,11 +796,12 @@ void FilesystemContext::HandleFileStreamClose(const picojson::value& msg,
 
   FStreamMap::iterator it = fstream_map_.find(key);
   if (it != fstream_map_.end()) {
-    std::fstream* fs = it->second;
+    std::fstream* fs = it->second.second;
     if (fs->is_open())
       fs->close();
+    delete fs;
+    fstream_map_.erase(it);
   }
-  fstream_map_.erase(key);
 
   SetSyncSuccess(reply);
 }
@@ -926,7 +943,7 @@ void FilesystemContext::HandleFileStreamRead(const picojson::value& msg,
   else
     count = kMaxSize;
 
-  std::fstream* fs = GetFileStream(key);
+  std::fstream* fs = GetFileStream(key, std::ios_base::in);
   if (!fs) {
     SetSyncError(reply, IO_ERR);
     return;
@@ -986,7 +1003,7 @@ void FilesystemContext::HandleFileStreamWrite(const picojson::value& msg,
   }
   unsigned int key = msg.get("streamID").get<double>();
 
-  std::fstream* fs = GetFileStream(key);
+  std::fstream* fs = GetFileStream(key, std::ios_base::out);
   if (!fs) {
     SetSyncError(reply, IO_ERR);
     return;
