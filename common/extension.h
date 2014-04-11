@@ -53,7 +53,7 @@ class Extension {
   bool RegisterPermissions(const char* perm_table);
 
   // This API should be called in the message handler of extension
-  bool CheckAPIAccessControl(const char* api_name);
+  static bool CheckAPIAccessControl(const char* api_name);
 
   virtual Instance* CreateInstance();
 
