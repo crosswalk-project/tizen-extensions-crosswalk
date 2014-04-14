@@ -226,7 +226,7 @@ tizen.DownloadRequest = function(url, destination, fileName, networkType) {
   this.url_ = url;
 
   if (!(this instanceof tizen.DownloadRequest)) {
-    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+    throw new TypeError;
   }
   this.uid = ++currentUID;
   this.destination = asValidString(destination);
