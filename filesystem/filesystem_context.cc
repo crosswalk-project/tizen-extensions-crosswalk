@@ -693,21 +693,14 @@ void FilesystemContext::HandleSyncMessage(const char* message) {
     api_->SetSyncReply(reply.c_str());
 }
 
-static std::string to_string(int value) {
-  char buffer[sizeof(value) * 3];
-  if (snprintf(buffer, sizeof(buffer), "%d", value) < 0)
-    return std::string();
-  return std::string(buffer);
-}
-
 void FilesystemContext::HandleFileSystemManagerGetMaxPathLength(
       const picojson::value& msg, std::string& reply) {
   int max_path = pathconf("/", _PC_PATH_MAX);
   if (max_path < 0)
     max_path = PATH_MAX;
 
-  std::string max_path_len_str = to_string(max_path);
-  SetSyncSuccess(reply, max_path_len_str);
+  picojson::value value(static_cast<double>(max_path));
+  SetSyncSuccess(reply, value);
 }
 
 bool FilesystemContext::IsKnownFileStream(const picojson::value& msg) {

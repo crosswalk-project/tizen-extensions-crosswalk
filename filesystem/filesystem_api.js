@@ -720,13 +720,6 @@ File.prototype.deleteFile = function(filePath, onsuccess, onerror) {
   });
 };
 
-
 (function() {
-  var manager = new FileSystemManager();
-  exports.resolve = manager.resolve;
-  exports.getStorage = manager.getStorage;
-  exports.listStorages = manager.listStorages;
-  exports.addStorageStateChangeListener = manager.addStorageStateChangeListener;
-  exports.removeStorageStateChangeListener = manager.removeStorageStateChangeListener;
-  exports.maxPathLength = manager.maxPathLength;
+  exports = new FileSystemManager();
 })();
