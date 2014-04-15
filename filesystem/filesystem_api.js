@@ -424,14 +424,17 @@ function File(fullPath, parent) {
     if (status.isError)
       return 0;
     if (status.isDirectory)
-      return 0;
+      return undefined;
     return status.size;
   };
   var getLength = function() {
-    if (getIsFile())
-      return 1;
-    return files.length;
-  };
+    var status = stat();
+    if (status.isError)
+      return 0;
+    if (status.isDirectory)
+      return status.length;
+    return undefined;
+   };
 
   Object.defineProperties(this, {
     'parent': { get: getParent, enumerable: true },
