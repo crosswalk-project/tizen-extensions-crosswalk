@@ -274,16 +274,16 @@ std::string ApplicationInformation::PkgIdToAppId(const std::string& pkg_id) {
   return app_id;
 }
 
-picojson::value* ApplicationInformation::GetAllInstalled() {
-  picojson::value* result = new picojson::value(picojson::object_type, true);
+picojson::object* ApplicationInformation::GetAllInstalled() {
+  picojson::object* result = new picojson::object;
   picojson::value data(picojson::array_type, true);
   picojson::value error(picojson::object_type, true);
 
   RetrieveAllInstalledAppInfo(data, error);
   if (!error.get<picojson::object>().empty())
-    result->get<picojson::object>()["error"] = error;
+    (*result)["error"] = error;
   else
-    result->get<picojson::object>()["data"] = data;
+    (*result)["data"] = data;
   return result;
 }
 

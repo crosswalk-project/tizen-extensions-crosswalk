@@ -5,14 +5,18 @@
 #ifndef APPLICATION_APPLICATION_INSTANCE_H_
 #define APPLICATION_APPLICATION_INSTANCE_H_
 
+#include <functional>
+
 #include "common/extension.h"
 #include "common/picojson.h"
 
-class ApplicationExtension;
+class ApplicationManager;
 
 class ApplicationInstance : public common::Instance {
  public:
-  explicit ApplicationInstance(ApplicationExtension* extension);
+  typedef std::function<void(const picojson::object&)> AsyncMessageCallback;
+
+  explicit ApplicationInstance(ApplicationManager* current_app);
   ~ApplicationInstance();
 
  private:
@@ -20,12 +24,22 @@ class ApplicationInstance : public common::Instance {
   virtual void HandleMessage(const char* msg);
   virtual void HandleSyncMessage(const char* msg);
 
+  // Synchronous message handlers.
   void HandleGetAppInfo(picojson::value& msg);
+  void HandleGetAppContext(picojson::value& msg);
+  void HandleGetCurrentApp(picojson::value& msg);
+  void HandleExitCurrentApp(picojson::value& msg);
+  void HandleHideCurrentApp(picojson::value& msg);
+
+  // Asynchronous message handlers.
   void HandleGetAppsInfo(picojson::value& msg);
+  void HandleGetAppsContext(picojson::value& msg);
+  void HandleKillApp(picojson::value& msg);
+  void HandleLaunchApp(picojson::value& msg);
 
-  void ReturnMessageAsync(picojson::value& msg, const picojson::object& obj);
+  void ReturnMessageAsync(double callback_id, const picojson::object& obj);
 
-  ApplicationExtension* extension_;
+  ApplicationManager* manager_;
 };
 
 #endif  // APPLICATION_APPLICATION_INSTANCE_H_

@@ -20,7 +20,7 @@ class ApplicationInformation {
   // Returns a object type value to caller. When success its "data" field will
   // contains an app info array. When fail its "error" field will contains error
   // info.
-  static picojson::value* GetAllInstalled();
+  static picojson::object* GetAllInstalled();
 
   explicit ApplicationInformation(const std::string& app_id);
   ~ApplicationInformation();
