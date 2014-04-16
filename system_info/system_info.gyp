@@ -41,6 +41,13 @@
             ]
           },
         }],
+       [ 'display_type == "wayland"', {
+         'variables': {
+            'packages': [
+              'wayland-client',
+            ]
+          },
+        }],
       ],
       'variables': {
         'packages': [
