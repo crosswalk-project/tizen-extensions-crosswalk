@@ -46,6 +46,7 @@ BuildRequires: pkgconfig(capi-content-media-content)
 BuildRequires: pkgconfig(dbus-glib-1)
 # Evas.h is required by capi-web-favorites.
 BuildRequires: pkgconfig(evas)
+BuildRequires: pkgconfig(gio-2.0)
 BuildRequires: pkgconfig(glib-2.0)
 BuildRequires: pkgconfig(tapi)
 BuildRequires: pkgconfig(libudev)
