@@ -11,7 +11,7 @@
         'download_context.cc',
         'download_context.h',
         'download_context_desktop.cc',
-        'download_context_mobile.cc',
+        'download_context_tizen.cc',
         'download_utils.h',
       ],
       'conditions': [
