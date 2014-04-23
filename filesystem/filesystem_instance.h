@@ -1,9 +1,9 @@
-// Copyright (c) 2013 Intel Corporation. All rights reserved.
+// Copyright (c) 2014 Intel Corporation. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef FILESYSTEM_FILESYSTEM_CONTEXT_H_
-#define FILESYSTEM_FILESYSTEM_CONTEXT_H_
+#ifndef FILESYSTEM_FILESYSTEM_INSTANCE_H_
+#define FILESYSTEM_FILESYSTEM_INSTANCE_H_
 
 #include <app_storage.h>
 
@@ -15,19 +15,16 @@
 #include <utility>
 #include <vector>
 
-#include "common/extension_adapter.h"
+#include "common/extension.h"
 #include "common/picojson.h"
 #include "tizen/tizen.h"
 
-class FilesystemContext {
+class FilesystemInstance : public common::Instance {
  public:
-  explicit FilesystemContext(ContextAPI* api);
-  ~FilesystemContext();
+  FilesystemInstance();
+  ~FilesystemInstance();
 
-  /* ExtensionAdapter implementation */
-  static const char name[];
-  static const char* GetJavaScript();
-  static const char* entry_points[];
+  // common::Instance implementation
   void HandleMessage(const char* message);
   void HandleSyncMessage(const char* message);
 
@@ -65,8 +62,6 @@ class FilesystemContext {
     std::string fullpath_;
   };
 
-  void initialize();
-
   /* Asynchronous messages */
   void HandleFileSystemManagerResolve(const picojson::value& msg);
   void HandleFileSystemManagerGetStorage(const picojson::value& msg);
@@ -87,12 +82,12 @@ class FilesystemContext {
 
   /* Sync messages */
   void HandleFileSystemManagerGetMaxPathLength(const picojson::value& msg,
-        std::string& reply);
+                                               std::string& reply);
   void HandleFileStreamClose(const picojson::value& msg, std::string& reply);
   void HandleFileStreamRead(const picojson::value& msg, std::string& reply);
   void HandleFileStreamWrite(const picojson::value& msg, std::string& reply);
   void HandleFileCreateDirectory(const picojson::value& msg,
-        std::string& reply);
+                                 std::string& reply);
   void HandleFileCreateFile(const picojson::value& msg, std::string& reply);
   void HandleFileGetURI(const picojson::value& msg, std::string& reply);
   void HandleFileResolve(const picojson::value& msg, std::string& reply);
@@ -106,7 +101,7 @@ class FilesystemContext {
   std::fstream* GetFileStream(unsigned int key);
   std::fstream* GetFileStream(unsigned int key, std::ios_base::openmode mode);
   bool CopyAndRenameSanityChecks(const picojson::value& msg,
-        const std::string& from, const std::string& to, bool overwrite);
+      const std::string& from, const std::string& to, bool overwrite);
   void SetSyncError(std::string& output, WebApiAPIErrors error_type);
   void SetSyncSuccess(std::string& reply);
   void SetSyncSuccess(std::string& reply, std::string& output);
@@ -122,7 +117,6 @@ class FilesystemContext {
   static void OnStorageStateChanged(int id, storage_state_e state,
       void *user_data);
 
-  ContextAPI* api_;
   typedef std::pair<std::ios_base::openmode, std::fstream*> FStream;
   typedef std::map<unsigned int, FStream> FStreamMap;
   FStreamMap fstream_map_;
@@ -132,4 +126,4 @@ class FilesystemContext {
   std::vector<int> watched_storages_;
 };
 
-#endif  // FILESYSTEM_FILESYSTEM_CONTEXT_H_
+#endif  // FILESYSTEM_FILESYSTEM_INSTANCE_H_

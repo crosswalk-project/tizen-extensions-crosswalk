@@ -1,20 +1,21 @@
-// Copyright (c) 2013 Intel Corporation. All rights reserved.
+// Copyright (c) 2014 Intel Corporation. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "filesystem/filesystem_context.h"
+#include "filesystem/filesystem_instance.h"
 
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <iconv.h>
+#include <pkgmgr-info.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <iconv.h>
 
+#include <iostream>
+#include <sstream>
 #include <utility>
-
-DEFINE_XWALK_EXTENSION(FilesystemContext)
 
 namespace {
 const unsigned kDefaultFileMode = 0755;
@@ -25,6 +26,18 @@ const char kPathImages[] = "/opt/usr/media/Images";
 const char kPathVideos[] = "/opt/usr/media/Videos";
 const char kPathDownloads[] = "/opt/usr/media/Downloads";
 const char kPathDocuments[] = "/opt/usr/media/Documents";
+const char kPathRingtones[] = "/opt/usr/share/settings/Ringtones";
+
+const char kLocationCamera[] = "camera";
+const char kLocationMusic[] = "music";
+const char kLocationImages[] = "images";
+const char kLocationVideos[] = "videos";
+const char kLocationDownloads[] = "downloads";
+const char kLocationDocuments[] = "documents";
+const char kLocationRingtones[] = "ringtones";
+const char kLocationWgtPackage[] = "wgt-package";
+const char kLocationWgtPrivate[] = "wgt-private";
+const char kLocationWgtPrivateTmp[] = "wgt-private-tmp";
 
 const char kInternalStorage[] = "internal";
 const char kRemovableStorage[] = "removable";
@@ -50,15 +63,51 @@ bool IsWritable(const struct stat& st) {
   return false;
 }
 
-
 std::string JoinPath(const std::string& one, const std::string& another) {
-  return one + "/" + another;
+  return one + '/' + another;
 }
 
+// This function creates full path and parent directories when needed.
+// Similar to "mkdir -p".
 bool makePath(const std::string& path) {
+  // Path should start with '/' and contain at least 1 character after '/'.
+  if (path.empty() || path[0] != '/' || path.length() < 2)
+    return false;
+
   struct stat st;
-  if (stat(path.c_str(), &st) != 0)
-    return mkdir(path.c_str(), kDefaultFileMode) == 0;
+  std::string dir = path;
+  if (stat(dir.c_str(), &st) == 0)
+    return true;
+
+  // Add trailing '/' if missing, so we can iterate till the end of the path.
+  if (dir[dir.size() - 1] != '/')
+    dir += '/';
+
+  for (auto iter = dir.begin(); iter != dir.end();) {
+    auto cur_iter = std::find(iter, dir.end(), '/');
+
+    // If '/' is found at the beginning of the string, iterate to the next '/'.
+    if (cur_iter == iter) {
+      ++iter;
+      cur_iter = std::find(iter, dir.end(), '/');
+    }
+
+    std::string new_path = std::string(dir.begin(), cur_iter);
+
+    // If path doesn't exist, try to create one and continue iteration.
+    // In case of error, stop iteration and return.
+    if (stat(new_path.c_str(), &st) != 0)
+      if (mkdir(new_path.c_str(), kDefaultFileMode) != 0 && errno != EEXIST )
+          return false;
+    // If path exists and it is not a directory, stop iteration and return.
+    else if (!S_ISDIR(st.st_mode))
+      return false;
+
+    // Advance iterator and create next parent folder.
+    iter = cur_iter;
+    if (cur_iter != dir.end())
+      ++iter;
+  }
   return true;
 }
 
@@ -81,23 +130,87 @@ int get_dir_entry_count(const char* path) {
   return count;
 }
 
+std::string GetAppId(const std::string& package_id) {
+  char *appid = NULL;
+  pkgmgrinfo_pkginfo_h pkginfo_handle;
+  int ret = pkgmgrinfo_pkginfo_get_pkginfo(package_id.c_str(), &pkginfo_handle);
+  if (ret != PMINFO_R_OK)
+    return std::string();
+  ret = pkgmgrinfo_pkginfo_get_mainappid(pkginfo_handle, &appid);
+  if (ret != PMINFO_R_OK) {
+    pkgmgrinfo_pkginfo_destroy_pkginfo(pkginfo_handle);
+    return std::string();
+  }
+
+  std::string retval(appid);
+  pkgmgrinfo_pkginfo_destroy_pkginfo(pkginfo_handle);
+  return retval;
+}
+
+std::string GetExecPath(const std::string& app_id) {
+  char* exec_path = NULL;
+  pkgmgrinfo_appinfo_h appinfo_handle;
+  int ret = pkgmgrinfo_appinfo_get_appinfo(app_id.c_str(), &appinfo_handle);
+  if (ret != PMINFO_R_OK)
+    return std::string();
+  ret = pkgmgrinfo_appinfo_get_exec(appinfo_handle, &exec_path);
+  if (ret != PMINFO_R_OK) {
+    pkgmgrinfo_appinfo_destroy_appinfo(appinfo_handle);
+    return std::string();
+  }
+
+  std::string retval(exec_path);
+  pkgmgrinfo_appinfo_destroy_appinfo(appinfo_handle);
+  return retval;
+}
+
+std::string GetApplicationPath() {
+  std::string id_str = common::Extension::GetRuntimeVariable("app_id", 64);
+  picojson::value id_val;
+  std::istringstream buf(id_str);
+  std::string error = picojson::parse(id_val, buf);
+  if (!error.empty()) {
+    std::cerr << "Got invalid package ID." << std::endl;
+    return std::string();
+  }
+
+  std::string pkg_id = id_val.get<std::string>();
+  if (pkg_id.empty())
+    return std::string();
+
+  std::string app_id = GetAppId(pkg_id);
+  if (app_id.empty())
+    return std::string();
+  std::string exec_path = GetExecPath(app_id);
+  if (exec_path.empty())
+    return std::string();
+
+  size_t index = exec_path.find(pkg_id);
+  if (index != std::string::npos)
+    return exec_path.substr(0, index + pkg_id.length());
+  return std::string();
+}
+
 };  // namespace
 
-FilesystemContext::FilesystemContext(ContextAPI* api)
-    : api_(api) {
-  initialize();
+FilesystemInstance::FilesystemInstance() {
+  std::string app_path = GetApplicationPath();
+  if (!app_path.empty()) {
+    AddInternalStorage(kLocationWgtPackage, app_path);
+    AddInternalStorage(kLocationWgtPrivate, JoinPath(app_path, "private"));
+    AddInternalStorage(kLocationWgtPrivateTmp, JoinPath(app_path, "tmp"));
+  }
+
+  AddInternalStorage(kLocationCamera, kPathCamera);
+  AddInternalStorage(kLocationMusic, kPathSounds);
+  AddInternalStorage(kLocationImages, kPathImages);
+  AddInternalStorage(kLocationVideos, kPathVideos);
+  AddInternalStorage(kLocationDownloads, kPathDownloads);
+  AddInternalStorage(kLocationDocuments, kPathDocuments);
+  AddInternalStorage(kLocationRingtones, kPathRingtones);
 }
 
-void FilesystemContext::initialize() {
-  AddInternalStorage("camera", kPathCamera);
-  AddInternalStorage("music", kPathSounds);
-  AddInternalStorage("images", kPathImages);
-  AddInternalStorage("videos", kPathVideos);
-  AddInternalStorage("downloads", kPathDownloads);
-  AddInternalStorage("documents", kPathDocuments);
-}
-
-FilesystemContext::~FilesystemContext() {
+FilesystemInstance::~FilesystemInstance() {
   FStreamMap::iterator it;
 
   for (it = fstream_map_.begin(); it != fstream_map_.end(); it++) {
@@ -107,17 +220,7 @@ FilesystemContext::~FilesystemContext() {
   }
 }
 
-const char FilesystemContext::name[] = "tizen.filesystem";
-
-const char* FilesystemContext::entry_points[] = { NULL };
-
-extern const char kSource_filesystem_api[];
-
-const char* FilesystemContext::GetJavaScript() {
-  return kSource_filesystem_api;
-}
-
-void FilesystemContext::HandleMessage(const char* message) {
+void FilesystemInstance::HandleMessage(const char* message) {
   picojson::value v;
 
   std::string err;
@@ -150,7 +253,7 @@ void FilesystemContext::HandleMessage(const char* message) {
     std::cout << "Ignoring unknown command: " << cmd;
 }
 
-void FilesystemContext::PostAsyncErrorReply(const picojson::value& msg,
+void FilesystemInstance::PostAsyncErrorReply(const picojson::value& msg,
       WebApiAPIErrors error_code) {
   picojson::value::object o;
   o["isError"] = picojson::value(true);
@@ -158,57 +261,63 @@ void FilesystemContext::PostAsyncErrorReply(const picojson::value& msg,
   o["reply_id"] = picojson::value(msg.get("reply_id").get<double>());
 
   picojson::value v(o);
-  api_->PostMessage(v.serialize().c_str());
+  PostMessage(v.serialize().c_str());
 }
 
-void FilesystemContext::PostAsyncSuccessReply(const picojson::value& msg,
+void FilesystemInstance::PostAsyncSuccessReply(const picojson::value& msg,
       picojson::value::object& reply) {
   reply["isError"] = picojson::value(false);
   reply["reply_id"] = picojson::value(msg.get("reply_id").get<double>());
 
   picojson::value v(reply);
-  api_->PostMessage(v.serialize().c_str());
+  PostMessage(v.serialize().c_str());
 }
 
-void FilesystemContext::PostAsyncSuccessReply(const picojson::value& msg) {
+void FilesystemInstance::PostAsyncSuccessReply(const picojson::value& msg) {
   picojson::value::object reply;
   PostAsyncSuccessReply(msg, reply);
 }
 
-void FilesystemContext::PostAsyncSuccessReply(const picojson::value& msg,
+void FilesystemInstance::PostAsyncSuccessReply(const picojson::value& msg,
       picojson::value& value) {
   picojson::value::object reply;
   reply["value"] = value;
   PostAsyncSuccessReply(msg, reply);
 }
 
-void FilesystemContext::HandleFileSystemManagerResolve(
+void FilesystemInstance::HandleFileSystemManagerResolve(
       const picojson::value& msg) {
   if (!msg.contains("location")) {
     PostAsyncErrorReply(msg, INVALID_VALUES_ERR);
     return;
   }
-  std::string location = msg.get("location").to_str();
 
+  std::string location = msg.get("location").to_str();
+  bool check_if_inside_default = true;
   std::string mode;
-  if (!msg.contains("mode")) {
-    if (location.find("wgt-package") == 0)
-      mode = "r";
-    else
-      mode = "rw";
-  } else {
-    mode = msg.get("mode").to_str();
+
+  mode = msg.contains("mode") ? msg.get("mode").to_str() : "rw";
+
+  size_t pos_wgt_pkg = location.find(kLocationWgtPackage);
+  size_t pos_ringtones = location.find(kLocationRingtones);
+
+  if (pos_wgt_pkg != std::string::npos || pos_ringtones != std::string::npos) {
+    if (mode == "w" || mode == "rw" || mode == "a") {
+      PostAsyncErrorReply(msg, INVALID_VALUES_ERR);
+      return;
+    }
+    mode = "r";
   }
 
-  bool check_if_inside_default = true;
+  if (pos_wgt_pkg != std::string::npos ||
+      pos_ringtones != std::string::npos ||
+      location.find(kLocationWgtPrivate) != std::string::npos)
+    check_if_inside_default = false;
+
   std::string real_path;
   if (location.find("file://") == 0) {
     real_path = location.substr(sizeof("file://") - 1);
     check_if_inside_default = false;
-  } else if (location.find("wgt-package") == 0 &&
-             (mode == "w" || mode == "rw")) {
-    PostAsyncErrorReply(msg, INVALID_VALUES_ERR);
-    return;
   } else {
     real_path = GetRealPath(location);
   }
@@ -250,7 +359,7 @@ void FilesystemContext::HandleFileSystemManagerResolve(
   PostAsyncSuccessReply(msg, o);
 }
 
-void FilesystemContext::HandleFileSystemManagerGetStorage(
+void FilesystemInstance::HandleFileSystemManagerGetStorage(
       const picojson::value& msg) {
   storage_foreach_device_supported(OnStorageDeviceSupported, this);
   Storages::const_iterator it = storages_.find(msg.get("label").to_str());
@@ -264,7 +373,7 @@ void FilesystemContext::HandleFileSystemManagerGetStorage(
   PostAsyncSuccessReply(msg, storage_object);
 }
 
-void FilesystemContext::HandleFileSystemManagerListStorages(
+void FilesystemInstance::HandleFileSystemManagerListStorages(
       const picojson::value& msg) {
   storage_foreach_device_supported(OnStorageDeviceSupported, this);
   picojson::array storage_objects;
@@ -279,7 +388,7 @@ void FilesystemContext::HandleFileSystemManagerListStorages(
   PostAsyncSuccessReply(msg, value);
 }
 
-void FilesystemContext::HandleFileOpenStream(const picojson::value& msg) {
+void FilesystemInstance::HandleFileOpenStream(const picojson::value& msg) {
   if (!msg.contains("mode")) {
     PostAsyncErrorReply(msg, INVALID_VALUES_ERR);
     return;
@@ -388,7 +497,7 @@ static bool RecursiveDeleteDirectory(const std::string& path) {
   return false;
 }
 
-void FilesystemContext::HandleFileDeleteDirectory(const picojson::value& msg) {
+void FilesystemInstance::HandleFileDeleteDirectory(const picojson::value& msg) {
   if (!msg.contains("directoryPath")) {
     PostAsyncErrorReply(msg, INVALID_VALUES_ERR);
     return;
@@ -414,7 +523,7 @@ void FilesystemContext::HandleFileDeleteDirectory(const picojson::value& msg) {
   PostAsyncSuccessReply(msg);
 }
 
-void FilesystemContext::HandleFileDeleteFile(const picojson::value& msg) {
+void FilesystemInstance::HandleFileDeleteFile(const picojson::value& msg) {
   if (!msg.contains("filePath")) {
     PostAsyncErrorReply(msg, INVALID_VALUES_ERR);
     return;
@@ -445,7 +554,7 @@ void FilesystemContext::HandleFileDeleteFile(const picojson::value& msg) {
   }
 }
 
-void FilesystemContext::HandleFileListFiles(const picojson::value& msg) {
+void FilesystemInstance::HandleFileListFiles(const picojson::value& msg) {
   if (!msg.contains("fullPath")) {
     PostAsyncErrorReply(msg, INVALID_VALUES_ERR);
     return;
@@ -483,7 +592,7 @@ void FilesystemContext::HandleFileListFiles(const picojson::value& msg) {
 }
 
 
-bool FilesystemContext::CopyAndRenameSanityChecks(const picojson::value& msg,
+bool FilesystemInstance::CopyAndRenameSanityChecks(const picojson::value& msg,
       const std::string& from, const std::string& to, bool overwrite) {
   bool destination_file_exists = true;
   if (access(to.c_str(), F_OK) < 0) {
@@ -584,7 +693,7 @@ ssize_t PosixFile::Write(char* buffer, size_t count) {
 
 }  // namespace
 
-void FilesystemContext::HandleFileCopyTo(const picojson::value& msg) {
+void FilesystemInstance::HandleFileCopyTo(const picojson::value& msg) {
   if (!msg.contains("originFilePath")) {
     PostAsyncErrorReply(msg, INVALID_VALUES_ERR);
     return;
@@ -643,7 +752,7 @@ void FilesystemContext::HandleFileCopyTo(const picojson::value& msg) {
   PostAsyncSuccessReply(msg);
 }
 
-void FilesystemContext::HandleFileMoveTo(const picojson::value& msg) {
+void FilesystemInstance::HandleFileMoveTo(const picojson::value& msg) {
   if (!msg.contains("originFilePath")) {
     PostAsyncErrorReply(msg, INVALID_VALUES_ERR);
     return;
@@ -671,7 +780,7 @@ void FilesystemContext::HandleFileMoveTo(const picojson::value& msg) {
   PostAsyncSuccessReply(msg);
 }
 
-void FilesystemContext::HandleSyncMessage(const char* message) {
+void FilesystemInstance::HandleSyncMessage(const char* message) {
   picojson::value v;
 
   std::string err;
@@ -709,10 +818,10 @@ void FilesystemContext::HandleSyncMessage(const char* message) {
     std::cout << "Ignoring unknown command: " << cmd;
 
   if (!reply.empty())
-    api_->SetSyncReply(reply.c_str());
+    SendSyncReply(reply.c_str());
 }
 
-void FilesystemContext::HandleFileSystemManagerGetMaxPathLength(
+void FilesystemInstance::HandleFileSystemManagerGetMaxPathLength(
       const picojson::value& msg, std::string& reply) {
   int max_path = pathconf("/", _PC_PATH_MAX);
   if (max_path < 0)
@@ -722,7 +831,7 @@ void FilesystemContext::HandleFileSystemManagerGetMaxPathLength(
   SetSyncSuccess(reply, value);
 }
 
-bool FilesystemContext::IsKnownFileStream(const picojson::value& msg) {
+bool FilesystemInstance::IsKnownFileStream(const picojson::value& msg) {
   if (!msg.contains("streamID"))
     return false;
   unsigned int key = msg.get("streamID").get<double>();
@@ -730,7 +839,7 @@ bool FilesystemContext::IsKnownFileStream(const picojson::value& msg) {
   return fstream_map_.find(key) != fstream_map_.end();
 }
 
-std::fstream* FilesystemContext::GetFileStream(unsigned int key) {
+std::fstream* FilesystemInstance::GetFileStream(unsigned int key) {
   FStreamMap::iterator it = fstream_map_.find(key);
   if (it == fstream_map_.end())
     return NULL;
@@ -741,7 +850,7 @@ std::fstream* FilesystemContext::GetFileStream(unsigned int key) {
   return NULL;
 }
 
-std::fstream* FilesystemContext::GetFileStream(unsigned int key,
+std::fstream* FilesystemInstance::GetFileStream(unsigned int key,
     std::ios_base::openmode mode) {
   FStreamMap::iterator it = fstream_map_.find(key);
   if (it == fstream_map_.end())
@@ -757,7 +866,7 @@ std::fstream* FilesystemContext::GetFileStream(unsigned int key,
   return NULL;
 }
 
-void FilesystemContext::SetSyncError(std::string& output,
+void FilesystemInstance::SetSyncError(std::string& output,
       WebApiAPIErrors error_type) {
   picojson::value::object o;
 
@@ -767,7 +876,7 @@ void FilesystemContext::SetSyncError(std::string& output,
   output = v.serialize();
 }
 
-void FilesystemContext::SetSyncSuccess(std::string& reply,
+void FilesystemInstance::SetSyncSuccess(std::string& reply,
       std::string& output) {
   picojson::value::object o;
 
@@ -778,7 +887,7 @@ void FilesystemContext::SetSyncSuccess(std::string& reply,
   reply = v.serialize();
 }
 
-void FilesystemContext::SetSyncSuccess(std::string& reply) {
+void FilesystemInstance::SetSyncSuccess(std::string& reply) {
   picojson::value::object o;
 
   o["isError"] = picojson::value(false);
@@ -787,7 +896,7 @@ void FilesystemContext::SetSyncSuccess(std::string& reply) {
   reply = v.serialize();
 }
 
-void FilesystemContext::SetSyncSuccess(std::string& reply,
+void FilesystemInstance::SetSyncSuccess(std::string& reply,
       picojson::value& output) {
   picojson::value::object o;
 
@@ -798,7 +907,7 @@ void FilesystemContext::SetSyncSuccess(std::string& reply,
   reply = v.serialize();
 }
 
-void FilesystemContext::HandleFileStreamClose(const picojson::value& msg,
+void FilesystemInstance::HandleFileStreamClose(const picojson::value& msg,
       std::string& reply) {
   if (!msg.contains("streamID")) {
     SetSyncError(reply, INVALID_VALUES_ERR);
@@ -941,7 +1050,7 @@ std::string ConvertCharacterEncoding(const char* from_encoding,
 
 }  // namespace
 
-void FilesystemContext::HandleFileStreamRead(const picojson::value& msg,
+void FilesystemInstance::HandleFileStreamRead(const picojson::value& msg,
       std::string& reply) {
   if (!IsKnownFileStream(msg)) {
     SetSyncError(reply, IO_ERR);
@@ -1002,7 +1111,7 @@ void FilesystemContext::HandleFileStreamRead(const picojson::value& msg,
   SetSyncSuccess(reply, buffer_as_string);
 }
 
-void FilesystemContext::HandleFileStreamWrite(const picojson::value& msg,
+void FilesystemInstance::HandleFileStreamWrite(const picojson::value& msg,
       std::string& reply) {
   if (!msg.contains("data")) {
     SetSyncError(reply, INVALID_VALUES_ERR);
@@ -1047,7 +1156,7 @@ void FilesystemContext::HandleFileStreamWrite(const picojson::value& msg,
   SetSyncSuccess(reply);
 }
 
-void FilesystemContext::HandleFileCreateDirectory(const picojson::value& msg,
+void FilesystemInstance::HandleFileCreateDirectory(const picojson::value& msg,
       std::string& reply) {
   if (!msg.contains("fullPath")) {
     SetSyncError(reply, INVALID_VALUES_ERR);
@@ -1079,7 +1188,7 @@ void FilesystemContext::HandleFileCreateDirectory(const picojson::value& msg,
   SetSyncSuccess(reply, full_path);
 }
 
-void FilesystemContext::HandleFileCreateFile(const picojson::value& msg,
+void FilesystemInstance::HandleFileCreateFile(const picojson::value& msg,
       std::string& reply) {
   if (!msg.contains("fullPath")) {
     SetSyncError(reply, INVALID_VALUES_ERR);
@@ -1114,7 +1223,7 @@ void FilesystemContext::HandleFileCreateFile(const picojson::value& msg,
   SetSyncSuccess(reply, full_path);
 }
 
-void FilesystemContext::HandleFileGetURI(const picojson::value& msg,
+void FilesystemInstance::HandleFileGetURI(const picojson::value& msg,
       std::string& reply) {
   if (!msg.contains("fullPath")) {
     SetSyncError(reply, INVALID_VALUES_ERR);
@@ -1140,7 +1249,7 @@ void FilesystemContext::HandleFileGetURI(const picojson::value& msg,
   SetSyncSuccess(reply, uri_path);
 }
 
-void FilesystemContext::HandleFileResolve(const picojson::value& msg,
+void FilesystemInstance::HandleFileResolve(const picojson::value& msg,
       std::string& reply) {
   if (!msg.contains("fullPath")) {
     SetSyncError(reply, INVALID_VALUES_ERR);
@@ -1174,7 +1283,7 @@ void FilesystemContext::HandleFileResolve(const picojson::value& msg,
   SetSyncSuccess(reply, full_path);
 }
 
-void FilesystemContext::HandleFileStat(const picojson::value& msg,
+void FilesystemInstance::HandleFileStat(const picojson::value& msg,
       std::string& reply) {
   if (!msg.contains("fullPath")) {
     SetSyncError(reply, INVALID_VALUES_ERR);
@@ -1211,7 +1320,7 @@ void FilesystemContext::HandleFileStat(const picojson::value& msg,
   SetSyncSuccess(reply, v);
 }
 
-void FilesystemContext::HandleFileStreamStat(const picojson::value& msg,
+void FilesystemInstance::HandleFileStreamStat(const picojson::value& msg,
       std::string& reply) {
   if (!IsKnownFileStream(msg)) {
     SetSyncError(reply, IO_ERR);
@@ -1255,7 +1364,7 @@ void FilesystemContext::HandleFileStreamStat(const picojson::value& msg,
   SetSyncSuccess(reply, v);
 }
 
-void FilesystemContext::HandleFileStreamSetPosition(const picojson::value& msg,
+void FilesystemInstance::HandleFileStreamSetPosition(const picojson::value& msg,
       std::string& reply) {
   if (!msg.contains("position")) {
     SetSyncError(reply, INVALID_VALUES_ERR);
@@ -1284,7 +1393,7 @@ void FilesystemContext::HandleFileStreamSetPosition(const picojson::value& msg,
   SetSyncSuccess(reply);
 }
 
-std::string FilesystemContext::GetRealPath(const std::string& fullPath) {
+std::string FilesystemInstance::GetRealPath(const std::string& fullPath) {
   std::size_t pos = fullPath.find_first_of('/');
   std::string virtual_root = fullPath;
 
@@ -1303,7 +1412,7 @@ std::string FilesystemContext::GetRealPath(const std::string& fullPath) {
   return it->second.GetFullPath();
 }
 
-void FilesystemContext::AddInternalStorage(
+void FilesystemInstance::AddInternalStorage(
     const std::string& label, const std::string& path) {
   if (makePath(path))
     storages_.insert(SorageLabelPair(label,
@@ -1313,7 +1422,7 @@ void FilesystemContext::AddInternalStorage(
                                              path)));
 }
 
-void FilesystemContext::AddStorage(int id,
+void FilesystemInstance::AddStorage(int id,
                                    storage_type_e type,
                                    storage_state_e state,
                                    const std::string& path) {
@@ -1335,7 +1444,7 @@ void FilesystemContext::AddStorage(int id,
   }
 }
 
-void FilesystemContext::NotifyStorageStateChanged(int id,
+void FilesystemInstance::NotifyStorageStateChanged(int id,
                                                   storage_state_e state) {
   for (Storages::iterator it = storages_.begin(); it != storages_.end(); ++it) {
     if (it->second.GetId() == id) {
@@ -1344,34 +1453,34 @@ void FilesystemContext::NotifyStorageStateChanged(int id,
       reply["storage"] = picojson::value(it->second.toJSON(it->first));
       reply["cmd"] = picojson::value("storageChanged");
       picojson::value value(reply);
-      api_->PostMessage(value.serialize().c_str());
+      PostMessage(value.serialize().c_str());
       break;
     }
   }
 }
 
-bool FilesystemContext::OnStorageDeviceSupported(
+bool FilesystemInstance::OnStorageDeviceSupported(
     int id, storage_type_e type, storage_state_e state,
     const char *path, void* user_data) {
-  reinterpret_cast<FilesystemContext*>(user_data)->AddStorage(
+  reinterpret_cast<FilesystemInstance*>(user_data)->AddStorage(
       id, type, state, path);
   return true;
 }
 
-void FilesystemContext::OnStorageStateChanged(
+void FilesystemInstance::OnStorageStateChanged(
     int id, storage_state_e state, void* user_data) {
-  reinterpret_cast<FilesystemContext*>(user_data)->NotifyStorageStateChanged(
+  reinterpret_cast<FilesystemInstance*>(user_data)->NotifyStorageStateChanged(
       id, state);
 }
 
-FilesystemContext::Storage::Storage(
+FilesystemInstance::Storage::Storage(
     int id, int type, int state, const std::string& fullpath)
   : id_(id),
     type_(type),
     state_(state),
     fullpath_(fullpath) { }
 
-picojson::object FilesystemContext::Storage::toJSON(
+picojson::object FilesystemInstance::Storage::toJSON(
     const std::string& label) const {
   picojson::object storage_object;
   storage_object["label"] = picojson::value(label);
@@ -1380,12 +1489,12 @@ picojson::object FilesystemContext::Storage::toJSON(
   return storage_object;
 }
 
-std::string FilesystemContext::Storage::type() const {
+std::string FilesystemInstance::Storage::type() const {
   return (type_ == Storage::STORAGE_TYPE_INTERNAL) ? kStorageTypeInternal :
       kStorageTypeExternal;
 }
 
-std::string FilesystemContext::Storage::state() const {
+std::string FilesystemInstance::Storage::state() const {
   switch (state_) {
   case Storage::STORAGE_STATE_MOUNTED:
   case Storage::STORAGE_STATE_MOUNTED_READONLY:
