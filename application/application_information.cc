@@ -10,14 +10,24 @@
 #include <pkgmgr-info.h>
 
 #include <memory>
+#include <utility>
 #include <vector>
+
+#include "application/application_extension_utils.h"
+#include "tizen/tizen.h"
 
 namespace {
 
-void SetErrorMessage(picojson::value& error, const std::string& property_name) {
+void SetErrorMessage(picojson::object& error,
+                     const std::string& property_name) {
   std::string error_message = "Fail to get " + property_name;
-  error.get<picojson::object>()["error"] = picojson::value(property_name);
-  error.get<picojson::object>()["message"] = picojson::value(error_message);
+  if (property_name == "appinfo" || property_name == "appid")
+    error["code"] = picojson::value(
+        static_cast<double>(WebApiAPIErrors::NOT_FOUND_ERR));
+  else
+    error["code"] = picojson::value(
+        static_cast<double>(WebApiAPIErrors::UNKNOWN_ERR));
+  error["message"] = picojson::value(error_message);
   std::cerr << error_message << std::endl;
 }
 
@@ -28,7 +38,7 @@ void SetErrorMessage(picojson::value& error, const std::string& property_name) {
 class PkgMgrHandle {
  public:
   static PkgMgrHandle* Create(const std::string& app_id,
-                              picojson::value& error) {
+                              picojson::object& error) {
     pkgmgrinfo_appinfo_h appinfo_handle;
     int ret = pkgmgrinfo_appinfo_get_appinfo(app_id.c_str(), &appinfo_handle);
     if (ret != PMINFO_R_OK) {
@@ -39,7 +49,7 @@ class PkgMgrHandle {
   }
 
   static PkgMgrHandle* Create(pkgmgrinfo_appinfo_h& appinfo_handle,
-                              picojson::value& error) {
+                              picojson::object& error) {
     char* app_id = NULL;
     int ret = pkgmgrinfo_appinfo_get_appid(appinfo_handle, &app_id);
     if (ret != PMINFO_R_OK || !app_id) {
@@ -59,7 +69,7 @@ class PkgMgrHandle {
 
   const std::string& pkg_id() const { return pkg_id_; }
 
-  bool GetName(char** name, picojson::value& error) {
+  bool GetName(char** name, picojson::object& error) {
     int ret = pkgmgrinfo_appinfo_get_label(appinfo_handle_, name);
     if ((ret != PMINFO_R_OK) || (*name == NULL)) {
       SetErrorMessage(error, "name");
@@ -68,7 +78,7 @@ class PkgMgrHandle {
     return true;
   }
 
-  bool GetIcon(char** icon_path, picojson::value& error) {
+  bool GetIcon(char** icon_path, picojson::object& error) {
     int ret = pkgmgrinfo_appinfo_get_icon(appinfo_handle_, icon_path);
     if ((ret != PMINFO_R_OK) || (*icon_path == NULL)) {
       SetErrorMessage(error, "icon_path");
@@ -77,7 +87,7 @@ class PkgMgrHandle {
     return true;
   }
 
-  bool GetNoDisplay(bool* show, picojson::value& error) {
+  bool GetNoDisplay(bool* show, picojson::object& error) {
     int ret = pkgmgrinfo_appinfo_is_nodisplay(appinfo_handle_, show);
     if (ret != PMINFO_R_OK) {
       SetErrorMessage(error, "show");
@@ -89,7 +99,7 @@ class PkgMgrHandle {
   }
 
   bool GetCategories(std::vector<picojson::value>* categories,
-                     picojson::value& error) {
+                     picojson::object& error) {
     int ret = pkgmgrinfo_appinfo_foreach_category(
         appinfo_handle_, &PkgMgrHandle::SaveCategoriesCallback, &categories);
     if (ret != PMINFO_R_OK) {
@@ -99,7 +109,7 @@ class PkgMgrHandle {
     return true;
   }
 
-  bool GetVersion(char** version, picojson::value& error) {
+  bool GetVersion(char** version, picojson::object& error) {
     int ret = pkgmgrinfo_pkginfo_get_version(pkginfo_handle_, version);
     if ((ret != PMINFO_R_OK) || (*version == NULL)) {
       SetErrorMessage(error, "version");
@@ -108,7 +118,7 @@ class PkgMgrHandle {
     return true;
   }
 
-  bool GetInstallTime(int* install_date, picojson::value& error) {
+  bool GetInstallTime(int* install_date, picojson::object& error) {
     int ret = pkgmgrinfo_pkginfo_get_installed_time(
         pkginfo_handle_, install_date);
     if (ret != PMINFO_R_OK) {
@@ -118,7 +128,7 @@ class PkgMgrHandle {
     return true;
   }
 
-  bool GetSize(int* install_size, picojson::value& error) {
+  bool GetSize(int* install_size, picojson::object& error) {
     int ret = pkgmgrinfo_pkginfo_get_total_size(pkginfo_handle_, install_size);
     if (ret != PMINFO_R_OK) {
       SetErrorMessage(error, "install_size");
@@ -131,7 +141,7 @@ class PkgMgrHandle {
   static PkgMgrHandle* CreateInternal(const std::string& app_id,
                                       pkgmgrinfo_appinfo_h& appinfo_handle,
                                       bool owns_appinfo_handle,
-                                      picojson::value& error) {
+                                      picojson::object& error) {
     char* pkg_id = NULL;
     int ret = package_manager_get_package_id_by_app_id(app_id.c_str(), &pkg_id);
     if (ret != PACKAGE_MANAGER_ERROR_NONE) {
@@ -181,8 +191,8 @@ class PkgMgrHandle {
 };
 
 void RetrieveAppInfo(PkgMgrHandle& handle,
-                     picojson::value& info,
-                     picojson::value& error) {
+                     picojson::object& info,
+                     picojson::object& error) {
   char* name = NULL;
   char* icon_path = NULL;
   char* version = NULL;
@@ -201,23 +211,22 @@ void RetrieveAppInfo(PkgMgrHandle& handle,
     return;
   }
 
-  picojson::value::object& data = info.get<picojson::object>();
-  data["id"] = picojson::value(handle.app_id());
-  data["name"] = picojson::value(name);
-  data["iconPath"] = picojson::value(icon_path);
-  data["version"] = picojson::value(version);
-  data["show"] = picojson::value(show);
-  data["categories"] = picojson::value(categories);
-  data["installDate"] = picojson::value(static_cast<double>(install_date));
-  data["size"] = picojson::value(static_cast<double>(install_size));
-  data["packageId"] = picojson::value(handle.pkg_id());
+  info["id"] = picojson::value(handle.app_id());
+  info["name"] = picojson::value(name);
+  info["iconPath"] = picojson::value(icon_path);
+  info["version"] = picojson::value(version);
+  info["show"] = picojson::value(show);
+  info["categories"] = picojson::value(categories);
+  info["installDate"] = picojson::value(static_cast<double>(install_date));
+  info["size"] = picojson::value(static_cast<double>(install_size));
+  info["packageId"] = picojson::value(handle.pkg_id());
 }
 
 int GetAllAppInfoCallback(pkgmgrinfo_appinfo_h appinfo_handle,
                           void* user_data) {
   picojson::array* data = static_cast<picojson::array*>(user_data);
-  picojson::value info(picojson::object_type, true);
-  picojson::value error(picojson::object_type, true);
+  picojson::object info;
+  picojson::object error;
 
   std::unique_ptr<PkgMgrHandle> handle(
       PkgMgrHandle::Create(appinfo_handle, error));
@@ -227,25 +236,24 @@ int GetAllAppInfoCallback(pkgmgrinfo_appinfo_h appinfo_handle,
   }
 
   RetrieveAppInfo(*handle, info, error);
-  if (!error.get<picojson::object>().empty()) {
+  if (!error.empty()) {
     data->clear();
     return -1;
   }
 
-  data->push_back(info);
+  data->push_back(picojson::value(info));
   return 0;
 }
 
-void RetrieveAllInstalledAppInfo(picojson::value& data,
-                                 picojson::value& error) {
-  int ret = pkgmgrinfo_appinfo_get_installed_list(
-      GetAllAppInfoCallback, &data.get<picojson::array>());
+void RetrieveAllInstalledAppInfo(picojson::array& data,
+                                 picojson::object& error) {
+  int ret = pkgmgrinfo_appinfo_get_installed_list(GetAllAppInfoCallback, &data);
   if (ret != PMINFO_R_OK) {
     SetErrorMessage(error, "installed");
     return;
   }
 
-  if (data.get<picojson::array>().empty())
+  if (data.empty())
     SetErrorMessage(error, "get_all");
 }
 
@@ -275,21 +283,17 @@ std::string ApplicationInformation::PkgIdToAppId(const std::string& pkg_id) {
 }
 
 picojson::value* ApplicationInformation::GetAllInstalled() {
-  picojson::value* result = new picojson::value(picojson::object_type, true);
-  picojson::value data(picojson::array_type, true);
-  picojson::value error(picojson::object_type, true);
+  picojson::array data;
+  picojson::object error;
 
   RetrieveAllInstalledAppInfo(data, error);
-  if (!error.get<picojson::object>().empty())
-    result->get<picojson::object>()["error"] = error;
+  if (!error.empty())
+    return CreateResultMessage(WebApiAPIErrors::UNKNOWN_ERR);
   else
-    result->get<picojson::object>()["data"] = data;
-  return result;
+    return CreateResultMessage(data);
 }
 
-ApplicationInformation::ApplicationInformation(const std::string& app_id)
-    : data_(picojson::object_type, true),
-      error_(picojson::object_type, true) {
+ApplicationInformation::ApplicationInformation(const std::string& app_id) {
   std::unique_ptr<PkgMgrHandle> handle(PkgMgrHandle::Create(app_id, error_));
   if (handle && IsValid())
     RetrieveAppInfo(*handle, data_, error_);
@@ -298,16 +302,25 @@ ApplicationInformation::ApplicationInformation(const std::string& app_id)
 ApplicationInformation::~ApplicationInformation() {
 }
 
-std::string ApplicationInformation::Serialize() const {
-  if (IsValid()) {
-    return data_.serialize();
-  } else if (!error_.get<picojson::object>().empty()) {
-    return error_.serialize();
+const picojson::value& ApplicationInformation::Value() {
+  if (value_.is<picojson::null>() && IsValid())
+    value_ = picojson::value(data_);
+  return value_;
+}
+
+const std::string ApplicationInformation::Serialize() {
+  std::unique_ptr<picojson::value> result;
+  if (!IsValid()) {
+    picojson::object::const_iterator it = error_.find("code");
+    assert(it != error_.end());
+    result.reset(CreateResultMessage(
+          static_cast<WebApiAPIErrors>(it->second.get<double>())));
   } else {
-    return "";
+    result.reset(CreateResultMessage(Value()));
   }
+  return result->serialize();
 }
 
 bool ApplicationInformation::IsValid() const {
-  return error_.get<picojson::object>().empty();
+  return error_.empty();
 }

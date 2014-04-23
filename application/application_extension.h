@@ -5,25 +5,28 @@
 #ifndef APPLICATION_APPLICATION_EXTENSION_H_
 #define APPLICATION_APPLICATION_EXTENSION_H_
 
+#include <memory>
 #include <string>
 
 #include "common/extension.h"
 
+class Application;
+class ApplicationManager;
+
 class ApplicationExtension : public common::Extension {
  public:
-  ApplicationExtension(const std::string& app_id, const std::string& pkg_id);
+  explicit ApplicationExtension(const std::string& pkg_id);
   virtual ~ApplicationExtension();
 
-  const std::string& app_id() const { return app_id_; }
-
-  const std::string& pkg_id() const { return pkg_id_; }
+  Application* current_app() { return current_app_.get(); }
+  ApplicationManager* app_manager() { return app_manager_.get(); }
 
  private:
   // common::Extension implementation.
   virtual common::Instance* CreateInstance();
 
-  std::string app_id_;
-  std::string pkg_id_;
+  std::unique_ptr<Application> current_app_;
+  std::unique_ptr<ApplicationManager> app_manager_;
 };
 
 #endif  // APPLICATION_APPLICATION_EXTENSION_H_
