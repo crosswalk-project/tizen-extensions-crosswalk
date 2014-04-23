@@ -9,12 +9,17 @@
       'variables': {
         'packages': [
           'capi-appfw-application',
+          'pkgmgr-info',
         ],
       },
       'sources': [
+        '../common/extension.cc',
+        '../common/extension.h',
         'filesystem_api.js',
-        'filesystem_context.cc',
-        'filesystem_context.h',
+        'filesystem_extension.cc',
+        'filesystem_extension.h',
+        'filesystem_instance.cc',
+        'filesystem_instance.h',
       ],
       'includes': [
         '../common/pkg-config.gypi',
