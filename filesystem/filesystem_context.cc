@@ -62,6 +62,25 @@ bool makePath(const std::string& path) {
   return true;
 }
 
+int get_dir_entry_count(const char* path) {
+  int count = 0;
+  DIR* dir = opendir(path);
+  if (!dir)
+    return count;
+
+  struct dirent entry;
+  struct dirent *result;
+  int ret = readdir_r(dir, &entry, &result);
+
+  for (; ret == 0 && result != NULL; ret = readdir_r(dir, &entry, &result)) {
+    if (entry.d_type == DT_REG || entry.d_type == DT_DIR)
+      count++;
+  }
+
+  closedir(dir);
+  return count;
+}
+
 };  // namespace
 
 FilesystemContext::FilesystemContext(ContextAPI* api)
@@ -1174,13 +1193,19 @@ void FilesystemContext::HandleFileStat(const picojson::value& msg,
     return;
   }
 
+  bool is_directory = !!S_ISDIR(st.st_mode);
+
   picojson::value::object o;
   o["size"] = picojson::value(static_cast<double>(st.st_size));
   o["modified"] = picojson::value(static_cast<double>(st.st_mtime));
   o["created"] = picojson::value(static_cast<double>(st.st_ctime));  // ?
   o["readOnly"] = picojson::value(!IsWritable(st));
   o["isFile"] = picojson::value(!!S_ISREG(st.st_mode));
-  o["isDirectory"] = picojson::value(!!S_ISDIR(st.st_mode));
+  o["isDirectory"] = picojson::value(is_directory);
+  if (is_directory)
+    o["length"] = picojson::value(
+        static_cast<double>(get_dir_entry_count(real_path.c_str())));
+
 
   picojson::value v(o);
   SetSyncSuccess(reply, v);
