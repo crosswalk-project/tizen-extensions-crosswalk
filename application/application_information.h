@@ -5,6 +5,7 @@
 #ifndef APPLICATION_APPLICATION_INFORMATION_H_
 #define APPLICATION_APPLICATION_INFORMATION_H_
 
+#include <memory>
 #include <string>
 
 #include "common/picojson.h"
@@ -25,13 +26,14 @@ class ApplicationInformation {
   explicit ApplicationInformation(const std::string& app_id);
   ~ApplicationInformation();
 
-  std::string Serialize() const;
-
- private:
+  const picojson::value& Value();
+  const std::string Serialize();
   bool IsValid() const;
 
-  picojson::value data_;
-  picojson::value error_;
+ private:
+  picojson::object data_;
+  picojson::object error_;
+  picojson::value value_;
 };
 
 #endif  // APPLICATION_APPLICATION_INFORMATION_H_

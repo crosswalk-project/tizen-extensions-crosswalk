@@ -7,8 +7,9 @@
 #include <iostream>
 #include <sstream>
 
-#include "application/application_information.h"
+#include "application/application.h"
 #include "application/application_instance.h"
+#include "application/application_manager.h"
 #include "common/picojson.h"
 
 common::Extension* CreateExtension() {
@@ -31,23 +32,16 @@ common::Extension* CreateExtension() {
     return NULL;
   }
 
-  std::string app_id = ApplicationInformation::PkgIdToAppId(pkg_id);
-  if (app_id.empty()) {
-    std::cerr << "Can't translate app package ID to application ID."
-              << std::endl;
-    return NULL;
-  }
-
-  return new ApplicationExtension(app_id, pkg_id);
+  return new ApplicationExtension(pkg_id);
 }
 
 // This will be generated from application_api.js
 extern const char kSource_application_api[];
 
-ApplicationExtension::ApplicationExtension(const std::string& app_id,
-                                           const std::string& pkg_id)
-    : app_id_(app_id),
-      pkg_id_(pkg_id) {
+ApplicationExtension::ApplicationExtension(const std::string& pkg_id) {
+  current_app_.reset(new Application(pkg_id));
+  app_manager_.reset(new ApplicationManager());
+
   SetExtensionName("tizen.application");
   SetJavaScriptAPI(kSource_application_api);
 }
