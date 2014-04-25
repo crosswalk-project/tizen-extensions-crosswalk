@@ -60,6 +60,37 @@ function Content(id, name, type, mimeType, title, contentURI, thumnailURIs, rele
   });
 }
 
+function ContentAudio(obj, album, genres, artists, composer, copyright, bitrate, trackNumber, duration) {
+  Object.defineProperties(obj, {
+    'album': { writable: false, value: album, enumerable: true },
+    'genres': { writable: false, value: genres, enumerable: true },
+    'artists': { writable: false, value: artists, enumerable: true },
+    'composer': { writable: false, value: composer, enumerable: true },
+    'copyright': { writable: false, value: copyright, enumerable: true },
+    'bitrate': { writable: false, value: bitrate, enumerable: true },
+    'trackNumber': { writable: false, value: trackNumber, enumerable: true },
+    'duration': { writable: false, value: duration, enumerable: true },
+  });
+}
+
+function ContentImage(obj, width, height, orientation) {
+  Object.defineProperties(obj, {
+    'width': { writable: false, value: width, enumerable: true },
+    'height': { writable: false, value: height, enumerable: true },
+    'orientation': { writable: false, value: orientation, enumerable: true },
+  });
+}
+
+function ContentVideo(obj, album, artists, duration, width, height) {
+  Object.defineProperties(obj, {
+    'album': { writable: false, value: album, enumerable: true },
+    'artists': { writable: false, value: artists, enumerable: true },
+    'duration': { writable: false, value: duration, enumerable: true },
+    'width': { writable: false, value: width, enumerable: true },
+    'height': { writable: false, value: height, enumerable: true },
+  });
+}
+
 function ContentManager() {
 }
 
@@ -120,6 +151,30 @@ ContentManager.prototype.find = function(onsuccess, onerror, directoryId, filter
               content.size,
               content.description,
               content.rating);
+
+          if (content.type == "AUDIO") {
+            ContentAudio(jsonContent,
+                content.album,
+                content.genres,
+                content.artists,
+                content.composer,
+                content.copyright,
+                content.bitrate,
+                content.trackNumber,
+                content.duration);
+          } else if (content.type == "IMAGE") {
+            ContentImage(jsonContent,
+                content.width,
+                content.height,
+                content.orientation);
+          } else if (content.type == "VIDEO") {
+            ContentImage(jsonContent,
+                content.album,
+                content.artists,
+                content.duration,
+                content.width,
+                content.height);
+          }
           contents.push(jsonContent);
         }     
         onsuccess(contents);
