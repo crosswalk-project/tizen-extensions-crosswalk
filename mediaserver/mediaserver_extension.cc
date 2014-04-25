@@ -8,7 +8,6 @@
 #include "mediaserver/mediaserver_instance.h"
 
 common::Extension* CreateExtension() {
-  g_type_init();
   return new MediaServerExtension;
 }
 
