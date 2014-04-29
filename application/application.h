@@ -5,6 +5,7 @@
 #ifndef APPLICATION_APPLICATION_H_
 #define APPLICATION_APPLICATION_H_
 
+#include <gio/gio.h>
 #include <memory>
 #include <string>
 
@@ -32,6 +33,7 @@ class Application {
 
   std::string app_id_;
   std::string pkg_id_;
+  GDBusProxy* running_app_proxy_;
 };
 
 #endif  // APPLICATION_APPLICATION_H_

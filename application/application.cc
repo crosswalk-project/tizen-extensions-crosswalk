@@ -12,11 +12,50 @@
 #include "application/application_extension_utils.h"
 #include "application/application_information.h"
 
+namespace {
+
+const char kRuntimeServiceName[] =  "org.crosswalkproject.Runtime1";
+const char kRuntimeRunningManagerPath[] = "/running1";
+const char kRuntimeRunningAppInterface[] =
+    "org.crosswalkproject.Running.Application1";
+
+// The runtime process exports object for each running app on the session bus.
+GDBusProxy* CreateRunningAppProxy(const std::string& xwalk_app_id) {
+  GError* error = NULL;
+  GDBusConnection* connection =
+      g_bus_get_sync(G_BUS_TYPE_SESSION, NULL, &error);
+  if (!connection) {
+    std::cerr << "Couldn't get the session bus connection: "
+              << error->message << std::endl;
+    g_error_free(error);
+    return NULL;
+  }
+
+  std::string path =
+      std::string(kRuntimeRunningManagerPath) + "/" + xwalk_app_id;
+  GDBusProxy* proxy = g_dbus_proxy_new_sync(
+      connection, G_DBUS_PROXY_FLAGS_NONE, NULL, kRuntimeServiceName,
+      path.c_str(), kRuntimeRunningAppInterface, NULL, &error);
+  if (!proxy) {
+    std::cerr << "Couldn't create proxy for " << kRuntimeRunningAppInterface
+              << ": " << error->message << std::endl;
+    g_error_free(error);
+    return NULL;
+  }
+
+  return proxy;
+}
+
+}  // namespace
+
 Application::Application(const std::string& pkg_id)
-    : pkg_id_(pkg_id) {
+    : pkg_id_(pkg_id),
+      running_app_proxy_(NULL) {
 }
 
 Application::~Application() {
+  if (running_app_proxy_)
+    g_object_unref(running_app_proxy_);
 }
 
 ApplicationInformation Application::GetAppInfo() {
@@ -32,14 +71,38 @@ ApplicationContext Application::GetAppContext() {
 }
 
 picojson::value* Application::Exit() {
-  // TODO(xiang): calls "Terminate" method of running app object on session bus.
-  std::cerr << "ASSERT NOT IMPLEMENTED.\n";
+  if (!running_app_proxy_) {
+    if (!(running_app_proxy_ = CreateRunningAppProxy(pkg_id_)))
+      return CreateResultMessage(WebApiAPIErrors::UNKNOWN_ERR);
+  }
+
+  GError* error = NULL;
+  GVariant* result = g_dbus_proxy_call_sync(
+      running_app_proxy_, "Terminate", NULL,
+      G_DBUS_CALL_FLAGS_NONE, -1, NULL, &error);
+  if (!result) {
+    std::cerr << "Fail to call 'Terminate':" << error->message << std::endl;
+    g_error_free(error);
+    return CreateResultMessage(WebApiAPIErrors::UNKNOWN_ERR);
+  }
   return CreateResultMessage();
 }
 
 picojson::value* Application::Hide() {
-  // TODO(xiang): calls "Hide" method of running app object on session bus.
-  std::cerr << "ASSERT NOT IMPLEMENTED.\n";
+  if (!running_app_proxy_) {
+    if (!(running_app_proxy_ = CreateRunningAppProxy(pkg_id_)))
+      return CreateResultMessage(WebApiAPIErrors::UNKNOWN_ERR);
+  }
+
+  GError* error = NULL;
+  GVariant* result = g_dbus_proxy_call_sync(
+      running_app_proxy_, "Hide", NULL,
+      G_DBUS_CALL_FLAGS_NONE, -1, NULL, &error);
+  if (!result) {
+    std::cerr << "Fail to call 'Hide':" << error->message << std::endl;
+    g_error_free(error);
+    return CreateResultMessage(WebApiAPIErrors::UNKNOWN_ERR);
+  }
   return CreateResultMessage();
 }
 
