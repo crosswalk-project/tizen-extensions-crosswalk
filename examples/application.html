@@ -15,6 +15,58 @@ Input test app id: <input type="text" id="app_id" value="current app ID"></input
 <br>Applications ID:</br>
 <textarea id="apps_id" rows="10" cols="64"></textarea>
 
+<br>
+<br>
+Input test app context: <input type="text" id="ctx_id" value="current app context"></input>
+<input type="button" value="GetAppContext" onclick="handleGetAppContext()"></input>
+<br>
+<br>Application context information:</br>
+<textarea id="app_context" rows="2" cols="64"></textarea>
+
+<br>
+<br>
+<input type="button" value="GetAppsContext" onclick="handleGetAppsContext()"></input>
+<br>
+<br>Running applications context:</br>
+<textarea id="apps_context" rows="10" cols="64"></textarea>
+
+<br>
+<br>
+<input type="button" value="GetCurrentApplication" onclick="handleGetCurrentApp()"></input>
+<br>
+<br>Current application:</br>
+<textarea id="curr_app" rows="2" cols="64"></textarea>
+
+<br>
+<br>
+Input launch app ID: <input type="text" id="launch_app_id" value=""></input>
+<input type="button" value="Launch" onclick="handleLaunch()"></input>
+<br>
+<br>Result:</br>
+<textarea id="app_launch" rows="2" cols="64"></textarea>
+
+<br>
+<br>
+Input kill app context: <input type="text" id="kill_context_id" value=""></input>
+<input type="button" value="Kill" onclick="handleKill()"></input>
+<br>
+<br>Result:</br>
+<textarea id="app_kill" rows="2" cols="64"></textarea>
+
+<br>
+<br>
+<input type="button" value="AddAppEvent" onclick="handleAddAppInfoEvent()"></input>
+<input type="button" value="RemoveAppEvent" onclick="handleRemoveAppInfoEvent()"></input>
+<br>
+<br>Result:</br>
+<textarea id="app_event" rows="6" cols="64"></textarea>
+
+<br>
+<br>
+<input type="button" value="ExitCurrentApp" onclick="handleExitApp()"></input>
+<br>
+<input type="button" value="HideCurrentApp" onclick="handleHideApp()"></input>
+
 <pre id="console"></pre>
 <script src="js/js-test-pre.js"></script>
 <script>
@@ -27,16 +79,16 @@ function handleGetAppInfo() {
     else
       info = tizen.application.getAppInfo(app_id.value);
 
-      var output = document.getElementById("app_info");
-      output.value += "id: " + info.id + "\n";
-      output.value += "name: " + info.name + "\n";
-      output.value += "iconPath: " + info.iconPath + "\n";
-      output.value += "version: " + info.version + "\n";
-      output.value += "show: " + info.show + "\n";
-      output.value += "categories: " + info.categories + "\n";
-      output.value += "installDate: " + info.installDate+ "\n";
-      output.value += "size: " + info.size + "\n";
-      output.value += "packageId: " + info.packageId + "\n";
+    var output = document.getElementById("app_info");
+    output.value += "id: " + info.id + "\n";
+    output.value += "name: " + info.name + "\n";
+    output.value += "iconPath: " + info.iconPath + "\n";
+    output.value += "version: " + info.version + "\n";
+    output.value += "show: " + info.show + "\n";
+    output.value += "categories: " + info.categories + "\n";
+    output.value += "installDate: " + info.installDate+ "\n";
+    output.value += "size: " + info.size + "\n";
+    output.value += "packageId: " + info.packageId + "\n";
   } catch (err) {
     debug(err.name);
   }
@@ -60,6 +112,131 @@ function handleGetAppsInfo() {
     debug(err.name);
   }
 }
+
+function handleGetAppContext() {
+  try {
+    var ctx_id = document.getElementById("ctx_id");
+    var context;
+    if (ctx_id.value === "current app context")
+      context = tizen.application.getAppContext();
+    else
+      context = tizen.application.getAppContext(ctx_id.value);
+
+    var output = document.getElementById("app_context");
+    output.value += "id: " + context.id + "\n";
+    output.value += "appId: " + context.appId + "\n";
+  } catch (err) {
+    console.log(err.name);
+  }
+}
+
+function handleGetAppsContext() {
+  try {
+    var output = document.getElementById("apps_context");
+    var onsuccess = function(contexts) {
+      for (var i = 0; i < contexts.length; i++) {
+        output.value += contexts[i].id + "\n";
+      }
+    };
+
+    var onerror = function(error) {
+      output.value += "Fail to get apps context: " + error.name;
+    };
+
+    tizen.application.getAppsContext(onsuccess, onerror);
+  } catch (err) {
+    debug(err.name);
+  }
+}
+
+function handleGetCurrentApp() {
+  try {
+    var app = tizen.application.getCurrentApplication();
+    var output = document.getElementById("curr_app");
+    output.value += "appId: " + app.appInfo.id + "\n";
+    output.value += "contextId: " + app.contextId + "\n";
+  } catch (err) {
+    debug(err.name);
+  }
+}
+
+function handleLaunch() {
+  try {
+    var appId = document.getElementById("launch_app_id");
+    var output = document.getElementById("app_launch");
+    var onsuccess = function() {
+        output.value += "Application launched successfully!\n";
+    };
+    var onerror = function(error) {
+      output.value += "Fail to launch app: " + error.name + "\n";
+    };
+
+    tizen.application.launch(appId.value, onsuccess, onerror);
+  } catch (err) {
+    debug(err.name);
+  }
+}
+
+function handleKill() {
+  try {
+    var ctxId = document.getElementById("kill_context_id");
+    var output = document.getElementById("app_kill");
+    var onsuccess = function() {
+      output.value += "Application killed successfully!\n";
+    };
+    var onerror = function(error) {
+      output.value += "Fail to kill app: " + error.name + "\n";
+    };
+
+    tizen.application.kill(ctxId.value, onsuccess, onerror);
+  } catch (err) {
+    debug(err.name);
+  }
+}
+
+function handleAddAppInfoEvent() {
+  try {
+    var output = document.getElementById("app_event");
+    lastWatchId = tizen.application.addAppInfoEventListener({
+      oninstalled: function(appinfo) {
+        output.value += "install app name:" + appinfo.name + "\n";
+      },
+      onupdated: function(appinfo) {
+        output.value += "update app name:" + appinfo.name + "\n";
+      },
+      onuninstalled: function(appid) {
+        output.value += "uninstalled app id:" + appid + '\n';
+      }
+    });
+  } catch(err) {
+    debug(err.name);
+  }
+}
+
+function handleRemoveAppInfoEvent() {
+  try {
+    tizen.application.removeAppInfoEventListener(lastWatchId);
+  } catch (err) {
+    debug(err.name);
+  }
+}
+
+function handleExitApp() {
+  try {
+    tizen.application.getCurrentApplication().exit();
+  } catch (err) {
+    debug(err.name);
+  }
+}
+
+function handleHideApp() {
+  try {
+    tizen.application.getCurrentApplication().hide();
+  } catch (err) {
+    debug(err.name);
+  }
+}
+
 </script>
 </body>
 </html>
