@@ -104,13 +104,13 @@ function Application(appInfo, contextId) {
 Application.prototype.exit = function() {
   var result = sendSyncMessage({ cmd: 'ExitCurrentApp' });
   if (result.error != null)
-    throw new tizen.WebAPIException(tizen.WebAPIException.UNKNOWN_ERR);
+    throw new tizen.WebAPIException(result.error);
 };
 
 Application.prototype.hide = function() {
   var result = sendSyncMessage({ cmd: 'HideCurrentApp' });
   if (result.error != null)
-    throw new tizen.WebAPIException(tizen.WebAPIException.UNKNOWN_ERR);
+    throw new tizen.WebAPIException(result.error);
 };
 
 // ApplicationContext interface.
