@@ -967,7 +967,7 @@ void FilesystemContext::HandleFileStreamRead(const picojson::value& msg,
   fs->clear();
   std::streampos bytes_read = fs->tellg() - initial_pos;
 
-  if (fs->bad() || (strlen(buffer) == 0 && bytes_read <= 0)) {
+  if (fs->bad()) {
     fs->clear();
     SetSyncError(reply, IO_ERR);
     return;
