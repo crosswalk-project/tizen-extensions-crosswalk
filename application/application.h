@@ -20,6 +20,7 @@ class Application {
   explicit Application(const std::string& pkg_id);
   ~Application();
 
+  const std::string GetAppId();
   ApplicationInformation GetAppInfo();
   ApplicationContext GetAppContext();
 

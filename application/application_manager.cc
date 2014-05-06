@@ -6,10 +6,12 @@
 
 #include <app_manager.h>
 #include <aul.h>
+#include <pkgmgr-info.h>
 #include <unistd.h>
 
 #include <algorithm>
 #include <iostream>
+#include <tuple>
 
 #include "application/application_extension_utils.h"
 #include "application/application_information.h"
@@ -77,6 +79,21 @@ int AppEventsCallback(int id, const char* type, const char* package,
   manager->OnAppInfoEvent(event_type, event_state, app_ids);
 
   return APP_MANAGER_ERROR_NONE;
+}
+
+int AppMetaDataCallback(const char* key, const char* value, void* data) {
+  auto ret = static_cast<std::tuple<bool, picojson::array>*>(data);
+  if (!key || !value) {
+    std::cerr << "Application metadata contains null key/value.\n";
+    std::get<0>(*ret) = false;
+    return -1;
+  }
+
+  picojson::object obj;
+  obj["key"] = picojson::value(key);
+  obj["value"] = picojson::value(value);
+  std::get<1>(*ret).push_back(picojson::value(obj));
+  return 0;
 }
 
 }  // namespace
@@ -152,6 +169,23 @@ picojson::value* ApplicationManager::LaunchApp(const std::string& app_id) {
   }
 
   return CreateResultMessage();
+}
+
+
+picojson::value* ApplicationManager::GetAppMetaData(const std::string& app_id) {
+  pkgmgrinfo_appinfo_h handle;
+  if (pkgmgrinfo_appinfo_get_appinfo(app_id.c_str(), &handle) != PMINFO_R_OK)
+    return CreateResultMessage(WebApiAPIErrors::NOT_FOUND_ERR);
+
+  // The first boolean will set to false if AppMetaDataCallback fail.
+  auto data = std::make_tuple(true, picojson::array());
+  int ret = pkgmgrinfo_appinfo_foreach_metadata(
+      handle, AppMetaDataCallback, &data);
+  pkgmgrinfo_appinfo_destroy_appinfo(handle);
+  if (ret != PMINFO_R_OK || !std::get<0>(data))
+    return CreateResultMessage(WebApiAPIErrors::UNKNOWN_ERR);
+
+  return CreateResultMessage(std::get<1>(data));
 }
 
 picojson::value* ApplicationManager::RegisterAppInfoEvent(
