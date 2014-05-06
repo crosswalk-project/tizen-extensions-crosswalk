@@ -92,6 +92,8 @@ void ApplicationInstance::HandleSyncMessage(const char* msg) {
     HandleRegisterAppInfoEvent();
   } else if (cmd == "UnregisterAppInfoEvent") {
     HandleUnregisterAppInfoEvent();
+  } else if (cmd == "GetAppMetaData") {
+    HandleGetAppMetaData(v);
   } else {
     std::cout << "ASSERT NOT REACHED.\n";
   }
@@ -144,6 +146,19 @@ void ApplicationInstance::HandleRegisterAppInfoEvent() {
 void ApplicationInstance::HandleUnregisterAppInfoEvent() {
   std::unique_ptr<picojson::value> result(
       extension_->app_manager()->UnregisterAppInfoEvent(this));
+  SendSyncReply(result->serialize().c_str());
+}
+
+void ApplicationInstance::HandleGetAppMetaData(const picojson::value& msg) {
+  std::string app_id;
+  if (msg.contains("id") && msg.get("id").is<std::string>()) {
+    app_id = msg.get("id").to_str();
+  } else {
+    app_id = extension_->current_app()->GetAppId();
+  }
+
+  std::unique_ptr<picojson::value> result(
+      extension_->app_manager()->GetAppMetaData(app_id));
   SendSyncReply(result->serialize().c_str());
 }
 

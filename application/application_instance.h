@@ -30,6 +30,7 @@ class ApplicationInstance : public common::Instance {
   void HandleHideCurrentApp();
   void HandleRegisterAppInfoEvent();
   void HandleUnregisterAppInfoEvent();
+  void HandleGetAppMetaData(const picojson::value& msg);
 
   // Asynchronous message handlers.
   void HandleGetAppsInfo(const picojson::value& msg);
