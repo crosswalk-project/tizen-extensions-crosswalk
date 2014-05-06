@@ -27,11 +27,11 @@ std::string pathToURI(const std::string path) {
 unsigned ContentInstance::m_instanceCount = 0;
 
 ContentInstance::ContentInstance() {
+  ++m_instanceCount;
   if (media_content_connect() != MEDIA_CONTENT_ERROR_NONE) {
-    std::cerr << "media_content_connect: error\n";
+    std::cerr << "media_content_connect: DB connection error" << std::endl;
     return;
   }
-  ++m_instanceCount;
 }
 
 ContentInstance::~ContentInstance() {
