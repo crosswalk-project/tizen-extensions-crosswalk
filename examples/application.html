@@ -67,6 +67,16 @@ Input kill app context: <input type="text" id="kill_context_id" value=""></input
 <br>
 <input type="button" value="HideCurrentApp" onclick="handleHideApp()"></input>
 
+
+<br>
+<br>
+Input app ID: <input type="text" id="meta_app_id" value="current app ID"></input>
+<input type="button" value="GetAppMetaData" onclick="handleGetAppMetaData()"></input>
+<br>
+<br>Application meta data:</br>
+<textarea id="app_meta_data" rows="4" cols="64"></textarea>
+
+
 <pre id="console"></pre>
 <script src="js/js-test-pre.js"></script>
 <script>
@@ -232,6 +242,25 @@ function handleExitApp() {
 function handleHideApp() {
   try {
     tizen.application.getCurrentApplication().hide();
+  } catch (err) {
+    debug(err.name);
+  }
+}
+
+function handleGetAppMetaData() {
+  try {
+    var app_id = document.getElementById("meta_app_id");
+    var data;
+    if (app_id.value === "current app ID")
+      data = tizen.application.getAppMetaData();
+    else
+      data = tizen.application.getAppMetaData(app_id.value);
+
+    var output = document.getElementById("app_meta_data");
+    for (var i = 0; i < data.length; ++i) {
+      output.value += "key: " + data.key + "\n";
+      output.value += "value: " + data.value + "\n";
+    }
   } catch (err) {
     debug(err.name);
   }

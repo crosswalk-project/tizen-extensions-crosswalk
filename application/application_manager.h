@@ -24,6 +24,7 @@ class ApplicationManager {
 
   picojson::value* KillApp(const std::string& context_id);
   picojson::value* LaunchApp(const std::string& app_id);
+  picojson::value* GetAppMetaData(const std::string& app_id);
 
   // Application information events registration/unregistration handlers.
   typedef std::function<void(picojson::object&)> AppInfoEventCallback;

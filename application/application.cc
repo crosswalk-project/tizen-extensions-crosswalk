@@ -58,6 +58,13 @@ Application::~Application() {
     g_object_unref(running_app_proxy_);
 }
 
+
+const std::string Application::GetAppId() {
+  if (app_id_.empty() && !RetrieveAppId())
+    return "";
+  return app_id_;
+}
+
 ApplicationInformation Application::GetAppInfo() {
   if (app_id_.empty() && !RetrieveAppId())
     // Return an invalid ApplicationInformation by passing an empty app ID.

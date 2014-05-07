@@ -129,6 +129,12 @@ function ApplicationInformation(json) {
   }
 }
 
+// ApplicationMetaData interface.
+function ApplicationMetaData(json) {
+  defineReadOnlyProperty(this, 'key', json.key);
+  defineReadOnlyProperty(this, 'value', json.value);
+}
+
 exports.getAppInfo = function(appId) {
   if (typeof appId !== 'string' && appId != undefined)
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
@@ -276,4 +282,18 @@ exports.removeAppInfoEventListener = function(watchId) {
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
 
   appInfoEventCallbacks.removeCallback(watchId);
+};
+
+exports.getAppMetaData = function(appId) {
+  if (typeof appId !== 'string' && appId != undefined)
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+
+  var result = sendSyncMessage({ cmd: 'GetAppMetaData', id: appId });
+  if (result.error != null)
+    throw new tizen.WebAPIException(result.error);
+
+  var data = [];
+  for (var i = 0, len = result.data.length; i < len; ++i)
+      data.push(new ApplicationMetaData(result.data[i]));
+  return data;
 };
