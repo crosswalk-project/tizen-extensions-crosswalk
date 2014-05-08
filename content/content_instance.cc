@@ -17,10 +17,22 @@
 
 namespace {
 const std::string STR_FILTER("filter");
-std::string pathToURI(const std::string path) {
-  static std::string scheme("file://");
+const std::string STR_CONTENT_URI("contentURI");
 
-  return scheme + path;
+std::string createUriFromLocalPath(const std::string path) {
+  static std::string fileScheme("file://");
+
+  return fileScheme + path;
+}
+
+std::string getUriPath(const std::string uri) {
+  static std::string fileScheme("file://");
+  std::string _fileScheme = uri.substr(0, fileScheme.size());
+
+  if (_fileScheme == fileScheme)
+    return uri.substr(fileScheme.size());
+  else
+    return "";
 }
 }  // namespace
 
@@ -52,7 +64,7 @@ void ContentInstance::HandleMessage(const char* message) {
     std::cerr << "Ignoring message.\n";
     return;
   }
-#ifdef DEBUG
+#ifdef DEBUG_JSON
   std::cout << "HandleMessage: " << message << std::endl;
 #endif
   std::string cmd = v.get("cmd").to_str();
@@ -60,6 +72,8 @@ void ContentInstance::HandleMessage(const char* message) {
     HandleGetDirectoriesRequest(v);
   } else if (cmd == "ContentManager.find") {
     HandleFindRequest(v);
+  } else if (cmd == "ContentManager.scanFile") {
+    HandleScanFileRequest(v);
   } else {
     std::cerr << "Message " + cmd + " is not supported.\n";
   }
@@ -144,7 +158,7 @@ bool ContentInstance::mediaFolderCallback(media_folder_h handle,
   ContentFolder* folder = new ContentFolder;
   folder->init(handle);
   folderList->addFolder(folder);
-#ifdef DEBUG
+#ifdef DEBUG_ITEM
   folder->print();
 #endif
   return true;
@@ -157,7 +171,8 @@ void ContentInstance::HandleFindRequest(const picojson::value& msg) {
   ContentFilter& filter = ContentFilter::instance();
   if (msg.contains(STR_FILTER)) {
     picojson::value filterValue = msg.get(STR_FILTER);
-    if (!filterValue.is<picojson::null>()) {
+    if (!filterValue.is<picojson::null>() &&
+        filterValue.is<picojson::object>()) {
       std::string condition = filter.convert(msg.get(STR_FILTER));
       if (media_filter_create(&filterHandle) == MEDIA_CONTENT_ERROR_NONE)
         media_filter_set_condition(filterHandle,
@@ -242,7 +257,7 @@ void ContentInstance::HandleFindReply(
     items.push_back(picojson::value(o));
   }
   picojson::value value(items);
-#ifdef DEBUG
+#ifdef DEBUG_JSON
   std::cout << "JSON reply: " << std::endl <<
      value.serialize().c_str() << std::endl;
 #endif
@@ -258,7 +273,7 @@ bool ContentInstance::mediaInfoCallback(media_info_h handle, void* user_data) {
   ContentItem* item = new ContentItem;
   item->init(handle);
   itemList->addItem(item);
-#ifdef DEBUG
+#ifdef DEBUG_ITEM
   item->print();
 #endif
   return true;
@@ -275,7 +290,7 @@ void ContentFolder::init(media_folder_h handle) {
   }
 
   if (media_folder_get_path(handle, &str) == MEDIA_CONTENT_ERROR_NONE) {
-    setDirectoryURI(pathToURI(str));
+    setDirectoryURI(createUriFromLocalPath(str));
     free(str);
   }
 
@@ -305,15 +320,13 @@ void ContentFolder::init(media_folder_h handle) {
   }
 }
 
-#ifdef DEBUG
+#ifdef DEBUG_ITEM
 void ContentFolder::print(void) {
   std::cout << "ID: " << id() << std::endl;
   std::cout << "URI: " << directoryURI() << std::endl;
   std::cout << "Title: " << title() << std::endl;
   std::cout << "Type: " << storageType() << std::endl;
-  char pc[26];
-  time_t time = modifiedDate();
-  std::cout << "Date: " << ctime_r(&time, pc) << std::endl;
+  std::cout << "Date: " << modifiedDate() << std::endl;
 }
 #endif
 
@@ -346,13 +359,13 @@ void ContentItem::init(media_info_h handle) {
   }
 
   if (media_info_get_file_path(handle, &pc) == MEDIA_CONTENT_ERROR_NONE && pc) {
-    setContentURI(pathToURI(pc));
+    setContentURI(createUriFromLocalPath(pc));
     free(pc);
   }
 
   if (media_info_get_thumbnail_path(handle,
       &pc) == MEDIA_CONTENT_ERROR_NONE && pc) {
-    setThumbnailURIs(pathToURI(pc));
+    setThumbnailURIs(createUriFromLocalPath(pc));
     free(pc);
   }
 
@@ -511,7 +524,7 @@ void ContentItem::init(media_info_h handle) {
   }
 }
 
-#ifdef DEBUG
+#ifdef DEBUG_ITEM
 void ContentItem::print(void) {
   std::cout << "----" << std::endl;
   std::cout << "ID: " << id() << std::endl;
@@ -548,3 +561,26 @@ void ContentItem::print(void) {
   }
 }
 #endif
+
+void ContentInstance::HandleScanFileRequest(const picojson::value& msg) {
+  if (msg.contains(STR_CONTENT_URI)) {
+    picojson::value uriValue = msg.get(STR_CONTENT_URI);
+    if (!uriValue.is<picojson::null>()) {
+      std::string uri = uriValue.to_str();
+      std::string path = getUriPath(uri);
+      if (path.empty())
+        path = uri;
+      int result = media_content_scan_file(path.c_str());
+      if (result == MEDIA_CONTENT_ERROR_NONE) {
+        HandleScanFileReply(msg);
+      } else {
+        std::cerr << "media_content_scan_file error:" << result << std::endl;
+        PostAsyncErrorReply(msg, WebApiAPIErrors::DATABASE_ERR);
+      }
+    }
+  }
+}
+
+void ContentInstance::HandleScanFileReply(const picojson::value& msg) {
+  PostAsyncSuccessReply(msg);
+}

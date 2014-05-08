@@ -98,7 +98,13 @@ function handleScanFile()
 {
   try {
     debug('tizen.content.scanFile:');
-    tizen.content.scanFile();
+    tizen.content.scanFile("file:///opt/usr/media/Images/Default.jpg",
+      function(uri) {
+        debug("scan OK: " + uri);
+      },
+      function(err) {
+        debug("scan ERR: ")
+      });
   }
   catch (err) {
     debug(err.name);

@@ -37,6 +37,8 @@ class ContentInstance : public common::Instance {
     ContentFolderList *);
   void HandleFindRequest(const picojson::value& json);
   void HandleFindReply(const picojson::value& json, ContentItemList *);
+  void HandleScanFileRequest(const picojson::value& json);
+  void HandleScanFileReply(const picojson::value& json);
 
   // Asynchronous message helpers
   void PostAsyncErrorReply(const picojson::value&, WebApiAPIErrors);
@@ -69,7 +71,7 @@ class ContentFolder {
   void setModifiedDate(const std::string& modifiedDate) {
     modifiedDate_ = modifiedDate; }
 
-#ifdef DEBUG
+#ifdef DEBUG_ITEM
   void print(void);
 #endif
 
@@ -145,7 +147,7 @@ class ContentItem {
   double longitude() const { return latitude_; }
   void setLongitude(double latitude) { latitude_ = latitude; }
 
-#ifdef DEBUG
+#ifdef DEBUG_ITEM
   void print(void);
 #endif
 
