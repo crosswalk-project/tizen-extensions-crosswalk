@@ -4,7 +4,7 @@
 <script>
 function handleTextToSpeech() {
   var currentText = document.getElementById("inputText").value;
-  var newText = tizen.speech.VocalizeString(currentText);
+  var newText = tizen.speech.vocalizeString(currentText);
   document.getElementById("inputText").value = newText;
 }
 </script>
