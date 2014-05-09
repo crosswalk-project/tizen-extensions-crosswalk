@@ -64,6 +64,9 @@ BuildRequires: pkgconfig(xrandr)
 %endif
 BuildRequires: python
 Requires:      crosswalk
+# For Content API
+Requires:      media-data-sdk
+Requires:      media-thumbnail-server
 
 %description
 Tizen Web APIs implemented using Crosswalk.
