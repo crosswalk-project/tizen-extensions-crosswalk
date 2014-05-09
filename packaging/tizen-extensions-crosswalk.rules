@@ -1,0 +1,16 @@
+crosswalk::ep system::homedir rx
+crosswalk::ep system::vconf rwx
+crosswalk::ep ail::db r
+crosswalk::ep data-provider-master rw
+crosswalk::ep deviced rw
+crosswalk::ep device::bklight rw
+crosswalk::ep system::media rwx
+crosswalk::ep download-provider w
+crosswalk::ep system::use_internet rw
+crosswalk::ep sound_server rw
+crosswalk::ep stt-server r
+crosswalk::ep pkgmgr::db r
+crosswalk::ep org.tizen.setting rx
+crosswalk::ep dbus rwx
+system::use_internet crosswalk::ep w
+dbus crosswalk::ep rwx
