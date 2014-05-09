@@ -11,7 +11,9 @@
 
 #include <algorithm>
 #include <iostream>
-#include <tuple>
+// TODO (halton): Remove NOLINT after cpplint.py updated with CL
+// https://codereview.chromium.org/269013009/
+#include <tuple>  // NOLINT
 
 #include "application/application_extension_utils.h"
 #include "application/application_information.h"
