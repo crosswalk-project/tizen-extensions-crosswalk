@@ -20,16 +20,16 @@
 #endif
 
 class Display {
-  public:
-    Display();
+ public:
+  Display();
 
-    wl_display* display;
-    wl_registry* registry;
-    wl_output* output;
-    int width;
-    int height;
-    double physical_width;
-    double physical_height;
+  wl_display* display;
+  wl_registry* registry;
+  wl_output* output;
+  int width;
+  int height;
+  double physical_width;
+  double physical_height;
 };
 
 Display::Display()
