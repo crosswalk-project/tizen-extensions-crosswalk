@@ -65,7 +65,6 @@ BuildRequires: pkgconfig(xrandr)
 BuildRequires: python
 Requires:      crosswalk
 # For Content API
-Requires:      media-data-sdk
 Requires:      media-thumbnail-server
 
 %description
