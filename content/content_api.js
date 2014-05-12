@@ -183,6 +183,17 @@ ContentManager.prototype.find = function(onsuccess, onerror, directoryId, filter
 }
 
 ContentManager.prototype.scanFile = function(contentURI, onsuccess, onerror) {
+  postMessage({
+      cmd: 'ContentManager.scanFile',
+      contentURI: contentURI
+    }, function(result) {
+      if (result.isError) {
+        if (onerror)
+          onerror(new tizen.WebAPIError(result.errorCode));
+      } else if (onsuccess) {
+        onsuccess(contentURI);
+      }
+  });
 }
 
 ContentManager.prototype.setChangeListener = function(onchange) {
