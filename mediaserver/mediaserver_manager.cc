@@ -51,8 +51,21 @@ void MediaServerManager::scanNetwork() {
   dleyna_manager_call_get_servers(
       manager_proxy_,
       NULL,
-      OnGetServersCallBack,
+      OnScanNetworkCallBack,
       this);
+}
+
+void MediaServerManager::getServers(const picojson::value& value) {
+  if (!manager_proxy_)
+    return;
+
+  double async_call_id = value.get("asyncCallId").get<double>();
+
+  dleyna_manager_call_get_servers(
+      manager_proxy_,
+      cancellable_,
+      OnGetServersCallBack,
+      new CallbackData(this, async_call_id));
 }
 
 void MediaServerManager::handleBrowse(const picojson::value& value) {
@@ -118,25 +131,60 @@ MediaServerPtr MediaServerManager::getMediaServerById(const std::string& id) {
   return MediaServerPtr();
 }
 
-void MediaServerManager::OnGetServers(
+void MediaServerManager::OnScanNetwork(
     GObject *source_object,
     GAsyncResult *res) {
   GError* gerror = NULL;
-  gchar **out_Servers;
+  gchar **out_servers;
   if (!dleyna_manager_call_get_servers_finish(
       manager_proxy_,
-      &out_Servers,
+      &out_servers,
       res,
       &gerror)) {
     g_error_free(gerror);
     return;
   }
 
-  while (gchar* server_path = *out_Servers) {
-    postServerFound(std::string(*out_Servers));
-    out_Servers++;
+  while (gchar* server_path = *out_servers) {
+    postServerFound(std::string(*out_servers));
+    out_servers++;
     g_free(server_path);
   }
+}
+
+void MediaServerManager::OnGetServers(
+    GObject *source_object,
+    GAsyncResult *res,
+    double async_id) {
+  GError* gerror = NULL;
+  gchar **out_servers;
+  if (!dleyna_manager_call_get_servers_finish(
+      manager_proxy_,
+      &out_servers,
+      res,
+      &gerror)) {
+    g_error_free(gerror);
+    return;
+  }
+
+  picojson::value::array servers;
+
+  while (gchar* server_path = *out_servers) {
+    MediaServerPtr media_server(new MediaServer(instance_,
+        std::string(*out_servers)));
+    media_servers_.insert(MediaServerPair(std::string(*out_servers),
+        media_server));
+    servers.push_back(media_server->toJSON());
+    out_servers++;
+    g_free(server_path);
+  }
+
+  picojson::value::object object;
+  object["cmd"] = picojson::value("getServersCompleted");
+  object["asyncCallId"] = picojson::value(async_id);
+  object["servers"] =   picojson::value(servers);
+  picojson::value value(object);
+  instance_->PostMessage(value.serialize().c_str());
 }
 
 void MediaServerManager::OnFoundServer(

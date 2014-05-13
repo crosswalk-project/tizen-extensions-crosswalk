@@ -5,6 +5,8 @@
 <body>
 
 <button onclick='scanNetwork()'>Scan for media servers</button>
+<button onclick='findMediaObjects()'>Scan network for media objects</button>
+
 
 <div id='serverContainer'></div>
 <div id='mediaObjectsContainer'></div>
@@ -18,6 +20,10 @@ var servers = {};
 function scanNetwork() {
   emptyContainer('serverContainer');
   navigator.mediaServer.scanNetwork();
+}
+
+function findMediaObjects() {
+  navigator.mediaServer.find('Type contains "image"', "ASCDisplayName").then(listMediaObjects);
 }
 
 function getServerId() {
