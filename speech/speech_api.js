@@ -10,7 +10,7 @@ var sendSyncMessage = function(msg) {
   return extension.internal.sendSyncMessage(JSON.stringify(msg));
 };
 
-exports.VocalizeString = function(speakText) {
+exports.vocalizeString = function(speakText) {
   try {
     var r = JSON.parse(sendSyncMessage({
       'cmd': 'VocalizeString',
