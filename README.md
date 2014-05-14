@@ -15,6 +15,7 @@ JavaScript: We use Google's Closure Linter for checking our JavaScript coding sy
 It is used in --strict mode but with max_line_length set to 100 columns.
 Please ALWAYS run tools/js_lint.sh before submitting patches.
 
+
 C++: We use cpplint. Please ALWAYS run tools/check-coding-style before submitting patches.
 
 ## License
