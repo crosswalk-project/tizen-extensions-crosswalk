@@ -1,7 +1,7 @@
 %bcond_with wayland
 
-%define _manifestdir /opt/share/packages
-%define _desktop_icondir /opt/share/icons/default/small
+%define _manifestdir %{TZ_SYS_RW_PACKAGES}
+%define _desktop_icondir %{TZ_SYS_SHARE}/icons/default/small
 %define _bluetooth_demo_package tizen-extensions-crosswalk-bluetooth-demo
 %define _examples_package tizen-extensions-crosswalk-examples
 %define _system_info_demo_package tizen-extensions-crosswalk-system-info-demo
@@ -34,6 +34,7 @@ BuildRequires: pkgconfig(capi-system-power)
 BuildRequires: pkgconfig(capi-system-runtime-info)
 BuildRequires: pkgconfig(capi-system-sensor)
 BuildRequires: pkgconfig(capi-system-system-settings)
+BuildRequires: pkgconfig(libtzplatform-config)
 # For IVI, it doesn't need sim package.
 %if "%{profile}" == "mobile"
 BuildRequires: pkgconfig(capi-telephony-sim)
