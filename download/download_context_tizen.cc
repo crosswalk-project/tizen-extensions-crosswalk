@@ -4,6 +4,7 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <tzplatform_config.h>
 #include <unistd.h>
 
 #include "download/download_context.h"
@@ -31,16 +32,15 @@ const std::string DownloadContext::GetFullDestinationPath(
     const std::string destination) const {
   // TODO(hdq): User should be able to choose store to external storage
   //            i.e. /opt/storage/sdcard/Downloads
-  const std::string directory("/opt/usr/media/");
   const std::string default_folder("Downloads");
   const std::string location = destination.empty() ? default_folder : destination;
-  std::string path = directory + GetActualFolder(location);
+  std::string path = tzplatform_getenv(TZ_USER_CONTENT) + GetActualFolder(location);
 
   // Create path if not exist
   struct stat path_stat;
   if (stat(path.c_str(), &path_stat) == -1
       && mkdir(path.c_str(), 0777) != 0) {
-    path = directory + default_folder;
+    path = tzplatform_getenv(TZ_USER_CONTENT) + default_folder;
   }
 
   return path;

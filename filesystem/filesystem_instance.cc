@@ -11,6 +11,7 @@
 #include <pkgmgr-info.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <tzplatform_config.h>
 #include <unistd.h>
 
 #include <iostream>
@@ -19,14 +20,6 @@
 
 namespace {
 const unsigned kDefaultFileMode = 0755;
-const char kDefaultPath[] = "/opt/usr/media";
-const char kPathCamera[] = "/opt/usr/media/Camera";
-const char kPathSounds[] = "/opt/usr/media/Sounds";
-const char kPathImages[] = "/opt/usr/media/Images";
-const char kPathVideos[] = "/opt/usr/media/Videos";
-const char kPathDownloads[] = "/opt/usr/media/Downloads";
-const char kPathDocuments[] = "/opt/usr/media/Documents";
-const char kPathRingtones[] = "/opt/usr/share/settings/Ringtones";
 
 const char kLocationCamera[] = "camera";
 const char kLocationMusic[] = "music";
@@ -202,13 +195,14 @@ FilesystemInstance::FilesystemInstance() {
     AddInternalStorage(kLocationWgtPrivateTmp, JoinPath(app_path, "tmp"));
   }
 
-  AddInternalStorage(kLocationCamera, kPathCamera);
-  AddInternalStorage(kLocationMusic, kPathSounds);
-  AddInternalStorage(kLocationImages, kPathImages);
-  AddInternalStorage(kLocationVideos, kPathVideos);
-  AddInternalStorage(kLocationDownloads, kPathDownloads);
-  AddInternalStorage(kLocationDocuments, kPathDocuments);
-  AddInternalStorage(kLocationRingtones, kPathRingtones);
+  AddInternalStorage(kLocationCamera, tzplatform_getenv(TZ_USER_CAMERA));
+  AddInternalStorage(kLocationMusic, tzplatform_getenv(TZ_USER_SOUNDS));
+  AddInternalStorage(kLocationImages, tzplatform_getenv(TZ_USER_IMAGES));
+  AddInternalStorage(kLocationVideos, tzplatform_getenv(TZ_USER_VIDEOS));
+  AddInternalStorage(kLocationDownloads, tzplatform_getenv(TZ_USER_DOWNLOADS));
+  AddInternalStorage(kLocationDocuments, tzplatform_getenv(TZ_USER_DOCUMENTS));
+  AddInternalStorage(kLocationRingtones, \
+    tzplatform_mkpath(TZ_USER_SHARE, "settings/Ringtones"));
 }
 
 FilesystemInstance::~FilesystemInstance() {
@@ -223,7 +217,6 @@ FilesystemInstance::~FilesystemInstance() {
 
 void FilesystemInstance::HandleMessage(const char* message) {
   picojson::value v;
-
   std::string err;
   picojson::parse(v, message, message + strlen(message), &err);
   if (!err.empty()) {
@@ -336,7 +329,9 @@ void FilesystemInstance::HandleFileSystemManagerResolve(
   std::string real_path_ack = std::string(real_path_cstr);
   free(real_path_cstr);
 
-  if (check_if_inside_default && real_path_ack.find(kDefaultPath) != 0) {
+  if (check_if_inside_default &&
+      real_path_ack.find(
+          tzplatform_getenv(TZ_USER_CONTENT)) != std::string::npos) {
     PostAsyncErrorReply(msg, INVALID_VALUES_ERR);
     return;
   }
