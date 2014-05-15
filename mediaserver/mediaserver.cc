@@ -427,7 +427,7 @@ void MediaServer::postResult(
   picojson::array json_objects;
 
   g_variant_iter_init(&it, objects);
-  while (variant = g_variant_iter_next_value(&it)) {
+  while ((variant = g_variant_iter_next_value(&it))) {
     json_objects.push_back(mediaObjectToJSON(variant));
     g_variant_unref(variant);
   }
@@ -509,7 +509,7 @@ void MediaServer::OnCreateFolder(
     GAsyncResult *res,
     double async_id) {
   GError* gerror = NULL;
-  gchar **out_Paths;
+  gchar **out_Paths = NULL;
 
   if (dleyna_media_device_call_create_container_in_any_container_finish(
       mediadevice_proxy_,
@@ -530,7 +530,7 @@ void MediaServer::OnUpload(
     double async_id) {
   GError* gerror = NULL;
   guint upload_id;
-  gchar **out_Path;
+  gchar **out_Path = NULL;
 
   if (dleyna_media_device_call_upload_to_any_container_finish(
       mediadevice_proxy_,
@@ -553,7 +553,7 @@ void MediaServer::OnUploadToContainer(
     double async_id) {
   GError* gerror = NULL;
   guint out_UploadId;
-  gchar **out_Path;
+  gchar **out_Path = NULL;
 
   if (upnp_media_container2_call_upload_finish(
       reinterpret_cast<upnpMediaContainer2*>(source_object),
@@ -577,7 +577,7 @@ void MediaServer::OnCreateFolderInContainer(
     GAsyncResult *res,
     double async_id) {
   GError* gerror = NULL;
-  gchar **out_Path;
+  gchar **out_Path = NULL;
 
   if (upnp_media_container2_call_create_container_finish(
       reinterpret_cast<upnpMediaContainer2*>(source_object),
