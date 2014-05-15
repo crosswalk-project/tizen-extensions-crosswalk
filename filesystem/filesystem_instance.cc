@@ -96,12 +96,13 @@ bool makePath(const std::string& path) {
 
     // If path doesn't exist, try to create one and continue iteration.
     // In case of error, stop iteration and return.
-    if (stat(new_path.c_str(), &st) != 0)
+    if (stat(new_path.c_str(), &st) != 0) {
       if (mkdir(new_path.c_str(), kDefaultFileMode) != 0 && errno != EEXIST )
           return false;
     // If path exists and it is not a directory, stop iteration and return.
-    else if (!S_ISDIR(st.st_mode))
+    } else if (!S_ISDIR(st.st_mode)) {
       return false;
+    }
 
     // Advance iterator and create next parent folder.
     iter = cur_iter;
@@ -979,11 +980,14 @@ int DecodeOne(char c) {
 
 std::string ConvertFrom(std::string input) {
   std::string decoded;
-  int input_len = input.length(), decoded_bits = 0, c, i;
+  int input_len = input.length();
 
   if (input_len % 4)
     return input;
 
+  int i;
+  int c = 0;
+  int decoded_bits = 0;
   for (i = 0; i < input_len;) {
     c = input[i++];
     if (c == '=')
