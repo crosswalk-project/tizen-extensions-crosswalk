@@ -14,7 +14,7 @@ Group:      Development/Libraries
 Summary:    Tizen Web APIs implemented using Crosswalk
 URL:        https://github.com/otcshare/tizen-extensions-crosswalk
 Source0:    %{name}-%{version}.tar.gz
-Source1:    %{name}
+Source1:    %{name}.in
 Source2:    %{name}.png
 Source3:    %{_bluetooth_demo_package}
 Source4:    %{_examples_package}
@@ -99,10 +99,13 @@ Tizen Web APIs system info demo implementation using Crosswalk.
 %setup -q
 
 cp %{SOURCE1001} .
+cp %{SOURCE1} .
 cp %{SOURCE2} .
 cp %{SOURCE3} .
 cp %{SOURCE4} .
 cp %{SOURCE5} .
+
+sed "s|@LIB_INSTALL_DIR@|%{_libdir}|g" %{name}.in > %{name}
 
 %build
 
@@ -122,7 +125,7 @@ make %{?_smp_mflags}
 %install
 
 # Binary wrapper.
-install -m 755 -D %{SOURCE1} %{buildroot}%{_bindir}/%{name}
+install -m 755 -D %{name} %{buildroot}%{_bindir}/%{name}
 install -m 755 -D %{SOURCE3} %{buildroot}%{_bindir}/%{_bluetooth_demo_package}
 install -m 755 -D %{SOURCE4} %{buildroot}%{_bindir}/%{_examples_package}
 install -m 755 -D %{SOURCE5} %{buildroot}%{_bindir}/%{_system_info_demo_package}
