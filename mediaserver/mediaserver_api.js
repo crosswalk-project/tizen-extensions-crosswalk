@@ -75,6 +75,9 @@ extension.setMessageListener(function(json) {
     case 'serverLost':
       handleMediaServerLost(msg);
       break;
+    case 'getServersCompleted':
+      handleGetServersCompleted(msg);
+      break;
     case 'browseCompleted':
     case 'findCompleted':
       handleBrowseCompleted(msg);
@@ -119,6 +122,10 @@ function handleAsyncCallSuccess(msg) {
 
 function handleAsyncCallError(msg) {
   g_async_calls[msg.asyncCallId].reject(Error('Async operation failed'));
+}
+
+function handleGetServersCompleted(msg) {
+  g_async_calls[msg.asyncCallId].resolve(msg.servers);
 }
 
 function convertToMediaObjects(objArray) {
@@ -185,6 +192,35 @@ MediaServerManager.prototype.scanNetwork = function() {
   extension.postMessage(JSON.stringify(msg));
 };
 
+function getServers() {
+  var msg = {
+    'cmd': 'getServers'
+  };
+  return createPromise(msg);
+}
+
+MediaServerManager.prototype.find = function(query, sortOptions) {
+  return new Promise(function(resolve, reject) {
+    getServers().then(
+        function onServersFound(servers) {
+          var promises = [];
+          servers.forEach(function(server) {
+            var mediaServer = new MediaServer(server);
+            promises.push(mediaServer.find(server.root.id, query,
+                          createSortString(sortOptions), 0, 0));
+          });
+
+          Promise.all(promises).then(function(results) {
+            var mediaItems = [];
+            results.forEach(function(result) {
+              mediaItems = mediaItems.concat(result);
+            });
+            resolve(mediaItems);
+          }, reject);
+        }, reject);
+  });
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 // MediaServer
 ///////////////////////////////////////////////////////////////////////////////
@@ -233,8 +269,8 @@ MediaServer.prototype.createFolder = function(folderName) {
 function createSortString(str) {
   var sortString;
   if (str.length) {
-    sortString = str.replace('ASC','+')
-    sortString = sortString.replace('DESC','-')
+    sortString = str.replace('ASC', '+');
+    sortString = sortString.replace('DESC', '-');
   }
   return sortString;
 }

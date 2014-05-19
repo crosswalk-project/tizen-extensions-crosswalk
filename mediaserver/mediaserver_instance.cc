@@ -58,6 +58,8 @@ void MediaServerInstance::HandleMessage(const char* message) {
   std::string cmd = v.get("cmd").to_str();
   if (cmd == "scanNetwork")
     media_server_manager_->scanNetwork();
+  else if (cmd == "getServers")
+    media_server_manager_->getServers(v);
   else if (cmd == "browse")
     media_server_manager_->handleBrowse(v);
   else if (cmd == "find")

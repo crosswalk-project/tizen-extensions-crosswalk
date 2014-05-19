@@ -24,6 +24,7 @@ class MediaServerManager {
   virtual ~MediaServerManager();
 
   void scanNetwork();
+  void getServers(const picojson::value& value);
   void handleBrowse(const picojson::value& value);
   void handleFind(const picojson::value& value);
   void handleCreateFolder(const picojson::value& value);
@@ -36,8 +37,11 @@ class MediaServerManager {
   void postServerFound(const std::string& path);
   MediaServerPtr getMediaServerById(const picojson::value& id);
   MediaServerPtr getMediaServerById(const std::string& id);
+  bool isCancelled() { g_cancellable_is_cancelled(cancellable_); }
 
-  CALLBACK_METHOD(OnGetServers, GObject*, GAsyncResult*, MediaServerManager);
+  CALLBACK_METHOD(OnScanNetwork, GObject*, GAsyncResult*, MediaServerManager);
+  CALLBACK_METHOD_WITH_ID(OnGetServers, GObject*, GAsyncResult*,
+      MediaServerManager);
   CALLBACK_METHOD(OnLostServer, dleynaManager*,
                   const gchar*, MediaServerManager);
   CALLBACK_METHOD(OnFoundServer, dleynaManager*,
@@ -47,6 +51,7 @@ class MediaServerManager {
   common::Instance* instance_;
   dleynaManager* manager_proxy_;
   std::map<std::string, MediaServerPtr> media_servers_;
+  GCancellable* cancellable_;
 };
 
 #endif  // MEDIASERVER_MEDIASERVER_MANAGER_H_
