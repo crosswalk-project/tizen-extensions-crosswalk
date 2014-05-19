@@ -114,12 +114,15 @@ void SysInfoCellularNetwork::SetFlightMode() {
 }
 
 void SysInfoCellularNetwork::SetIMEI() {
-  char* imei = NULL;
-  imei = tel_get_misc_me_imei_sync(NULL);
-  if (!imei)
+  TapiHandle* handle = tel_init(0);
+  if (!handle) {
     imei_ = "";
-  else
-    imei_ = imei;
+    return;
+  }
+  char* imei = tel_get_misc_me_imei_sync(handle);
+  tel_deinit(handle);
+  imei_ = imei ? imei : "";
+  free(imei);
 }
 
 void SysInfoCellularNetwork::Get(picojson::value& error,
