@@ -206,19 +206,6 @@ void NetworkBearerSelectionConnection::ReleaseRouteToHost(
 
 connection_profile_h NetworkBearerSelectionConnection::GetProfileForNetworkType(
     NetworkType network_type) {
-  // FIXME(tmpsantos): I'm not really sure if we should really map the UNKNOWN
-  // type to the wireless. Looks to me that it should have its own category,
-  // although the spec doesn't say anything about it.
-  connection_profile_type_e expected_profile_type;
-  switch (network_type) {
-    case CELLULAR:
-      expected_profile_type = CONNECTION_PROFILE_TYPE_CELLULAR;
-      break;
-    case UNKNOWN:
-      expected_profile_type = CONNECTION_PROFILE_TYPE_WIFI;
-      break;
-  }
-
   connection_profile_iterator_h profile_iter;
   int ret = connection_get_profile_iterator(connection_,
                                             CONNECTION_ITERATOR_TYPE_REGISTERED,
@@ -234,7 +221,15 @@ connection_profile_h NetworkBearerSelectionConnection::GetProfileForNetworkType(
 
     connection_profile_type_e profile_type;
     connection_profile_get_type(profile, &profile_type);
-    if (profile_type == expected_profile_type)
+
+    // FIXME(tmpsantos): I'm not really sure if we should really map the UNKNOWN
+    // type to the wireless. Looks to me that it should have its own category,
+    // although the spec doesn't say anything about it.
+    connection_profile_type_e expected_type = CONNECTION_PROFILE_TYPE_WIFI;
+    if (network_type == CELLULAR)
+      expected_type = CONNECTION_PROFILE_TYPE_CELLULAR;
+
+    if (profile_type == expected_type)
       return profile;
   }
 

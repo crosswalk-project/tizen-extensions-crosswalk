@@ -158,7 +158,6 @@ picojson::value* ApplicationManager::KillApp(const std::string& context_id) {
 }
 
 picojson::value* ApplicationManager::LaunchApp(const std::string& app_id) {
-  WebApiAPIErrors error = WebApiAPIErrors::NO_ERROR;
   int ret = aul_open_app(app_id.c_str());
   if (ret < 0) {
     switch (ret) {

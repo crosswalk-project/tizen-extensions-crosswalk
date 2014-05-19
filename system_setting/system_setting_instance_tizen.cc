@@ -13,7 +13,7 @@ void SystemSettingInstance::HandleSetProperty(const picojson::value& msg) {
     (msg.get("_type").get<double>());
   const char* value = msg.get("_file").to_str().c_str();
   const char* reply_id = msg.get("_reply_id").to_str().c_str();
-  system_settings_key_e key;
+  system_settings_key_e key = SYSTEM_SETTINGS_KEY_INCOMING_CALL_RINGTONE;
   switch (type) {
     case HOME_SCREEN:
       key = SYSTEM_SETTINGS_KEY_WALLPAPER_HOME_SCREEN;
@@ -27,9 +27,9 @@ void SystemSettingInstance::HandleSetProperty(const picojson::value& msg) {
     case NOTIFICATION_EMAIL:
       key = SYSTEM_SETTINGS_KEY_EMAIL_ALERT_RINGTONE;
       break;
-  default:
-    std::cout<< "Invalid Key : should not reach here";
-    break;
+    default:
+      std::cout<< "Invalid Key : should not reach here";
+      break;
   }
 
   int ret = system_settings_set_value_string(key, value);
@@ -40,7 +40,7 @@ void SystemSettingInstance::HandleGetProperty(const picojson::value& msg) {
   SystemSettingType type = static_cast<SystemSettingType>
     (msg.get("_type").get<double>());
   const char* reply_id = msg.get("_reply_id").to_str().c_str();
-  system_settings_key_e key;
+  system_settings_key_e key = SYSTEM_SETTINGS_KEY_INCOMING_CALL_RINGTONE;
   switch (type) {
     case HOME_SCREEN:
       key = SYSTEM_SETTINGS_KEY_WALLPAPER_HOME_SCREEN;
