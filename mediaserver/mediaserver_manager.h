@@ -37,7 +37,7 @@ class MediaServerManager {
   void postServerFound(const std::string& path);
   MediaServerPtr getMediaServerById(const picojson::value& id);
   MediaServerPtr getMediaServerById(const std::string& id);
-  bool isCancelled() { g_cancellable_is_cancelled(cancellable_); }
+  bool isCancelled() { return g_cancellable_is_cancelled(cancellable_); }
 
   CALLBACK_METHOD(OnScanNetwork, GObject*, GAsyncResult*, MediaServerManager);
   CALLBACK_METHOD_WITH_ID(OnGetServers, GObject*, GAsyncResult*,
