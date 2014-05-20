@@ -2,18 +2,45 @@
 <head>
 <title>Speech Example</title>
 <script>
+
+function toggleSTT() {
+  var btn = document.getElementById('btn_stt');
+
+  if (btn.value == 'Record Voice') {
+    btn.value = 'Stop Recording';
+    tizen.speech.setCBListener(function(cmds) {
+      var output = document.getElementById('log');
+
+      var log = 'Found Commands: <br>';
+      for (var i = 0; i < cmds.length; i++) {
+        log += '    ' + cmds[i] + '<br>';
+      }
+
+      output.innerHTML += log;
+    });
+  } else {
+    tizen.speech.setCBListener(null);
+    btn.value = 'Record Voice';
+  }
+}
+  
 function handleTextToSpeech() {
   var currentText = document.getElementById("inputText").value;
-  var newText = tizen.speech.vocalizeString(currentText);
-  document.getElementById("inputText").value = newText;
+  tizen.speech.vocalizeString(currentText);
 }
+
 </script>
 </head>
 <body>
   <div name="input">
-    <div id="instructionLabel">Type in some text</div>
-      <input type="text" id="inputText"><br>
-      <button id="say" onClick="handleTextToSpeech()">Speak Out</button>
+    <div id="instructionLabel">Type in some text to listen:</div>
+    <input type="text" id="inputText"><br>
+    <input id='btn_say' type='button' onClick='handleTextToSpeech()' value='Speak Out'/>
+  </div>
+  
+  <div id="output">
+    <input id='btn_stt' type='button' onClick='toggleSTT()' value='Record Voice'/>
+    <div id='log'></div>
   </div>
 </body>
 </html>
