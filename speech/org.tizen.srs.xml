@@ -1,0 +1,14 @@
+<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"
+                      "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
+<node>
+  <interface name='org.tizen.srs'>
+    <method name='synthesize'>
+      <arg type='s' name='message' direction='in'/>
+      <arg type='s' name='language' direction='in'/>
+      <arg type='u' name='id' direction='out'/>
+    </method>
+    <signal name="Result">
+      <arg type='as' name='tokens'/>
+    </signal>
+  </interface>
+</node>
