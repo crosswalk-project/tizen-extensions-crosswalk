@@ -18,6 +18,7 @@
         'system_setting/system_setting.gyp:*',
         'time/time.gyp:*',
         'tizen/tizen.gyp:*',
+        'utils/utils.gyp:*',
       ],
       'conditions': [
         [ 'tizen == 1', {
