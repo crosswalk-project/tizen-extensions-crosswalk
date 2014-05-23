@@ -95,12 +95,22 @@ function ContentManager() {
 }
 
 ContentManager.prototype.update = function(content) {
+  if (!xwalk.utils.validateArguments('o', arguments)) {
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+  }
 }
 
 ContentManager.prototype.updateBatch = function(content, onsuccess, onerror) {
+  if (!xwalk.utils.validateArguments('o?ff', arguments)) {
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+  }
 }
 
 ContentManager.prototype.getDirectories = function(onsuccess, onerror) {
+  if (!xwalk.utils.validateArguments('f?f', arguments)) {
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+  }
+
   postMessage({
       cmd: 'ContentManager.getDirectories',
     }, function(result) {
@@ -124,6 +134,10 @@ ContentManager.prototype.getDirectories = function(onsuccess, onerror) {
 }
 
 ContentManager.prototype.find = function(onsuccess, onerror, directoryId, filter, sortMode, count, offset) {
+  if (!xwalk.utils.validateArguments('f?fsoonn', arguments)) {
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+  }
+
   postMessage({
       cmd: 'ContentManager.find',
       directoryId: directoryId,
@@ -183,6 +197,9 @@ ContentManager.prototype.find = function(onsuccess, onerror, directoryId, filter
 }
 
 ContentManager.prototype.scanFile = function(contentURI, onsuccess, onerror) {
+  if (!xwalk.utils.validateArguments('s?ff', arguments)) {
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+  }
   postMessage({
       cmd: 'ContentManager.scanFile',
       contentURI: contentURI
@@ -197,6 +214,9 @@ ContentManager.prototype.scanFile = function(contentURI, onsuccess, onerror) {
 }
 
 ContentManager.prototype.setChangeListener = function(onchange) {
+  if (!xwalk.utils.validateArguments('f', arguments)) {
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+  }
 }
 
 ContentManager.prototype.unsetChangeLIstener = function() {
