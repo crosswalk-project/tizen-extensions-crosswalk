@@ -34,6 +34,51 @@ extension.setMessageListener(function(msg) {
   }
 });
 
+// TODO(spoussa): Copied from bluetooth/bluetooth_api.js
+// We should make this a common JS library.
+var signature_to_type = { 'n': 'number',
+                          'f': 'function',
+                          'b': 'boolean',
+                          's': 'string',
+                          'o': 'object'
+                        };
+
+// Returns if the passed arguments match the signature.
+function validateArguments(signature, args) {
+  var full_args = Array.prototype.slice.call(args);
+
+  // After '?' everything is optional.
+  var mandatory_len = signature.indexOf('?') === -1 ? signature.length : signature.indexOf('?');
+
+  if (full_args.length < mandatory_len)
+    return false;
+
+  // Mandatory arguments.
+  for (var i = 0; i < mandatory_len; i++) {
+    if (typeof full_args[i] !== signature_to_type[signature[i]] || full_args[i] === null)
+      return false;
+  }
+
+  // Optional args may be null.
+  for (var i = mandatory_len; i < full_args.length && i < signature.length - 1; i++) {
+    if (full_args[i] !== null && typeof full_args[i] !== signature_to_type[signature[i + 1]])
+      return false;
+  }
+
+  return true;
+}
+
+function validateObject(object, signature, attributes) {
+  for (var i = 0; i < signature.length; i++) {
+    if (object.hasOwnProperty(attributes[i]) &&
+        typeof object[attributes[i]] !== signature_to_type[signature[i]]) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 function Folder(uri, id, type, title) {
   Object.defineProperties(this, {
     'directoryURI': { writable: false, value: uri, enumerable: true },
@@ -95,12 +140,22 @@ function ContentManager() {
 }
 
 ContentManager.prototype.update = function(content) {
+  if (!validateArguments('o', arguments)) {
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+  }
 }
 
 ContentManager.prototype.updateBatch = function(content, onsuccess, onerror) {
+  if (!validateArguments('o?ff', arguments)) {
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+  }
 }
 
 ContentManager.prototype.getDirectories = function(onsuccess, onerror) {
+  if (!validateArguments('f?f', arguments)) {
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+  }
+
   postMessage({
       cmd: 'ContentManager.getDirectories',
     }, function(result) {
@@ -124,6 +179,10 @@ ContentManager.prototype.getDirectories = function(onsuccess, onerror) {
 }
 
 ContentManager.prototype.find = function(onsuccess, onerror, directoryId, filter, sortMode, count, offset) {
+  if (!validateArguments('f?fsoonn', arguments)) {
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+  }
+
   postMessage({
       cmd: 'ContentManager.find',
       directoryId: directoryId,
@@ -183,6 +242,9 @@ ContentManager.prototype.find = function(onsuccess, onerror, directoryId, filter
 }
 
 ContentManager.prototype.scanFile = function(contentURI, onsuccess, onerror) {
+  if (!validateArguments('s?ff', arguments)) {
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+  }
   postMessage({
       cmd: 'ContentManager.scanFile',
       contentURI: contentURI
