@@ -74,5 +74,10 @@
       '-fPIC',
       '-fvisibility=hidden',
     ],
+    'variables': {
+      'packages': [
+        'libtzplatform-config',
+      ],
+    },
   },
 }

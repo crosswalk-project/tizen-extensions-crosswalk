@@ -5,14 +5,12 @@
 #include "system_info/system_info_storage.h"
 
 #include <sys/statfs.h>
+#include <tzplatform_config.h>
 #include <vconf.h>
 
 #include "common/picojson.h"
 
 namespace {
-
-const char* sStorageInternalPath = "/opt/usr/media";
-const char* sStorageSDCardPath = "/opt/storage/sdcard";
 
 }  // namespace
 
@@ -45,7 +43,7 @@ bool SysInfoStorage::Update(picojson::value& error) {
 bool SysInfoStorage::GetInternal(picojson::value& error,
                                  picojson::value& unit) {
   struct statfs fs;
-  if (statfs(sStorageInternalPath, &fs) < 0) {
+  if (statfs(tzplatform_getenv(TZ_USER_CONTENT), &fs) < 0) {
     system_info::SetPicoJsonObjectValue(error, "message",
         picojson::value("Internal Storage path Error"));
     return false;
@@ -79,13 +77,13 @@ bool SysInfoStorage::GetMMC(picojson::value& error, picojson::value& unit) {
   }
 
   struct statfs fs;
-  if (statfs(sStorageInternalPath, &fs) < 0) {
+  if (statfs(tzplatform_getenv(TZ_USER_CONTENT), &fs) < 0) {
     system_info::SetPicoJsonObjectValue(error, "message",
         picojson::value("MMC mount path error"));
     return false;
   }
 
-  statfs(sStorageSDCardPath, &fs);
+  statfs(tzplatform_mkpath(TZ_SYS_STORAGE, "sdcard"), &fs);
   double available_capacity = static_cast<double>(fs.f_bsize) *
                               static_cast<double>(fs.f_bavail);
   double capacity = static_cast<double>(fs.f_bsize) *

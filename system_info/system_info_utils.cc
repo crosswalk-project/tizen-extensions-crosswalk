@@ -5,6 +5,7 @@
 #include "system_info/system_info_utils.h"
 
 #include <stdio.h>
+#include <tzplatform_config.h>
 #include <unistd.h>
 
 #include <algorithm>
@@ -24,7 +25,7 @@ char* GetDuidProperty() {
   FILE *fp = NULL;
   static char duid[kDuid_buffer_size] = {0, };
   size_t len = strlen(kDuid_str_key);
-  fp = fopen("/opt/usr/etc/system_info_cache.ini", "r");
+  fp = fopen(tzplatform_mkpath(TZ_USER_ETC, "system_info_cache.ini"), "r");
 
   if (fp) {
     while (fgets(duid, kDuid_buffer_size - 1, fp)) {
