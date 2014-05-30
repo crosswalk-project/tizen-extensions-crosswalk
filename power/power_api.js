@@ -138,12 +138,18 @@ exports.unsetScreenStateChangeListener = function() {
 };
 
 exports.getScreenBrightness = function() {
-  var brightness = parseFloat(sendSyncMessage({
+  var r = JSON.parse(sendSyncMessage({
     'cmd': 'PowerGetScreenBrightness'
   }));
-  if (defaultScreenBrightness === undefined)
-    defaultScreenBrightness = brightness;
-  return brightness;
+  if (r['error']){
+	throw new tizen.WebAPIException(tizen.WebAPIException.NOT_SUPPORTED_ERR);
+  }
+  else {
+	var brightness = r['brightness'];
+	if (defaultScreenBrightness === undefined)
+	  defaultScreenBrightness = brightness;
+	return brightness;
+  }
 };
 
 exports.setScreenBrightness = function(brightness) {

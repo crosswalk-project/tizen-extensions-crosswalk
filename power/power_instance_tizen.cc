@@ -221,16 +221,25 @@ void PowerInstanceMobile::HandleGetScreenState() {
 
 void PowerInstanceMobile::HandleGetScreenBrightness() {
   int platformBrightness;
+  picojson::value::object o;
+
   int ret = device_get_brightness(0, &platformBrightness);
   if (ret != 0) {
     fprintf(stderr, "Can't get the brightness from the platform. \n");
-    return;
+    o["error"] = picojson::value("Can't get the brightness from the platform.");
   }
-
-  double brightness = platformBrightness / 100.0;
-  char brightnessAsString[32];
-  snprintf(brightnessAsString, sizeof(brightnessAsString), "%g", brightness);
-  SendSyncReply(brightnessAsString);
+  else {
+	int maxBrightness;
+	ret = device_get_max_brightness(0, &maxBrightness);
+	if (ret != 0 || maxBrightness ==0) {
+	  fprintf(stderr, "Can't get the max brightness from the platform. \n");
+	  maxBrightness = 100;
+	}
+	double brightness = platformBrightness / maxBrightness;
+	o["brightness"] = picojson::value(brightness);
+  }
+  picojson::value v(o);
+  SendSyncReply(v.serialize().c_str());
 }
 
 void PowerInstanceMobile::HandleSetScreenEnabled(const picojson::value& msg) {
