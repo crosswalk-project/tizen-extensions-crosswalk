@@ -18,7 +18,12 @@
         'includes/': [['exclude', '_desktop\\.gypi$|desktop/']],
       }],
       ['tizen == 1', {
-        'defines': ['TIZEN']
+        'defines': ['TIZEN'],
+        'variables': {
+          'packages': [
+            'libtzplatform-config',
+          ],
+        },
       }, {
         'sources/': [['exclude', '_tizen\\.cc$|tizen/']],
         'includes/': [['exclude', '_tizen\\.gypi$|tizen/']],
@@ -74,10 +79,5 @@
       '-fPIC',
       '-fvisibility=hidden',
     ],
-    'variables': {
-      'packages': [
-        'libtzplatform-config',
-      ],
-    },
   },
 }
