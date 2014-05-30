@@ -227,16 +227,15 @@ void PowerInstanceMobile::HandleGetScreenBrightness() {
   if (ret != 0) {
     fprintf(stderr, "Can't get the brightness from the platform. \n");
     o["error"] = picojson::value("Can't get the brightness from the platform.");
-  }
-  else {
-	int maxBrightness;
-	ret = device_get_max_brightness(0, &maxBrightness);
-	if (ret != 0 || maxBrightness ==0) {
-	  fprintf(stderr, "Can't get the max brightness from the platform. \n");
-	  maxBrightness = 100;
-	}
-	double brightness = platformBrightness / maxBrightness;
-	o["brightness"] = picojson::value(brightness);
+    } else {
+      int maxBrightness;
+      ret = device_get_max_brightness(0, &maxBrightness);
+      if (ret != 0 || maxBrightness ==0) {
+      fprintf(stderr, "Can't get the max brightness from the platform. \n");
+      maxBrightness = 100;
+    }
+    double brightness = platformBrightness / maxBrightness;
+    o["brightness"] = picojson::value(brightness);
   }
   picojson::value v(o);
   SendSyncReply(v.serialize().c_str());
