@@ -12,6 +12,7 @@
         'mediaserver/mediaserver.gyp:*',
         'network_bearer_selection/network_bearer_selection.gyp:*',
         'notification/notification.gyp:*',
+        'phone/phone.gyp:*',
         'power/power.gyp:*',
         'speech/speech.gyp:*',
         'system_info/system_info.gyp:*',
