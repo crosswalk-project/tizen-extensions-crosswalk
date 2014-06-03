@@ -2,20 +2,21 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef BLUETOOTH_BLUETOOTH_CONTEXT_H_
-#define BLUETOOTH_BLUETOOTH_CONTEXT_H_
+#ifndef BLUETOOTH_BLUETOOTH_INSTANCE_H_
+#define BLUETOOTH_BLUETOOTH_INSTANCE_H_
 
 #include <gio/gio.h>
 #include <map>
 #include <string>
 #include <vector>
 
-#include "common/extension_adapter.h"
+#include "common/extension.h"
 #include "common/picojson.h"
 
 #define G_CALLBACK_1(METHOD, SENDER, ARG0)                                     \
   static void METHOD ## Thunk(SENDER sender, ARG0 res, gpointer userdata) {    \
-    return reinterpret_cast<BluetoothContext*>(userdata)->METHOD(sender, res); \
+    return reinterpret_cast<BluetoothInstance*>(userdata)->METHOD(sender,      \
+                                                                  res);        \
   }                                                                            \
                                                                                \
   void METHOD(SENDER, ARG0);
@@ -27,7 +28,7 @@
     if (context->cancellable                                                   \
         && g_cancellable_is_cancelled(context->cancellable))                   \
       goto done;                                                               \
-    reinterpret_cast<BluetoothContext*>(context->userdata)->METHOD(sender,     \
+    reinterpret_cast<BluetoothInstance*>(context->userdata)->METHOD(sender,    \
                                                                    res);       \
   done:                                                                        \
     delete context;                                                            \
@@ -45,7 +46,7 @@
       return;                                                                  \
     }                                                                          \
     std::string property = callback_data->property;                            \
-    reinterpret_cast<BluetoothContext*>(                                       \
+    reinterpret_cast<BluetoothInstance*>(                                      \
         callback_data->bt_context)->METHOD(property, res);                     \
     delete callback_data;                                                      \
     return;                                                                    \
@@ -81,19 +82,15 @@ static ContextCancellable* CancellableWrap(
 }
 
 
-class BluetoothContext {
+class BluetoothInstance : public common::Instance {
  public:
-  explicit BluetoothContext(ContextAPI* api);
-  ~BluetoothContext();
-
-  // ExtensionAdapter implementation.
-  static const char name[];
-  static const char* GetJavaScript();
-  static const char* entry_points[];
-  void HandleMessage(const char* message);
-  void HandleSyncMessage(const char* message);
+  BluetoothInstance();
+  ~BluetoothInstance();
 
  private:
+  virtual void HandleMessage(const char* msg);
+  virtual void HandleSyncMessage(const char* msg);
+
   void PlatformInitialize();
 
   G_CALLBACK_CANCELLABLE_1(OnAdapterProxyCreated, GObject*, GAsyncResult*);
@@ -112,15 +109,14 @@ class BluetoothContext {
   void HandleCloseSocket(const picojson::value& msg);
   void HandleUnregisterServer(const picojson::value& msg);
 
-  void PostMessage(picojson::value v);
-  void SetSyncReply(picojson::value v);
+  void InternalPostMessage(picojson::value v);
+  void InternalSetSyncReply(picojson::value v);
   void FlushPendingMessages();
 
   void AdapterInfoToValue(picojson::value::object& o);
 
   void AdapterSendGetDefaultAdapterReply();
 
-  ContextAPI* api_;
   std::string discover_callback_id_;
   std::string stop_discovery_callback_id_;
   std::map<std::string, std::string> adapter_info_;
@@ -207,4 +203,4 @@ class BluetoothContext {
 #endif
 };
 
-#endif  // BLUETOOTH_BLUETOOTH_CONTEXT_H_
+#endif  // BLUETOOTH_BLUETOOTH_INSTANCE_H_

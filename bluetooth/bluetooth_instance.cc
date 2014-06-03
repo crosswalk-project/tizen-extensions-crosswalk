@@ -2,44 +2,19 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#if defined(TIZEN)
-#include <bluetooth.h>
-#endif
+#include "bluetooth/bluetooth_instance.h"
 
-#include "bluetooth/bluetooth_context.h"
 #include "common/picojson.h"
 
-int32_t XW_Initialize(XW_Extension extension, XW_GetInterface get_interface) {
-#if defined(TIZEN)
-  int init = bt_initialize();
-  if (init != BT_ERROR_NONE)
-    g_printerr("\n\nCouldn't initialize Bluetooth module.");
-#endif
-
-  return ExtensionAdapter<BluetoothContext>::Initialize(extension,
-                                                        get_interface);
-}
-
-BluetoothContext::BluetoothContext(ContextAPI* api)
-    : api_(api) {
+BluetoothInstance::BluetoothInstance() {
   PlatformInitialize();
 }
 
-const char BluetoothContext::name[] = "tizen.bluetooth";
-
-const char* BluetoothContext::entry_points[] = { NULL };
-
-extern const char kSource_bluetooth_api[];
-
-const char* BluetoothContext::GetJavaScript() {
-  return kSource_bluetooth_api;
-}
-
-void BluetoothContext::HandleMessage(const char* message) {
+void BluetoothInstance::HandleMessage(const char* msg) {
   picojson::value v;
 
   std::string err;
-  picojson::parse(v, message, message + strlen(message), &err);
+  picojson::parse(v, msg, msg + strlen(msg), &err);
   if (!err.empty()) {
     std::cout << "Ignoring message.\n";
     return;
@@ -64,11 +39,11 @@ void BluetoothContext::HandleMessage(const char* message) {
     HandleUnregisterServer(v);
 }
 
-void BluetoothContext::HandleSyncMessage(const char* message) {
+void BluetoothInstance::HandleSyncMessage(const char* msg) {
   picojson::value v;
 
   std::string err;
-  picojson::parse(v, message, message + strlen(message), &err);
+  picojson::parse(v, msg, msg + strlen(msg), &err);
   if (!err.empty()) {
     std::cout << "Ignoring Sync message.\n";
     return;
@@ -81,7 +56,7 @@ void BluetoothContext::HandleSyncMessage(const char* message) {
     HandleSocketWriteData(v);
 }
 
-void BluetoothContext::HandleDiscoverDevices(const picojson::value& msg) {
+void BluetoothInstance::HandleDiscoverDevices(const picojson::value& msg) {
   discover_callback_id_ = msg.get("reply_id").to_str();
   if (adapter_proxy_) {
     g_dbus_proxy_call(
@@ -91,7 +66,7 @@ void BluetoothContext::HandleDiscoverDevices(const picojson::value& msg) {
   }
 }
 
-void BluetoothContext::HandleStopDiscovery(const picojson::value& msg) {
+void BluetoothInstance::HandleStopDiscovery(const picojson::value& msg) {
   stop_discovery_callback_id_ = msg.get("reply_id").to_str();
   if (adapter_proxy_) {
     g_dbus_proxy_call(
@@ -101,7 +76,7 @@ void BluetoothContext::HandleStopDiscovery(const picojson::value& msg) {
   }
 }
 
-void BluetoothContext::OnDiscoveryStarted(GObject*, GAsyncResult* res) {
+void BluetoothInstance::OnDiscoveryStarted(GObject*, GAsyncResult* res) {
   GError* error = 0;
 
   GVariant* result = g_dbus_proxy_call_finish(adapter_proxy_, res, &error);
@@ -120,13 +95,13 @@ void BluetoothContext::OnDiscoveryStarted(GObject*, GAsyncResult* res) {
   o["error"] = picojson::value(static_cast<double>(errorCode));
 
   picojson::value v(o);
-  PostMessage(v);
+  InternalPostMessage(v);
 
   if (result)
     g_variant_unref(result);
 }
 
-void BluetoothContext::OnDiscoveryStopped(GObject* source, GAsyncResult* res) {
+void BluetoothInstance::OnDiscoveryStopped(GObject* source, GAsyncResult* res) {
   GError* error = 0;
   GVariant* result = g_dbus_proxy_call_finish(adapter_proxy_, res, &error);
 
@@ -144,19 +119,19 @@ void BluetoothContext::OnDiscoveryStopped(GObject* source, GAsyncResult* res) {
   stop_discovery_callback_id_.clear();
   o["error"] = picojson::value(static_cast<double>(0));
   picojson::value v(o);
-  PostMessage(v);
+  InternalPostMessage(v);
 }
 
-void BluetoothContext::FlushPendingMessages() {
+void BluetoothInstance::FlushPendingMessages() {
   // Flush previous pending messages.
   if (!queue_.empty()) {
     MessageQueue::iterator it;
     for (it = queue_.begin(); it != queue_.end(); ++it)
-      api_->PostMessage((*it).serialize().c_str());
+      PostMessage((*it).serialize().c_str());
   }
 }
 
-void BluetoothContext::AdapterInfoToValue(picojson::value::object& o) {
+void BluetoothInstance::AdapterInfoToValue(picojson::value::object& o) {
   o["cmd"] = picojson::value("");
 
   // Sending a dummy adapter, so JS can call setPowered(true) on it.
@@ -177,7 +152,7 @@ void BluetoothContext::AdapterInfoToValue(picojson::value::object& o) {
   o["error"] = picojson::value(static_cast<double>(0));
 }
 
-void BluetoothContext::AdapterSendGetDefaultAdapterReply() {
+void BluetoothInstance::AdapterSendGetDefaultAdapterReply() {
   if (default_adapter_reply_id_.empty())
     return;
 
@@ -190,12 +165,12 @@ void BluetoothContext::AdapterSendGetDefaultAdapterReply() {
   if (!is_js_context_initialized_)
     is_js_context_initialized_ = true;
 
-  SetSyncReply(picojson::value(o));
+  InternalSetSyncReply(picojson::value(o));
 
   default_adapter_reply_id_.clear();
 }
 
-void BluetoothContext::PostMessage(picojson::value v) {
+void BluetoothInstance::InternalPostMessage(picojson::value v) {
   // If the JavaScript 'context' hasn't been initialized yet (i.e. the C++
   // backend was loaded and it is already executing but
   // tizen.bluetooth.getDefaultAdapter() hasn't been called so far), we need to
@@ -209,11 +184,11 @@ void BluetoothContext::PostMessage(picojson::value v) {
   }
 
   FlushPendingMessages();
-  api_->PostMessage(v.serialize().c_str());
+  PostMessage(v.serialize().c_str());
 }
 
-void BluetoothContext::SetSyncReply(picojson::value v) {
-  api_->SetSyncReply(v.serialize().c_str());
+void BluetoothInstance::InternalSetSyncReply(picojson::value v) {
+  SendSyncReply(v.serialize().c_str());
 
   FlushPendingMessages();
 }
