@@ -23,7 +23,12 @@
         },
       }],
       ['tizen == 1', {
-        'defines': ['TIZEN']
+        'defines': ['TIZEN'],
+        'variables': {
+          'packages': [
+            'libtzplatform-config',
+          ],
+        },
       }, {
         'sources/': [['exclude', '_tizen\\.cc$|tizen/']],
         'includes/': [['exclude', '_tizen\\.gypi$|tizen/']],
