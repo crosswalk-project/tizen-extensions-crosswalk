@@ -16,6 +16,11 @@
       ['extension_host_os != "desktop"', {
         'sources/': [['exclude', '_desktop\\.cc$|desktop/']],
         'includes/': [['exclude', '_desktop\\.gypi$|desktop/']],
+        'variables': {
+          'packages': [
+            'libtzplatform-config',
+          ],
+        },
       }],
       ['tizen == 1', {
         'defines': ['TIZEN']
@@ -74,10 +79,5 @@
       '-fPIC',
       '-fvisibility=hidden',
     ],
-    'variables': {
-      'packages': [
-        'libtzplatform-config',
-      ],
-    },
   },
 }

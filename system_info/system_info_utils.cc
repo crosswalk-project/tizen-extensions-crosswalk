@@ -5,7 +5,9 @@
 #include "system_info/system_info_utils.h"
 
 #include <stdio.h>
+#if defined(TIZEN)
 #include <tzplatform_config.h>
+#endif
 #include <unistd.h>
 
 #include <algorithm>
@@ -20,6 +22,7 @@ const char kDuid_str_key[] = "http://tizen.org/system/duid";
 
 namespace system_info {
 
+#if defined(TIZEN)
 char* GetDuidProperty() {
   char *s = NULL;
   FILE *fp = NULL;
@@ -45,6 +48,7 @@ char* GetDuidProperty() {
   }
   return s;
 }
+#endif
 
 int ReadOneByte(const char* path) {
   FILE* fp = fopen(path, "r");
