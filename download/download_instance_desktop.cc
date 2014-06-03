@@ -2,14 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "download/download_context.h"
+#include "download/download_instance.h"
 
 #include <pwd.h>
 #include <stdlib.h>
 #include <sys/types.h>
 #include <unistd.h>
 
-std::string DownloadContext::GetFullDestinationPath(
+std::string DownloadInstance::GetFullDestinationPath(
     const std::string destination) const {
   std::string path(getenv("HOME"));
   if (path.empty()) {
