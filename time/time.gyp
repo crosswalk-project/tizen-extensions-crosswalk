@@ -20,8 +20,6 @@
         'time_extension.h',
         'time_instance.cc',
         'time_instance.h',
-        '../common/extension.h',
-        '../common/extension.cc',
       ],
       'conditions': [
         [ 'tizen == 1', {

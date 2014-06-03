@@ -15,8 +15,6 @@
         'bookmark_extension.h',
         'bookmark_instance.cc',
         'bookmark_instance.h',
-        '../common/extension.h',
-        '../common/extension.cc',
       ],
 
       # Evas.h is used in favorites.h.

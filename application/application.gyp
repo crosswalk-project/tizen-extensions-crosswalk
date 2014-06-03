@@ -7,8 +7,6 @@
       'target_name': 'tizen_application',
       'type': 'loadable_module',
       'sources': [
-        '../common/extension.cc',
-        '../common/extension.h',
         'application.cc',
         'application.h',
         'application_api.js',

@@ -14,8 +14,6 @@
         'system_setting_instance.h',
         'system_setting_instance_desktop.cc',
         'system_setting_instance_tizen.cc',
-        '../common/extension.h',
-        '../common/extension.cc',
       ],
       'conditions': [
         ['tizen == 1', {

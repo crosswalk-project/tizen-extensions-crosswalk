@@ -7,8 +7,6 @@
       'target_name': 'tizen_network_bearer_selection',
       'type': 'loadable_module',
       'sources': [
-        '../common/extension.cc',
-        '../common/extension.h',
         'network_bearer_selection_api.js',
         'network_bearer_selection_connection_tizen.cc',
         'network_bearer_selection_connection_tizen.h',

@@ -17,8 +17,6 @@
         'power_instance_tizen.cc',
         'power_instance_tizen.h',
         'power_types.h',
-        '../common/extension.h',
-        '../common/extension.cc',
       ],
       'includes': [
         '../common/pkg-config.gypi',

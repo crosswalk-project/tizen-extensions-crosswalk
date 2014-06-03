@@ -28,8 +28,6 @@
         'mediaserver_instance.h',
         'mediaserver_manager.cc',
         'mediaserver_manager.h',
-        '../common/extension.cc',
-        '../common/extension.h',
       ],
       'includes': [
         '../common/pkg-config.gypi',

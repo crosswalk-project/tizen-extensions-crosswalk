@@ -21,8 +21,6 @@
         'messageport_extension.h',
         'messageport_instance.cc',
         'messageport_instance.h',
-        '../common/extension.cc',
-        '../common/extension.h',
       ],
     },
   ],

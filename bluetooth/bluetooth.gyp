@@ -17,8 +17,6 @@
         '../common/pkg-config.gypi',
       ],
       'sources': [
-        '../common/extension.cc',
-        '../common/extension.h',
         'bluetooth_api.js',
         'bluetooth_extension.cc',
         'bluetooth_extension.h',
