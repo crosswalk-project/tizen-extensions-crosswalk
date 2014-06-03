@@ -2,7 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "bluetooth/bluetooth_context.h"
+#include "bluetooth/bluetooth_instance.h"
+
 #include "common/picojson.h"
 
 static void getPropertyValue(const char* key, GVariant* value,
@@ -20,12 +21,12 @@ static void getPropertyValue(const char* key, GVariant* value,
   }
 }
 
-void BluetoothContext::OnPropertiesChanged(GDBusProxy* proxy,
+void BluetoothInstance::OnPropertiesChanged(GDBusProxy* proxy,
     GVariant* changed_properties, const gchar* const* invalidated_properties,
     gpointer data) {
 
   const char* interface = g_dbus_proxy_get_interface_name(proxy);
-  BluetoothContext* handler = reinterpret_cast<BluetoothContext*>(data);
+  BluetoothInstance* handler = reinterpret_cast<BluetoothInstance*>(data);
 
   if (g_variant_n_children(changed_properties) > 0) {
     GVariantIter* iter;
@@ -62,11 +63,11 @@ void BluetoothContext::OnPropertiesChanged(GDBusProxy* proxy,
     }
     g_variant_iter_free(iter);
     picojson::value v(o);
-    handler->PostMessage(v);
+    handler->InternalPostMessage(v);
   }
 }
 
-void BluetoothContext::OnDBusObjectAdded(GDBusObjectManager* manager,
+void BluetoothInstance::OnDBusObjectAdded(GDBusObjectManager* manager,
     GDBusObject* object) {
   GDBusInterface* interface = g_dbus_object_get_interface(object,
       "org.bluez.Device1");
@@ -79,7 +80,7 @@ void BluetoothContext::OnDBusObjectAdded(GDBusObjectManager* manager,
   }
 }
 
-void BluetoothContext::OnDBusObjectRemoved(GDBusObjectManager* manager,
+void BluetoothInstance::OnDBusObjectRemoved(GDBusObjectManager* manager,
     GDBusObject* object) {
   GDBusInterface* interface = g_dbus_object_get_interface(object,
       "org.bluez.Device1");
@@ -90,7 +91,7 @@ void BluetoothContext::OnDBusObjectRemoved(GDBusObjectManager* manager,
   }
 }
 
-void BluetoothContext::OnAdapterProxyCreated(GObject*, GAsyncResult* res) {
+void BluetoothInstance::OnAdapterProxyCreated(GObject*, GAsyncResult* res) {
   GError* error = 0;
   adapter_proxy_ = g_dbus_proxy_new_for_bus_finish(res, &error);
 
@@ -113,12 +114,12 @@ void BluetoothContext::OnAdapterProxyCreated(GObject*, GAsyncResult* res) {
   }
 
   g_signal_connect(adapter_proxy_, "g-properties-changed",
-      G_CALLBACK(BluetoothContext::OnPropertiesChanged), this);
+      G_CALLBACK(BluetoothInstance::OnPropertiesChanged), this);
 
   g_strfreev(properties);
 }
 
-void BluetoothContext::CacheManagedObject(gpointer data, gpointer user_data) {
+void BluetoothInstance::CacheManagedObject(gpointer data, gpointer user_data) {
   GDBusObject* object = static_cast<GDBusObject*>(data);
   GDBusInterface* interface = g_dbus_object_get_interface(object,
       "org.bluez.Device1");
@@ -127,14 +128,14 @@ void BluetoothContext::CacheManagedObject(gpointer data, gpointer user_data) {
     g_dbus_proxy_new_for_bus(G_BUS_TYPE_SYSTEM, G_DBUS_PROXY_FLAGS_NONE,
         NULL /* GDBusInterfaceInfo */, "org.bluez",
         g_dbus_object_get_object_path(object), "org.bluez.Device1",
-        NULL /* GCancellable */, BluetoothContext::KnownDeviceFoundThunk,
+        NULL /* GCancellable */, BluetoothInstance::KnownDeviceFoundThunk,
         user_data);
 
     g_object_unref(interface);
   }
 }
 
-void BluetoothContext::OnManagerCreated(GObject*, GAsyncResult* res) {
+void BluetoothInstance::OnManagerCreated(GObject*, GAsyncResult* res) {
   GError* err = 0;
   object_manager_ = g_dbus_object_manager_client_new_for_bus_finish(res, &err);
 
@@ -153,9 +154,7 @@ void BluetoothContext::OnManagerCreated(GObject*, GAsyncResult* res) {
   }
 }
 
-BluetoothContext::~BluetoothContext() {
-  delete api_;
-
+BluetoothInstance::~BluetoothInstance() {
   if (adapter_proxy_)
     g_object_unref(adapter_proxy_);
   if (object_manager_)
@@ -166,7 +165,7 @@ BluetoothContext::~BluetoothContext() {
     g_object_unref(it->second);
 }
 
-void BluetoothContext::PlatformInitialize() {
+void BluetoothInstance::PlatformInitialize() {
   adapter_proxy_ = 0;
   object_manager_ = 0;
   is_js_context_initialized_ = false;
@@ -193,7 +192,7 @@ void BluetoothContext::PlatformInitialize() {
       this);
 }
 
-picojson::value BluetoothContext::HandleGetDefaultAdapter(
+picojson::value BluetoothInstance::HandleGetDefaultAdapter(
     const picojson::value& msg) {
   if (adapter_info_.empty())
     return picojson::value();
@@ -212,7 +211,7 @@ picojson::value BluetoothContext::HandleGetDefaultAdapter(
   o["visible"] = picojson::value(visible);
 
   // This is the JS API entry point, so we should clean our message queue
-  // on the next PostMessage call.
+  // on the next InternalPostMessage call.
   if (!is_js_context_initialized_)
     is_js_context_initialized_ = true;
 
@@ -220,13 +219,13 @@ picojson::value BluetoothContext::HandleGetDefaultAdapter(
   return v;
 }
 
-GDBusProxy* BluetoothContext::CreateDeviceProxy(GAsyncResult* res) {
+GDBusProxy* BluetoothInstance::CreateDeviceProxy(GAsyncResult* res) {
   GError* error = 0;
   GDBusProxy* deviceProxy = g_dbus_proxy_new_for_bus_finish(res, &error);
   if (deviceProxy) {
     known_devices_[g_dbus_proxy_get_object_path(deviceProxy)] = deviceProxy;
     g_signal_connect(deviceProxy, "g-properties-changed",
-        G_CALLBACK(BluetoothContext::OnPropertiesChanged), this);
+        G_CALLBACK(BluetoothInstance::OnPropertiesChanged), this);
   } else {
     g_printerr("## DeviceProxy creation error: %s\n", error->message);
     g_error_free(error);
@@ -249,7 +248,7 @@ static void getPropertiesFromProxy(GDBusProxy* deviceProxy,
   g_strfreev(property_names);
 }
 
-void BluetoothContext::DeviceFound(GObject*, GAsyncResult* res) {
+void BluetoothInstance::DeviceFound(GObject*, GAsyncResult* res) {
   GDBusProxy* deviceProxy = CreateDeviceProxy(res);
 
   if (deviceProxy) {
@@ -261,11 +260,11 @@ void BluetoothContext::DeviceFound(GObject*, GAsyncResult* res) {
     o["found_on_discovery"] = picojson::value(true);
 
     picojson::value v(o);
-    PostMessage(v);
+    InternalPostMessage(v);
   }
 }
 
-void BluetoothContext::DeviceRemoved(GDBusObject* object) {
+void BluetoothInstance::DeviceRemoved(GDBusObject* object) {
   if (object) {
     DeviceMap::iterator it =
         known_devices_.find(g_dbus_object_get_object_path(object));
@@ -281,7 +280,7 @@ void BluetoothContext::DeviceRemoved(GDBusObject* object) {
     o["Address"] = picojson::value(value_str);
 
     picojson::value v(o);
-    PostMessage(v);
+    InternalPostMessage(v);
 
     g_object_unref(it->second);
     known_devices_.erase(it);
@@ -291,7 +290,7 @@ void BluetoothContext::DeviceRemoved(GDBusObject* object) {
   }
 }
 
-void BluetoothContext::KnownDeviceFound(GObject*, GAsyncResult* res) {
+void BluetoothInstance::KnownDeviceFound(GObject*, GAsyncResult* res) {
   GDBusProxy* deviceProxy = CreateDeviceProxy(res);
 
   if (deviceProxy) {
@@ -303,6 +302,6 @@ void BluetoothContext::KnownDeviceFound(GObject*, GAsyncResult* res) {
     o["found_on_discovery"] = picojson::value(false);
 
     picojson::value v(o);
-    PostMessage(v);
+    InternalPostMessage(v);
   }
 }

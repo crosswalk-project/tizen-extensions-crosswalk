@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "bluetooth/bluetooth_context.h"
+#include "bluetooth/bluetooth_instance.h"
 
 #if defined(TIZEN)
 #include <bluetooth.h>
@@ -135,9 +135,9 @@ static void getPropertyValue(const char* key, GVariant* value,
   }
 }
 
-void BluetoothContext::OnSignal(GDBusProxy* proxy, gchar* sender, gchar* signal,
-      GVariant* parameters, gpointer data) {
-  BluetoothContext* handler = reinterpret_cast<BluetoothContext*>(data);
+void BluetoothInstance::OnSignal(GDBusProxy* proxy, gchar* sender,
+    gchar* signal, GVariant* parameters, gpointer data) {
+  BluetoothInstance* handler = reinterpret_cast<BluetoothInstance*>(data);
 
   if (!strcmp(signal, "DeviceFound")) {
     char* address;
@@ -174,16 +174,16 @@ void BluetoothContext::OnSignal(GDBusProxy* proxy, gchar* sender, gchar* signal,
       picojson::value::object property_updated;
       property_updated["cmd"] = picojson::value("AdapterUpdated");
       property_updated[name] = picojson::value(handler->adapter_info_[name]);
-      handler->PostMessage(picojson::value(property_updated));
+      handler->InternalPostMessage(picojson::value(property_updated));
     }
     g_variant_unref(value);
   }
 }
 
-void BluetoothContext::OnDeviceSignal(
+void BluetoothInstance::OnDeviceSignal(
     GDBusProxy* proxy, gchar* sender, gchar* signal,
     GVariant* parameters, gpointer data) {
-  BluetoothContext* handler = reinterpret_cast<BluetoothContext*>(data);
+  BluetoothInstance* handler = reinterpret_cast<BluetoothInstance*>(data);
   const char* iface = g_dbus_proxy_get_interface_name(proxy);
 
   // We only want org.bluez.Device signals.
@@ -215,14 +215,14 @@ void BluetoothContext::OnDeviceSignal(
 
   getPropertyValue(key, value, o);
 
-  handler->PostMessage(picojson::value(o));
+  handler->InternalPostMessage(picojson::value(o));
 }
 
 // static
-void BluetoothContext::OnManagerSignal(GDBusProxy* proxy, gchar* sender_name,
-                                       gchar* signal, GVariant* parameters,
-                                       gpointer user_data) {
-  BluetoothContext* handler = reinterpret_cast<BluetoothContext*>(user_data);
+void BluetoothInstance::OnManagerSignal(GDBusProxy* proxy, gchar* sender_name,
+                                        gchar* signal, GVariant* parameters,
+                                        gpointer user_data) {
+  BluetoothInstance* handler = reinterpret_cast<BluetoothInstance*>(user_data);
   const char* iface = g_dbus_proxy_get_interface_name(proxy);
 
   // We only want org.bluez.Manager signals.
@@ -257,7 +257,7 @@ void BluetoothContext::OnManagerSignal(GDBusProxy* proxy, gchar* sender_name,
                            CancellableWrap(handler->all_pending_, handler));
 }
 
-void BluetoothContext::OnGotAdapterProperties(GObject*, GAsyncResult* res) {
+void BluetoothInstance::OnGotAdapterProperties(GObject*, GAsyncResult* res) {
   GError* error = 0;
   GVariant* result = g_dbus_proxy_call_finish(adapter_proxy_, res, &error);
 
@@ -308,7 +308,7 @@ void BluetoothContext::OnGotAdapterProperties(GObject*, GAsyncResult* res) {
     }
   }
 
-  PostMessage(picojson::value(o));
+  InternalPostMessage(picojson::value(o));
 
   AdapterSendGetDefaultAdapterReply();
 
@@ -320,7 +320,7 @@ void BluetoothContext::OnGotAdapterProperties(GObject*, GAsyncResult* res) {
     o["reply_id"] = picojson::value(callbacks_map_["Powered"]);
     o["error"] = picojson::value(static_cast<double>(0));
 
-    PostMessage(picojson::value(o));
+    InternalPostMessage(picojson::value(o));
 
     callbacks_map_.erase("Powered");
   }
@@ -328,7 +328,7 @@ void BluetoothContext::OnGotAdapterProperties(GObject*, GAsyncResult* res) {
   g_variant_iter_free(it);
 }
 
-void BluetoothContext::OnAdapterPropertySet(
+void BluetoothInstance::OnAdapterPropertySet(
     std::string property, GAsyncResult* res) {
   GError* error = 0;
   auto it = callbacks_map_.find(property);
@@ -353,13 +353,13 @@ void BluetoothContext::OnAdapterPropertySet(
     o["error"] = picojson::value(static_cast<double>(0));
   }
 
-  PostMessage(picojson::value(o));
+  InternalPostMessage(picojson::value(o));
   callbacks_map_.erase(property);
 
   g_variant_unref(result);
 }
 
-void BluetoothContext::OnAdapterProxyCreated(GObject*, GAsyncResult* res) {
+void BluetoothInstance::OnAdapterProxyCreated(GObject*, GAsyncResult* res) {
   GError* error = 0;
   adapter_proxy_ = g_dbus_proxy_new_for_bus_finish(res, &error);
 
@@ -376,10 +376,10 @@ void BluetoothContext::OnAdapterProxyCreated(GObject*, GAsyncResult* res) {
                     CancellableWrap(all_pending_, this));
 
   g_signal_connect(adapter_proxy_, "g-signal",
-    G_CALLBACK(BluetoothContext::OnSignal), this);
+    G_CALLBACK(BluetoothInstance::OnSignal), this);
 }
 
-void BluetoothContext::OnServiceProxyCreated(GObject*, GAsyncResult* res) {
+void BluetoothInstance::OnServiceProxyCreated(GObject*, GAsyncResult* res) {
   GError* error = 0;
   service_proxy_ = g_dbus_proxy_new_for_bus_finish(res, &error);
 
@@ -389,7 +389,7 @@ void BluetoothContext::OnServiceProxyCreated(GObject*, GAsyncResult* res) {
   }
 }
 
-void BluetoothContext::OnManagerCreated(GObject*, GAsyncResult* res) {
+void BluetoothInstance::OnManagerCreated(GObject*, GAsyncResult* res) {
   GError* err = 0;
   manager_proxy_ = g_dbus_proxy_new_for_bus_finish(res, &err);
 
@@ -406,15 +406,15 @@ void BluetoothContext::OnManagerCreated(GObject*, GAsyncResult* res) {
                     CancellableWrap(all_pending_, this));
 
   g_signal_connect(manager_proxy_, "g-signal",
-                   G_CALLBACK(BluetoothContext::OnManagerSignal), this);
+                   G_CALLBACK(BluetoothInstance::OnManagerSignal), this);
 }
 
 // static
-void BluetoothContext::OnBluetoothServiceAppeared(GDBusConnection* connection,
-                                                  const char* name,
-                                                  const char* name_owner,
-                                                  void* user_data) {
-  BluetoothContext* handler = reinterpret_cast<BluetoothContext*>(user_data);
+void BluetoothInstance::OnBluetoothServiceAppeared(GDBusConnection* connection,
+                                                   const char* name,
+                                                   const char* name_owner,
+                                                   void* user_data) {
+  BluetoothInstance* handler = reinterpret_cast<BluetoothInstance*>(user_data);
 
   if (handler->manager_proxy_)
     return;
@@ -431,10 +431,10 @@ void BluetoothContext::OnBluetoothServiceAppeared(GDBusConnection* connection,
 }
 
 // static
-void BluetoothContext::OnBluetoothServiceVanished(GDBusConnection* connection,
-                                                  const char* name,
-                                                  void* user_data) {
-  BluetoothContext* handler = reinterpret_cast<BluetoothContext*>(user_data);
+void BluetoothInstance::OnBluetoothServiceVanished(GDBusConnection* connection,
+                                                   const char* name,
+                                                   void* user_data) {
+  BluetoothInstance* handler = reinterpret_cast<BluetoothInstance*>(user_data);
 
   if (handler->manager_proxy_) {
     g_object_unref(handler->manager_proxy_);
@@ -449,7 +449,7 @@ void BluetoothContext::OnBluetoothServiceVanished(GDBusConnection* connection,
   handler->AdapterSendGetDefaultAdapterReply();
 }
 
-void BluetoothContext::AdapterSetPowered(const picojson::value& msg) {
+void BluetoothInstance::AdapterSetPowered(const picojson::value& msg) {
   bool powered = msg.get("value").get<bool>();
   int error = 0;
 
@@ -482,14 +482,14 @@ void BluetoothContext::AdapterSetPowered(const picojson::value& msg) {
     o["reply_id"] = msg.get("reply_id");
     o["error"] = picojson::value(static_cast<double>(error));
 
-    PostMessage(picojson::value(o));
+    InternalPostMessage(picojson::value(o));
     return;
   }
 
   callbacks_map_["Powered"] = msg.get("reply_id").to_str();
 }
 
-void BluetoothContext::OnGotDefaultAdapterPath(GObject*, GAsyncResult* res) {
+void BluetoothInstance::OnGotDefaultAdapterPath(GObject*, GAsyncResult* res) {
   GError* error = 0;
   GVariant* result = g_dbus_proxy_call_finish(manager_proxy_, res, &error);
 
@@ -527,7 +527,7 @@ void BluetoothContext::OnGotDefaultAdapterPath(GObject*, GAsyncResult* res) {
   g_free(path);
 }
 
-void BluetoothContext::OnAdapterCreateBonding(GObject*, GAsyncResult* res) {
+void BluetoothInstance::OnAdapterCreateBonding(GObject*, GAsyncResult* res) {
   GError* error = 0;
   GVariant* result = g_dbus_proxy_call_finish(adapter_proxy_, res, &error);
 
@@ -545,11 +545,11 @@ void BluetoothContext::OnAdapterCreateBonding(GObject*, GAsyncResult* res) {
     g_variant_unref(result);
   }
 
-  PostMessage(picojson::value(o));
+  InternalPostMessage(picojson::value(o));
   callbacks_map_.erase("CreateBonding");
 }
 
-void BluetoothContext::OnAdapterDestroyBonding(GObject*, GAsyncResult* res) {
+void BluetoothInstance::OnAdapterDestroyBonding(GObject*, GAsyncResult* res) {
   GError* error = 0;
   GVariant* result = g_dbus_proxy_call_finish(adapter_proxy_, res, &error);
 
@@ -567,11 +567,11 @@ void BluetoothContext::OnAdapterDestroyBonding(GObject*, GAsyncResult* res) {
     g_variant_unref(result);
   }
 
-  PostMessage(picojson::value(o));
+  InternalPostMessage(picojson::value(o));
   callbacks_map_.erase("DestroyBonding");
 }
 
-void BluetoothContext::OnFoundDevice(GObject*, GAsyncResult* res) {
+void BluetoothInstance::OnFoundDevice(GObject*, GAsyncResult* res) {
   picojson::value::object o;
   char* object_path;
   GError* error = 0;
@@ -585,7 +585,7 @@ void BluetoothContext::OnFoundDevice(GObject*, GAsyncResult* res) {
     o["reply_id"] = picojson::value(callbacks_map_["DestroyBonding"]);
     o["error"] = picojson::value(static_cast<double>(1));
 
-    PostMessage(picojson::value(o));
+    InternalPostMessage(picojson::value(o));
     callbacks_map_.erase("DestroyBonding");
     return;
   }
@@ -600,9 +600,7 @@ void BluetoothContext::OnFoundDevice(GObject*, GAsyncResult* res) {
   g_variant_unref(result);
 }
 
-BluetoothContext::~BluetoothContext() {
-  delete api_;
-
+BluetoothInstance::~BluetoothInstance() {
   g_cancellable_cancel(all_pending_);
   // Explicitly leaking all_pending_ here. It will be free'd on 'shutdown'.
 
@@ -623,7 +621,7 @@ BluetoothContext::~BluetoothContext() {
 #endif
 }
 
-void BluetoothContext::PlatformInitialize() {
+void BluetoothInstance::PlatformInitialize() {
   adapter_proxy_ = 0;
   manager_proxy_ = 0;
 
@@ -652,7 +650,7 @@ void BluetoothContext::PlatformInitialize() {
                            CancellableWrap(all_pending_, this));
 }
 
-void BluetoothContext::HandleGetDefaultAdapter(const picojson::value& msg) {
+void BluetoothInstance::HandleGetDefaultAdapter(const picojson::value& msg) {
   default_adapter_reply_id_ = msg.get("reply_id").to_str();
 
   // We still don't have the information. It was requested during
@@ -664,8 +662,8 @@ void BluetoothContext::HandleGetDefaultAdapter(const picojson::value& msg) {
   AdapterSendGetDefaultAdapterReply();
 }
 
-void BluetoothContext::DeviceFound(std::string address,
-                                   GVariantIter* properties) {
+void BluetoothInstance::DeviceFound(std::string address,
+                                    GVariantIter* properties) {
   const gchar* key;
   GVariant* value;
   picojson::value::object o;
@@ -677,10 +675,10 @@ void BluetoothContext::DeviceFound(std::string address,
     getPropertyValue(key, value, o);
 
   picojson::value v(o);
-  PostMessage(v);
+  InternalPostMessage(v);
 }
 
-void BluetoothContext::HandleSetAdapterProperty(const picojson::value& msg) {
+void BluetoothInstance::HandleSetAdapterProperty(const picojson::value& msg) {
   std::string property = msg.get("property").to_str();
   // We handle the Powered property differently because we may have to do
   // different things depending on the platform on which we are running.
@@ -726,7 +724,7 @@ void BluetoothContext::HandleSetAdapterProperty(const picojson::value& msg) {
                     property_set_callback_data_);
 }
 
-void BluetoothContext::HandleCreateBonding(const picojson::value& msg) {
+void BluetoothInstance::HandleCreateBonding(const picojson::value& msg) {
   std::string address = msg.get("address").to_str();
   callbacks_map_["CreateBonding"] = msg.get("reply_id").to_str();
 
@@ -737,7 +735,7 @@ void BluetoothContext::HandleCreateBonding(const picojson::value& msg) {
       CancellableWrap(all_pending_, this));
 }
 
-void BluetoothContext::HandleDestroyBonding(const picojson::value& msg) {
+void BluetoothInstance::HandleDestroyBonding(const picojson::value& msg) {
   std::string address = msg.get("address").to_str();
   callbacks_map_["DestroyBonding"] = msg.get("reply_id").to_str();
 
@@ -748,9 +746,9 @@ void BluetoothContext::HandleDestroyBonding(const picojson::value& msg) {
       CancellableWrap(all_pending_, this));
 }
 
-gboolean BluetoothContext::OnSocketHasData(GSocket* client, GIOCondition cond,
-                                              gpointer user_data) {
-  BluetoothContext* handler = reinterpret_cast<BluetoothContext*>(user_data);
+gboolean BluetoothInstance::OnSocketHasData(GSocket* client, GIOCondition cond,
+                                            gpointer user_data) {
+  BluetoothInstance* handler = reinterpret_cast<BluetoothInstance*>(user_data);
   int fd = g_socket_get_fd(client);
   picojson::value::object o;
 
@@ -758,7 +756,7 @@ gboolean BluetoothContext::OnSocketHasData(GSocket* client, GIOCondition cond,
     o["cmd"] = picojson::value("SocketClosed");
     o["socket_fd"] = picojson::value(static_cast<double>(fd));
 
-    handler->PostMessage(picojson::value(o));
+    handler->InternalPostMessage(picojson::value(o));
 
     return false;
   }
@@ -774,12 +772,12 @@ gboolean BluetoothContext::OnSocketHasData(GSocket* client, GIOCondition cond,
   o["socket_fd"] = picojson::value(static_cast<double>(fd));
   o["data"] = picojson::value(buf, len);
 
-  handler->PostMessage(picojson::value(o));
+  handler->InternalPostMessage(picojson::value(o));
 
   return true;
 }
 
-void BluetoothContext::OnListenerAccept(GObject* object, GAsyncResult* res) {
+void BluetoothInstance::OnListenerAccept(GObject* object, GAsyncResult* res) {
   GError* error = 0;
   GSocket *socket = g_socket_listener_accept_socket_finish(
       rfcomm_listener_, res, NULL, &error);
@@ -802,17 +800,17 @@ void BluetoothContext::OnListenerAccept(GObject* object, GAsyncResult* res) {
   o["socket_fd"] = picojson::value(static_cast<double>(fd));
   o["peer"] = picojson::value(address);
 
-  PostMessage(picojson::value(o));
+  InternalPostMessage(picojson::value(o));
 
   GSource *source = g_socket_create_source(socket, G_IO_IN, NULL);
 
-  g_source_set_callback(source, (GSourceFunc) BluetoothContext::OnSocketHasData,
+  g_source_set_callback(source, (GSourceFunc)BluetoothInstance::OnSocketHasData,
                         this, NULL);
   g_source_attach(source, NULL);
   g_source_unref(source);
 }
 
-void BluetoothContext::OnServiceAddRecord(GObject* object, GAsyncResult* res) {
+void BluetoothInstance::OnServiceAddRecord(GObject* object, GAsyncResult* res) {
   GError* error = 0;
   picojson::value::object o;
   GVariant* result = g_dbus_proxy_call_finish(service_proxy_, res, &error);
@@ -856,10 +854,10 @@ void BluetoothContext::OnServiceAddRecord(GObject* object, GAsyncResult* res) {
 
   callbacks_map_.erase("RFCOMMListen");
 
-  PostMessage(picojson::value(o));
+  InternalPostMessage(picojson::value(o));
 }
 
-void BluetoothContext::HandleRFCOMMListen(const picojson::value& msg) {
+void BluetoothInstance::HandleRFCOMMListen(const picojson::value& msg) {
   std::string name = msg.get("name").to_str();
   std::string uuid = msg.get("uuid").to_str();
   uint8_t channel = 0;
@@ -886,7 +884,7 @@ void BluetoothContext::HandleRFCOMMListen(const picojson::value& msg) {
                     CancellableWrap(all_pending_, this));
 }
 
-void BluetoothContext::OnDeviceProxyCreated(
+void BluetoothInstance::OnDeviceProxyCreated(
     GObject* object, GAsyncResult* res) {
   GDBusProxy* device_proxy;
   GError* error = 0;
@@ -907,10 +905,10 @@ void BluetoothContext::OnDeviceProxyCreated(
       CancellableWrap(all_pending_, this));
 
   g_signal_connect(device_proxy, "g-signal",
-    G_CALLBACK(BluetoothContext::OnDeviceSignal), this);
+    G_CALLBACK(BluetoothInstance::OnDeviceSignal), this);
 }
 
-void BluetoothContext::OnGotDeviceProperties(
+void BluetoothInstance::OnGotDeviceProperties(
     GObject* object, GAsyncResult* res) {
   GError* error = 0;
   GDBusProxy *device_proxy = reinterpret_cast<GDBusProxy*>(object);
@@ -944,10 +942,10 @@ void BluetoothContext::OnGotDeviceProperties(
   }
 
   picojson::value v(o);
-  PostMessage(v);
+  InternalPostMessage(v);
 }
 
-void BluetoothContext::HandleSocketWriteData(const picojson::value& msg) {
+void BluetoothInstance::HandleSocketWriteData(const picojson::value& msg) {
   int fd = static_cast<int>(msg.get("socket_fd").get<double>());
   auto it = sockets_.begin();
   gssize len = 0;
@@ -966,10 +964,10 @@ void BluetoothContext::HandleSocketWriteData(const picojson::value& msg) {
   picojson::value::object o;
   o["size"] = picojson::value(static_cast<double>(len));
 
-  SetSyncReply(picojson::value(o));
+  InternalSetSyncReply(picojson::value(o));
 }
 
-void BluetoothContext::HandleCloseSocket(const picojson::value& msg) {
+void BluetoothInstance::HandleCloseSocket(const picojson::value& msg) {
   int fd = static_cast<int>(msg.get("socket_fd").get<double>());
   std::vector<GSocket*>::iterator it = sockets_.begin();
 
@@ -988,10 +986,10 @@ void BluetoothContext::HandleCloseSocket(const picojson::value& msg) {
   o["error"] = picojson::value(static_cast<double>(0));
 
   picojson::value v(o);
-  PostMessage(v);
+  InternalPostMessage(v);
 }
 
-void BluetoothContext::OnServiceRemoveRecord(
+void BluetoothInstance::OnServiceRemoveRecord(
     GObject* object, GAsyncResult* res) {
   GError* error = 0;
   GVariant* result = g_dbus_proxy_call_finish(service_proxy_, res, &error);
@@ -1009,10 +1007,10 @@ void BluetoothContext::OnServiceRemoveRecord(
 
   callbacks_map_.erase("UnregisterServer");
 
-  PostMessage(picojson::value(o));
+  InternalPostMessage(picojson::value(o));
 }
 
-void BluetoothContext::HandleUnregisterServer(const picojson::value& msg) {
+void BluetoothInstance::HandleUnregisterServer(const picojson::value& msg) {
   int fd = static_cast<int>(msg.get("server_fd").get<double>());
   uint32_t handle = static_cast<uint32_t>(msg.get("sdp_handle").get<double>());
   std::vector<GSocket*>::iterator it = servers_.begin();
