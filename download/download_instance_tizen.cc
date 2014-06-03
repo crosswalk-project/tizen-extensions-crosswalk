@@ -2,14 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include <sys/types.h>
+#include "download/download_instance.h"
+
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <tzplatform_config.h>
 #include <unistd.h>
 
-#include "download/download_context.h"
-
-const std::string DownloadContext::GetActualFolder(
+const std::string DownloadInstance::GetActualFolder(
     const std::string& destination) const {
   typedef std::map<std::string, std::string> LocationMap;
   static const LocationMap::value_type data[] = {
@@ -28,7 +28,7 @@ const std::string DownloadContext::GetActualFolder(
   }
 }
 
-const std::string DownloadContext::GetFullDestinationPath(
+const std::string DownloadInstance::GetFullDestinationPath(
     const std::string destination) const {
   // TODO(hdq): User should be able to choose store to external storage
   //            i.e. /opt/storage/sdcard/Downloads

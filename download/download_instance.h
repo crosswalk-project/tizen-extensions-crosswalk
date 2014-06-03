@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef DOWNLOAD_DOWNLOAD_CONTEXT_H_
-#define DOWNLOAD_DOWNLOAD_CONTEXT_H_
+#ifndef DOWNLOAD_DOWNLOAD_INSTANCE_H_
+#define DOWNLOAD_DOWNLOAD_INSTANCE_H_
 
 #include <tr1/memory>
 #include <map>
@@ -11,27 +11,25 @@
 #include <string>
 #include <sstream>
 
-#include "common/extension_adapter.h"
+#include "common/extension.h"
 #include "common/utils.h"
 #include "web/download.h"
 
 namespace picojson {
+
 class value;
-}
 
-class DownloadContext {
+}  // namespace
+
+class DownloadInstance : public common::Instance {
  public:
-  explicit DownloadContext(ContextAPI* api);
-  ~DownloadContext();
-
-  // ExtensionAdapter implementation.
-  static const char name[];
-  static const char* GetJavaScript();
-  static const char* entry_points[];
-  void HandleMessage(const char* message);
-  void HandleSyncMessage(const char* message);
+  DownloadInstance();
+  ~DownloadInstance();
 
  private:
+  virtual void HandleMessage(const char* msg);
+  virtual void HandleSyncMessage(const char* msg);
+
   void HandleStart(const picojson::value& msg);
   template <typename FnType>
   bool HandleGeneral(const picojson::value& msg,
@@ -42,9 +40,9 @@ class DownloadContext {
   void HandleGetMIMEType(const picojson::value& msg);
   struct DownloadArgs {
     std::string download_uid;
-    DownloadContext* context;
-    DownloadArgs(std::string uid, DownloadContext* c)
-      : download_uid(uid), context(c) {}
+    DownloadInstance* instance;
+    DownloadArgs(std::string uid, DownloadInstance* i)
+      : download_uid(uid), instance(i) {}
   };
   typedef std::vector<DownloadArgs*> DownloadArgsVector;
   DownloadArgsVector args_;
@@ -61,17 +59,15 @@ class DownloadContext {
   static void OnFailedInfo(void* user_param,
                            const std::string& error);
 
-  ContextAPI* api_;
-
   struct DownloadItem {
     std::string uid;
     std::string url;
     std::string destination;
-    std::string fileName;
-    download_network_type_e networkType;
-    std::string httpHeader;
+    std::string file_name;
+    download_network_type_e network_type;
+    std::string http_header;
 
-    int downloadID;
+    int download_id;
     char* file_type;
     long long unsigned file_size;
     char* tmp_saved_path;
@@ -79,9 +75,9 @@ class DownloadContext {
 
     DownloadItem() {}
     ~DownloadItem() {
-      download_unset_state_changed_cb(downloadID);
-      download_unset_progress_cb(downloadID);
-      download_destroy(downloadID);
+      download_unset_state_changed_cb(download_id);
+      download_unset_progress_cb(download_id);
+      download_destroy(download_id);
     }
 
    private:
@@ -91,19 +87,18 @@ class DownloadContext {
   typedef std::map<std::string, DownloadItemRefPtr> DownloadItemMap;
   DownloadItemMap downloads_;
 
-  // FullDestPath = HomePath + DestPath
   // TODO(hdq): This depends on filesystem api?
   const std::string GetFullDestinationPath(const std::string destination) const;
   const std::string GetActualFolder(const std::string& destination) const;
 
   bool GetDownloadID(const picojson::value& msg,
-                     int& downloadID, DownloadArgs** args);
+                     int& download_id, DownloadArgs** args);
   bool GetID(const picojson::value& msg,
-             std::string& uid, int& downloadID) const;
-  std::string GetUID(int downloadID) const;
+             std::string& uid, int& download_id) const;
+  std::string GetUID(int download_id) const;
 
  private:
-  DISALLOW_COPY_AND_ASSIGN(DownloadContext);
+  DISALLOW_COPY_AND_ASSIGN(DownloadInstance);
 };
 
-#endif  // DOWNLOAD_DOWNLOAD_CONTEXT_H_
+#endif  // DOWNLOAD_DOWNLOAD_INSTANCE_H_
