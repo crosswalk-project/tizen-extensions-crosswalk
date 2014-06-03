@@ -2,31 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "network_bearer_selection/network_bearer_selection_context.h"
+#include "network_bearer_selection/network_bearer_selection_instance.h"
 
-#include "common/extension_adapter.h"
 #include "common/picojson.h"
 #include "network_bearer_selection/network_bearer_selection_request.h"
 
-extern const char kSource_network_bearer_selection_api[];
-
-NetworkBearerSelectionContext::NetworkBearerSelectionContext(ContextAPI* api)
-    : api_(api) {
-}
-
-const char NetworkBearerSelectionContext::name[] =
-    "tizen.networkbearerselection";
-
-const char* NetworkBearerSelectionContext::entry_points[] = { NULL };
-
-const char* NetworkBearerSelectionContext::GetJavaScript() {
-  return kSource_network_bearer_selection_api;
-}
-
-void NetworkBearerSelectionContext::PostMessage(const std::string& cmd,
-                                                WebApiAPIErrors error,
-                                                bool disconnected,
-                                                const std::string& reply_id) {
+void NetworkBearerSelectionInstance::InternalPostMessage(
+    const std::string& cmd, WebApiAPIErrors error,
+    bool disconnected, const std::string& reply_id) {
   picojson::value::object o;
   o["cmd"] = picojson::value(cmd);
   o["error"] = picojson::value(static_cast<double>(error));
@@ -34,16 +17,16 @@ void NetworkBearerSelectionContext::PostMessage(const std::string& cmd,
   o["reply_id"] = picojson::value(reply_id);
 
   picojson::value v(o);
-  api_->PostMessage(v.serialize().c_str());
+  PostMessage(v.serialize().c_str());
 }
 
-void NetworkBearerSelectionContext::HandleMessage(const char* message) {
+void NetworkBearerSelectionInstance::HandleMessage(const char* msg) {
   picojson::value v;
   std::string err;
 
-  picojson::parse(v, message, message + strlen(message), &err);
+  picojson::parse(v, msg, msg + strlen(msg), &err);
   if (!err.empty()) {
-    std::cerr << name << ": invalid JSON message." << std::endl;
+    std::cerr << ": invalid JSON message." << std::endl;
     return;
   }
 
@@ -69,5 +52,5 @@ void NetworkBearerSelectionContext::HandleMessage(const char* message) {
   else if (cmd == "releaseRouteToHost")
     OnReleaseRouteToHost(request);
   else
-    std::cerr << name << ": invalid command (" << cmd << ")." << std::endl;
+    std::cerr << ": invalid command (" << cmd << ")." << std::endl;
 }

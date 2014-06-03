@@ -6,12 +6,12 @@
 #define NETWORK_BEARER_SELECTION_NETWORK_BEARER_SELECTION_REQUEST_H_
 
 #include <string>
-#include "network_bearer_selection/network_bearer_selection_context.h"
+#include "network_bearer_selection/network_bearer_selection_instance.h"
 
 class NetworkBearerSelectionRequest {
  public:
   explicit NetworkBearerSelectionRequest(
-      NetworkBearerSelectionContext* context);
+      NetworkBearerSelectionInstance* instance);
 
   void Success();
   void Disconnected();
@@ -28,7 +28,7 @@ class NetworkBearerSelectionRequest {
   void set_reply_id(const std::string& reply_id);
 
  private:
-  NetworkBearerSelectionContext* context_;
+  NetworkBearerSelectionInstance* instance_;
 
   bool success_;
 

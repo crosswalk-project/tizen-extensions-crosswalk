@@ -5,8 +5,8 @@
 #include "network_bearer_selection/network_bearer_selection_request.h"
 
 NetworkBearerSelectionRequest::NetworkBearerSelectionRequest(
-    NetworkBearerSelectionContext* context)
-  : context_(context), success_(false) {
+    NetworkBearerSelectionInstance* instance)
+  : instance_(instance), success_(false) {
 }
 
 void NetworkBearerSelectionRequest::Success() {
@@ -16,17 +16,17 @@ void NetworkBearerSelectionRequest::Success() {
   // the state change. This might make us call this method twice
   // in certain corner cases. The success_ guard prevents that.
   if (!success_)
-    context_->PostMessage(cmd_, NO_ERROR, false, reply_id_);
+    instance_->InternalPostMessage(cmd_, NO_ERROR, false, reply_id_);
 
   success_ = true;
 }
 
 void NetworkBearerSelectionRequest::Disconnected() {
-  context_->PostMessage(cmd_, NO_ERROR, true, reply_id_);
+  instance_->InternalPostMessage(cmd_, NO_ERROR, true, reply_id_);
 }
 
 void NetworkBearerSelectionRequest::Failure() {
-  context_->PostMessage(cmd_, UNKNOWN_ERR, false, reply_id_);
+  instance_->InternalPostMessage(cmd_, UNKNOWN_ERR, false, reply_id_);
 }
 
 void NetworkBearerSelectionRequest::set_cmd(const std::string& cmd) {
