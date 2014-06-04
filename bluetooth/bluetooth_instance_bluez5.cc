@@ -10,7 +10,12 @@ static void getPropertyValue(const char* key, GVariant* value,
     picojson::value::object& o) {
   if (!strcmp(key, "Class")) {
     guint32 class_id = g_variant_get_uint32(value);
-    o[key] = picojson::value(static_cast<double>(class_id));
+    o["ClassMajor"] = picojson::value \
+                      (static_cast<double>((class_id & 0x00001F00) >> 8));
+    o["ClassMinor"] = picojson::value \
+                      (static_cast<double>(class_id & 0x000000FC));
+    o["ClassService"] = picojson::value\
+                        (static_cast<double>(class_id & 0x00FF0000));
   } else if (!strcmp(key, "RSSI")) {
     gint16 class_id = g_variant_get_int16(value);
     o[key] = picojson::value(static_cast<double>(class_id));
@@ -192,10 +197,10 @@ void BluetoothInstance::PlatformInitialize() {
       this);
 }
 
-picojson::value BluetoothInstance::HandleGetDefaultAdapter(
+void BluetoothInstance::HandleGetDefaultAdapter(
     const picojson::value& msg) {
   if (adapter_info_.empty())
-    return picojson::value();
+    return;
 
   picojson::value::object o;
   o["cmd"] = picojson::value("");
@@ -215,8 +220,7 @@ picojson::value BluetoothInstance::HandleGetDefaultAdapter(
   if (!is_js_context_initialized_)
     is_js_context_initialized_ = true;
 
-  picojson::value v(o);
-  return v;
+  InternalSetSyncReply(picojson::value(o));
 }
 
 GDBusProxy* BluetoothInstance::CreateDeviceProxy(GAsyncResult* res) {
