@@ -21,6 +21,7 @@ Source4:    %{_examples_package}
 Source5:    %{_system_info_demo_package}
 Source1001: %{name}.manifest
 
+BuildRequires: ninja
 BuildRequires: pkgconfig(appcore-common)
 BuildRequires: pkgconfig(bluez)
 BuildRequires: pkgconfig(capi-appfw-application)
@@ -109,7 +110,7 @@ sed "s|@LIB_INSTALL_DIR@|%{_libdir}|g" %{name}.in > %{name}
 
 %build
 
-export GYP_GENERATORS='make'
+export GYP_GENERATORS='ninja'
 GYP_OPTIONS="--depth=. -Dtizen=1 -Dextension_build_type=Debug -Dextension_host_os=%{profile}"
 
 %if %{with wayland}
@@ -120,7 +121,7 @@ GYP_OPTIONS="$GYP_OPTIONS -Ddisplay_type=x11"
 
 ./tools/gyp/gyp $GYP_OPTIONS tizen-wrt.gyp
 
-make %{?_smp_mflags}
+ninja -C out/Default %{?_smp_mflags}
 
 %install
 
