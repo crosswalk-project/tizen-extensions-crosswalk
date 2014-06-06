@@ -294,6 +294,6 @@ exports.getAppMetaData = function(appId) {
 
   var data = [];
   for (var i = 0, len = result.data.length; i < len; ++i)
-      data.push(new ApplicationMetaData(result.data[i]));
+    data.push(new ApplicationMetaData(result.data[i]));
   return data;
 };

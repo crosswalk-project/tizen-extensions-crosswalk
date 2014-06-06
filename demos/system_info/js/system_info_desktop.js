@@ -1,9 +1,9 @@
-$(document).ready(function () {
+$(document).ready(function() {
   $('#main').ascensor({
-    direction: "chocolate",
+    direction: 'chocolate',
     overflow: 'hidden',
     loop: true,
-    ascensorMap: [[0,0],[0,1],[0,2],[1,2],[1,1],[1,0]]
+    ascensorMap: [[0, 0], [0, 1], [0, 2], [1, 2], [1, 1], [1, 0]]
   });
 
   build_info = new BuildInfo();

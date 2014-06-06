@@ -45,6 +45,6 @@ Utils.prototype.validateObject = function(object, signature, attributes) {
   }
 
   return true;
-}
+};
 
 exports = new Utils();
