@@ -100,6 +100,11 @@ class FilesystemInstance : public common::Instance {
   bool IsKnownFileStream(const picojson::value& msg);
   std::fstream* GetFileStream(unsigned int key);
   std::fstream* GetFileStream(unsigned int key, std::ios_base::openmode mode);
+  std::string GetFileEncoding(unsigned int key) const;
+  void ReadText(std::fstream* file, size_t num_chars, const char* encoding,
+      std::string& reply);
+  std::string ResolveImplicitDestination(const std::string& from,
+      const std::string& to);
   bool CopyAndRenameSanityChecks(const picojson::value& msg,
       const std::string& from, const std::string& to, bool overwrite);
   void SetSyncError(std::string& output, WebApiAPIErrors error_type);
@@ -117,7 +122,8 @@ class FilesystemInstance : public common::Instance {
   static void OnStorageStateChanged(int id, storage_state_e state,
       void *user_data);
 
-  typedef std::pair<std::ios_base::openmode, std::fstream*> FStream;
+  typedef std::tuple<std::ios_base::openmode, std::fstream*,
+      std::string> FStream;
   typedef std::map<unsigned int, FStream> FStreamMap;
   FStreamMap fstream_map_;
   typedef std::map<std::string, Storage> Storages;

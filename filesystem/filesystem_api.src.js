@@ -5,20 +5,14 @@
 var _callbacks = {};
 var _next_reply_id = 0;
 
-var _listeners = {};
+var _listeners = [];
 var _next_listener_id = 0;
 
 var getNextReplyId = function() {
   return _next_reply_id++;
 };
 
-function defineReadOnlyProperty(object, key, value) {
-  Object.defineProperty(object, key, {
-    configurable: false,
-    writable: false,
-    value: value
-  });
-}
+var encodings = {'UTF-8' : 1, 'ISO8859-1' : 1}; // gyp injection here
 
 var postMessage = function(msg, callback) {
   var reply_id = getNextReplyId();
@@ -69,7 +63,7 @@ var getFileParent = function(childPath) {
 function is_string(value) { return typeof(value) === 'string' || value instanceof String; }
 function is_integer(value) { return isFinite(value) && !isNaN(parseInt(value)); }
 function get_valid_mode(mode) {
-  if (mode == null)
+  if (mode === null)
     return 'rw';
   else if (mode === 'a' || mode === 'w' || mode === 'r' || mode === 'rw')
     return mode;
@@ -96,7 +90,8 @@ FileSystemManager.prototype.resolve = function(location, onsuccess,
   if (onerror !== null && !(onerror instanceof Function) &&
       arguments.length > 2)
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
-
+  if (arguments.length < 4)
+    mode = null;
   mode = get_valid_mode(mode);
 
   postMessage({
@@ -171,35 +166,18 @@ FileSystemManager.prototype.addStorageStateChangeListener = function(onsuccess, 
 };
 
 FileSystemManager.prototype.removeStorageStateChangeListener = function(watchId) {
-  if (!(typeof(watchId) !== 'number'))
+  if (watchId !== undefined && typeof(watchId) !== 'number')
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
 
-  var index = _listeners.indexOf(watchId);
-  if (~index)
-    _listeners.slice(index, 1);
+
+  if (_listeners[watchId])
+    _listeners[watchId] = null;
   else
     throw new tizen.WebAPIException(tizen.WebAPIException.NOT_FOUND_ERR);
 };
 
-function FileFilter(name, startModified, endModified, startCreated, endCreated) {
-  var self = {
-    toString: function() {
-      return JSON.stringify(this);
-    }
-  };
-  Object.defineProperties(self, {
-    'name': { writable: false, value: name, enumerable: true },
-    'startModified': { writable: false, value: startModified, enumerable: true },
-    'endModified': { writable: false, value: endModified, enumerable: true },
-    'startCreated': { writable: false, value: startCreated, enumerable: true },
-    'endCreated': { writable: false, value: endCreated, enumerable: true }
-  });
-  return self;
-}
-
-function FileStream(streamID, encoding) {
+function FileStream(streamID) {
   this.streamID = streamID;
-  this.encoding = encoding || 'UTF-8';
 
   function fs_stat(streamID) {
     var result = sendSyncMessage('FileStreamStat', { streamID: streamID });
@@ -211,9 +189,7 @@ function FileStream(streamID, encoding) {
   var getStreamID = function() {
     return streamID;
   };
-  var getEncoding = function() {
-    return encoding;
-  };
+
   var isEof = function() {
     var status = fs_stat(streamID);
     if (status.isError)
@@ -243,13 +219,11 @@ function FileStream(streamID, encoding) {
     return status.bytesAvailable;
   };
 
-  defineReadOnlyProperty(this, 'eof', false);
-  defineReadOnlyProperty(this, 'bytesAvailable', 0);
-
   Object.defineProperties(this, {
     'streamID': { get: getStreamID, enumerable: false },
-    'encoding': { get: getEncoding, enumerable: false },
-    'position': { get: getPosition, set: setPosition, enumerable: true }
+    'position': { get: getPosition, set: setPosition, enumerable: true },
+    'eof': { get: isEof, enumerable: true },
+    'bytesAvailable': { get: getBytesAvailable, enumerable: true }
   });
 }
 
@@ -260,12 +234,11 @@ FileStream.prototype.close = function() {
 };
 
 FileStream.prototype.read = function(charCount) {
-  if (arguments.length == 1 && !(is_integer(charCount)))
+  if (!(is_integer(charCount)))
     throw new tizen.WebAPIException(tizen.WebAPIException.INVALID_VALUES_ERR);
 
   var result = sendSyncMessage('FileStreamRead', {
     streamID: this.streamID,
-    encoding: this.encoding,
     type: 'Default',
     count: charCount
   });
@@ -276,12 +249,11 @@ FileStream.prototype.read = function(charCount) {
 };
 
 FileStream.prototype.readBytes = function(byteCount) {
-  if (arguments.length == 1 && !(is_integer(byteCount)))
+  if (!(is_integer(byteCount)))
     throw new tizen.WebAPIException(tizen.WebAPIException.INVALID_VALUES_ERR);
 
   var result = sendSyncMessage('FileStreamRead', {
     streamID: this.streamID,
-    encoding: this.encoding,
     type: 'Bytes',
     count: byteCount
   });
@@ -292,12 +264,11 @@ FileStream.prototype.readBytes = function(byteCount) {
 };
 
 FileStream.prototype.readBase64 = function(byteCount) {
-  if (arguments.length == 1 && !(is_integer(byteCount)))
+  if (!(is_integer(byteCount)))
     throw new tizen.WebAPIException(tizen.WebAPIException.INVALID_VALUES_ERR);
 
   var result = sendSyncMessage('FileStreamRead', {
     streamID: this.streamID,
-    encoding: this.encoding,
     type: 'Base64',
     count: byteCount
   });
@@ -313,7 +284,6 @@ FileStream.prototype.write = function(stringData) {
 
   var result = sendSyncMessage('FileStreamWrite', {
     streamID: this.streamID,
-    encoding: this.encoding,
     type: 'Default',
     data: stringData
   });
@@ -327,7 +297,6 @@ FileStream.prototype.writeBytes = function(byteData) {
 
   var result = sendSyncMessage('FileStreamWrite', {
     streamID: this.streamID,
-    encoding: this.encoding,
     type: 'Bytes',
     data: byteData
   });
@@ -341,7 +310,6 @@ FileStream.prototype.writeBase64 = function(base64Data) {
 
   var result = sendSyncMessage('FileStreamWrite', {
     streamID: this.streamID,
-    encoding: this.encoding,
     type: 'Base64',
     data: base64Data
   });
@@ -465,14 +433,13 @@ File.prototype.listFiles = function(onsuccess, onerror, filter) {
   if (onerror !== null && !(onerror instanceof Function) &&
       arguments.length > 1)
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
-  if (filter !== null && !(filter instanceof FileFilter) &&
-      arguments.length > 2)
+  if (filter !== null && typeof(filter) !== 'object' && arguments.length > 2)
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
 
   postMessage({
     cmd: 'FileListFiles',
     fullPath: this.fullPath,
-    filter: filter ? filter.toString() : ''
+    filter: filter ? JSON.stringify(filter) : ''
   }, function(result) {
     if (result.isError) {
       if (onerror)
@@ -494,11 +461,11 @@ File.prototype.openStream = function(mode, onsuccess, onerror, encoding) {
   if (onerror !== null && !(onerror instanceof Function) &&
       arguments.length > 2)
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
-
+  if (mode == null)
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
   mode = get_valid_mode(mode);
-
-  if ((arguments.length > 3 && is_string(encoding)) &&
-      (encoding != 'UTF-8' && encoding != 'ISO-8859-1'))
+  encoding = encoding || 'UTF-8';
+  if (!is_string(encoding) || !(encoding.toUpperCase() in encodings))
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
 
   postMessage({
@@ -511,7 +478,7 @@ File.prototype.openStream = function(mode, onsuccess, onerror, encoding) {
       if (onerror)
         onerror(new tizen.WebAPIError(result.errorCode));
     } else if (onsuccess) {
-      onsuccess(new FileStream(result.streamID, result.encoding));
+      onsuccess(new FileStream(result.streamID));
     }
   });
 };
@@ -523,12 +490,12 @@ File.prototype.readAsText = function(onsuccess, onerror, encoding) {
       arguments.length > 1)
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
 
-  if ((arguments.length > 2 && is_string(encoding)) &&
-      (encoding != 'UTF-8' && encoding != 'ISO-8859-1'))
+  if ((arguments.length > 2 && encoding !== null && !is_string(encoding)))
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
 
   var streamOpened = function(stream) {
-    onsuccess(stream.read());
+    // number of characters is less than or equal to number of bytes
+    onsuccess(stream.read(stream.bytesAvailable));
     stream.close();
   };
   var streamError = function(error) {
@@ -546,6 +513,8 @@ File.prototype.readAsText = function(onsuccess, onerror, encoding) {
 
 File.prototype.copyTo = function(originFilePath, destinationFilePath,
     overwrite, onsuccess, onerror) {
+  if (!this.isDirectory)
+    onerror(new tizen.WebAPIException(tizen.WebAPIException.IO_ERR));
   // originFilePath, destinationFilePath - full virtual file path
   if (onsuccess !== null && !(onsuccess instanceof Function) &&
       arguments.length > 3)
@@ -587,6 +556,8 @@ File.prototype.copyTo = function(originFilePath, destinationFilePath,
 
 File.prototype.moveTo = function(originFilePath, destinationFilePath,
     overwrite, onsuccess, onerror) {
+  if (!this.isDirectory)
+    onerror(new tizen.WebAPIException(tizen.WebAPIException.IO_ERR));
   // originFilePath, destinationFilePath - full virtual file path
   if (onsuccess !== null && !(onsuccess instanceof Function) &&
       arguments.length > 3)
@@ -627,6 +598,8 @@ File.prototype.moveTo = function(originFilePath, destinationFilePath,
 };
 
 File.prototype.createDirectory = function(relativeDirPath) {
+  if (!this.isDirectory)
+    onerror(new tizen.WebAPIException(tizen.WebAPIException.IO_ERR));
   if (relativeDirPath.indexOf('./') >= 0)
     throw new tizen.WebAPIException(tizen.WebAPIException.INVALID_VALUES_ERR);
 
@@ -642,6 +615,8 @@ File.prototype.createDirectory = function(relativeDirPath) {
 };
 
 File.prototype.createFile = function(relativeFilePath) {
+  if (!this.isDirectory)
+    onerror(new tizen.WebAPIException(tizen.WebAPIException.IO_ERR));
   if (relativeFilePath.indexOf('./') >= 0)
     throw new tizen.WebAPIException(tizen.WebAPIException.INVALID_VALUES_ERR);
 
@@ -657,6 +632,8 @@ File.prototype.createFile = function(relativeFilePath) {
 };
 
 File.prototype.resolve = function(relativeFilePath) {
+  if (!this.isDirectory)
+    onerror(new tizen.WebAPIException(tizen.WebAPIException.IO_ERR));
   var status = sendSyncMessage('FileResolve', {
     fullPath: this.fullPath,
     relativeFilePath: relativeFilePath
@@ -669,6 +646,8 @@ File.prototype.resolve = function(relativeFilePath) {
 };
 
 File.prototype.deleteDirectory = function(directoryPath, recursive, onsuccess, onerror) {
+  if (!this.isDirectory)
+    onerror(new tizen.WebAPIException(tizen.WebAPIException.IO_ERR));
   // directoryPath - full virtual directory path
   if (onsuccess !== null && !(onsuccess instanceof Function) &&
       arguments.length > 2)
@@ -697,6 +676,8 @@ File.prototype.deleteDirectory = function(directoryPath, recursive, onsuccess, o
 };
 
 File.prototype.deleteFile = function(filePath, onsuccess, onerror) {
+  if (!this.isDirectory)
+    onerror(new tizen.WebAPIException(tizen.WebAPIException.IO_ERR));
   // filePath - full virtual file path
   if (onsuccess !== null && !(onsuccess instanceof Function) &&
       arguments.length > 1)
