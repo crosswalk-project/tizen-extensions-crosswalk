@@ -617,8 +617,8 @@ void NotifyDatabaseChange(const char* view, char* changes, void* user_data) {
       case CONTACTS_CHANGE_INSERTED:
         ins = true;
       case CONTACTS_CHANGE_UPDATED:
-        if (!ins)
-        if (check(contacts_db_get_record(CALLH_VIEW_URI, uid, &record))) {
+        if (!ins &&
+            check(contacts_db_get_record(CALLH_VIEW_URI, uid, &record))) {
           picojson::value::object val;
           if (check(SerializeEntry(record, val))) {
             if (ins)
@@ -655,7 +655,6 @@ void NotifyDatabaseChange(const char* view, char* changes, void* user_data) {
 }
 
 }  // namespace
-
 
 bool CallHistoryInstance::CheckBackend() {
   if (backendConnected_)

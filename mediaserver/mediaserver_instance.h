@@ -6,7 +6,8 @@
 #define MEDIASERVER_MEDIASERVER_INSTANCE_H_
 
 #include <glib.h>
-#include <thread>
+#include <thread>  // NOLINT
+
 #include "common/extension.h"
 
 class MediaServerManager;

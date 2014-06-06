@@ -119,14 +119,14 @@ void DownloadInstance::OnStartInfo(int download_id, void* user_param) {
   const std::string uid(args->download_uid);
   DownloadItemRefPtr item = args->instance->downloads_[uid];
 
-  long long unsigned file_size = 0;
+  long long unsigned file_size = 0;  // NOLINT
   CHECK(download_get_content_size(download_id, &file_size), args);
   item->file_size = file_size;
 }
 
 // static
 void DownloadInstance::OnProgressInfo(int download_id,
-                                      long long unsigned received,
+                                      long long unsigned received,  // NOLINT
                                       void* user_param) {
   DownloadArgs* args = static_cast<DownloadArgs*>(user_param);
   DownloadItemRefPtr item =

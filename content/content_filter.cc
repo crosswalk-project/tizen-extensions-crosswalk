@@ -83,13 +83,13 @@ std::string ContentFilter::convert(const picojson::value& jsonFilter) {
 
   // Tizen requires this weird mapping on type
   if (attributeName == "type") {
-    if (matchValue == "IMAGE")
+    if (matchValue == "IMAGE") {
       matchValue = "0";
-    else if (matchValue == "VIDEO")
+    } else if (matchValue == "VIDEO") {
       matchValue = "1";
-    else if (matchValue == "AUDIO")
+    } else if (matchValue == "AUDIO") {
       matchValue = "3";
-    else if (matchValue == "OTHER") {
+    } else if (matchValue == "OTHER") {
       matchValue = "4";
     } else {
       std::cerr << "Filter ERR: unknown media type " << matchValue << std::endl;
