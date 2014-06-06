@@ -6,7 +6,7 @@
 #define SPEECH_SPEECH_INSTANCE_H_
 
 #include <glib.h>
-#include <thread>
+#include <thread>  // NOLINT
 
 #include "common/extension.h"
 #include "common/picojson.h"

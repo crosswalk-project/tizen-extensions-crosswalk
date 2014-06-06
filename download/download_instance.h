@@ -19,7 +19,7 @@ namespace picojson {
 
 class value;
 
-}  // namespace
+}  // namespace picojson
 
 class DownloadInstance : public common::Instance {
  public:
@@ -50,7 +50,7 @@ class DownloadInstance : public common::Instance {
                              download_state_e state,
                              void* user_data);
   static void OnProgressInfo(int download_id,
-                             long long unsigned received,
+                             long long unsigned received,  // NOLINT
                              void* user_param);
   static void OnStartInfo(int download_id, void* user_param);
   static void OnFinishedInfo(int download_id, void* user_param);
@@ -69,7 +69,7 @@ class DownloadInstance : public common::Instance {
 
     int download_id;
     char* file_type;
-    long long unsigned file_size;
+    long long unsigned file_size;  // NOLINT
     char* tmp_saved_path;
     char* content_name;
 

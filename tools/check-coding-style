@@ -25,7 +25,6 @@ cpplint.py --filter="$FILTERS" $(find . \
                                ! -path './packaging' \
                                ! -name 'XW_Extension*.h' \
                                ! -name 'picojson.*' \
-                               ! -path './download/*' \
                                \( -name '*.h' -o -name '*.cc' \) )
 
 # Return to previous dir and return the code returned by cpplint.py

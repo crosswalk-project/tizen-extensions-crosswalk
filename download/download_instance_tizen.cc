@@ -33,8 +33,10 @@ const std::string DownloadInstance::GetFullDestinationPath(
   // TODO(hdq): User should be able to choose store to external storage
   //            i.e. /opt/storage/sdcard/Downloads
   const std::string default_folder("Downloads");
-  const std::string location = destination.empty() ? default_folder : destination;
-  std::string path = tzplatform_getenv(TZ_USER_CONTENT) + GetActualFolder(location);
+  const std::string location =
+      destination.empty() ? default_folder : destination;
+  std::string path =
+      tzplatform_getenv(TZ_USER_CONTENT) + GetActualFolder(location);
 
   // Create path if not exist
   struct stat path_stat;
