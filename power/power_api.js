@@ -141,7 +141,7 @@ exports.getScreenBrightness = function() {
   var r = JSON.parse(sendSyncMessage({
     'cmd': 'PowerGetScreenBrightness'
   }));
-  if (r['error']){
+  if (r['error']) {
     throw new tizen.WebAPIException(tizen.WebAPIException.NOT_SUPPORTED_ERR);
     return;
   }

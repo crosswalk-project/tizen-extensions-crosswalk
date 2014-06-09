@@ -1,4 +1,4 @@
-$(document).ready(function () {
+$(document).ready(function() {
   $('#exit_btn').click(function() {
     // Open the local windows. To avoid window.close() invalid problem.
     window.open('', '_self', '');
@@ -6,10 +6,10 @@ $(document).ready(function () {
   });
 
   $('#main').ascensor({
-    direction: "chocolate",
+    direction: 'chocolate',
     overflow: 'hidden',
     loop: true,
-    ascensorMap: [[0,0],[0,1],[1,1],[1,0],[2,0],[2,1],[3,1],[3,0]]
+    ascensorMap: [[0, 0], [0, 1], [1, 1], [1, 0], [2, 0], [2, 1], [3, 1], [3, 0]]
   });
 
   battery_info = new BatteryInfo();

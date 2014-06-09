@@ -8,6 +8,13 @@ if [ ! `which cpplint.py` ]; then
    exit 1
 fi
 
+if [ ! `which gjslint` ]; then
+   echo -e "\nPlease make sure gjslint (Google Closure Lint) is in your PATH."
+   echo -e "You can install it directly by \"sudo easy_install-2.7 http://closure-linter.googlecode.com/files/closure_linter-latest.tar.gz\"."
+   echo -e "Or visit https://developers.google.com/closure/utilities/docs/linter_howto for more information.\n"
+   exit 1
+fi
+
 # Store current dir and change to repository root dir.
 OLD_PWD=$PWD
 SELF_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -26,8 +33,21 @@ cpplint.py --filter="$FILTERS" $(find . \
                                ! -name 'XW_Extension*.h' \
                                ! -name 'picojson.*' \
                                \( -name '*.h' -o -name '*.cc' \) )
+CPP_RET_VAL=$?
+
+gjslint --strict --nojsdoc --max_line_length 100 --unix_mode $(find . \
+                               ! -path './out*' ! -path './.git*' \
+                               ! -path './packaging' \
+                               ! -name 'jquery.*' \
+                               ! -name 'flotr2.*' \
+                               -name '*.js' )
 
 # Return to previous dir and return the code returned by cpplint.py
-RET_VAL=$?
+JS_RET_VAL=$?
 cd $OLD_PWD
-exit $RET_VAL
+
+if [ "x$CPP_RET_VAL" = "x0" -a "x$JS_RET_VAL" = "x0" ]; then
+  exit 0
+else
+  exit 1
+fi

@@ -140,14 +140,14 @@ FileSystemManager.prototype.listStorages = function(onsuccess, onerror) {
     cmd: 'FileSystemManagerListStorages'
   }, function(result) {
     if (result.isError)
-        onerror(new tizen.WebAPIError(result.errorCode));
+      onerror(new tizen.WebAPIError(result.errorCode));
     else {
-        var storages = [];
-        for (var i = 0; i < result.value.length; i++) {
-          var storage = result.value[i];
-          storages.push(new FileSystemStorage(storage.label, storage.type, storage.state));
-        }
-        onsuccess(storages);
+      var storages = [];
+      for (var i = 0; i < result.value.length; i++) {
+        var storage = result.value[i];
+        storages.push(new FileSystemStorage(storage.label, storage.type, storage.state));
+      }
+      onsuccess(storages);
     }
   });
 };
@@ -155,7 +155,7 @@ FileSystemManager.prototype.listStorages = function(onsuccess, onerror) {
 function handleStorageChanged(msg) {
   var storage = msg.storage;
   _listeners.forEach(function(id) {
-    _listeners[id](new FileSystemStorage(storage.label, storage.type, storage.state))
+    _listeners[id](new FileSystemStorage(storage.label, storage.type, storage.state));
   });
 }
 
@@ -434,7 +434,7 @@ function File(fullPath, parent) {
     if (status.isDirectory)
       return status.length;
     return undefined;
-   };
+  };
 
   Object.defineProperties(this, {
     'parent': { get: getParent, enumerable: true },

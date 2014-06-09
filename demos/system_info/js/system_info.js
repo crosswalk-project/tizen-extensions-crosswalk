@@ -1,10 +1,6 @@
-/**********************************************************
- *
- * @module: system_info.js
- * @version: 1.0
- * @copyright: © 2013 Intel
- * 
- **********************************************************/
+// Copyright (c) 2013 Intel Corporation. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 
 function BatteryInfo() {
   this.level = $('<p></p>').addClass('center');
@@ -22,20 +18,20 @@ function BatteryInfo() {
 
   this.getInfo = function getInfo(BATTERY) {
     tizen.systeminfo.getPropertyValue(
-      "BATTERY",
-      function(battery) {
-        BATTERY.draw_graph(battery);
-        BATTERY.charging.text(battery.isCharging ? 'Charging':'No Charging');
-        BATTERY.level.text(battery.level * 100 + '%');
-      },
-      null);
+        'BATTERY',
+        function(battery) {
+          BATTERY.draw_graph(battery);
+          BATTERY.charging.text(battery.isCharging ? 'Charging' : 'No Charging');
+          BATTERY.level.text(battery.level * 100 + '%');
+        },
+        null);
     tizen.systeminfo.addPropertyValueChangeListener(
-      "BATTERY",
-      function(battery) {
-        BATTERY.draw_graph(battery);
-        BATTERY.charging.text(battery.isCharging ? 'Charging':'No Charging');
-        BATTERY.level.text(battery.level * 100 + '%');
-      });
+        'BATTERY',
+        function(battery) {
+          BATTERY.draw_graph(battery);
+          BATTERY.charging.text(battery.isCharging ? 'Charging' : 'No Charging');
+          BATTERY.level.text(battery.level * 100 + '%');
+        });
   };
 }
 
@@ -47,25 +43,25 @@ function BuildInfo() {
 
   this.getInfo = function getInfo(BUILD) {
     tizen.systeminfo.getPropertyValue(
-      "BUILD",
-      function(build) {
-        BUILD.model.text("MODEL: " + build.model);
-        BUILD.manufacturer.text("MANUFACTURE: " + build.manufacturer);
-        BUILD.build_version.text("BUILDVERSION: " + build.buildVersion);
-      },
-      null);
+        'BUILD',
+        function(build) {
+          BUILD.model.text('MODEL: ' + build.model);
+          BUILD.manufacturer.text('MANUFACTURE: ' + build.manufacturer);
+          BUILD.build_version.text('BUILDVERSION: ' + build.buildVersion);
+        },
+        null);
     tizen.systeminfo.addPropertyValueChangeListener(
-      "BUILD",
-      function(build) {
-        BUILD.model.text("MODEL: " + build.model);
-        BUILD.manufacturer.text("MANUFACTURE: " + build.manufacturer);
-        BUILD.build_version.text("BUILDVERSION: " + build.buildVersion);
-      });
+        'BUILD',
+        function(build) {
+          BUILD.model.text('MODEL: ' + build.model);
+          BUILD.manufacturer.text('MANUFACTURE: ' + build.manufacturer);
+          BUILD.build_version.text('BUILDVERSION: ' + build.buildVersion);
+        });
   };
 }
 
 function CellularNetworkInfo() {
-  this.status = $('<p></p>').text("CELLULAR is OFF");
+  this.status = $('<p></p>').text('CELLULAR is OFF');
   this.apn_imei = $('<p></p>');
   this.ip_address = $('<p></p>');
   this.ipv6_address = $('<p></p>');
@@ -77,34 +73,34 @@ function CellularNetworkInfo() {
 
   this.change_cellular = function change_cellular(cellular) {
     if (cellular.status == 'ON') {
-      this.status.text("CELLULAR: " + cellular.status);
-      this.apn_imei.text("APN: " + cellular.apn + "  " +
-                         "IMEI: " + cellular.imei);
-      this.ip_address.text("IP ADDRESS: " + cellular.ipAddress);
-      this.ipv6_address.text("IPV6 ADDRESS: " + cellular.ipv6Address);
-      this.short_info.text("MCC: " + cellular.mcc + "  " +
-                           "MNC: " + cellular.mnc + "  " +
-                           "CELLID: " + cellular.cellId + "  " +
-                           "LAC: " + cellular.lac);
-      this.bool_info.text(cellular.isRoaming? "Roaming":"NoRoaming" +
-                          cellular.isFlightMode? "Flight":"NoFlight");
+      this.status.text('CELLULAR: ' + cellular.status);
+      this.apn_imei.text('APN: ' + cellular.apn + '  ' +
+                         'IMEI: ' + cellular.imei);
+      this.ip_address.text('IP ADDRESS: ' + cellular.ipAddress);
+      this.ipv6_address.text('IPV6 ADDRESS: ' + cellular.ipv6Address);
+      this.short_info.text('MCC: ' + cellular.mcc + '  ' +
+                           'MNC: ' + cellular.mnc + '  ' +
+                           'CELLID: ' + cellular.cellId + '  ' +
+                           'LAC: ' + cellular.lac);
+      this.bool_info.text(cellular.isRoaming ? 'Roaming' : 'NoRoaming' +
+                          cellular.isFlightMode ? 'Flight' : 'NoFlight');
     } else {
-      this.status.text("CELLULAR IS OFF!");
+      this.status.text('CELLULAR IS OFF!');
     }
   };
 
   this.getInfo = function getInfo(CELLULAR) {
     tizen.systeminfo.getPropertyValue(
-      "CELLULAR_NETWORK",
-      function(cellular) {
-        CELLULAR.change_cellular(cellular);
-      },
-      null);
+        'CELLULAR_NETWORK',
+        function(cellular) {
+          CELLULAR.change_cellular(cellular);
+        },
+        null);
     tizen.systeminfo.addPropertyValueChangeListener(
-      "CELLULAR_NETWORK",
-      function(cellular) {
-        CELLULAR.change_cellular(cellular);
-      });
+        'CELLULAR_NETWORK',
+        function(cellular) {
+          CELLULAR.change_cellular(cellular);
+        });
   };
 }
 
@@ -121,11 +117,11 @@ function CPUInfo() {
       show: true,
       fill: true,
       fillColor: {
-      colors: ['#f00', '#fdd'],
+        colors: ['#f00', '#fdd'],
         getInfo: 'top',
-        end: 'bottom',
+        end: 'bottom'
       },
-      fillOpacity: 1,
+      fillOpacity: 1
     }
   };
   this.graph_yaxis = {
@@ -135,20 +131,20 @@ function CPUInfo() {
     max: 100,
     min: -5,
     color: '#fff',
-    autoScale: true,
+    autoScale: true
   };
   this.graph_xaxis = {
     title: 'TIME',
     noTicks: true,
-    ticks: [[0, "PAST"], [200, "FUTURE"]],
+    ticks: [[0, 'PAST'], [200, 'FUTURE']],
     max: 200,
-    min: 0,
+    min: 0
   };
   this.graph_grid = {
     backgroundColor: {
       colors: [[0, '#fff'], [1, '#bbb']],
       getInfo: 'top',
-      end: 'bottom',
+      end: 'bottom'
     }
   };
 
@@ -170,38 +166,38 @@ function CPUInfo() {
     }
 
     CPU.cpu_graph = Flotr.draw(CPU.cpu_container,
-      [CPU.graph_lines], {
-        title: CPU.cpu_data[length - 1] + '%',
-        yaxis: CPU.graph_yaxis,
-        xaxis: CPU.graph_xaxis,
-        grid: CPU.graph_grid,
-        legend: {position: 'nw'},
-      }
-    );
+        [CPU.graph_lines], {
+          title: CPU.cpu_data[length - 1] + '%',
+          yaxis: CPU.graph_yaxis,
+          xaxis: CPU.graph_xaxis,
+          grid: CPU.graph_grid,
+          legend: {position: 'nw'}
+        }
+        );
 
     setTimeout(function() {
       CPU.cpu_animate(CPU, CPU.cpu_data.length);
-      }, 50);
+    }, 50);
   };
 
   this.getInfo = function getInfo(CPU) {
     tizen.systeminfo.getPropertyValue(
-      "CPU",
-      function(cpu) {
-        CPU.cpu_data.push((cpu.load * 100).toFixed(1));
-      },
-      null);
+        'CPU',
+        function(cpu) {
+          CPU.cpu_data.push((cpu.load * 100).toFixed(1));
+        },
+        null);
     CPU.cpu_animate(CPU, CPU.cpu_data.length);
     tizen.systeminfo.addPropertyValueChangeListener(
-      "CPU",
-      function(cpu) {
-        if (CPU.cpu_data.length < CPU.cpu_data_size) {
-          CPU.cpu_data.push((cpu.load * 100).toFixed(1));
-        } else {
-          CPU.cpu_data.shift();
-          CPU.cpu_data.push((cpu.load * 100).toFixed(1));
-        }
-      });
+        'CPU',
+        function(cpu) {
+          if (CPU.cpu_data.length < CPU.cpu_data_size) {
+            CPU.cpu_data.push((cpu.load * 100).toFixed(1));
+          } else {
+            CPU.cpu_data.shift();
+            CPU.cpu_data.push((cpu.load * 100).toFixed(1));
+          }
+        });
   };
 }
 
@@ -211,26 +207,26 @@ function DeviceOrientationInfo() {
   $('#deviceorientation').append(this.status, this.auto_rotation);
 
   this.change_status = function change_status(status) {
-    switch(status) {
-      case "PORTRAIT_PRIMARY":
+    switch (status) {
+      case 'PORTRAIT_PRIMARY':
         $('#ball').css('-webkit-animation', 'jump-pp 1s infinite');
         $('#ball').css('animation', 'jump-pp 1.5s infinite');
         $('#ball').removeClass();
         $('#ball').addClass('ball-top');
         break;
-      case "PORTRAIT_SECONDARY":
+      case 'PORTRAIT_SECONDARY':
         $('#ball').css('-webkit-animation', 'jump-ps 1s infinite');
         $('#ball').css('animation', 'jump-ps 1.5s infinite');
         $('#ball').removeClass();
         $('#ball').addClass('ball-bottom');
         break;
-      case "LANDSCAPE_PRIMARY":
+      case 'LANDSCAPE_PRIMARY':
         $('#ball').css('-webkit-animation', 'jump-lp 1s infinite');
         $('#ball').css('animation', 'jump-lp 1.5s infinite');
         $('#ball').removeClass();
         $('#ball').addClass('ball-left');
         break;
-      case "LANDSCAPE_SECONDARY":
+      case 'LANDSCAPE_SECONDARY':
         $('#ball').css('-webkit-animation', 'jump-ls 1s infinite');
         $('#ball').css('animation', 'jump-ls 1.5s infinite');
         $('#ball').removeClass();
@@ -245,22 +241,22 @@ function DeviceOrientationInfo() {
 
   this.getInfo = function getInfo(DEVICEORIENTATION) {
     tizen.systeminfo.getPropertyValue(
-      "DEVICE_ORIENTATION",
-      function(deviceorientation) {
-        DEVICEORIENTATION.change_status(deviceorientation.status);
-        DEVICEORIENTATION.status.text("STATUS: " + deviceorientation.status);
-        DEVICEORIENTATION.auto_rotation.text(deviceorientation.isAutoRotation ?
-                                             "AUTOROTATION":"NO AUTOROTATION");
-      },
-      null);
+        'DEVICE_ORIENTATION',
+        function(deviceorientation) {
+          DEVICEORIENTATION.change_status(deviceorientation.status);
+          DEVICEORIENTATION.status.text('STATUS: ' + deviceorientation.status);
+          DEVICEORIENTATION.auto_rotation.text(deviceorientation.isAutoRotation ?
+              'AUTOROTATION' : 'NO AUTOROTATION');
+        },
+        null);
     tizen.systeminfo.addPropertyValueChangeListener(
-      "DEVICE_ORIENTATION",
-      function(deviceorientation) {
-        DEVICEORIENTATION.change_status(deviceorientation.status);
-        DEVICEORIENTATION.status.text("STATUS: " + deviceorientation.status);
-        DEVICEORIENTATION.auto_rotation.text(deviceorientation.isAutoRotation ?
-                                             "AUTOROTATION":"NO AUTOROTATION");
-      });
+        'DEVICE_ORIENTATION',
+        function(deviceorientation) {
+          DEVICEORIENTATION.change_status(deviceorientation.status);
+          DEVICEORIENTATION.status.text('STATUS: ' + deviceorientation.status);
+          DEVICEORIENTATION.auto_rotation.text(deviceorientation.isAutoRotation ?
+              'AUTOROTATION' : 'NO AUTOROTATION');
+        });
   };
 }
 
@@ -274,15 +270,15 @@ function DisplayInfo() {
                               this.screen, this.physical, this.brightness);
 
   this.change_display = function change_display(display) {
-    this.dots_perinch_width.text("DOS PER INCH WIDTH: " +
+    this.dots_perinch_width.text('DOS PER INCH WIDTH: ' +
         display.dotsPerInchWidth.toFixed(2));
-    this.dots_perinch_height.text("DOS PER INCH HEIGTH: " +
+    this.dots_perinch_height.text('DOS PER INCH HEIGTH: ' +
         display.dotsPerInchHeight.toFixed(2));
-    this.screen.text("SCREEN: WIDTH(" + display.resolutionWidth +
-        ") HEIGHT(" + display.resolutionHeight + ")");
-    this.physical.text("PHYSICAL: WIDTH(" + display.physicalWidth +
-        ") HEIGHT(" + display.physicalHeight + ")");
-    this.brightness.text("BRIGHTNESS: " + display.brightness);
+    this.screen.text('SCREEN: WIDTH(' + display.resolutionWidth +
+        ') HEIGHT(' + display.resolutionHeight + ')');
+    this.physical.text('PHYSICAL: WIDTH(' + display.physicalWidth +
+        ') HEIGHT(' + display.physicalHeight + ')');
+    this.brightness.text('BRIGHTNESS: ' + display.brightness);
     var physicalTotal = display.physicalWidth + display.physicalHeight;
     var screenTotal = display.resolutionWidth + display.resolutionHeight;
     $('#display_physical').width(500 * display.physicalWidth /
@@ -298,16 +294,16 @@ function DisplayInfo() {
 
   this.getInfo = function getInfo(DISPLAY) {
     tizen.systeminfo.getPropertyValue(
-      "DISPLAY",
-      function(display) {
-        DISPLAY.change_display(display);
-      },
-      null);
+        'DISPLAY',
+        function(display) {
+          DISPLAY.change_display(display);
+        },
+        null);
     tizen.systeminfo.addPropertyValueChangeListener(
-      "DISPLAY",
-      function(display) {
-        DISPLAY.change_display(display);
-      });
+        'DISPLAY',
+        function(display) {
+          DISPLAY.change_display(display);
+        });
   };
 }
 
@@ -318,18 +314,18 @@ function LocaleInfo() {
 
   this.getInfo = function getInfo(LOCALE) {
     tizen.systeminfo.getPropertyValue(
-      "LOCALE",
-      function(locale) {
-        LOCALE.language.text("LANGUAGE: " + locale.language);
-        LOCALE.country.text("COUNTRY: " + locale.country);
-      },
-      null);
+        'LOCALE',
+        function(locale) {
+          LOCALE.language.text('LANGUAGE: ' + locale.language);
+          LOCALE.country.text('COUNTRY: ' + locale.country);
+        },
+        null);
     tizen.systeminfo.addPropertyValueChangeListener(
-      "LOCALE",
-      function(locale) {
-        LOCALE.language.text("LANGUAGE: " + locale.language);
-        LOCALE.country.text("COUNTRY: " + locale.country);
-      });
+        'LOCALE',
+        function(locale) {
+          LOCALE.language.text('LANGUAGE: ' + locale.language);
+          LOCALE.country.text('COUNTRY: ' + locale.country);
+        });
   };
 }
 
@@ -338,16 +334,16 @@ function NetworkInfo() {
 
   this.getInfo = function getInfo(NETWORK) {
     tizen.systeminfo.getPropertyValue(
-      "NETWORK",
-      function(network) {
-        NETWORK.network_type.text("TYPE: " + network.type);
-      },
-      null);
+        'NETWORK',
+        function(network) {
+          NETWORK.network_type.text('TYPE: ' + network.type);
+        },
+        null);
     tizen.systeminfo.addPropertyValueChangeListener(
-      "NETWORK",
-      function(network) {
-        NETWORK.network_type.text("TYPE: " + network.type);
-      });
+        'NETWORK',
+        function(network) {
+          NETWORK.network_type.text('TYPE: ' + network.type);
+        });
   };
 }
 
@@ -357,18 +353,18 @@ function PeripheralInfo() {
 
   this.getInfo = function getInfo(PERIPHERAL) {
     tizen.systeminfo.getPropertyValue(
-      "PERIPHERAL",
-      function(peripheral) {
-        PERIPHERAL.video_output.text(peripheral.isVideoOutputOn ?
-                                     "VIDEOOUTPUT: ON":"VIDEOOUTPUT: OFF");
-      },
-      null);
+        'PERIPHERAL',
+        function(peripheral) {
+          PERIPHERAL.video_output.text(peripheral.isVideoOutputOn ?
+              'VIDEOOUTPUT: ON' : 'VIDEOOUTPUT: OFF');
+        },
+        null);
     tizen.systeminfo.addPropertyValueChangeListener(
-      "PERIPHERAL",
-      function(peripheral) {
-        PERIPHERAL.video_output.text(peripheral.isVideoOutputOn ?
-                                     "VIDEOOUTPUT: ON":"VIDEOOUTPUT: OFF");
-      });
+        'PERIPHERAL',
+        function(peripheral) {
+          PERIPHERAL.video_output.text(peripheral.isVideoOutputOn ?
+              'VIDEOOUTPUT: ON' : 'VIDEOOUTPUT: OFF');
+        });
   };
 }
 
@@ -382,28 +378,28 @@ function SimInfo() {
                              this.short_info, this.msin_spn);
 
   this.change_sim = function change_sim(sim) {
-    this.state.text("STATE: " + sim.state);
-    this.operator_name.text("OPERATOR NAME: " + sim.operatorName);
-    this.msisdn_iccid.text("MSISDN: " + sim.msisdn + "  " +
-        "ICCID: " + sim.iccid);
-    this.short_info.text("MCC: " + sim.mcc + "  " +
-        "MNC: " + sim.mnc);
-    this.msin_spn.text("MSIN: " + sim.msin + "  " +
-        "SPN: " + sim.spn);
+    this.state.text('STATE: ' + sim.state);
+    this.operator_name.text('OPERATOR NAME: ' + sim.operatorName);
+    this.msisdn_iccid.text('MSISDN: ' + sim.msisdn + '  ' +
+        'ICCID: ' + sim.iccid);
+    this.short_info.text('MCC: ' + sim.mcc + '  ' +
+        'MNC: ' + sim.mnc);
+    this.msin_spn.text('MSIN: ' + sim.msin + '  ' +
+        'SPN: ' + sim.spn);
   };
 
   this.getInfo = function getInfo(SIM) {
     tizen.systeminfo.getPropertyValue(
-      "SIM",
-      function(sim) {
-        SIM.change_sim(sim);
-      },
-      null);
+        'SIM',
+        function(sim) {
+          SIM.change_sim(sim);
+        },
+        null);
     tizen.systeminfo.addPropertyValueChangeListener(
-      "SIM",
-      function(sim) {
-        SIM.change_sim(sim);
-      });
+        'SIM',
+        function(sim) {
+          SIM.change_sim(sim);
+        });
   };
 }
 
@@ -424,46 +420,46 @@ function StorageInfo() {
       Flotr.draw(containner, [
         {data: [data1], label: 'used'},
         {data: [data2], label: 'available'}
-        ], {
-          HtmlText: false,
-          title: 'TYPE:' + UNITS[i].type,
-          grid: {
-            verticalLines: false,
-            horizontalLines: false,
-            circular: true,
-          },
-          xaxis: {showLabels: false},
-          yaxis: {showLabels: false},
-          pie: {
-            show: true,
-            explode: 6,
-          },
-          mouse: {track: true},
-          legend: {
-            position: 'se',
-            backgroundColor: '#D2E8FF',
-          }
-        });
+      ], {
+        HtmlText: false,
+        title: 'TYPE:' + UNITS[i].type,
+        grid: {
+          verticalLines: false,
+          horizontalLines: false,
+          circular: true
+        },
+        xaxis: {showLabels: false},
+        yaxis: {showLabels: false},
+        pie: {
+          show: true,
+          explode: 6
+        },
+        mouse: {track: true},
+        legend: {
+          position: 'se',
+          backgroundColor: '#D2E8FF'
+        }
+      });
     }
   };
 
   this.getInfo = function getInfo(STORAGE) {
     tizen.systeminfo.getPropertyValue(
-      "STORAGE",
-      function(storage) {
-        STORAGE.draw_graph(storage.units);
-      },
-      null);
+        'STORAGE',
+        function(storage) {
+          STORAGE.draw_graph(storage.units);
+        },
+        null);
     tizen.systeminfo.addPropertyValueChangeListener(
-      "STORAGE",
-      function(storage) {
-        STORAGE.draw_graph(storage.units);
-      });
+        'STORAGE',
+        function(storage) {
+          STORAGE.draw_graph(storage.units);
+        });
   };
 }
 
 function WifiNetworkInfo() {
-  this.status = $('<p></p>').text("WIFI IS OFF!");
+  this.status = $('<p></p>').text('WIFI IS OFF!');
   this.ssid = $('<p></p>');
   this.ip_address = $('<p></p>');
   this.ipv6_address = $('<p></p>');
@@ -473,28 +469,28 @@ function WifiNetworkInfo() {
 
   this.change_wifi = function change_wifi(wifi) {
     if (wifi.status == 'ON') {
-      this.status.text("WIFI: " + wifi.status);
-      this.ssid.text("WIFI SSID: " + wifi.ssid);
-      this.ip_address.text("WIFI IP ADDRESS: " + wifi.ipAddress);
-      this.ipv6_address.text("WIFI IPV6 ADDRESS: " + wifi.ipv6Address);
-      this.signal_strength.text("WIFI SIGNAL STRENGTH: " +
+      this.status.text('WIFI: ' + wifi.status);
+      this.ssid.text('WIFI SSID: ' + wifi.ssid);
+      this.ip_address.text('WIFI IP ADDRESS: ' + wifi.ipAddress);
+      this.ipv6_address.text('WIFI IPV6 ADDRESS: ' + wifi.ipv6Address);
+      this.signal_strength.text('WIFI SIGNAL STRENGTH: ' +
                                 wifi.signalStrength);
     } else {
-      this.status.text("WIFI IS OFF!");
+      this.status.text('WIFI IS OFF!');
     }
   };
 
   this.getInfo = function getInfo(WIFI) {
     tizen.systeminfo.getPropertyValue(
-      "WIFI_NETWORK",
-      function(wifi) {
-        WIFI.change_wifi(wifi);
-      },
-      null);
+        'WIFI_NETWORK',
+        function(wifi) {
+          WIFI.change_wifi(wifi);
+        },
+        null);
     tizen.systeminfo.addPropertyValueChangeListener(
-      "WIFI_NETWORK",
-      function(wifi) {
-        WIFI.change_wifi(wifi);
-      });
+        'WIFI_NETWORK',
+        function(wifi) {
+          WIFI.change_wifi(wifi);
+        });
   };
 }
