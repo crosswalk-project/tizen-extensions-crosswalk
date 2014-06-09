@@ -1,0 +1,144 @@
+<html>
+<head>
+<title>NFC example</title>
+</head>
+<body>
+
+<button onclick='powerOn()'>Power ON</button>
+<button onclick='powerOff()'>Power OFF</button>
+<button onclick='startPoll()'>Start polling</button>
+<button onclick='stopPoll()'>Stop polling</button>
+
+<button onclick='createNDEFRecord()'>Create NDEF record</button>
+
+<div id='tag_methods' style='display: none;'>
+<button onclick='readNDEF()'>Read NDEF</button>
+<button onclick='writeTextNDEF()'>Write text NDEF</button>
+<button onclick='writeURINDEF()'>Write URI NDEF</button>
+<button onclick='writeMediaNDEF()'>Write Media NDEF</button>
+</div>
+
+<div id='peer_methods' style='display: none;'>
+<button onclick='sendURINDEF()'>Send URI NDEF to peer</button>
+</div>
+
+<div id='log'></div>
+<div id='eventLog'></div>
+
+<script>
+
+var tag = null;
+var peer = null;
+
+function addMessage(obj) {
+  if(typeof obj === 'string')
+    document.getElementById('log').innerHTML = obj;
+  else
+    document.getElementById('eventLog').innerHTML = "Received event: " + obj.type;
+}
+
+var events = [
+  'poweron',
+  'poweroff',
+  'pollstart',
+  'pollstop',
+  'tagfound',
+  'taglost',
+  'peerfound',
+  'peerlost'
+];
+
+function handleEvent(e) { 
+  addMessage(e);
+}
+
+events.forEach(function(event) {
+  navigator.nfc.addEventListener(event, handleEvent);
+});
+
+navigator.nfc.addEventListener('tagfound', tagFound);
+navigator.nfc.addEventListener('taglost', tagLost);
+navigator.nfc.addEventListener('peerfound', peerFound);
+navigator.nfc.addEventListener('peerlost', peerLost);
+
+function tagFound(e) {
+  tag = e.tag;
+  document.getElementById('tag_methods').style.display = 'block';
+}
+
+function tagLost(e) {
+  tag = null;
+  document.getElementById('tag_methods').style.display = 'none';
+}
+
+function peerFound(e) {
+  peer = e.peer;
+  peer.addEventListener('messageread', onMessageRead);
+  document.getElementById('peer_methods').style.display = 'block';
+}
+
+function peerLost(e) {
+  peer = null;
+  document.getElementById('peer_methods').style.display = 'none';
+}
+
+function onMessageRead(e) {
+  addMessage("Received message: " + JSON.stringify(e.message));
+}
+
+function readNDEF() {
+  tag.readNDEF().then(function(record) { 
+    addMessage("Read ndef: " + JSON.stringify(record)); 
+    }, function(){ addMessage("Cannot read tag"); });
+}
+ 
+function writeTextNDEF() {
+  var text = new NDEFRecordText("hello world", "en-US", "UTF-8");
+  tag.writeNDEF(new NDEFMessage([text])).then();
+}
+
+function writeURINDEF() {
+  var uri = new NDEFRecordURI("http://www.intel.com");
+  tag.writeNDEF(new NDEFMessage([uri])).then();
+}
+
+function sendURINDEF() {
+  var uri = new NDEFRecordURI("http://www.google.com");
+  peer.sendNDEF(new NDEFMessage([uri])).then();
+}
+
+function writeMediaNDEF() {
+  var media = new NDEFRecordMedia("text/plain", [104, 101, 108, 108, 111]);
+  tag.writeNDEF(new NDEFMessage([media])).then();
+}
+
+function createNDEFRecord() {
+  var uri = new NDEFRecordURI("http://www.intel.com");
+  uri.getPayload().then(function(res){ addMessage("payload: " + res); },
+                        function(){ addMessage("getPayload Failed"); });
+}
+
+function powerOn() {
+  navigator.nfc.powerOn().then(function(){ addMessage("powerOn Succeeded"); },
+                               function(){ addMessage("powerOn Failed"); });
+}
+
+function powerOff() {
+  navigator.nfc.powerOff().then(function(){ addMessage("powerOff Succeeded"); },
+                                function(){ addMessage("powerOff Failed"); });
+}
+
+function startPoll() {
+  navigator.nfc.startPoll().then(function(){addMessage("startPoll Succeeded");},
+                                 function(){addMessage("startPoll Failed"); });
+}
+
+function stopPoll() {
+  navigator.nfc.stopPoll().then(function(){addMessage("stopPoll Succeeded");},
+                                function(){addMessage("stopPoll Failed"); });
+}
+
+</script>
+
+</body>
+</html>

@@ -32,6 +32,7 @@
             'download/download.gyp:*',
             'filesystem/filesystem.gyp:*',
             'messageport/messageport.gyp:*',
+            'nfc/nfc.gyp:*',
           ],
         }],
         [ 'extension_host_os == "mobile"', {
