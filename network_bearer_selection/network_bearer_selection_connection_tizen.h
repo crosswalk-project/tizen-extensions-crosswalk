@@ -5,7 +5,7 @@
 #ifndef NETWORK_BEARER_SELECTION_NETWORK_BEARER_SELECTION_CONNECTION_TIZEN_H_
 #define NETWORK_BEARER_SELECTION_NETWORK_BEARER_SELECTION_CONNECTION_TIZEN_H_
 
-#include "network_bearer_selection/network_bearer_selection_context.h"
+#include "network_bearer_selection/network_bearer_selection_instance.h"
 #include <net_connection.h>
 
 class NetworkBearerSelectionConnection {
