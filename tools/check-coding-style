@@ -38,7 +38,7 @@ CPP_RET_VAL=$?
 gjslint --strict --nojsdoc --max_line_length 100 --unix_mode $(find . \
                                ! -path './out*' ! -path './.git*' \
                                ! -path './packaging' \
-                               ! -name 'jquery.*' \
+                               ! -name 'jquery*' \
                                ! -name 'flotr2.*' \
                                -name '*.js' )
 
