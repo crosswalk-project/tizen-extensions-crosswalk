@@ -24,6 +24,7 @@
       'conditions': [
         [ 'tizen == 1', {
           'dependencies': [
+            'alarm/alarm.gyp:*',
             'application/application.gyp:*',
             'audiosystem/audiosystem.gyp:*',
             'bookmark/bookmark.gyp:*',
