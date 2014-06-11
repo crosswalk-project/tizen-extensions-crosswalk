@@ -157,6 +157,37 @@ function defineNonNullableProperty(object, key) {
     enumerable: true });
 }
 
+function defineProgressTypeProperty(object, key) {
+  Object.defineProperty(object, key, {
+    get: function(k) {
+      return this[k];
+    }.bind(object, key + '_'),
+    set: function(k, NewValue) {
+      if (['BYTE', 'PERCENTAGE'].indexOf(NewValue) > -1)
+        this[k] = NewValue;
+    }.bind(object, key + '_'),
+    enumerable: true });
+}
+
+function defineProgressValueProperty(object, key) {
+  Object.defineProperty(object, key, {
+    get: function(k) {
+      return this[k];
+    }.bind(object, key + '_'),
+    set: function(k, NewValue) {
+      if (NewValue != null) {
+        if (this.progressType == 'PERCENTAGE' && (NewValue > 100 || NewValue < 0)) {
+          this[k] = 100;
+        } else {
+          this[k] = NewValue >>> 0; // enforce unsigned long
+        }
+      } else {
+        this[k] = null;
+      }
+    }.bind(object, key + '_'),
+    enumerable: true });
+}
+
 tizen.NotificationDetailInfo = function(mainText, subText) {
   // FIXME(cmarcelo): This is a best effort that covers the common
   // cases. Investigate whether we can implement a primitive natively to give us
@@ -183,7 +214,10 @@ tizen.StatusNotification = function(statusType, title, dict) {
   defineReadOnlyProperty(this, 'postedTime', undefined);
   defineReadOnlyProperty(this, 'type', 'STATUS');
 
-  if (['SIMPLE', 'THUMBNAIL', 'ONGOING', 'PROGRESS'].indexOf(statusType) < -1)
+  defineProgressValueProperty(this, 'progressValue');
+  defineProgressTypeProperty(this, 'progressType');
+
+  if (['SIMPLE', 'THUMBNAIL', 'ONGOING', 'PROGRESS'].indexOf(statusType) < 0)
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
   defineReadOnlyProperty(this, 'statusType', statusType);
 
@@ -209,7 +243,6 @@ tizen.StatusNotification = function(statusType, title, dict) {
 
   defineNonNullableProperty(this, 'title');
   defineNonNullableProperty(this, 'vibration');
-  defineNonNullableProperty(this, 'progressType');
   defineNonNullableProperty(this, 'ledOnPeriod');
   defineNonNullableProperty(this, 'ledOffPeriod');
 };
