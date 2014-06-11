@@ -28,8 +28,6 @@
         'speech_extension.h',
         'speech_instance.cc',
         'speech_instance.h',
-        '../common/extension.cc',
-        '../common/extension.h',        
       ],
     },
     {

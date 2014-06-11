@@ -23,8 +23,6 @@
         'notification_parameters.h',
         'picojson_helpers.cc',
         'picojson_helpers.h',
-        '../common/extension.h',
-        '../common/extension.cc',
       ],
 
       'conditions': [

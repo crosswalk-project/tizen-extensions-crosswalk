@@ -19,8 +19,6 @@
         'content_filter.h',
         'content_instance.cc',
         'content_instance.h',
-        '../common/extension.cc',
-        '../common/extension.h',
       ],
       'includes': [
         '../common/pkg-config.gypi',

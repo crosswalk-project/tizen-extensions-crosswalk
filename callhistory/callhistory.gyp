@@ -23,8 +23,6 @@
             'callhistory.h',
             'callhistory_mobile.cc',
             'callhistory_props.h',
-            '../common/extension.cc',
-            '../common/extension.h',
           ],
         }],
       ],

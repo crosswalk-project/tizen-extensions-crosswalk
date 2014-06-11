@@ -102,8 +102,6 @@
         'system_info_wifi_network.h',
         'system_info_wifi_network_desktop.cc',
         'system_info_wifi_network_tizen.cc',
-        '../common/extension.cc',
-        '../common/extension.h',
       ],
     },
   ],

@@ -64,8 +64,8 @@
       '<(SHARED_INTERMEDIATE_DIR)',
     ],
     'sources': [
-      'extension_adapter.cc',
-      'extension_adapter.h',
+      'extension.cc',
+      'extension.h',
       'picojson.h',
       'utils.h',
       'XW_Extension.h',

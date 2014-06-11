@@ -13,8 +13,6 @@
         ],
       },
       'sources': [
-        '../common/extension.cc',
-        '../common/extension.h',
         'filesystem_api.js',
         'filesystem_extension.cc',
         'filesystem_extension.h',

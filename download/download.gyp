@@ -7,8 +7,6 @@
       'target_name': 'tizen_download',
       'type': 'loadable_module',
       'sources': [
-        '../common/extension.cc',
-        '../common/extension.h',
         'download_api.js',
         'download_extension.cc',
         'download_extension.h',
