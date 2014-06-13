@@ -25,11 +25,15 @@
           'dependencies': [
             'application/application.gyp:*',
             'bookmark/bookmark.gyp:*',
-            'callhistory/callhistory.gyp:*',
             'content/content.gyp:*',
             'download/download.gyp:*',
             'filesystem/filesystem.gyp:*',
             'messageport/messageport.gyp:*',
+          ],
+        }],
+        [ 'extension_host_os == "mobile"', {
+          'dependencies': [
+            'callhistory/callhistory.gyp:*',
           ],
         }],
       ],
