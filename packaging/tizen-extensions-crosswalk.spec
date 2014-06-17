@@ -5,6 +5,7 @@
 %define _bluetooth_demo_package tizen-extensions-crosswalk-bluetooth-demo
 %define _examples_package tizen-extensions-crosswalk-examples
 %define _system_info_demo_package tizen-extensions-crosswalk-system-info-demo
+%define _audiosystem_demo_package tizen-extensions-crosswalk-audiosystem-demo
 
 Name:       tizen-extensions-crosswalk
 Version:    0.70
@@ -19,6 +20,7 @@ Source2:    %{name}.png
 Source3:    %{_bluetooth_demo_package}
 Source4:    %{_examples_package}
 Source5:    %{_system_info_demo_package}
+Source6:    %{_audiosystem_demo_package}
 Source1001: %{name}.manifest
 
 BuildRequires: ninja
@@ -52,6 +54,7 @@ BuildRequires: pkgconfig(gio-2.0)
 BuildRequires: pkgconfig(glib-2.0)
 BuildRequires: pkgconfig(tapi)
 BuildRequires: pkgconfig(libudev)
+BuildRequires: pkgconfig(libpulse) >= 5.0
 BuildRequires: pkgconfig(message-port)
 BuildRequires: pkgconfig(notification)
 BuildRequires: pkgconfig(pkgmgr)
@@ -96,6 +99,14 @@ Requires:      %{name}
 %description  -n %{_system_info_demo_package}
 Tizen Web APIs system info demo implementation using Crosswalk.
 
+%package -n %{_audiosystem_demo_package}
+Summary: Sample volume control applicaiton
+Group: Development/Libraries
+Requires: %{name}
+
+%description  -n %{_audiosystem_demo_package}
+Sample Tizen volume control application that demonstrates the Tizen AudioSystem API usage.
+
 %prep
 %setup -q
 
@@ -130,6 +141,7 @@ install -m 755 -D %{name} %{buildroot}%{_bindir}/%{name}
 install -m 755 -D %{SOURCE3} %{buildroot}%{_bindir}/%{_bluetooth_demo_package}
 install -m 755 -D %{SOURCE4} %{buildroot}%{_bindir}/%{_examples_package}
 install -m 755 -D %{SOURCE5} %{buildroot}%{_bindir}/%{_system_info_demo_package}
+install -m 755 -D %{SOURCE6} %{buildroot}%{_bindir}/%{_audiosystem_demo_package}
 
 # Extensions.
 mkdir -p %{buildroot}%{_libdir}/%{name}
@@ -163,13 +175,30 @@ install -p -m 644 demos/system_info/css/*.css %{buildroot}%{_datarootdir}/%{name
 install -p -m 644 demos/system_info/js/*.js %{buildroot}%{_datarootdir}/%{name}/demos/system_info/js
 install -p -m 644 demos/system_info/images/*.png %{buildroot}%{_datarootdir}/%{name}/demos/system_info/images
 
+# Demos - audiosystem api 
+mkdir -p %{buildroot}%{_datarootdir}/%{name}/demos/audiosystem
+mkdir -p %{buildroot}%{_datarootdir}/%{name}/demos/audiosystem/css
+mkdir -p %{buildroot}%{_datarootdir}/%{name}/demos/audiosystem/css/ui-lightness
+mkdir -p %{buildroot}%{_datarootdir}/%{name}/demos/audiosystem/css/ui-lightness/images
+mkdir -p %{buildroot}%{_datarootdir}/%{name}/demos/audiosystem/js
+mkdir -p %{buildroot}%{_datarootdir}/%{name}/demos/audiosystem/images
+
+install -p -m 644 demos/audiosystem/*.html %{buildroot}%{_datarootdir}/%{name}/demos/audiosystem
+install -p -m 644 demos/audiosystem/css/*.css %{buildroot}%{_datarootdir}/%{name}/demos/audiosystem/css
+install -p -m 644 demos/audiosystem/css/ui-lightness/*.css %{buildroot}%{_datarootdir}/%{name}/demos/audiosystem/css/ui-lightness
+install -p -m 644 demos/audiosystem/css/ui-lightness/images/* %{buildroot}%{_datarootdir}/%{name}/demos/audiosystem/css/ui-lightness/images
+install -p -m 644 demos/audiosystem/js/*.js %{buildroot}%{_datarootdir}/%{name}/demos/audiosystem/js
+install -p -m 644 demos/audiosystem/images/*.png %{buildroot}%{_datarootdir}/%{name}/demos/audiosystem/images
+
 # register to the package manager
 install -m 644 -D %{_examples_package}.xml %{buildroot}%{_manifestdir}/%{_examples_package}.xml
 install -m 644 -D %{_bluetooth_demo_package}.xml %{buildroot}%{_manifestdir}/%{_bluetooth_demo_package}.xml
 install -m 644 -D %{_system_info_demo_package}.xml %{buildroot}%{_manifestdir}/%{_system_info_demo_package}.xml
+install -m 644 -D %{_audiosystem_demo_package}.xml %{buildroot}%{_manifestdir}/%{_audiosystem_demo_package}.xml
 install -p -D %{name}.png %{buildroot}%{_desktop_icondir}/%{_examples_package}.png
 install -p -D %{name}.png %{buildroot}%{_desktop_icondir}/%{_bluetooth_demo_package}.png
 install -p -D %{name}.png %{buildroot}%{_desktop_icondir}/%{_system_info_demo_package}.png
+install -p -D %{name}.png %{buildroot}%{_desktop_icondir}/%{_audiosystem_demo_package}.png
 
 %files
 # TODO(rakuco): This causes problems on 2.1 when creating the package.
@@ -201,3 +230,14 @@ install -p -D %{name}.png %{buildroot}%{_desktop_icondir}/%{_system_info_demo_pa
 %{_datarootdir}/%{name}/demos/system_info/css/*.css
 %{_datarootdir}/%{name}/demos/system_info/js/*.js
 %{_datarootdir}/%{name}/demos/system_info/images/*.png
+
+%files -n %{_audiosystem_demo_package}
+%{_bindir}/%{_audiosystem_demo_package}
+%{_manifestdir}/%{_audiosystem_demo_package}.xml
+%{_desktop_icondir}/%{_audiosystem_demo_package}.png
+%{_datarootdir}/%{name}/demos/audiosystem/index.html
+%{_datarootdir}/%{name}/demos/audiosystem/css/*.css
+%{_datarootdir}/%{name}/demos/audiosystem/css/ui-lightness/*.css
+%{_datarootdir}/%{name}/demos/audiosystem/css/ui-lightness/images/*
+%{_datarootdir}/%{name}/demos/audiosystem/js/*.js
+%{_datarootdir}/%{name}/demos/audiosystem/images/*

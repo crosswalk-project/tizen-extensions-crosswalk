@@ -1,0 +1,52 @@
+.footer {
+  position: absolute;
+  z-index: 20000;
+  font-family: fantasy;
+  text-align: center;
+  bottom: 1%;
+}
+.button.expand {
+  position: absolute;
+  right: 5%;
+}
+
+html body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+#tabs, #basic-view {
+  width: inherit;
+  height: inherit;
+  margin: 0;
+  padding: 0;
+}
+
+.label {
+  font-weight:bold;
+  padding-left: 5px;
+  padding-right:10px;
+}
+
+table {
+  width: 100%;
+}
+
+#mute label{
+  position: relative;
+  float: right;
+}
+
+.info {
+  width:100%;
+  font-size:100%;
+  text-align:center;
+  display:none;
+}
+
+.ui-slider {
+  width:90%;
+}
+

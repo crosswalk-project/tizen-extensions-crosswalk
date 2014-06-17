@@ -25,6 +25,7 @@
         [ 'tizen == 1', {
           'dependencies': [
             'application/application.gyp:*',
+            'audiosystem/audiosystem.gyp:*',
             'bookmark/bookmark.gyp:*',
             'content/content.gyp:*',
             'download/download.gyp:*',
@@ -113,6 +114,31 @@
               ],
               'outputs': [
                 'tizen-extensions-crosswalk-system-info-demo.xml',
+              ],
+              'action': [
+                'python',
+                '<@(_inputs)',
+                '<@(generate_args)',
+                '<@(_outputs)',
+              ],
+            },
+            {
+              'variables': {
+                'generate_args': [
+                  '_audiosystem_demo_package',
+                  'crosswalk-audiosystem-demo',
+                  '/usr/bin/tizen-extensions-crosswalk-audiosystem-demo',
+                  'Crosswalk Tizen Volume API Demo',
+                ],
+              },
+              'action_name': 'audiosystem_demo',
+              'inputs': [
+                'tools/generate_manifest.py',
+                'packaging/tizen-extensions-crosswalk.spec',
+                'tizen-extensions-crosswalk.xml.in',
+              ],
+              'outputs': [
+                'tizen-extensions-crosswalk-audiosystem-demo.xml',
               ],
               'action': [
                 'python',
