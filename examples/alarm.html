@@ -1,0 +1,126 @@
+<html>
+<head><h1>Hello, Alarm API</h1></head>
+<body>
+<hr>
+<h3>Launch Application at date</h3>
+Application Id: <input type="text" id="appId1" value="xwalk."></input> <br>
+At date: <input type="text" id="scheduledAt"></input><br>
+Period: <input type="text" id="period1" value="0">seconds</input><br>
+<input type="button" value="Launch" onclick="LaunchAtDate()"></input>
+
+<br><br>
+<hr>
+<h3>Launch Application after delay</h3>
+Application Id:<input type="text" id="appId2" value="xwalk."></input> <br>
+After Delay: <input type="text" id="afterDelay" value="1">seconds</input><br>
+Period: <input type="text" id="period2" value="0">seconds</input><br>
+<input type="button" value="Launch" onclick="LaunchAfterDelay()"></input>
+
+<br><br>
+<hr>
+<h3>Get alarm information</h3>
+Alarm Id:<input type="text" id="alarmIdToGet"><br>
+<input type="button" value="query" onclick="GetAlarmInfo()"><br>
+<textarea id="alarmInfoArea" rows="10" cols="64">no alarm found</textarea><br>
+
+<br><br>
+<hr>
+<h3>Remove alarm(s)</h3>
+Alarm Id:<input type="text" id="alarmIdToRemove"><br>
+<input type="button" value="remove" onclick="RemoveAlarm()"><br>
+<textarea id="removeFeedback" rows="10" cols="64"></textarea><br>
+
+<pre id="console"></pre>
+<script src="js/js-test-pre.js"></script>
+<script>
+  var now = new Date();
+  document.getElementById('scheduledAt').value = now.toString();
+
+  function LaunchAtDate() {
+    try {
+      var appId = document.getElementById('appId1').value;
+      var atDate = new Date(document.getElementById('scheduledAt').value);
+      var period = Number.parseInt(document.getElementById('period1').value);
+      //period = period * tizen.alarm.PERIOD_MINUTE;
+      var alarm = new tizen.AlarmAbsolute(atDate, period);
+      if (alarm instanceof tizen.Alarm && alarm instanceof tizen.AlarmAbsolute) {
+        console.log('It is an absolute alarm.');
+      }
+      tizen.alarm.add(alarm, appId);
+      console.log('Alarm:'+JSON.stringify(alarm));
+    } catch (e) {
+      debug(e.name);
+    }
+  }
+
+  function LaunchAfterDelay() {
+    try {
+      var appId = document.getElementById('appId2').value;
+      var delay = Number.parseInt(document.getElementById('afterDelay').value);
+      var period = Number.parseInt(document.getElementById('period2').value);
+      //period = period * tizen.alarm.PERIOD_MINUTE;
+      var alarm = new tizen.AlarmRelative(delay, period);
+      if (alarm instanceof tizen.Alarm && alarm instanceof tizen.AlarmRelative) {
+        console.log('It is a relative alarm.');
+      }
+      tizen.alarm.add(alarm, appId);
+      console.log('Alarm:' + JSON.stringify(alarm));
+    } catch (e) {
+      debug(e.name);
+    }
+  }
+
+  function GetAlarmInfo() {
+    try {
+      var alarmId = Number.parseInt(document.getElementById('alarmIdToGet').value);
+      document.getElementById('alarmInfoArea').value = 'Begin querying alarm.';
+      var output = '';
+      if (!alarmId || isNaN(alarmId)) {
+        var alarms = tizen.alarm.getAll();
+        if (!alarms || alarms.length === 0) {
+          output = 'No alarm is found';
+        } else {
+          for (var i = 0, len = alarms.length; i < len; i++) {
+            output += 'No.' + i + ':' + JSON.stringify(alarms[i]) + '\n';
+          }
+        }
+      } else {
+        var alarm = tizen.alarm.get(alarmId);
+        if (alarm) {
+          output = JSON.stringify(alarm);
+          if (alarm instanceof tizen.AlarmRelative) {
+            output += '\n remaining seconds:' + alarm.getRemainingSeconds();
+          } else if (alarm instanceof tizen.AlarmAbsolute) {
+            output += '\n next Scheduled Date:' + alarm.getNextScheduledDate();
+          }
+        } else {
+          output = 'The alarm is not found.';
+        }
+      }
+      document.getElementById('alarmInfoArea').value = output;
+    }catch(e) {
+      debug(e.name);
+      console.debug(JSON.stringify(e));
+    }
+  }
+
+  function RemoveAlarm() {
+    try {
+      var alarmId = Number.parseInt(document.getElementById('alarmIdToRemove').value);
+      document.getElementById('removeFeedback').value = 'Begin removing alarms.';
+      if (!alarmId || isNaN(alarmId)) {
+        tizen.alarm.removeAll();
+        document.getElementById('removeFeedback').value = 'All alarms have been removed.';
+      } else {
+        tizen.alarm.remove(alarmId);
+        document.getElementById('removeFeedback').value = 'The alarm ' + alarmId + ' has been removed.';
+      }
+    } catch (e) {
+      debug(e.name);
+      console.debug(JSON.stringify(e));
+    }
+  }
+
+</script>
+</body>
+</html>
