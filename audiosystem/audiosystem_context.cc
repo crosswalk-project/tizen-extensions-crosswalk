@@ -123,12 +123,7 @@ AudioSystemContext::AudioSystemContext()
 
 AudioSystemContext::~AudioSystemContext() {
   DBG("destroy");
-
-  pa_context_set_state_callback(context_, 0, 0);
-  pa_context_set_event_callback(context_, 0, 0);
-
   Disconnect();
-
   pa_mainloop_free(mainloop_);
 }
 
@@ -153,6 +148,7 @@ bool AudioSystemContext::Connect() {
 bool AudioSystemContext::Disconnect() {
   if (context_) {
     pa_context_disconnect(context_);
+    pa_context_set_state_callback(context_, 0, 0);
     pa_context_unref(context_);
     context_ = 0;
   }
