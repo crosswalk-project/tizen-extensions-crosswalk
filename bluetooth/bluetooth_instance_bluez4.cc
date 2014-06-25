@@ -4,10 +4,6 @@
 
 #include "bluetooth/bluetooth_instance.h"
 
-#if defined(TIZEN)
-#include <bluetooth.h>
-#endif
-
 #include <sys/types.h>
 #include <sys/socket.h>
 
@@ -120,7 +116,12 @@ static void getPropertyValue(const char* key, GVariant* value,
     picojson::value::object& o) {
   if (!strcmp(key, "Class")) {
     guint32 class_id = g_variant_get_uint32(value);
-    o[key] = picojson::value(static_cast<double>(class_id));
+    o["ClassMajor"] = picojson::value \
+                      (static_cast<double>((class_id & 0x00001F00) >> 8));
+    o["ClassMinor"] = picojson::value \
+                      (static_cast<double>(class_id & 0x000000FC));
+    o["ClassService"] = picojson::value\
+                        (static_cast<double>(class_id & 0x00FF0000));
   } else if (!strcmp(key, "RSSI")) {
     gint16 class_id = g_variant_get_int16(value);
     o[key] = picojson::value(static_cast<double>(class_id));
@@ -453,13 +454,6 @@ void BluetoothInstance::AdapterSetPowered(const picojson::value& msg) {
   bool powered = msg.get("value").get<bool>();
   int error = 0;
 
-#if defined(TIZEN)
-  if (powered)
-    error = bt_adapter_enable();
-  else
-    error = bt_adapter_disable();
-#else
-
   OnAdapterPropertySetData* property_set_callback_data_ =
       new OnAdapterPropertySetData;
   property_set_callback_data_->property = std::string("Powered");
@@ -472,7 +466,6 @@ void BluetoothInstance::AdapterSetPowered(const picojson::value& msg) {
                     G_DBUS_CALL_FLAGS_NONE, 5000, all_pending_,
                     OnAdapterPropertySetThunk,
                     property_set_callback_data_);
-#endif
 
   // Reply right away in case of error, or powered off.
   if (error || powered == false) {
@@ -615,10 +608,6 @@ BluetoothInstance::~BluetoothInstance() {
     g_object_unref(it->second);
 
   g_bus_unwatch_name(name_watch_id_);
-
-#if defined(TIZEN)
-    bt_deinitialize();
-#endif
 }
 
 void BluetoothInstance::PlatformInitialize() {

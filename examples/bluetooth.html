@@ -2,14 +2,24 @@
 
 <body>
 
-<input type="text" size=50 id="text">
+<input type="text" size=90 id="text">
 <br>
-<textarea cols=50 rows=20 id="output"></textarea>
+<textarea cols=80 rows=25 id="output"></textarea>
 <br>
 <button id="button1">Click 1</button>
 <button id="button2">Click 2</button>
 <button id="button3">Click 3</button>
 <button id="button4">Click 4</button>
+<button id="button5">Click 5</button>
+<button id="button6">Click 6</button>
+<button id="button7">Click 7</button>
+<button id="button8">Click 8</button>
+<button id="button9">Click 9</button>
+<button id="button10">Click 10</button>
+<button id="button11">Click 11</button>
+<button id="button12">Click 12</button>
+<button id="button13">Click 13</button>
+<button id="button14">Click 14</button>
 
 <pre id="console"></pre>
 <script src="js/js-test-pre.js"></script>
@@ -20,99 +30,316 @@
 var output = document.getElementById("output");
 
 var adapter = tizen.bluetooth.getDefaultAdapter();
+output.value += '\n## Default adapter ##';
+output.value += '\nadapter name: ' + adapter.name;
+output.value += ' / address ' + adapter.address;
 
 var devices = [];
 var device_index = 0;
 
 function handle(button, text, callback) {
-    var b = document.getElementById(button);
-    b.innerText = text;
-    b.addEventListener("click", callback);
+  var b = document.getElementById(button);
+  b.innerText = text;
+  b.addEventListener("click", callback);
 }
 
 var oldName = "";
 var oldVisible = false;
-function runChangePropertiesTest() {
-    oldName = adapter.name;
-    oldVisible = adapter.visible;
 
-    debug("Adapter Name (oldName): " + adapter.name);
-    debug("Adapter Visible (oldVisible): " + adapter.visible);
+var CHAT_SERVICE_UUID = "5BCE9431-6C75-32AB-AFE0-2EC108A30860";
+var chatServiceHandler = null;
+var clientSocket = null;
 
-    shouldBe("adapter.name === oldName", "true");
-    shouldBe("adapter.powered", "true");
-    shouldBe("adapter.visible === oldVisible", "true");
+function validateAddress(address) {
+  if (typeof address !== 'string')
+    return false;
 
-    adapter.setName("FooBigBarrrrr", onChangedAdapterName, onErrorCallback);
-    adapter.setVisible(!oldVisible, onChangedAdapterVisible, onErrorCallback);
+  var regExp = /([\dA-F][\dA-F]:){5}[\dA-F][\dA-F]/i;
+  if (!address.match(regExp))
+    return false;
 
-    setTimeout(function() {
-        shouldBe("adapter.name === oldName", "false");
-    }, 1000);
-
-    setTimeout(function() {
-        adapter.setName(oldName, onChangedAdapterName, onErrorCallback);
-        adapter.setVisible(!oldVisible, onChangedAdapterVisible, onErrorCallback);
-    }, 1000);
-};
-
-var discoverDevicesSuccessCallback = {
-    onstarted: function() {
-        output.value += '\n\n## Discovery Started ##';
-    },
-    ondevicefound: function(device) {
-        output.value += '\n' + device_index + '- Device Found: ' + device.name;
-        devices[device_index] = device;
-        device_index += 1;
-    },
-    ondevicedisappeared: function(address) {
-        output.value += '\nDevice Disappeared: ' + address;
-    },
-    onfinished: function(devices) {
-        output.value += '\n\n## Discovery Finished. Devices Found: ##';
-        for (var i = 0; i < devices.length; i++) {
-           output.value += '\nDevice Name: ' + devices[i].name;
-        }
-    }
-};
-
-var onErrorCallback = function(e) {
-    console.log("\nFailed: " + e.message);
-};
-
-var onGotKnownDevices = function(devices) {
-    output.value += '\n\n## Known Devices: ##';
-    for (var i = 0; i < devices.length; i++) {
-       output.value += '\nDevice Name: ' + devices[i].name;
-    }
+  return true;
 }
 
+function getAddressFromInputText() {
+  var address = document.getElementById("text");
+
+  if (address.value == "") {
+    output.value += '\nPlease enter a MAC address in input area first !!!';
+    return;
+  }
+
+  if (!validateAddress(address.value))
+    output.value += '\nMAC address is bad !!!';
+
+  return address.value;
+}
+
+function runPowerTest() {
+  oldState = adapter.powered;
+  output.value += '\nAdapter Power : ' + adapter.powered;
+  if(oldState == false)
+    adapter.setPowered(true, onChangedAdapterState, onErrorCallback);
+  else
+    adapter.setPowered(false, onChangedAdapterState, onErrorCallback);
+};
+
+var onChangedAdapterState = function() {
+  output.value += '\nAdapter New State: ' + adapter.powered;
+}
+
+function runNameTest() {
+  output.value += '\nCurrent adapter Name: ' + adapter.name;
+  adapter.setName("FooBar", onChangedAdapterName, onErrorCallback);
+};
+
 var onChangedAdapterName = function() {
-    debug("Adapter New Name: " + adapter.name);
+  output.value += '\nNew adapter Name: ' + adapter.name;
 }
 
 var onChangedAdapterVisible = function() {
-    shouldBe("adapter.visible === !oldVisible", "true");
-    oldVisible = adapter.visible;
+  shouldBe("adapter.visible === !oldVisible", "true");
+  oldVisible = adapter.visible;
 }
 
-handle("button1", "Scan", function() {
-    adapter.discoverDevices(discoverDevicesSuccessCallback, function(e){
-        console.log ("Failed to search devices: " + e.message + "(" + e.name + ")");
+function runChangePropertiesTest() {
+  oldName = adapter.name;
+  oldVisible = adapter.visible;
+
+  output.value += '\nAdapter Name (oldName): ' + adapter.name;
+  output.value += '\nAdapter Visible (oldVisible): ' + adapter.visible;
+
+  shouldBe("adapter.name === oldName", "true");
+  shouldBe("adapter.powered", "true");
+  shouldBe("adapter.visible === oldVisible", "true");
+
+  adapter.setName("FooBigBarrrrr", onChangedAdapterName, onErrorCallback);
+  adapter.setVisible(!oldVisible, onChangedAdapterVisible, onErrorCallback);
+
+  setTimeout(function() {
+    shouldBe("adapter.name === oldName", "false");
+  }, 1000);
+
+  setTimeout(function() {
+    adapter.setName(oldName, onChangedAdapterName, onErrorCallback);
+    adapter.setVisible(!oldVisible, onChangedAdapterVisible, onErrorCallback);
+  }, 1000);
+};
+
+var discoverDevicesSuccessCallback = {
+  onstarted: function() {
+    output.value += '\n\n## Discovery Started ##';
+  },
+  ondevicefound: function(device) {
+    output.value += '\n' + device_index + '- Device Found: ' + device.name;
+    devices[device_index] = device;
+    device_index += 1;
+  },
+  ondevicedisappeared: function(address) {
+    output.value += '\nDevice Disappeared: ' + address;
+  },
+  onfinished: function(devices) {
+    output.value += '\n\n## Discovery Finished. Devices Found: ##';
+    for (var i = 0; i < devices.length; i++) {
+      output.value += '\nDevice Name: ' + devices[i].name;
+    }
+  }
+};
+
+var onGotKnownDevices = function(devices) {
+  output.value += '\n\n## Known Devices: ##';
+  for (var i = 0; i < devices.length; i++) {
+    output.value += '\nDevice Name: ' + devices[i].name;
+    output.value += ' / address: ' + devices[i].address;
+  }
+}
+
+var onGotDeviceInfo = function(device) {
+  output.value += '\n\n## Get Device Info: ##';
+  output.value += '\nName: ' + device.name;
+  output.value += ' / Address: ' + device.address;
+  output.value += '\nClass major: ' + device.deviceClass.major;
+  output.value += ' / minor: ' + device.deviceClass.minor;
+  output.value += ' / service class: ' + device.deviceClass.services;
+  output.value += '\nIs Bonded: ' + ((device.isBonded) ? "Yes" : "No");
+  output.value += ' / Is Trusted: ' + ((device.isTrusted) ? "Yes" : "No");
+  output.value += ' / Is Connected: ' + ((device.isConnected) ? "Yes" : "No");
+  output.value += '\nUUIDs: ' + device.uuids.join("\n");
+ }
+
+var onHasServicesTests = function(device) {
+  output.value += '\n\n## hasServices tests ##';
+  var test = false;
+  test = device.deviceClass.hasService(tizen.bluetooth.deviceService.POSITIONING);
+  output.value += '\nPOSITIONING: ' + (test ? "Yes" : "No");
+  test = device.deviceClass.hasService(tizen.bluetooth.deviceService.NETWORKING);
+  output.value += ' / NETWORKING: ' + (test ? "Yes" : "No");
+  test = device.deviceClass.hasService(tizen.bluetooth.deviceService.TELEPHONY);
+  output.value += ' / TELEPHONY: ' + (test ? "Yes" : "No");
+}
+
+function runCreateBondingTest() {
+  output.value += '\n\n## Create bonding with MAC: ' + getAddressFromInputText() + ' ##';
+  adapter.createBonding(getAddressFromInputText(), onSuccessCreateBonding, onErrorCallback);
+};
+
+var onSuccessCreateBonding = function(device) {
+  output.value += '\nDevice Name:' + device.name + ' bond successfully created !';
+  output.value += '\nDevice Address:' + device.address;
+}
+
+function runDestroyBondingTest() {
+  output.value += '\n\n## Destroy bonding with MAC: ' + getAddressFromInputText() + ' ##';
+  adapter.destroyBonding(getAddressFromInputText(), onSuccessDestroyBonding, onErrorCallback);
+
+};
+
+var onSuccessDestroyBonding = function(device) {
+  output.value += '\nDevice Name:' + device.name + ' bond successfully destroyed !';
+  output.value += '\nDevice Address:' + device.address;
+}
+
+var onChatServiceSuccessCb = function(handler) {
+  output.value += '\nChat service registration was successful!';
+
+  chatServiceHandler = handler;
+
+  handler.onconnect = function(socket) {
+    output.value += '\nClient is connected: ' + socket.peer.name + ',' + socket.peer.address;
+    socket.onmessage = function() {
+      var data = socket.readData();
+      output.value += '\nThe socket received data: ' + socket.data;
+    };
+
+    socket.onclose = function() {
+      output.value += '\nThe socket is closed.';
+    };
+  };
+}
+
+function runUnregisterChatServiceTest() {
+  if (chatServiceHandler != null) {
+    chatServiceHandler.unregister(function() {
+      output.value += '\nChat service is unregistered';
+      chatServiceHandler = null;
+      },
+      function(e) {
+        output.value += '\nFailed to unregister service: ' + e.message;
     });
+  }
+}
+
+var onSocketConnected = function(socket) {
+  clientSocket = socket;
+  output.value += '\nOpening a socket successfully!!!';
+  socket.onmessage = function () {
+    var data = socket.readData();
+    var recvmsg = "";
+    for (var i = 0; i < data.length; i++)  {
+      recvmsg += String.fromCharCode(data[i]);
+    }
+    output.value += '\nserver msg >> ' + recvmsg;
+  };
+
+  socket.onclose = function() {
+    output.value += '\nsocket disconnected.';
+  };
+}
+
+var onDeviceReady = function(device) {
+  if (device.uuids.indexOf(CHAT_SERVICE_UUID) != -1) {
+    device.connectToServiceByUUID(CHAT_SERVICE_UUID, onSocketConnected, function(e) {
+      output.value += '\nError connecting to service. Reason: ' + e.message;
+    });
+  } else {
+    output.value += '\nChat service is not supported by this device';
+  }
+}
+
+function sendMessage(msg) {
+  if (clientSocket != null && clientSocket.state == "OPEN") {
+    clientSocket.writeData(msg);
+  }
+}
+
+var onErrorCallback = function(e) {
+  output.value += '\n[ERROR] Failed: ' + e.message;
+};
+
+handle("button1", "Power On/OFF", function() {
+  runPowerTest();
 });
 
-handle("button2", "Stop Scan", function() {
-    adapter.stopDiscovery(function() {
-        output.value += "\n## Discovery Stopped ##";
-        }, onErrorCallback);
+handle("button2", "Test Name", function() {
+  runNameTest();
 });
 
-handle("button3", "Get Known Devices", function() {
-    adapter.getKnownDevices(onGotKnownDevices, onErrorCallback);
+handle("button3", "Run Adapter properties test", function() {
+  runChangePropertiesTest();
 });
 
-handle("button4", "Run Adapter properties test", function() {
-    runChangePropertiesTest();
+
+handle("button4", "Start Scan", function() {
+  adapter.discoverDevices(discoverDevicesSuccessCallback, function(e){
+    output.value += '\n[ERROR] Failed to search devices: ' + e.message + '(' + e.name + ')';
+  });
+});
+
+handle("button5", "Stop Scan", function() {
+  adapter.stopDiscovery(function() {
+    output.value += "\n## Discovery Stopped ##";
+  }, onErrorCallback);
+});
+
+handle("button6", "Get Known Devices", function() {
+  adapter.getKnownDevices(onGotKnownDevices, onErrorCallback);
+});
+
+handle("button7", "Get Device Info", function() {
+  adapter.getDevice(getAddressFromInputText(), onGotDeviceInfo, onErrorCallback);
+});
+
+handle("button8", "Test hasService", function() {
+  adapter.getDevice(getAddressFromInputText(), onHasServicesTests, onErrorCallback);
+});
+
+handle("button9", "Create Bonding", function() {
+  runCreateBondingTest();
+});
+
+handle("button10", "Destroy Bonding", function() {
+  runDestroyBondingTest();
+});
+
+handle("button11", "Register RFCOMM chat service", function() {
+  output.value += '\n\n## Register RFCOMM Chat service ##';
+  adapter.registerRFCOMMServiceByUUID(CHAT_SERVICE_UUID, "Chat service", onChatServiceSuccessCb, onErrorCallback);
+});
+
+handle("button12", "Unregister chat service", function() {
+  runUnregisterChatServiceTest();
+});
+
+handle("button13", "Connect to chat service", function() {
+  output.value += '\n\n## Connect to Chat service ##';
+  adapter.getDevice(getAddressFromInputText(), onDeviceReady, function(e) { output.value += '\n"[ERROR] ' + e.message; });
+});
+
+handle("button14", "Send message", function() {
+  var msg = document.getElementById("text");
+  var message = msg.value;
+  output.value += '\n\n## Send message ##';
+
+  if (message == "") {
+    output.value += '\nPlease write a message in text area first !';
+    return;
+  }
+
+  if (typeof message !== 'string') {
+    output.value += '\ntext message is invalid !';
+    return;
+  }
+
+  sendMessage(message);
 });
 </script>

@@ -4,17 +4,16 @@
 
 #include "bluetooth/bluetooth_extension.h"
 
-#if defined(TIZEN)
+#if defined(TIZEN_CAPI_BT)
 #include <bluetooth.h>
+#include "bluetooth/bluetooth_instance_capi.h"
+#else
+#include "bluetooth/bluetooth_instance.h"
 #endif
 
-#include "bluetooth/bluetooth_instance.h"
-
 common::Extension* CreateExtension() {
-#if defined(TIZEN)
-  int init = bt_initialize();
-  if (init != BT_ERROR_NONE)
-    g_printerr("\n\nCouldn't initialize Bluetooth module.");
+#if defined(TIZEN_CAPI_BT)
+  CAPI(bt_initialize());
 #endif
 
   return new BluetoothExtension;

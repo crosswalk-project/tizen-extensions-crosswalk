@@ -11,7 +11,7 @@
           'gio-2.0',
           'bluez',
         ],
-        'bluetooth%': 'bluez4',
+        'bluetooth%': 'tizen_capi',
       },
       'includes': [
         '../common/pkg-config.gypi',
@@ -24,19 +24,46 @@
         'bluetooth_instance.h',
       ],
       'conditions': [
+        [ 'bluetooth == "bluez5" or bluetooth == "bluez4"', {
+          'variables': {
+            'packages': [
+             'gio-2.0',
+             'bluez',
+           ],
+          },
+        }],
         [ 'bluetooth == "bluez5"', {
-            'sources': ['bluetooth_instance_bluez5.cc'],
+            'sources': [
+              'bluetooth_instance_bluez5.cc',
+            ],
             'defines': ['BLUEZ_5'],
           }
         ],
         [ 'bluetooth == "bluez4"', {
-            'sources': ['bluetooth_instance_bluez4.cc'],
+            'sources': [
+              'bluetooth_instance_bluez4.cc',
+            ],
             'defines': ['BLUEZ_4'],
           }
         ],
-        [ 'tizen == 1', {
-            'variables': { 'packages': ['capi-network-bluetooth'] },
-        }],
+        [ 'bluetooth == "tizen_capi"', {
+            'sources!': [
+              'bluetooth_instance.cc',
+              'bluetooth_instance.h',
+            ],
+            'sources': [
+              'bluetooth_instance_capi.cc',
+              'bluetooth_instance_capi.h',
+            ],
+            'variables': {
+              'packages': [
+                'capi-network-bluetooth',
+                'glib-2.0',
+              ]
+            },
+            'defines': ['TIZEN_CAPI_BT'],
+          }
+        ],
       ],
     },
   ],
