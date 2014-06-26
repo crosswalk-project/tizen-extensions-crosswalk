@@ -362,9 +362,9 @@ function MediaItem(obj) {
   _addConstProperty(this, 'height', obj.height);
   _addConstProperty(this, 'duration', obj.duration);
   _addConstProperty(this, 'audioSampleRate', obj.audioSampleRate);
-  _addConstProperty(this, 'collection', obj.width);
-  _addConstProperty(this, 'author', obj.width);
-  _addConstProperty(this, 'category', obj.width);
-  _addConstProperty(this, 'trackNumber', obj.width);
+  _addConstProperty(this, 'collection', obj.collection);
+  _addConstProperty(this, 'author', obj.author);
+  _addConstProperty(this, 'category', obj.category);
+  _addConstProperty(this, 'trackNumber', obj.trackNumber);
 }
 derive(MediaItem, MediaObject);
