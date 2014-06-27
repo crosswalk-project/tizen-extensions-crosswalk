@@ -63,8 +63,12 @@ static void display_handle_mode(void* data,
                                 int height,
                                 int refresh) {
   Display* d = reinterpret_cast<Display* >(data);
-  d->width = width;
-  d->height = height;
+  // A display has multiple supporting modes.
+  // We need to check if it is the current using mode.
+  if (flags & WL_OUTPUT_MODE_CURRENT) {
+    d->width = width;
+    d->height = height;
+  }
 }
 
 static void registry_handle_global(void* data,
