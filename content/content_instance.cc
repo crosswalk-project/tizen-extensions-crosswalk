@@ -18,6 +18,7 @@
 namespace {
 const std::string STR_FILTER("filter");
 const std::string STR_CONTENT_URI("contentURI");
+const std::string STR_EVENT_TYPE("eventType");
 
 std::string createUriFromLocalPath(const std::string path) {
   static std::string fileScheme("file://");
@@ -64,7 +65,7 @@ void ContentInstance::HandleMessage(const char* message) {
     std::cerr << "Ignoring message.\n";
     return;
   }
-#ifdef DEBUG_JSON
+#ifdef DEBUG_JSON_CMD
   std::cout << "HandleMessage: " << message << std::endl;
 #endif
   std::string cmd = v.get("cmd").to_str();
@@ -94,7 +95,11 @@ void ContentInstance::PostAsyncSuccessReply(const picojson::value& msg,
     picojson::value::object& reply) {
   reply["isError"] = picojson::value(false);
   reply["replyId"] = picojson::value(msg.get("replyId").get<double>());
-
+  if (msg.contains(STR_EVENT_TYPE))
+    reply[STR_EVENT_TYPE] = picojson::value(msg.get(STR_EVENT_TYPE));
+#ifdef DEBUG_JSON_CMD
+  std::cout << "reply: " << msg.serialize().c_str() << std::endl;
+#endif
   picojson::value v(reply);
   PostMessage(v.serialize().c_str());
 }
@@ -112,12 +117,42 @@ void ContentInstance::PostAsyncSuccessReply(const picojson::value& msg,
 }
 
 void ContentInstance::HandleSyncMessage(const char* message) {
+  picojson::value v;
+  picojson::value::object o;
+
+  std::string err;
+  picojson::parse(v, message, message + strlen(message), &err);
+  if (!err.empty()) {
+    std::cerr << "Ignoring message.\n";
+    return;
+  }
+#ifdef DEBUG_JSON_CMD
+  std::cout << "HandleSyncMessage: " << message << std::endl;
+#endif
+  std::string cmd = v.get("cmd").to_str();
+  int rc = MEDIA_CONTENT_ERROR_INVALID_OPERATION;
+
+  if (cmd == "ContentManager.setChangeListener") {
+    rc = media_content_set_db_updated_cb(MediaContentChangeCallback, this);
+  } else if (cmd == "ContentManager.unsetChangeListener") {
+    rc = media_content_unset_db_updated_cb();
+  } else {
+    std::cerr << "Message " + cmd + " is not supported.\n";
+  }
+
+  if (rc != MEDIA_CONTENT_ERROR_NONE)
+    std::cerr << "error " << cmd << std::endl;
+
+#ifdef DEBUG_JSON_CMD
+  std::cout << "Reply: " << v.serialize().c_str() << std::endl;
+#endif
+  SendSyncReply(v.serialize().c_str());
 }
 
 void ContentInstance::HandleGetDirectoriesRequest(const picojson::value& msg) {
   ContentFolderList folderList;
   if (media_folder_foreach_folder_from_db(NULL,
-          mediaFolderCallback,
+          MediaFolderCallback,
           reinterpret_cast<void*>(&folderList)) != MEDIA_CONTENT_ERROR_NONE) {
     std::cerr << "media_folder_foreach_folder_from_db: error" << std::endl;
   } else {
@@ -147,7 +182,7 @@ void ContentInstance::HandleGetDirectoriesReply(const picojson::value& msg,
   PostAsyncSuccessReply(msg, value);
 }
 
-bool ContentInstance::mediaFolderCallback(media_folder_h handle,
+bool ContentInstance::MediaFolderCallback(media_folder_h handle,
     void* user_data) {
   if (!user_data)
     return false;
@@ -181,7 +216,7 @@ void ContentInstance::HandleFindRequest(const picojson::value& msg) {
   }
 
   if (media_info_foreach_media_from_db(filterHandle,
-      mediaInfoCallback,
+      MediaInfoCallback,
       reinterpret_cast<ContentFolderList*>(&itemList))
       != MEDIA_CONTENT_ERROR_NONE) {
     std::cerr << "media_info_foreach_media_from_db: error" << std::endl;
@@ -257,14 +292,14 @@ void ContentInstance::HandleFindReply(
     items.push_back(picojson::value(o));
   }
   picojson::value value(items);
-#ifdef DEBUG_JSON
+#ifdef DEBUG_JSON_REPLY
   std::cout << "JSON reply: " << std::endl <<
      value.serialize().c_str() << std::endl;
 #endif
   PostAsyncSuccessReply(msg, value);
 }
 
-bool ContentInstance::mediaInfoCallback(media_info_h handle, void* user_data) {
+bool ContentInstance::MediaInfoCallback(media_info_h handle, void* user_data) {
   if (!user_data)
     return false;
 
@@ -277,6 +312,54 @@ bool ContentInstance::mediaInfoCallback(media_info_h handle, void* user_data) {
   item->print();
 #endif
   return true;
+}
+
+void ContentInstance::MediaContentChangeCallback(
+    media_content_error_e error,
+    int pid,
+    media_content_db_update_item_type_e update_item,
+    media_content_db_update_type_e update_type,
+    media_content_type_e media_type,
+    char* uuid,
+    char* path,
+    char* mime_type,
+    void* user_data) {
+#ifdef DEBUG_ITEM
+  std::cout << "MediaContentChangeCallback: error=" << error <<
+      ", item=" << update_item << ", type=" << update_type << ", " <<
+      uuid << ", " << path << std::endl;
+#endif
+  if (!user_data)
+    return;
+
+  ContentInstance* self =
+      reinterpret_cast<ContentInstance*>(user_data);
+
+  picojson::value::object om;
+  om["replyId"] = picojson::value(static_cast<double>(0));
+  const std::string type = (update_type == MEDIA_CONTENT_INSERT ?
+      "INSERT" : (update_type == MEDIA_CONTENT_DELETE ? "DELETE" : "UPDATE"));
+  om[STR_EVENT_TYPE] = picojson::value(type);
+  picojson::value::object ov;
+  ov["type"] = picojson::value(static_cast<double>(media_type));
+
+  if (uuid)
+    ov["id"] = picojson::value(uuid);
+
+  if (path)
+    ov["contentURI"] = picojson::value(path);
+
+  if (mime_type)
+    ov["mimeType"] = picojson::value(mime_type);
+
+  picojson::value msg(om);
+  picojson::value value(ov);
+#ifdef DEBUG_JSON_REPLY
+  std::cout << "JSON event msg: " << msg.serialize().c_str() << std::endl;
+  std::cout << "JSON event val: " << value.serialize().c_str() << std::endl;
+#endif
+
+  self->PostAsyncSuccessReply(msg, value);
 }
 
 void ContentFolder::init(media_folder_h handle) {

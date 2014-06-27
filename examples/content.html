@@ -9,6 +9,8 @@
 <button onClick="handleGetDirectories()">Get Directories</button>
 <button onClick="handleFind()">Find</button>
 <button onClick="handleScanFile()">Scan File</button>
+<button onClick="enableEvents()">Listener (ON)</button>
+<button onClick="disableEvents()">Listener (OFF)</button>
 
 <div>
   <h2>Attribute Filter</h2>
@@ -60,8 +62,7 @@ function handleGetDirectories()
     function(err) {
       debug(err.name);
     });
-  }
-  catch (err) {
+  } catch (err) {
     debug(err.name);
   }
 }
@@ -89,8 +90,7 @@ function handleFind()
     function(err) {
       debug('find: error');
     }, null, filter);
-  }
-  catch (err) {
+  } catch (err) {
     debug(err.name);
   }
 }
@@ -105,8 +105,36 @@ function handleScanFile()
       function(err) {
         debug("scan ERR: ")
       });
+  } catch (err) {
+    debug(err.name);
   }
-  catch (err) {
+}
+var listener = {
+    oncontentadded: function(content) {
+      debug("Event ADD: " + content.contentURI);
+    },
+    oncontentupdated: function(content) {
+      debug("Event UPDATE: " + content.contentURI);
+    },
+    oncontentremoved: function(id) {
+      debug("Event REMOVE: " + id);
+    }
+ };
+
+function enableEvents() {
+  try {
+    debug('tizen.content.setChangeListener:');
+    tizen.content.setChangeListener(listener);
+  } catch (err) {
+    debug(err.name);
+  }
+}
+
+function disableEvents() {
+  try {
+    debug('tizen.content.unsetChangeListener:');
+    tizen.content.unsetChangeListener();
+  } catch (err) {
     debug(err.name);
   }
 }

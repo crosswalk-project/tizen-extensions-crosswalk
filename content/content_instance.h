@@ -48,8 +48,18 @@ class ContentInstance : public common::Instance {
   void PostAsyncSuccessReply(const picojson::value&);
 
   // Tizen CAPI helpers
-  static bool mediaFolderCallback(media_folder_h handle, void *user_data);
-  static bool mediaInfoCallback(media_info_h handle, void *user_data);
+  static bool MediaFolderCallback(media_folder_h handle, void *user_data);
+  static bool MediaInfoCallback(media_info_h handle, void *user_data);
+  static void MediaContentChangeCallback(
+      media_content_error_e error,
+      int pid,
+      media_content_db_update_item_type_e update_item,
+      media_content_db_update_type_e update_type,
+      media_content_type_e media_type,
+      char* uuid,
+      char* path,
+      char* mime_type,
+      void* user_data);
 
   static unsigned m_instanceCount;
 };

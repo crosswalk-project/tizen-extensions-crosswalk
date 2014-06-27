@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 var _callbacks = {};
-var _nextReplyId = 0;
+var _nextReplyId = 1; // 0 is reserved for events
 
 function getNextReplyId() {
   return _nextReplyId++;
@@ -25,7 +25,16 @@ extension.setMessageListener(function(msg) {
   var replyId = m.replyId;
   var callback = _callbacks[replyId];
 
-  if (typeof(callback) === 'function') {
+  if (replyId == 0) { // replyId zero is for events
+    if (exports.changeListener != null) {
+      if (m.eventType == 'INSERT')
+        exports.changeListener.oncontentadded(m.value);
+      else if (m.eventType == 'DELETE')
+        exports.changeListener.oncontentremoved(m.value.id);
+      else if (m.eventType == 'UPDATE')
+        exports.changeListener.oncontentupdated(m.value);
+    }
+  } else if (typeof(callback) === 'function') {
     callback(m);
     delete m.replyId;
     delete _callbacks[replyId];
@@ -94,6 +103,7 @@ function ContentVideo(obj, album, artists, duration, width, height) {
 }
 
 function ContentManager() {
+  this.changeListener = null;
 }
 
 ContentManager.prototype.update = function(content) {
@@ -216,13 +226,23 @@ ContentManager.prototype.scanFile = function(contentURI, onsuccess, onerror) {
   });
 };
 
-ContentManager.prototype.setChangeListener = function(onchange) {
-  if (!xwalk.utils.validateArguments('f', arguments)) {
+ContentManager.prototype.setChangeListener = function(listener) {
+  if (!xwalk.utils.validateArguments('o', arguments)) {
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
   }
+
+  if (!xwalk.utils.validateObject(listener, 'fff',
+      ['oncontentadded', 'oncontentupdated', 'oncontentremoved'])) {
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+  }
+
+  this.changeListener = listener;
+  sendSyncMessage({cmd: 'ContentManager.setChangeListener'});
 };
 
-ContentManager.prototype.unsetChangeLIstener = function() {
+ContentManager.prototype.unsetChangeListener = function() {
+  this.changeListener = null;
+  sendSyncMessage({cmd: 'ContentManager.unsetChangeListener'});
 };
 
 exports = new ContentManager();
