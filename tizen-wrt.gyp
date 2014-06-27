@@ -39,6 +39,11 @@
             'callhistory/callhistory.gyp:*',
           ],
         }],
+        [ 'extension_host_os == "ivi"', {
+          'dependencies': [
+            'vehicle/vehicle.gyp:*',
+          ],
+        }],
       ],
     },
     {

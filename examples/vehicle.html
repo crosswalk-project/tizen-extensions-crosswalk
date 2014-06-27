@@ -1,0 +1,22 @@
+<html>
+<h1>Hello, Tizen Vehicle API!</h1>
+
+<body>
+<pre id="console"></pre>
+<script src="js/js-test-pre.js"></script>
+<script>
+
+debug('tizen.vehicle.vehicleSpeed ' + tizen.vehicle.vehicleSpeed);
+debug('tizen.vehicle.vehicleSpeed.zones ' + tizen.vehicle.vehicleSpeed.zones);
+
+tizen.vehicle.vehicleSpeed.get().then(function(vehicleSpeed) {
+  debug("Vehicle speed: " + vehicleSpeed.speed);
+},
+function(error) {
+  debug("There was an error");
+});
+
+</script>
+<script src="js/js-test-post.js"></script>
+</body>
+</html>
