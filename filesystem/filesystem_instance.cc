@@ -41,10 +41,11 @@ const char kStorageStateMounted[] = "MOUNTED";
 const char kStorageStateRemoved[] = "REMOVED";
 const char kStorageStateUnmountable[] = "UNMOUNTABLE";
 
+const char kPlatformEncoding[] = "UTF-8";
+const size_t kBufferSize = 1024 * 4;
+
 unsigned int lastStreamId = 0;
-// FIXME(ricardotk): This needs another approach, kMaxSize is a palliative
-// solution.
-const unsigned kMaxSize = 64 * 1024;
+
 
 bool IsWritable(const struct stat& st) {
   if (st.st_mode & S_IWOTH)
@@ -125,7 +126,7 @@ int get_dir_entry_count(const char* path) {
 }
 
 std::string GetAppId(const std::string& package_id) {
-  char *appid = NULL;
+  char* appid = NULL;
   pkgmgrinfo_pkginfo_h pkginfo_handle;
   int ret = pkgmgrinfo_pkginfo_get_pkginfo(package_id.c_str(), &pkginfo_handle);
   if (ret != PMINFO_R_OK)
@@ -209,7 +210,7 @@ FilesystemInstance::~FilesystemInstance() {
   FStreamMap::iterator it;
 
   for (it = fstream_map_.begin(); it != fstream_map_.end(); it++) {
-    std::fstream* fs = it->second.second;
+    std::fstream* fs = std::get<1>(it->second);
     fs->close();
     delete(fs);
   }
@@ -323,7 +324,10 @@ void FilesystemInstance::HandleFileSystemManagerResolve(
 
   char* real_path_cstr = realpath(real_path.c_str(), NULL);
   if (!real_path_cstr) {
-    PostAsyncErrorReply(msg, IO_ERR);
+    if (errno == ENOENT)
+      PostAsyncErrorReply(msg, NOT_FOUND_ERR);
+    else
+      PostAsyncErrorReply(msg, IO_ERR);
     return;
   }
   std::string real_path_ack = std::string(real_path_cstr);
@@ -331,17 +335,17 @@ void FilesystemInstance::HandleFileSystemManagerResolve(
 
   if (check_if_inside_default &&
       real_path_ack.find(
-          tzplatform_getenv(TZ_USER_CONTENT)) != std::string::npos) {
+          tzplatform_getenv(TZ_USER_CONTENT)) == std::string::npos) {
     PostAsyncErrorReply(msg, INVALID_VALUES_ERR);
     return;
   }
-
   struct stat st;
   if (stat(real_path_ack.c_str(), &st) < 0) {
-    if (errno == ENOENT || errno == ENOTDIR)
+    if (errno == ENOENT || errno == ENOTDIR) {
       PostAsyncErrorReply(msg, NOT_FOUND_ERR);
-    else
+    } else {
       PostAsyncErrorReply(msg, IO_ERR);
+    }
     return;
   }
 
@@ -349,7 +353,6 @@ void FilesystemInstance::HandleFileSystemManagerResolve(
     PostAsyncErrorReply(msg, IO_ERR);
     return;
   }
-
   picojson::value::object o;
   o["fullPath"] = picojson::value(location);
   PostAsyncSuccessReply(msg, o);
@@ -408,11 +411,17 @@ void FilesystemInstance::HandleFileOpenStream(const picojson::value& msg) {
   std::string encoding = "";
   if (msg.contains("encoding"))
     encoding = msg.get("encoding").to_str();
-  if (!encoding.empty() && (encoding != "UTF-8" && encoding != "ISO-8859-1")) {
-    PostAsyncErrorReply(msg, TYPE_MISMATCH_ERR);
+  if (encoding.empty()) {
+    encoding = kPlatformEncoding;
+  }
+  // is the encoding supported by iconv?
+  iconv_t cd = iconv_open("UTF-8", encoding.c_str());
+  if (cd == reinterpret_cast<iconv_t>(-1)) {
+    PostAsyncErrorReply(msg, INVALID_VALUES_ERR);
+    iconv_close(cd);
     return;
   }
-
+  iconv_close(cd);
   if (!msg.contains("fullPath")) {
     PostAsyncErrorReply(msg, INVALID_VALUES_ERR);
     return;
@@ -438,22 +447,20 @@ void FilesystemInstance::HandleFileOpenStream(const picojson::value& msg) {
     PostAsyncErrorReply(msg, IO_ERR);
     return;
   }
-
   std::fstream* fs = new std::fstream(real_path_cstr, open_mode);
   if (!(*fs) || !fs->is_open()) {
     free(real_path_cstr);
+    delete fs;
     PostAsyncErrorReply(msg, INVALID_VALUES_ERR);
     return;
   }
   free(real_path_cstr);
 
-  fstream_map_[lastStreamId] = FStream(open_mode, fs);
+  fstream_map_[lastStreamId] = FStream(open_mode, fs, encoding);
 
   picojson::value::object o;
   o["streamID"] = picojson::value(static_cast<double>(lastStreamId));
-  o["encoding"] = picojson::value(encoding);
   lastStreamId++;
-
   PostAsyncSuccessReply(msg, o);
 }
 
@@ -542,6 +549,9 @@ void FilesystemInstance::HandleFileDeleteFile(const picojson::value& msg) {
     case ENOENT:
       PostAsyncErrorReply(msg, NOT_FOUND_ERR);
       break;
+    case EISDIR:
+      PostAsyncErrorReply(msg, INVALID_VALUES_ERR);
+      break;
     default:
       PostAsyncErrorReply(msg, UNKNOWN_ERR);
     }
@@ -587,37 +597,81 @@ void FilesystemInstance::HandleFileListFiles(const picojson::value& msg) {
   PostAsyncSuccessReply(msg, v);
 }
 
+std::string FilesystemInstance::ResolveImplicitDestination(
+    const std::string& from, const std::string& to) {
+  // Resolve implicit destination paths
+  // Sanity checks are done later, in CopyAndRenameSanityChecks
+  if (to.empty())
+    return "";
+
+  std::string explicit_to = to;
+  if (*to.rbegin() == '/' || *to.rbegin() == '\\') {
+    // 1. hinted paths
+    std::string::size_type found = from.find_last_of("/\\");
+    explicit_to.append(from.substr(found + 1));
+  } else {
+    // 2. no hint, apply heuristics on path types
+    // i.e. if we copy a file to a directory, we copy it into that directory
+    // as a file with the same name
+    struct stat to_st;
+    struct stat from_st;
+    if (stat(from.c_str(), &from_st) == 0 &&
+        stat(to.c_str(), &to_st) == 0 &&
+        S_ISREG(from_st.st_mode) &&
+        S_ISDIR(to_st.st_mode)) {
+      std::string::size_type found = from.find_last_of("/\\");
+      explicit_to.append(from.substr(found));  // including '/' to join
+    }
+  }
+  return explicit_to;
+}
 
 bool FilesystemInstance::CopyAndRenameSanityChecks(const picojson::value& msg,
-      const std::string& from, const std::string& to, bool overwrite) {
+    const std::string& from, const std::string& to, bool overwrite) {
+  if (from.empty() || to.empty()) {
+    PostAsyncErrorReply(msg, NOT_FOUND_ERR);
+    return false;
+  }
   bool destination_file_exists = true;
   if (access(to.c_str(), F_OK) < 0) {
     if (errno == ENOENT) {
       destination_file_exists = false;
     } else {
       PostAsyncErrorReply(msg, IO_ERR);
+      std::cerr << "destination unreachable\n";
       return false;
     }
   }
 
-  unsigned found = to.find_last_of("/\\");
+  std::string::size_type found = to.find_last_of("/\\");
   struct stat destination_parent_st;
   if (stat(to.substr(0, found).c_str(), &destination_parent_st) < 0) {
     PostAsyncErrorReply(msg, IO_ERR);
+    std::cerr << "parent of destination does not exist\n";
     return false;
   }
 
   if (overwrite && !IsWritable(destination_parent_st)) {
     PostAsyncErrorReply(msg, IO_ERR);
+    std::cerr << "parent of destination is not writable (overwrite is true)\n";
     return false;
   }
   if (!overwrite && destination_file_exists) {
     PostAsyncErrorReply(msg, IO_ERR);
+    std::cerr << "destination exists and overwrite is false\n";
     return false;
   }
 
   if (access(from.c_str(), F_OK)) {
     PostAsyncErrorReply(msg, NOT_FOUND_ERR);
+    std::cerr << "origin does not exist\n";
+    return false;
+  }
+
+  // don't copy or move into itself
+  if (to.length() >= from.length() && to.compare(0, from.length(), from) == 0) {
+    PostAsyncErrorReply(msg, IO_ERR);
+    std::cerr << "won't copy/move into itself\n";
     return false;
   }
 
@@ -687,6 +741,67 @@ ssize_t PosixFile::Write(char* buffer, size_t count) {
   }
 }
 
+bool CopyElement(const std::string &from, const std::string &to) {
+  struct stat from_st;
+  // element is a file
+  if (stat(from.c_str(), &from_st) == 0 && S_ISREG(from_st.st_mode)) {
+    PosixFile origin(from, O_RDONLY);
+    if (!origin.is_valid()) {
+      std::cerr << "from: " << from << " is invalid\n";
+      return false;
+    }
+
+    PosixFile destination(to, O_WRONLY | O_CREAT | O_TRUNC);
+    if (!destination.is_valid()) {
+      std::cerr << "to: " << to << " is invalid\n";
+      return false;
+    }
+
+    while (true) {
+      char buffer[kBufferSize];
+      ssize_t read_bytes = origin.Read(buffer, kBufferSize);
+      if (!read_bytes)
+        break;
+      if (read_bytes < 0) {
+        std::cerr << "read error\n";
+        return false;
+      }
+
+      if (destination.Write(buffer, read_bytes) < 0) {
+        std::cerr << "write error\n";
+        return false;
+      }
+    }
+
+    destination.UnlinkWhenDone(false);
+    return true;
+  }  // end file case
+
+  // element is a directory, create if not exists
+  int status = mkdir(to.c_str(), kDefaultFileMode);
+  if (status != 0 && errno != EEXIST) {
+    std::cerr << "failed to create destination dir: " << to << std::endl;
+    return false;
+  }
+  // recursively copy content
+  DIR* dir;
+  dir = opendir(from.c_str());
+  dirent* elt;
+  while ((elt = readdir(dir)) != NULL) {
+    if (!strcmp(elt->d_name, ".") || !strcmp(elt->d_name, ".."))
+      continue;
+    const std::string filename = elt->d_name;
+    const std::string full_origin = from + "/" + filename;
+    const std::string full_destination = to + "/" + filename;
+    if (!CopyElement(full_origin, full_destination)) {
+      closedir(dir);
+      return false;
+    }
+  }
+  closedir(dir);
+  return true;
+}
+
 }  // namespace
 
 void FilesystemInstance::HandleFileCopyTo(const picojson::value& msg) {
@@ -701,51 +816,18 @@ void FilesystemInstance::HandleFileCopyTo(const picojson::value& msg) {
 
   bool overwrite = msg.get("overwrite").evaluate_as_boolean();
   std::string real_origin_path =
-     GetRealPath(msg.get("originFilePath").to_str());
+      GetRealPath(msg.get("originFilePath").to_str());
   std::string real_destination_path =
-     GetRealPath(msg.get("destinationFilePath").to_str());
-
-  if (*real_destination_path.rbegin() == '/' ||
-      *real_destination_path.rbegin() == '\\') {
-    unsigned found = real_origin_path.find_last_of("/\\");
-    real_destination_path.append(real_origin_path.substr(found + 1));
-  }
+      ResolveImplicitDestination(real_origin_path,
+      GetRealPath(msg.get("destinationFilePath").to_str()));
 
   if (!CopyAndRenameSanityChecks(msg, real_origin_path, real_destination_path,
                                  overwrite))
     return;
-
-  PosixFile origin(real_origin_path, O_RDONLY);
-  if (!origin.is_valid()) {
+  if (CopyElement(real_origin_path, real_destination_path))
+    PostAsyncSuccessReply(msg);
+  else
     PostAsyncErrorReply(msg, IO_ERR);
-    return;
-  }
-
-  PosixFile destination(real_destination_path, O_WRONLY | O_CREAT |
-                                               (overwrite ? O_TRUNC : O_EXCL));
-  if (!destination.is_valid()) {
-    PostAsyncErrorReply(msg, IO_ERR);
-    return;
-  }
-
-  while (true) {
-    char buffer[512];
-    ssize_t read_bytes = origin.Read(buffer, 512);
-    if (!read_bytes)
-      break;
-    if (read_bytes < 0) {
-      PostAsyncErrorReply(msg, IO_ERR);
-      return;
-    }
-
-    if (destination.Write(buffer, read_bytes) < 0) {
-      PostAsyncErrorReply(msg, IO_ERR);
-      return;
-    }
-  }
-
-  destination.UnlinkWhenDone(false);
-  PostAsyncSuccessReply(msg);
 }
 
 void FilesystemInstance::HandleFileMoveTo(const picojson::value& msg) {
@@ -760,9 +842,10 @@ void FilesystemInstance::HandleFileMoveTo(const picojson::value& msg) {
 
   bool overwrite = msg.get("overwrite").evaluate_as_boolean();
   std::string real_origin_path =
-     GetRealPath(msg.get("originFilePath").to_str());
+      GetRealPath(msg.get("originFilePath").to_str());
   std::string real_destination_path =
-     GetRealPath(msg.get("destinationFilePath").to_str());
+      ResolveImplicitDestination(real_origin_path,
+      GetRealPath(msg.get("destinationFilePath").to_str()));
 
   if (!CopyAndRenameSanityChecks(msg, real_origin_path, real_destination_path,
                                  overwrite))
@@ -811,8 +894,7 @@ void FilesystemInstance::HandleSyncMessage(const char* message) {
   else if (cmd == "FileStreamSetPosition")
     HandleFileStreamSetPosition(v, reply);
   else
-    std::cout << "Ignoring unknown command: " << cmd;
-
+    std::cout << "Ignoring unknown command: " << cmd << std::endl;
   if (!reply.empty())
     SendSyncReply(reply.c_str());
 }
@@ -839,11 +921,18 @@ std::fstream* FilesystemInstance::GetFileStream(unsigned int key) {
   FStreamMap::iterator it = fstream_map_.find(key);
   if (it == fstream_map_.end())
     return NULL;
-  std::fstream* fs = it->second.second;
+  std::fstream* fs = std::get<1>(it->second);
 
   if (fs->is_open())
     return fs;
   return NULL;
+}
+
+std::string FilesystemInstance::GetFileEncoding(unsigned int key) const {
+  FStreamMap::const_iterator it = fstream_map_.find(key);
+  if (it == fstream_map_.end())
+    return kPlatformEncoding;
+  return std::get<2>(it->second);
 }
 
 std::fstream* FilesystemInstance::GetFileStream(unsigned int key,
@@ -852,10 +941,10 @@ std::fstream* FilesystemInstance::GetFileStream(unsigned int key,
   if (it == fstream_map_.end())
     return NULL;
 
-  if ((it->second.first & mode) != mode)
+  if ((std::get<0>(it->second) & mode) != mode)
     return NULL;
 
-  std::fstream* fs = it->second.second;
+  std::fstream* fs = std::get<1>(it->second);
 
   if (fs->is_open())
     return fs;
@@ -913,7 +1002,7 @@ void FilesystemInstance::HandleFileStreamClose(const picojson::value& msg,
 
   FStreamMap::iterator it = fstream_map_.find(key);
   if (it != fstream_map_.end()) {
-    std::fstream* fs = it->second.second;
+    std::fstream* fs = std::get<1>(it->second);
     if (fs->is_open())
       fs->close();
     delete fs;
@@ -1024,29 +1113,6 @@ std::string ConvertFrom(std::string input) {
 
 }  // namespace base64
 
-std::string ConvertCharacterEncoding(const char* from_encoding,
-                                     const char* to_encoding, char* buffer,
-                                     size_t buffer_len) {
-  iconv_t cd = iconv_open(from_encoding, to_encoding);
-
-  char converted[kMaxSize];
-  char *converted_buffer = converted;
-  size_t converted_len = sizeof(converted) - 1;
-
-  do {
-    if (iconv(cd, &buffer, &buffer_len, &converted_buffer, &converted_len)
-        == (size_t) -1) {
-      iconv_close(cd);
-      return "";
-    }
-  } while (buffer_len > 0 && converted_len > 0);
-  *converted_buffer = 0;
-
-  iconv_close(cd);
-
-  return std::string(converted, converted_len);
-}
-
 }  // namespace
 
 void FilesystemInstance::HandleFileStreamRead(const picojson::value& msg,
@@ -1058,34 +1124,45 @@ void FilesystemInstance::HandleFileStreamRead(const picojson::value& msg,
   unsigned int key = msg.get("streamID").get<double>();
 
   std::streamsize count;
-  if (msg.contains("count"))
+  if (msg.contains("count")) {
     count = msg.get("count").get<double>();
-  else
-    count = kMaxSize;
-
+  } else {
+    // count is not optional
+    SetSyncError(reply, IO_ERR);
+    return;
+  }
   std::fstream* fs = GetFileStream(key, std::ios_base::in);
   if (!fs) {
     SetSyncError(reply, IO_ERR);
     return;
   }
 
-  std::streampos initial_pos = fs->tellg();
-  char buffer[kMaxSize] = { 0 };
-  fs->read(buffer, count);
+  if (msg.get("type").to_str() == "Default") {
+    // we want decoded text data
+    // depending on encoding, a character (a.k.a. a glyph) may take
+    // one or several bytes in input and in output as well.
+    std::string encoding = GetFileEncoding(key);
+    ReadText(fs, count, encoding.c_str(), reply);
+    return;
+  }
+  // we want binary data
+  std::string buffer;
+  buffer.resize(count);
+  fs->read(&buffer[0], count);
+  std::streamsize bytes_read = fs->gcount();
   fs->clear();
-  std::streampos bytes_read = fs->tellg() - initial_pos;
-
   if (fs->bad()) {
     fs->clear();
     SetSyncError(reply, IO_ERR);
     return;
   }
+  buffer.resize(bytes_read);
 
   if (msg.get("type").to_str() == "Bytes") {
+    // return binary data as numeric array
     picojson::value::array a;
 
     for (int i = 0; i < bytes_read; i++) {
-      if (+buffer[i] != 0)
         a.push_back(picojson::value(static_cast<double>(buffer[i])));
     }
 
@@ -1094,20 +1171,14 @@ void FilesystemInstance::HandleFileStreamRead(const picojson::value& msg,
     return;
   }
 
-  std::string buffer_as_string;
-  if (msg.get("encoding").to_str() == "ISO-8859-1")
-    buffer_as_string = ConvertCharacterEncoding("ISO_8859-1", "UTF-8", buffer,
-                                                bytes_read);
-  else
-    buffer_as_string = std::string(buffer, bytes_read);
-
   if (msg.get("type").to_str() == "Base64") {
-    std::string base64_buffer = base64::ConvertTo(buffer_as_string);
+    // return binary data as Base64 encoded string
+    std::string base64_buffer = base64::ConvertTo(buffer);
     SetSyncSuccess(reply, base64_buffer);
     return;
   }
 
-  SetSyncSuccess(reply, buffer_as_string);
+  SetSyncSuccess(reply, buffer);
 }
 
 void FilesystemInstance::HandleFileStreamWrite(const picojson::value& msg,
@@ -1137,13 +1208,40 @@ void FilesystemInstance::HandleFileStreamWrite(const picojson::value& msg,
   } else if (msg.get("type").to_str() == "Base64") {
     buffer = base64::ConvertFrom(msg.get("data").to_str());
   } else {
-    buffer = msg.get("data").to_str();
+    // text mode
+    std::string text = msg.get("data").to_str();
+    std::string encoding = GetFileEncoding(key);
+    if (encoding != "UTF-8" && encoding != "utf-8") {
+      // transcode
+      iconv_t cd = iconv_open(encoding.c_str(), "UTF-8");
+      char encode_buf[kBufferSize];
+      // ugly cast for inconsistent iconv prototype
+      char* in_p = const_cast<char*>(text.data());
+      size_t in_bytes_left = text.length();
+      while (in_bytes_left > 0) {
+        char* out_p = encode_buf;
+        size_t out_bytes_free = kBufferSize;
+        size_t icnv = iconv(cd, &in_p, &in_bytes_left, &out_p, &out_bytes_free);
+        if (icnv == static_cast<size_t>(-1)) {
+          switch (errno) {
+            case E2BIG:
+              // expected case if encode_buf is full
+              break;
+            case EINVAL:
+            case EILSEQ:
+            default:
+              iconv_close(cd);
+              SetSyncError(reply, IO_ERR);
+              return;
+          }
+        }
+        buffer.append(encode_buf, kBufferSize-out_bytes_free);
+      }
+      iconv_close(cd);
+    } else {
+      buffer = text;
+    }
   }
-
-  // FIXME(ricardotk): get default platform encoding mode and compare.
-  if (msg.get("encoding").to_str() == "ISO-8859-1")
-    buffer = ConvertCharacterEncoding("ISO_8859-1", "UTF-8",
-                                                &buffer[0], buffer.length());
 
   if (!((*fs) << buffer)) {
     fs->clear();
@@ -1151,7 +1249,6 @@ void FilesystemInstance::HandleFileStreamWrite(const picojson::value& msg,
     return;
   }
   fs->flush();
-
   SetSyncSuccess(reply);
 }
 
@@ -1179,7 +1276,7 @@ void FilesystemInstance::HandleFileCreateDirectory(const picojson::value& msg,
     return;
   }
 
-  if (mkdir(real_path.c_str(), kDefaultFileMode) < 0) {
+  if (!makePath(real_path)) {
     SetSyncError(reply, IO_ERR);
     return;
   }
@@ -1333,12 +1430,11 @@ void FilesystemInstance::HandleFileStreamStat(const picojson::value& msg,
     return;
   }
 
-  std::streampos bytes_read = -1;
+  std::streampos fsize = 0;
   if (!fs->eof()) {
     std::streampos initial_pos = fs->tellg();
-    char buffer[kMaxSize] = { 0 };
-    fs->read(buffer, kMaxSize);
-    bytes_read = fs->tellg() - initial_pos;
+    fs->seekg(0, std::ios::end);
+    fsize = fs->tellg() - initial_pos;
     if (fs->bad()) {
       fs->clear();
       SetSyncError(reply, IO_ERR);
@@ -1353,11 +1449,10 @@ void FilesystemInstance::HandleFileStreamStat(const picojson::value& msg,
       return;
     }
   }
-
   picojson::value::object o;
   o["position"] = picojson::value(static_cast<double>(fs->tellg()));
   o["eof"] = picojson::value(fs->eof());
-  o["bytesAvailable"] = picojson::value(static_cast<double>(bytes_read));
+  o["bytesAvailable"] = picojson::value(static_cast<double>(fsize));
 
   picojson::value v(o);
   SetSyncSuccess(reply, v);
@@ -1388,8 +1483,163 @@ void FilesystemInstance::HandleFileStreamSetPosition(const picojson::value& msg,
     SetSyncError(reply, IO_ERR);
     return;
   }
-
   SetSyncSuccess(reply);
+}
+
+namespace {
+
+/**
+ * Request req_char_num characters (glyphs) from buffer s of length slen.
+ * Set actual_char_num to the number of actually available characters
+ * (actual_char_num <= req_char_num)
+ * Set bytes_num to the number of corresponding bytes in the buffer.
+ * Beware! the buffer must contain complete and valid UTF-8 character sequences.
+ */
+bool GetCharsFromBytes(char* s, int slen, int req_char_num,
+    size_t* actual_char_num, size_t* bytes_num) {
+  int i = 0;
+  int j = 0;
+  while (i < slen && j < req_char_num) {
+    if (s[i] > 0) {
+      i++;
+    } else if ((s[i] & 0xE0) == 0xC0) {
+      i += 2;
+    } else if ((s[i] & 0xF0) == 0xE0) {
+      i += 3;
+    } else if ((s[i] & 0xF8) == 0xF0) {
+      i += 4;
+    // these should never happen (restriction of unicode under 0x10FFFF)
+    // but belong to the UTF-8 standard yet.
+    } else if ((s[i] & 0xFC) == 0xF8) {
+      i += 5;
+    } else if ((s[i] & 0xFE) == 0xFC) {
+      i += 6;
+    } else {
+      std::cerr << "Invalid UTF-8!" << std::endl;
+      return false;
+    }
+    j++;
+  }
+  (*actual_char_num) = j;
+  (*bytes_num) = i;
+  return true;
+}
+
+}  // namespace
+
+void FilesystemInstance::ReadText(std::fstream* file, size_t num_chars,
+    const char* encoding, std::string& reply) {
+  iconv_t cd = iconv_open("UTF-8", encoding);
+
+  char inbuffer[kBufferSize];
+  char utf8buffer[kBufferSize];
+  std::string out;
+  int strlength = 0;
+
+  bool out_of_space = false;
+  bool partial_remains = false;
+  // number of bytes already at start of buffer
+  size_t offset = 0;
+  // As we can't predict how much data to read, we may convert more
+  // data than needed. Keep track of excess (converted) bytes in utf8buffer.
+  size_t excess_offset = 0;
+  size_t excess_len = 0;
+  std::streampos original_pos = file->tellg();
+
+  while (strlength < num_chars && !file->eof()) {
+    file->read(inbuffer + offset, kBufferSize - offset);
+    size_t src_bytes_left = file->gcount()+offset;
+
+    char* in_p = inbuffer;
+    do {
+      char* utf8_p = utf8buffer;
+      size_t utf8_bytes_free = kBufferSize;
+      out_of_space = false;
+      partial_remains = false;
+
+      size_t icnv = iconv(cd, &in_p, &src_bytes_left, &utf8_p,
+          &utf8_bytes_free);
+
+      if (icnv == static_cast<size_t>(-1)) {
+        switch (errno) {
+          case E2BIG:
+            out_of_space = true;
+            break;
+          case EINVAL:
+            partial_remains = true;
+            break;
+          case EILSEQ:
+          default:
+            iconv_close(cd);
+            // restore filepos
+            file->clear();
+            file->seekg(original_pos);
+            SetSyncError(reply, IO_ERR);
+            return;
+        }
+      }
+      int missing = num_chars - strlength;
+      size_t available = 0;
+      size_t datalen;
+      size_t utf8load = kBufferSize - utf8_bytes_free;
+      if (!GetCharsFromBytes(utf8buffer, utf8load,
+          missing, &available, &datalen)) {
+        iconv_close(cd);
+        // restore filepos
+        file->clear();
+        file->seekg(original_pos);
+        SetSyncError(reply, IO_ERR);
+        return;
+      }
+      out.append(utf8buffer, datalen);
+      strlength += available;
+      if (datalen < utf8load) {
+        excess_offset = datalen;
+        excess_len = utf8load - datalen;
+        out_of_space = false;
+        partial_remains = (src_bytes_left > 0);
+      }
+    } while (out_of_space);
+
+    if (partial_remains) {
+      // some bytes remains at the end of the buffer that were not converted
+      // move them to the beginning of the inbuffer before completing with data
+      // from disk
+      if (strlength < num_chars)
+        memmove(inbuffer, inbuffer + kBufferSize - src_bytes_left,
+            src_bytes_left);
+      offset = src_bytes_left;
+    } else {
+      offset = 0;
+    }
+  }
+
+  iconv_close(cd);
+  std::streampos back_jump = 0;
+  if (offset > 0) {
+    back_jump = offset;
+  }
+  if (excess_len > 0) {
+    // we've read too much, so reposition the file
+    // first, convert back(!) to compute input data size
+    cd = iconv_open(encoding, "UTF-8");
+    char* in_p = utf8buffer + excess_offset;
+    char* out_p = inbuffer;
+    size_t free_bytes = kBufferSize;
+    iconv(cd, &in_p, &excess_len, &out_p, &free_bytes);
+    if (!strcasecmp(encoding, "UTF16") || !strcasecmp(encoding, "UTF-16")) {
+      // don't count the BOM added by iconv
+      free_bytes += 2;
+    }
+    back_jump += (kBufferSize-free_bytes);
+    iconv_close(cd);
+  }
+  if (back_jump > 0) {
+    file->clear();
+    file->seekg(file->tellg()-back_jump);
+  }
+  SetSyncSuccess(reply, out);
+  return;
 }
 
 std::string FilesystemInstance::GetRealPath(const std::string& fullPath) {
@@ -1460,7 +1710,7 @@ void FilesystemInstance::NotifyStorageStateChanged(int id,
 
 bool FilesystemInstance::OnStorageDeviceSupported(
     int id, storage_type_e type, storage_state_e state,
-    const char *path, void* user_data) {
+    const char* path, void* user_data) {
   reinterpret_cast<FilesystemInstance*>(user_data)->AddStorage(
       id, type, state, path);
   return true;
