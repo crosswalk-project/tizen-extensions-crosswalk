@@ -32,6 +32,7 @@ class ContentInstance : public common::Instance {
   virtual void HandleMessage(const char* msg);
   virtual void HandleSyncMessage(const char* msg);
 
+  bool HandleUpdateRequest(const picojson::value& json);
   void HandleGetDirectoriesRequest(const picojson::value& json);
   void HandleGetDirectoriesReply(const picojson::value& json,
     ContentFolderList *);
@@ -96,12 +97,21 @@ class ContentFolder {
 class ContentItem {
  public:
   ContentItem() : size_(0), rating_(0), bitrate_(0), trackNumber_(0),
-      duration_(0), width_(0), height_(0), latitude_(0), longitude_(0)
-  {}
+      duration_(0), width_(0), height_(0), latitude_(DEFAULT_GEOLOCATION),
+      longitude_(DEFAULT_GEOLOCATION) {
+    editable_attributes_.push_back("name");
+    editable_attributes_.push_back("description");
+    editable_attributes_.push_back("rating");
+    editable_attributes_.push_back("geolocation");
+    editable_attributes_.push_back("orientation");
+  }
 
   void init(media_info_h handle);
 
   // Getters & Setters
+  const std::vector<std::string>& editable_attributes() const {
+    return editable_attributes_;
+  }
   const std::string& id() const { return id_; }
   void setID(const std::string& id) { id_ = id; }
   const std::string& name() const { return name_; }
@@ -154,14 +164,15 @@ class ContentItem {
   void setOrientation(const std::string& orintatin) {orientation_ = orintatin;}
   double latitude() const { return latitude_; }
   void setLatitude(double latitude) { latitude_ = latitude; }
-  double longitude() const { return latitude_; }
-  void setLongitude(double latitude) { latitude_ = latitude; }
+  double longitude() const { return longitude_; }
+  void setLongitude(double longitude) { longitude_ = longitude; }
 
 #ifdef DEBUG_ITEM
   void print(void);
 #endif
 
  protected:
+  std::vector<std::string> editable_attributes_;
   std::string id_;
   std::string name_;
   std::string type_;
@@ -191,6 +202,7 @@ class ContentItem {
   double latitude_;
   double longitude_;
   std::string orientation_;
+  const double DEFAULT_GEOLOCATION = -200;
 };
 
 class ContentFolderList {

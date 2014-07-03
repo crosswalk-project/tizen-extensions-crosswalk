@@ -52,11 +52,12 @@ function Folder(uri, id, type, title) {
   });
 }
 
-function Content(id, name, type, mimeType, title, contentURI, thumnailURIs, releaseDate,
-                 modifiedDate, size, description, rating) {
+function Content(editableAttributes, id, name, type, mimeType, title, contentURI, thumnailURIs,
+    releaseDate, modifiedDate, size, description, rating) {
   Object.defineProperties(this, {
+    'editableAttributes': { writable: false, value: editableAttributes, enumerable: true },
     'id': { writable: false, value: id, enumerable: true },
-    'name': { writable: false, value: name, enumerable: true },
+    'name': { writable: true, value: name, enumerable: true },
     'type': { writable: false, value: type, enumerable: true },
     'mimeType': { writable: false, value: mimeType, enumerable: true },
     'title': { writable: false, value: title, enumerable: true },
@@ -65,13 +66,13 @@ function Content(id, name, type, mimeType, title, contentURI, thumnailURIs, rele
     'releaseDate': { writable: false, value: releaseDate, enumerable: true },
     'modifiedDate': { writable: false, value: modifiedDate, enumerable: true },
     'size': { writable: false, value: size, enumerable: true },
-    'description': { writable: false, value: description, enumerable: true },
-    'rating': { writable: false, value: rating, enumerable: true }
+    'description': { writable: true, value: description, enumerable: true },
+    'rating': { writable: true, value: rating, enumerable: true }
   });
 }
 
 function ContentAudio(obj, album, genres, artists, composer, copyright,
-                      bitrate, trackNumber, duration) {
+    bitrate, trackNumber, duration) {
   Object.defineProperties(obj, {
     'album': { writable: false, value: album, enumerable: true },
     'genres': { writable: false, value: genres, enumerable: true },
@@ -84,16 +85,18 @@ function ContentAudio(obj, album, genres, artists, composer, copyright,
   });
 }
 
-function ContentImage(obj, width, height, orientation) {
+function ContentImage(obj, geolocation, width, height, orientation) {
   Object.defineProperties(obj, {
+    'geolocation': { writable: true, value: geolocation, enumerable: true },
     'width': { writable: false, value: width, enumerable: true },
     'height': { writable: false, value: height, enumerable: true },
-    'orientation': { writable: false, value: orientation, enumerable: true }
+    'orientation': { writable: true, value: orientation, enumerable: true }
   });
 }
 
-function ContentVideo(obj, album, artists, duration, width, height) {
+function ContentVideo(obj, geolocation, album, artists, duration, width, height) {
   Object.defineProperties(obj, {
+    'geolocation': { writable: true, value: geolocation, enumerable: true },
     'album': { writable: false, value: album, enumerable: true },
     'artists': { writable: false, value: artists, enumerable: true },
     'duration': { writable: false, value: duration, enumerable: true },
@@ -110,6 +113,10 @@ ContentManager.prototype.update = function(content) {
   if (!xwalk.utils.validateArguments('o', arguments)) {
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
   }
+  sendSyncMessage({
+    cmd: 'ContentManager.update',
+    content: content
+  });
 };
 
 ContentManager.prototype.updateBatch = function(content, onsuccess, onerror) {
@@ -166,7 +173,8 @@ ContentManager.prototype.find = function(onsuccess, onerror, directoryId,
       var contents = [];
       for (var i = 0; i < result.value.length; i++) {
         var content = result.value[i];
-        var jsonContent = new Content(content.id,
+        var jsonContent = new Content(content.editableAttributes,
+            content.id,
             content.name,
             content.type,
             content.mimeType,
@@ -190,12 +198,16 @@ ContentManager.prototype.find = function(onsuccess, onerror, directoryId,
               content.trackNumber,
               content.duration);
         } else if (content.type == 'IMAGE') {
+          var geolocation = new tizen.SimpleCoordinates(content.latitude, content.longitude);
           ContentImage(jsonContent,
+              geolocation,
               content.width,
               content.height,
               content.orientation);
         } else if (content.type == 'VIDEO') {
-          ContentImage(jsonContent,
+          var geolocation = new tizen.SimpleCoordinates(content.latitude, content.longitude);
+          ContentVideo(jsonContent,
+              geolocation,
               content.album,
               content.artists,
               content.duration,

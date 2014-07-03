@@ -16,6 +16,11 @@
 #include "common/picojson.h"
 
 namespace {
+
+const std::string STR_ID("id");
+const std::string STR_NAME("name");
+const std::string STR_DESCRIPTION("description");
+const std::string STR_RATING("rating");
 const std::string STR_FILTER("filter");
 const std::string STR_CONTENT_URI("contentURI");
 const std::string STR_EVENT_TYPE("eventType");
@@ -136,6 +141,9 @@ void ContentInstance::HandleSyncMessage(const char* message) {
     rc = media_content_set_db_updated_cb(MediaContentChangeCallback, this);
   } else if (cmd == "ContentManager.unsetChangeListener") {
     rc = media_content_unset_db_updated_cb();
+  } else if ("ContentManager.update") {
+    if (HandleUpdateRequest(v.get("content")))
+      rc = MEDIA_CONTENT_ERROR_NONE;
   } else {
     std::cerr << "Message " + cmd + " is not supported.\n";
   }
@@ -147,6 +155,52 @@ void ContentInstance::HandleSyncMessage(const char* message) {
   std::cout << "Reply: " << v.serialize().c_str() << std::endl;
 #endif
   SendSyncReply(v.serialize().c_str());
+}
+
+bool ContentInstance::HandleUpdateRequest(const picojson::value& msg) {
+  if (!msg.contains(STR_ID)) {
+    std::cerr << "HandleUpdateRequest: No ID in the message" << std::endl;
+    return false;
+  }
+
+  media_info_h handle;
+  if (media_info_get_media_from_db(msg.get(STR_ID).to_str().c_str(), &handle)
+      != MEDIA_CONTENT_ERROR_NONE) {
+    std::cerr << "media_info_get_media_from_db: error" << std::endl;
+    return false;
+  }
+
+  bool no_error = true;
+  if (msg.contains(STR_NAME) &&
+      media_info_set_display_name(handle,
+          msg.get(STR_NAME).to_str().c_str()) != MEDIA_CONTENT_ERROR_NONE) {
+    std::cerr << "media_info_set_display_name: error" << std::endl;
+    no_error = false;
+  }
+
+  if (msg.contains(STR_DESCRIPTION) &&
+      media_info_set_description(handle,
+          msg.get(STR_DESCRIPTION).to_str().c_str())
+              != MEDIA_CONTENT_ERROR_NONE) {
+    std::cerr << "media_info_set_description: error" << std::endl;
+    no_error = false;
+  }
+
+  if (msg.contains(STR_RATING) &&
+      media_info_set_rating(handle,
+          std::stoi(msg.get(STR_RATING).to_str()))
+              != MEDIA_CONTENT_ERROR_NONE) {
+    std::cerr << "media_info_set_rating: error" << std::endl;
+    no_error = false;
+  }
+
+  // Commit the changes to DB
+  if (media_info_update_to_db(handle) != MEDIA_CONTENT_ERROR_NONE) {
+    std::cerr << "media_info_update_to_db: error" << std::endl;
+    no_error = false;
+  }
+
+  return no_error;
 }
 
 void ContentInstance::HandleGetDirectoriesRequest(const picojson::value& msg) {
@@ -170,7 +224,7 @@ void ContentInstance::HandleGetDirectoriesReply(const picojson::value& msg,
 
     picojson::value::object o;
 
-    o["id"] = picojson::value(folder->id());
+    o[STR_ID] = picojson::value(folder->id());
     o["directoryURI"] = picojson::value(folder->directoryURI());
     o["title"] = picojson::value(folder->title());
     o["storageType"] = picojson::value(folder->storageType());
@@ -241,8 +295,13 @@ void ContentInstance::HandleFindReply(
 
     picojson::value::object o;
 
-    o["id"] = picojson::value(item->id());
-    o["name"] = picojson::value(item->name());
+    picojson::value::array editableAttributesJson;
+    std::vector<std::string> editableAttributes = item->editable_attributes();
+    for (unsigned i = 0; i < editableAttributes.size(); i++)
+      editableAttributesJson.push_back(picojson::value(editableAttributes[i]));
+    o["editableAttributes"] = picojson::value(editableAttributesJson);
+    o[STR_ID] = picojson::value(item->id());
+    o[STR_NAME] = picojson::value(item->name());
     o["type"] = picojson::value(item->type());
     o["mimeType"] = picojson::value(item->mimeType());
     o["title"] = picojson::value(item->title());
@@ -254,8 +313,8 @@ void ContentInstance::HandleFindReply(
     o["modifiedDate"] =
       picojson::value(item->modifiedDate());
     o["size"] = picojson::value(static_cast<double>(item->size()));
-    o["description"] = picojson::value(item->description());
-    o["rating"] = picojson::value(static_cast<double>(item->rating()));
+    o[STR_DESCRIPTION] = picojson::value(item->description());
+    o[STR_RATING] = picojson::value(static_cast<double>(item->rating()));
 
     if (item->type() == "AUDIO") {
       o["album"] = picojson::value(item->album());
@@ -277,6 +336,10 @@ void ContentInstance::HandleFindReply(
       o["width"] = picojson::value(static_cast<double>(item->width()));
       o["height"] = picojson::value(static_cast<double>(item->height()));
       o["orientation"] = picojson::value(item->orientation());
+      o["latitude"] =
+          picojson::value(static_cast<double>(item->latitude()));
+      o["longitude"] =
+          picojson::value(static_cast<double>(item->longitude()));
     } else if (item->type() == "VIDEO") {
       o["album"] = picojson::value(item->album());
       picojson::value::array artists;
@@ -285,6 +348,10 @@ void ContentInstance::HandleFindReply(
       o["duration"] = picojson::value(static_cast<double>(item->duration()));
       o["width"] = picojson::value(static_cast<double>(item->width()));
       o["height"] = picojson::value(static_cast<double>(item->height()));
+      o["latitude"] =
+          picojson::value(static_cast<double>(item->latitude()));
+      o["longitude"] =
+          picojson::value(static_cast<double>(item->longitude()));
     }
 
     picojson::value v(o);
@@ -486,7 +553,6 @@ void ContentItem::init(media_info_h handle) {
         if (image_meta_get_height(image, &i) == MEDIA_CONTENT_ERROR_NONE)
           setHeight(i);
 
-        // TODO(spoussa): coordinates do not return sensible values...
         double d;
         if (media_info_get_latitude(handle, &d) == MEDIA_CONTENT_ERROR_NONE)
           setLatitude(d);
@@ -549,6 +615,13 @@ void ContentItem::init(media_info_h handle) {
         if (video_meta_get_duration(video, &i) == MEDIA_CONTENT_ERROR_NONE) {
           setDuration(i);
         }
+
+        double d;
+        if (media_info_get_latitude(handle, &d) == MEDIA_CONTENT_ERROR_NONE)
+          setLatitude(d);
+
+        if (media_info_get_longitude(handle, &d) == MEDIA_CONTENT_ERROR_NONE)
+          setLongitude(d);
 
         video_meta_destroy(video);
       }
