@@ -5,17 +5,12 @@
 #include "bluetooth/bluetooth_extension.h"
 
 #if defined(TIZEN_CAPI_BT)
-#include <bluetooth.h>
 #include "bluetooth/bluetooth_instance_capi.h"
 #else
 #include "bluetooth/bluetooth_instance.h"
 #endif
 
 common::Extension* CreateExtension() {
-#if defined(TIZEN_CAPI_BT)
-  CAPI(bt_initialize());
-#endif
-
   return new BluetoothExtension;
 }
 

@@ -38,6 +38,7 @@ BluetoothInstance::BluetoothInstance()
   event_thread = pthread_create(&event_thread, &thread_attr,
       event_loop, NULL);
 
+  CAPI(bt_initialize());
   InitializeAdapter();
 }
 
