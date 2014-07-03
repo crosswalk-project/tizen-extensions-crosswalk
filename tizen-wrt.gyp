@@ -26,7 +26,6 @@
           'dependencies': [
             'alarm/alarm.gyp:*',
             'application/application.gyp:*',
-            'audiosystem/audiosystem.gyp:*',
             'bookmark/bookmark.gyp:*',
             'content/content.gyp:*',
             'download/download.gyp:*',
@@ -41,6 +40,7 @@
         }],
         [ 'extension_host_os == "ivi"', {
           'dependencies': [
+            'audiosystem/audiosystem.gyp:*',
             'vehicle/vehicle.gyp:*',
           ],
         }],
