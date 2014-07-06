@@ -251,3 +251,20 @@ exports.CompositeFilter.prototype = new exports.AbstractFilter();
 exports.CompositeFilter.prototype.constructor = exports.CompositeFilter;
 
 // end of Tizen filters
+
+// SimpleCoordinates
+// [Constructor(double latitude, double longitude)]
+// interface SimpleCoordinates {
+//   attribute double latitude;
+//   attribute double longitude;
+// };
+exports.SimpleCoordinates = function(latitude, longitude) {
+  if (!(typeof(latitude) === 'number' || typeof(longitude) === 'number'))
+    throw new exports.WebAPIException(exports.WebAPIException.TYPE_MISMATCH_ERR);
+
+  Object.defineProperties(this, {
+    'latitude': { writable: false, enumerable: true, value: latitude },
+    'longitude': { writable: false, enumerable: true, value: longitude }
+  });
+};
+exports.SimpleCoordinates.prototype.constructor = exports.SimpleCoordinates;
