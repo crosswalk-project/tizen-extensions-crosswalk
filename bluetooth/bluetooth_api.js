@@ -33,7 +33,8 @@ extension.setMessageListener(function(json) {
     handleSocketHasData(msg);
   else if (msg.cmd == 'SocketClosed')
     handleSocketClosed(msg);
-  else { // Then we are dealing with postMessage return.
+
+  if (msg.reply_id) { // Then we are dealing with postMessage return.
     var reply_id = msg.reply_id;
     var callback = _callbacks[reply_id];
     if (callback) {
@@ -200,7 +201,7 @@ var handleAdapterUpdated = function(msg) {
   if (msg.Powered) {
     var powered = (msg.Powered === 'true') ? true : false;
     _addConstProperty(defaultAdapter, 'powered', powered);
-    if (defaultAdapter.powered !== powered && listener && listener.onstatechanged) {
+    if (listener && listener.onstatechanged) {
       adapter.change_listener.onstatechanged(powered);
     }
   }
@@ -439,8 +440,6 @@ BluetoothAdapter.prototype.setName = function(name, successCallback, errorCallba
       return;
     }
 
-    _addConstProperty(defaultAdapter, 'name', name);
-
     if (successCallback)
       successCallback();
   });
@@ -472,8 +471,6 @@ BluetoothAdapter.prototype.setPowered = function(state, successCallback, errorCa
 
       throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
     }
-
-    _addConstProperty(defaultAdapter, 'powered', state);
 
     if (successCallback)
       successCallback();
@@ -508,8 +505,6 @@ BluetoothAdapter.prototype.setVisible = function(mode, successCallback, errorCal
       throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
       return;
     }
-
-    _addConstProperty(defaultAdapter, 'visible', mode);
 
     if (successCallback)
       successCallback();

@@ -112,7 +112,8 @@ void BluetoothInstance::OnStateChanged(int result,
 
   picojson::value::object o;
 
-  o["cmd"] = picojson::value("");
+  o["cmd"] = picojson::value("AdapterUpdated");
+  o["Powered"] = picojson::value(BoolToString(obj->adapter_enabled_));
   o["reply_id"] = picojson::value(obj->callbacks_id_map_["Powered"]);
   if (result)
     o["error"] = picojson::value(static_cast<double>(1));
@@ -132,8 +133,9 @@ void BluetoothInstance::OnNameChanged(char* name, void* user_data) {
 
   picojson::value::object o;
 
+  o["cmd"] = picojson::value("AdapterUpdated");
+  o["Name"] = picojson::value(name);
   o["error"] = picojson::value(static_cast<double>(0));
-  o["cmd"] = picojson::value("");
   o["reply_id"] = picojson::value(obj->callbacks_id_map_["Name"]);
   obj->InternalPostMessage(picojson::value(o));
   obj->callbacks_id_map_.erase("Name");
@@ -149,7 +151,12 @@ void BluetoothInstance::OnVisibilityChanged(int result,
 
   picojson::value::object o;
 
-  o["cmd"] = picojson::value("");
+  const char* visible =
+      (visibility_mode == BT_ADAPTER_VISIBILITY_MODE_NON_DISCOVERABLE) ?
+          "false" : "true";
+
+  o["cmd"] = picojson::value("AdapterUpdated");
+  o["Discoverable"] = picojson::value(visible);
   o["reply_id"] = picojson::value(obj->callbacks_id_map_["Discoverable"]);
   if (result)
     o["error"] = picojson::value(static_cast<double>(1));
