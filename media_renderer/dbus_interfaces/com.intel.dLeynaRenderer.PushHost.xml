@@ -1,0 +1,17 @@
+<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"
+                      "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
+<!-- GDBus 2.38.2 -->
+<node>
+  <interface name="com.intel.dLeynaRenderer.PushHost">
+    <method name="HostFile">
+      <arg type="s" name="Path" direction="in">
+      </arg>
+      <arg type="s" name="Uri" direction="out">
+      </arg>
+    </method>
+    <method name="RemoveFile">
+      <arg type="s" name="Path" direction="in">
+      </arg>
+    </method>
+  </interface>
+</node>
