@@ -13,6 +13,7 @@
 
 #include "common/extension.h"
 #include "common/utils.h"
+#include "common/virtual_fs.h"
 #include "web/download.h"
 
 namespace picojson {
@@ -27,6 +28,7 @@ class DownloadInstance : public common::Instance {
   ~DownloadInstance();
 
  private:
+  VirtualFS vfs_;
   virtual void HandleMessage(const char* msg);
   virtual void HandleSyncMessage(const char* msg);
 
@@ -87,9 +89,7 @@ class DownloadInstance : public common::Instance {
   typedef std::map<std::string, DownloadItemRefPtr> DownloadItemMap;
   DownloadItemMap downloads_;
 
-  // TODO(hdq): This depends on filesystem api?
   const std::string GetFullDestinationPath(const std::string destination) const;
-  const std::string GetActualFolder(const std::string& destination) const;
 
   bool GetDownloadID(const picojson::value& msg,
                      int& download_id, DownloadArgs** args);
