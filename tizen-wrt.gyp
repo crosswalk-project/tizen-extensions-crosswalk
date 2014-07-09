@@ -30,6 +30,7 @@
             'application/application.gyp:*',
             'bookmark/bookmark.gyp:*',
             'content/content.gyp:*',
+            'datasync/datasync.gyp:*',
             'download/download.gyp:*',
             'filesystem/filesystem.gyp:*',
             'messageport/messageport.gyp:*',

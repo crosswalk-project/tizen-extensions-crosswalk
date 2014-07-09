@@ -64,6 +64,7 @@ BuildRequires: pkgconfig(pkgmgr)
 BuildRequires: pkgconfig(pkgmgr-info)
 BuildRequires: pkgconfig(pmapi)
 BuildRequires: pkgconfig(tapi)
+BuildRequires: pkgconfig(sync-agent)
 BuildRequires: pkgconfig(vconf)
 %if %{with wayland}
 BuildRequires: pkgconfig(wayland-client)
