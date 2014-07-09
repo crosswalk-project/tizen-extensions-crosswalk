@@ -9,7 +9,8 @@
 #include "common/extension.h"
 #include "mediarenderer/mediarenderer.h"
 
-typedef std::pair<std::string, std::shared_ptr<MediaRenderer>> MediaRendererPair;
+typedef std::pair<std::string, std::shared_ptr<MediaRenderer>>
+    MediaRendererPair;
 
 MediaRendererManager::MediaRendererManager(common::Instance* instance)
     : instance_(instance) {
@@ -132,14 +133,14 @@ void MediaRendererManager::handleGotoTrack(const picojson::value& value) {
 }
 
 void MediaRendererManager::postRendererFound(const std::string& path) {
- MediaRendererPtr media_renderer(new MediaRenderer(instance_, path));
- fprintf(stderr, "Renderer FOUND: %s\n", path.c_str());
+  MediaRendererPtr media_renderer(new MediaRenderer(instance_, path));
+  fprintf(stderr, "Renderer FOUND: %s\n", path.c_str());
   media_renderers_.insert(MediaRendererPair(path, media_renderer));
   picojson::value::object object;
   object["cmd"] = picojson::value("rendererFound");
- object["renderer"] = media_renderer->toJSON();
- picojson::value value(object);
- instance_->PostMessage(value.serialize().c_str());
+  object["renderer"] = media_renderer->toJSON();
+  picojson::value value(object);
+  instance_->PostMessage(value.serialize().c_str());
 }
 
 
@@ -148,7 +149,8 @@ MediaRendererPtr MediaRendererManager::getMediaRendererById(
   return getMediaRendererById(id.get("rendererId").to_str());
 }
 
-MediaRendererPtr MediaRendererManager::getMediaRendererById(const std::string& id) {
+MediaRendererPtr MediaRendererManager::getMediaRendererById(
+    const std::string& id) {
   if (media_renderers_.size()) {
     std::map<std::string, MediaRendererPtr>::const_iterator it;
     fprintf(stderr, "Searching Renderer: %s\n", id.c_str());

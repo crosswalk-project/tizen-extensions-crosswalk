@@ -9,6 +9,7 @@
       'type': 'none',
       'dependencies': [
         'bluetooth/bluetooth.gyp:*',
+        'mediarenderer/mediarenderer.gyp:*',
         'mediaserver/mediaserver.gyp:*',
         'network_bearer_selection/network_bearer_selection.gyp:*',
         'notification/notification.gyp:*',

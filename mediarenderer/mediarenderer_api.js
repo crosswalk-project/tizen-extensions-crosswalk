@@ -221,7 +221,7 @@ MediaRenderer.prototype.prefetchURI = function(mediaURI, metaData) {
 MediaRenderer.prototype.cancel = function() {
   var msg = {
     'cmd': 'cancel',
-    'rendererId': this.id,
+    'rendererId': this.id
   };
   return createPromise(msg);
 };
@@ -230,8 +230,8 @@ MediaRenderer.prototype.cancel = function() {
 // MediaController
 ///////////////////////////////////////////////////////////////////////////////
 
-function MediaController (obj) {
-  _addConstPropertyFromObject(this, 'id', obj);  
+function MediaController(obj) {
+  _addConstPropertyFromObject(this, 'id', obj);
   _addConstPropertyFromObject(this, 'playbackStatus', obj);
   _addConstPropertyFromObject(this, 'muted', obj);
   _addConstPropertyFromObject(this, 'volume', obj);

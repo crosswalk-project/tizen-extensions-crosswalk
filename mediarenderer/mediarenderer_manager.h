@@ -27,7 +27,7 @@ class MediaRendererManager {
   void getRenderers(const picojson::value& value);
   void handleOpenURI(const picojson::value& value);
   void handlePrefetchURI(const picojson::value& value);
-  void handleCancel(const picojson::value& value);  
+  void handleCancel(const picojson::value& value);
   void handlePlay(const picojson::value& value);
   void handlePause(const picojson::value& value);
   void handleStop(const picojson::value& value);

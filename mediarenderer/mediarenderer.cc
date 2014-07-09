@@ -20,15 +20,15 @@ static picojson::value toJSONValue(const gchar* value) {
   return value ? picojson::value(value) : picojson::value();
 }
 
-static picojson::value toJSONValueArray(const GVariant *values) {
+static picojson::value toJSONValueArray(GVariant *values) {
   picojson::array array;
   GVariantIter iter;
   GVariant *child;
   gint value;
 
-  g_variant_iter_init (&iter, (GVariant *)values);
-  while (g_variant_iter_next (&iter, "{d}", &value))
-    array.push_back(picojson::value((double)value));
+  g_variant_iter_init(&iter, values);
+  while (g_variant_iter_next(&iter, "{d}", &value))
+    array.push_back(picojson::value(static_cast<double>(value)));
   return picojson::value(array);
 }
 
@@ -41,7 +41,7 @@ MediaRenderer::MediaRenderer(common::Instance* instance,
       object_path_(object_path),
       cancellable_(g_cancellable_new()) {
   GError* gerror = NULL;
-  
+
   rendererdevice_proxy_ = dleyna_renderer_device_proxy_new_for_bus_sync(
       G_BUS_TYPE_SESSION,
       G_DBUS_PROXY_FLAGS_NONE,
@@ -79,13 +79,13 @@ MediaRenderer::MediaRenderer(common::Instance* instance,
   if (gerror) {
     g_error_free(gerror);
     return;
-  }      
+  }
 }
 
 MediaRenderer::~MediaRenderer() {
   g_object_unref(rendererdevice_proxy_);
-  g_object_unref(pushhost_proxy_);  
-  //g_object_unref(mediaplayer2_proxy_);
+  g_object_unref(pushhost_proxy_);
+  // g_object_unref(mediaplayer2_proxy_);
   g_object_unref(mprisplayer_proxy_);
 }
 
@@ -121,16 +121,17 @@ picojson::value MediaRenderer::toJSON() {
     controllerObject["id"] = picojson::value(object_path_);
     controllerObject["playbackStatus"] = toJSONValue(
         mprismediaplayer2_player_get_playback_status(mprisplayer_proxy_));
-    controllerObject["muted"] = picojson::value((bool)
-        mprismediaplayer2_player_get_mute(mprisplayer_proxy_));
+    controllerObject["muted"] = picojson::value(static_cast<bool>
+        (mprismediaplayer2_player_get_mute(mprisplayer_proxy_)));
     controllerObject["volume"] = picojson::value(
         mprismediaplayer2_player_get_volume(mprisplayer_proxy_));
-    controllerObject["track"] = picojson::value((double)
-        mprismediaplayer2_player_get_current_track(mprisplayer_proxy_));
+    controllerObject["track"] = picojson::value(static_cast<double>
+        (mprismediaplayer2_player_get_current_track(mprisplayer_proxy_)));
     controllerObject["speed"] = picojson::value(
         mprismediaplayer2_player_get_rate(mprisplayer_proxy_));
-    //controllerObject["playSpeeds"] = toJSONValueArray(
-    //    (const GVariant *)mprismediaplayer2_player_get_transport_play_speeds(mprisplayer_proxy_));
+    // controllerObject["playSpeeds"] = toJSONValueArray(
+    //    (const GVariant *)mprismediaplayer2_player_get_transport_play_speeds(
+    //        mprisplayer_proxy_));
 
     object_["controller"] = picojson::value(controllerObject);
   }
@@ -138,7 +139,7 @@ picojson::value MediaRenderer::toJSON() {
   return picojson::value(object_);
 }
 
-//MediaRenderer methods
+// MediaRenderer methods
 void MediaRenderer::openURI(const picojson::value& value) {
   double async_call_id = value.get("asyncCallId").get<double>();
 
@@ -175,7 +176,6 @@ void MediaRenderer::prefetchURI(const picojson::value& value) {
       cancellable_,
       OnPrefetchURICallBack,
       new CallbackData(this, async_call_id));
-
 }
 
 void MediaRenderer::cancel(const picojson::value& value) {
@@ -197,7 +197,7 @@ bool MediaRenderer::isCancelled() const {
   return g_cancellable_is_cancelled(cancellable_);
 }
 
-//MediaController methods
+// MediaController methods
 void MediaRenderer::play(const picojson::value& value) {
   double async_call_id = value.get("asyncCallId").get<double>();
 
@@ -225,7 +225,7 @@ void MediaRenderer::pause(const picojson::value& value) {
       mprisplayer_proxy_,
       cancellable_,
       OnPauseCallBack,
-      new CallbackData(this, async_call_id));  
+      new CallbackData(this, async_call_id));
 }
 
 void MediaRenderer::stop(const picojson::value& value) {
@@ -240,7 +240,7 @@ void MediaRenderer::stop(const picojson::value& value) {
       mprisplayer_proxy_,
       cancellable_,
       OnStopCallBack,
-      new CallbackData(this, async_call_id));  
+      new CallbackData(this, async_call_id));
 }
 
 void MediaRenderer::next(const picojson::value& value) {
@@ -281,7 +281,9 @@ void MediaRenderer::mute(const picojson::value& value) {
     return;
   }
 
-  mprismediaplayer2_player_set_mute(mprisplayer_proxy_, (gboolean)value.get("mute").get<double>());
+  mprismediaplayer2_player_set_mute(
+      mprisplayer_proxy_,
+      (gboolean)value.get("mute").get<double>());
   postResult("setMuteCompleted", value.get("asyncCallId").get<double>());
 }
 
@@ -293,7 +295,9 @@ void MediaRenderer::setSpeed(const picojson::value& value) {
     return;
   }
 
-  mprismediaplayer2_player_set_rate(mprisplayer_proxy_, value.get("speed").get<double>());
+  mprismediaplayer2_player_set_rate(
+      mprisplayer_proxy_,
+      value.get("speed").get<double>());
   postResult("setSpeedCompleted", value.get("asyncCallId").get<double>());
 }
 
@@ -304,8 +308,10 @@ void MediaRenderer::setVolume(const picojson::value& value) {
     postError(async_call_id);
     return;
   }
-  mprismediaplayer2_player_set_rate(mprisplayer_proxy_, value.get("volume").get<double>());  
-  postResult("setVolumeCompleted", value.get("asyncCallId").get<double>());  
+  mprismediaplayer2_player_set_rate(
+      mprisplayer_proxy_,
+      value.get("volume").get<double>());
+  postResult("setVolumeCompleted", value.get("asyncCallId").get<double>());
 }
 
 void MediaRenderer::gotoTrack(const picojson::value& value) {
@@ -380,8 +386,9 @@ void MediaRenderer::OnHostFile(
     cancellable_,
     OnOpenURICallBack,
     new CallbackData(this, async_id));
-  } else
+  } else {
     postError(async_id);
+  }
 
   if (gerror)
     g_error_free(gerror);

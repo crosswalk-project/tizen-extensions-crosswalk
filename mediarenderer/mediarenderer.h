@@ -26,7 +26,7 @@ class MediaRenderer {
   void prefetchURI(const picojson::value& value);
   void cancel(const picojson::value& value);
   bool isCancelled() const;
-  
+
   // MediaController methods
   void play(const picojson::value& value);
   void pause(const picojson::value& value);
@@ -41,13 +41,13 @@ class MediaRenderer {
   picojson::value toJSON();
 
  private:
-
   void postResult(const char* completed_operation,
                   double async_operation_id);
   void postError(double async_operation_id);
 
   CALLBACK_METHOD_WITH_ID(OnOpenURI, GObject*, GAsyncResult*, MediaRenderer);
-  CALLBACK_METHOD_WITH_ID(OnPrefetchURI, GObject*, GAsyncResult*, MediaRenderer);
+  CALLBACK_METHOD_WITH_ID(OnPrefetchURI, GObject*,
+      GAsyncResult*, MediaRenderer);
   CALLBACK_METHOD_WITH_ID(OnCancel, GObject*, GAsyncResult*, MediaRenderer);
   CALLBACK_METHOD_WITH_ID(OnHostFile, GObject*, GAsyncResult*, MediaRenderer);
 
@@ -62,7 +62,7 @@ class MediaRenderer {
   common::Instance* instance_;
   picojson::value::object object_;
   dleynaRendererDevice* rendererdevice_proxy_;
-  dleynaPushHost* pushhost_proxy_;  
+  dleynaPushHost* pushhost_proxy_;
   mprisMediaPlayer2* mediaplayer2_proxy_;
   mprismediaplayer2Player* mprisplayer_proxy_;
   std::string object_path_;
