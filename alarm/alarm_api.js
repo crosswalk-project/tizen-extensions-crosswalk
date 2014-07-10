@@ -87,12 +87,14 @@ tizen.AlarmAbsolute = function(date, periodOrDaysOfWeek) {
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
   }
 
+  var periodValue = null;
   var daysOfTheWeek = [];
   if (typeof periodOrDaysOfWeek === 'number' && !isNaN(periodOrDaysOfWeek)) {
-    defineReadOnlyProperty(this, 'period', periodOrDaysOfWeek);
+    periodValue = periodOrDaysOfWeek;
   } else if (periodOrDaysOfWeek instanceof Array && periodOrDaysOfWeek.length > 0) {
     daysOfTheWeek = periodOrDaysOfWeek;
   }
+  defineReadOnlyProperty(this, 'period', periodValue);
   defineReadOnlyProperty(this, 'daysOfTheWeek', daysOfTheWeek);
 };
 
@@ -124,6 +126,8 @@ tizen.AlarmRelative = function(delay, period) {
 
   if (typeof period === 'number' && !isNaN(period))
     defineReadOnlyProperty(this, 'period', period);
+  else
+    defineReadOnlyProperty(this, 'period', null);
 };
 
 tizen.AlarmRelative.prototype = new tizen.Alarm();
