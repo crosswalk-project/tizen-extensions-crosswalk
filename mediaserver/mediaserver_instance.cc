@@ -9,41 +9,12 @@
 #include "common/picojson.h"
 #include "mediaserver/mediaserver_manager.h"
 
-MediaServerInstance::MediaServerInstance()
-    : worker_thread_(&MediaServerInstance::InitWorkerThread, this) {
-  worker_thread_.detach();
+MediaServerInstance::MediaServerInstance() {
+  media_server_manager_ = new MediaServerManager(this);
 }
 
 MediaServerInstance::~MediaServerInstance() {
-  g_main_loop_quit(worker_loop_);
   delete media_server_manager_;
-}
-
-gboolean MediaServerInstance::CreateMediaServerManager(void* data) {
-  if (!data) {
-    std::cerr << "Null pointer is passed to callback" << std::endl;
-    return FALSE;
-  }
-
-  MediaServerInstance* instance = static_cast<MediaServerInstance*>(data);
-  instance->media_server_manager_ = new MediaServerManager(instance);
-  return FALSE;
-}
-
-void MediaServerInstance::InitWorkerThread() {
-  GMainContext* context = g_main_context_default();
-  worker_loop_ = g_main_loop_new(context, FALSE);
-  g_main_context_push_thread_default(context);
-  GSource* source = g_idle_source_new();
-  g_source_set_callback(source,
-                        &MediaServerInstance::CreateMediaServerManager,
-                        this,
-                        NULL);
-  g_source_attach(source, context);
-  g_main_loop_run(worker_loop_);
-  g_source_destroy(source);
-  g_source_unref(source);
-  g_main_loop_unref(worker_loop_);
 }
 
 void MediaServerInstance::HandleMessage(const char* message) {
