@@ -571,7 +571,7 @@ void BluetoothInstance::HandleStopDiscovery(const picojson::value& msg) {
   CAPI(bt_adapter_is_discovering(&is_discovering));
   if (!is_discovering) {
     picojson::value::object o;
-    o["error"] = picojson::value(static_cast<double>(1));
+    o["error"] = picojson::value(static_cast<double>(0));
     o["cmd"] = picojson::value("");
     o["reply_id"] = picojson::value(callbacks_id_map_["StopDiscovery"]);
     callbacks_id_map_.erase("StopDiscovery");
