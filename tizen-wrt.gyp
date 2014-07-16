@@ -42,6 +42,7 @@
           'dependencies': [
             'audiosystem/audiosystem.gyp:*',
             'vehicle/vehicle.gyp:*',
+            'sso/sso.gyp:*',
           ],
         }],
       ],
