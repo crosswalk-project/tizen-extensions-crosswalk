@@ -1,0 +1,33 @@
+<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"
+                      "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
+<!-- GDBus 2.38.2 -->
+<node>
+  <interface name="com.intel.dLeynaRenderer.Manager">
+    <method name="GetVersion">
+      <arg type="s" name="Version" direction="out">
+      </arg>
+    </method>
+    <method name="Release">
+    </method>
+    <method name="GetRenderers">
+      <arg type="ao" name="Renderers" direction="out">
+      </arg>
+    </method>
+    <method name="Rescan">
+    </method>
+    <signal name="FoundRenderer">
+      <arg type="o" name="Path">
+      </arg>
+    </signal>
+    <signal name="LostRenderer">
+      <arg type="o" name="Path">
+      </arg>
+    </signal>
+    <property type="b" name="NeverQuit" access="readwrite">
+    </property>
+    <property type="as" name="WhiteListEntries" access="readwrite">
+    </property>
+    <property type="b" name="WhiteListEnabled" access="readwrite">
+    </property>
+  </interface>
+</node>
