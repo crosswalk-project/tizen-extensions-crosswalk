@@ -4,7 +4,6 @@
 
 #include "mediaserver/mediaserver_extension.h"
 
-#include <glib-object.h>
 #include "mediaserver/mediaserver_instance.h"
 
 common::Extension* CreateExtension() {
