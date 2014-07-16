@@ -13,10 +13,12 @@
 #include "common/picojson.h"
 
 common::Extension* CreateExtension() {
-  // NOTE: The app_id here is package ID instead of application ID for Tizen.
-  // As Crosswalk app has 1 to 1 mapping between package and application, we
-  // can transfer pkg_id to app_id.
-  std::string id_str = common::Extension::GetRuntimeVariable("app_id", 64);
+  // For xpk, tizen_app_id = xwalk.package_id;
+  //          package_id = crosswalk_32bytes_app_id;
+  // For wgt, tizen_app_id = package_id.app_name,
+  //          package_id = tizen_wrt_10bytes_package_id;
+  std::string id_str =
+      common::Extension::GetRuntimeVariable("tizen_app_id", 64);
   picojson::value id_val;
   std::istringstream buf(id_str);
   std::string error = picojson::parse(id_val, buf);
@@ -25,12 +27,18 @@ common::Extension* CreateExtension() {
     return NULL;
   }
 
-  std::string pkg_id = id_val.get<std::string>();
-  if (pkg_id.empty()) {
+  std::string tizen_app_id = id_val.get<std::string>();
+  if (tizen_app_id.empty()) {
     std::cerr << "Application extension will not be created without "
               << "application context." << std::endl;
     return NULL;
   }
+
+  std::string pkg_id;
+  if (tizen_app_id.find("xwalk.") == 0)
+    pkg_id = tizen_app_id.substr(6);
+  else
+    pkg_id = tizen_app_id.substr(0, 10);
 
   return new ApplicationExtension(pkg_id);
 }
