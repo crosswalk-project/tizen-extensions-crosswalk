@@ -4,21 +4,12 @@
 
 #include "bluetooth/bluetooth_instance_capi.h"
 
-#include <pthread.h>
-
 #include "common/picojson.h"
 
 namespace {
 
 inline const char* BoolToString(bool b) {
   return b ? "true" : "false";
-}
-
-static void* event_loop(void* arg) {
-  GMainLoop* event_loop;
-  event_loop = g_main_loop_new(NULL, FALSE);
-  g_main_loop_run(event_loop);
-  return NULL;
 }
 
 }  // anonymous namespace
@@ -28,15 +19,6 @@ BluetoothInstance::BluetoothInstance()
       adapter_enabled_(false),
       js_reply_needed_(false),
       stop_discovery_from_js_(false) {
-
-  // we need a thread for running the main loop
-  // and catching bluetooth glib signals
-  pthread_t event_thread;
-  pthread_attr_t thread_attr;
-  pthread_attr_init(&thread_attr);
-  pthread_attr_setdetachstate(&thread_attr, PTHREAD_CREATE_DETACHED);
-  event_thread = pthread_create(&event_thread, &thread_attr,
-      event_loop, NULL);
 
   CAPI(bt_initialize());
   InitializeAdapter();
