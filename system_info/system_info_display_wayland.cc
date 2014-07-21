@@ -30,6 +30,7 @@ class Display {
   int height;
   double physical_width;
   double physical_height;
+  int factor;
 };
 
 Display::Display()
@@ -39,7 +40,8 @@ Display::Display()
       width(0),
       height(0),
       physical_width(0.0),
-      physical_height(0.0) {}
+      physical_height(0.0),
+      factor(1) {}
 
 static void display_handle_geometry(void* data,
                                     wl_output* output,
@@ -51,7 +53,7 @@ static void display_handle_geometry(void* data,
                                     const char* make,
                                     const char* model,
                                     int transform) {
-  Display* d = reinterpret_cast<Display* >(data);
+  Display* d = reinterpret_cast<Display*>(data);
   d->physical_width = physical_width;
   d->physical_height = physical_height;
 }
@@ -62,7 +64,7 @@ static void display_handle_mode(void* data,
                                 int width,
                                 int height,
                                 int refresh) {
-  Display* d = reinterpret_cast<Display* >(data);
+  Display* d = reinterpret_cast<Display*>(data);
   // A display has multiple supporting modes.
   // We need to check if it is the current using mode.
   if (flags & WL_OUTPUT_MODE_CURRENT) {
@@ -71,16 +73,31 @@ static void display_handle_mode(void* data,
   }
 }
 
+static void display_handle_done(void* data,
+                                wl_output* output) {
+}
+
+// This method will be called if any screen with UI scale adjustment applied.
+// So it is safe to assume factor to be 1.0 (unscaled) by default.
+static void display_handle_scale(void* data,
+                                 wl_output* output,
+                                 int factor) {
+  Display* d = reinterpret_cast<Display*>(data);
+  d->factor = factor;
+}
+
 static void registry_handle_global(void* data,
                                    wl_registry* registry,
                                    uint32_t id,
                                    const char* interface,
                                    uint32_t version) {
-  Display* d = reinterpret_cast<Display* >(data);
+  Display* d = reinterpret_cast<Display*>(data);
 
   static const wl_output_listener kOutputListener = {
     display_handle_geometry,
-    display_handle_mode
+    display_handle_mode,
+    display_handle_done,
+    display_handle_scale
   };
 
   if (strcmp(interface, "wl_output") == 0) {
@@ -114,7 +131,8 @@ SysInfoDisplay::SysInfoDisplay()
       physical_width_(0.0),
       physical_height_(0.0),
       brightness_(0.0),
-      timeout_cb_id_(0) {}
+      timeout_cb_id_(0),
+      scale_factor_(0) {}
 
 void SysInfoDisplay::Get(picojson::value& error,
                          picojson::value& data) {
@@ -156,6 +174,7 @@ bool SysInfoDisplay::UpdateSize() {
   resolution_height_ = screen.height;
   physical_width_ = screen.physical_width;
   physical_height_ = screen.physical_height;
+  scale_factor_ = screen.factor;
 
   wl_registry_destroy(screen.registry);
   wl_display_flush(screen.display);
@@ -241,11 +260,12 @@ void SysInfoDisplay::SetData(picojson::value& data) {
   system_info::SetPicoJsonObjectValue(data, "physicalHeight",
       picojson::value(physical_height_));
 
-  // dpi = N * 25.4 pixels / M inch
-  dots_per_inch_width_ = physical_width_ == 0 ? 0 :
-      static_cast<unsigned long>((resolution_width_ * 25.4) / physical_width_); // NOLINT
-  dots_per_inch_height_ = physical_height_ == 0 ? 0 :
-      static_cast<unsigned long>((resolution_height_ * 25.4) / physical_height_); // NOLINT
+#if defined(GENERIC_DESKTOP) || defined(TIZEN_IVI)
+  dots_per_inch_width_ = dots_per_inch_height_ = scale_factor_ * 96.0;
+#elif defined(TIZEN_MOBILE)
+  // A mobile device is considered to be held at 60% of arms length.
+  dots_per_inch_width_ = dots_per_inch_height_ = scale_factor * (96.0 / 0.6);
+#endif
 
   system_info::SetPicoJsonObjectValue(data, "dotsPerInchWidth",
       picojson::value(static_cast<double>(dots_per_inch_width_)));
