@@ -86,53 +86,67 @@ tizen.Alarm.prototype.constructor = tizen.Alarm;
 tizen.AlarmAbsolute = function(date, periodOrDaysOfWeek) {
   tizen.Alarm.apply(this);
 
+  var periodValue = null;
+  var local_date = null;
+  var local_daysOfTheWeek = [];
+
   if (date instanceof Date) {
-    defineReadOnlyProperty(this, 'date', date);
+    local_date = date.getTime();
+    Object.defineProperty(this, 'date', {
+      enumerable: true,
+      get: function() { return new Date(local_date); }
+    });
   } else {
-    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+    throw new TypeError;
   }
 
-  var periodValue = null;
-  var daysOfTheWeek = [];
-  if (typeof periodOrDaysOfWeek === 'number' && !isNaN(periodOrDaysOfWeek)) {
+  if (typeof periodOrDaysOfWeek === 'number' && !isNaN(periodOrDaysOfWeek))
     periodValue = periodOrDaysOfWeek;
-  } else if (periodOrDaysOfWeek instanceof Array && periodOrDaysOfWeek.length > 0) {
-    daysOfTheWeek = periodOrDaysOfWeek;
-  }
+  else if (periodOrDaysOfWeek instanceof Array && periodOrDaysOfWeek.length > 0)
+    local_daysOfTheWeek = periodOrDaysOfWeek.slice(0);
+
   defineReadOnlyProperty(this, 'period', periodValue);
-  defineReadOnlyProperty(this, 'daysOfTheWeek', daysOfTheWeek);
+  Object.defineProperty(this, 'daysOfTheWeek', {
+      enumerable: true,
+      get: function() { return local_daysOfTheWeek.slice(0); }
+  });
+
+  if (!(this instanceof tizen.AlarmAbsolute))
+    throw new TypeError;
 };
 
 tizen.AlarmAbsolute.prototype = new tizen.Alarm();
 tizen.AlarmAbsolute.prototype.constructor = tizen.AlarmAbsolute;
 
 tizen.AlarmAbsolute.prototype.getNextScheduledDate = function() {
-  if (this.id === undefined) {
+  if (this.id === undefined)
     throw new tizen.WebAPIException(tizen.WebAPIException.UNKNOWN_ERR);
-  }
 
-  var operation = { cmd: OperationEnum.GetNextScheduledDate, alarm: this.id };
+  var operation = { cmd: OperationEnum.GetNextScheduledDate, alarm: parseInt(this.id) };
   var ret = sendSyncMessage(operation);
-  if (ret.error) {
-    throw new tizen.WebAPIException(tizen.WebAPIException.UNKNOWN_ERR);
-  }
+  if (ret.error)
+    return null;
 
-  var seconds = ret.data['nextScheduledDate'] || 0;
+  var seconds = ret.data['nextScheduledDate'];
   return new Date(seconds * 1000);
 };
 
 tizen.AlarmRelative = function(delay, period) {
   tizen.Alarm.apply(this);
 
-  if (typeof delay === 'number' && !isNaN(delay))
-    defineReadOnlyProperty(this, 'delay', delay);
-  else
-    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+  if (typeof delay !== 'number' || isNaN(delay))
+    delay = 0;
 
-  if (typeof period === 'number' && !isNaN(period))
-    defineReadOnlyProperty(this, 'period', period);
-  else
-    defineReadOnlyProperty(this, 'period', null);
+  if (arguments.length < 2)
+    period = null;
+  else if (isNaN(period))
+    period = 0;
+
+  defineReadOnlyProperty(this, 'delay', delay);
+  defineReadOnlyProperty(this, 'period', period);
+
+  if (!(this instanceof tizen.AlarmRelative))
+    throw new TypeError;
 };
 
 tizen.AlarmRelative.prototype = new tizen.Alarm();
@@ -142,10 +156,10 @@ tizen.AlarmRelative.prototype.getRemainingSeconds = function() {
   if (this.id === undefined)
     throw new tizen.WebAPIException(tizen.WebAPIException.UNKNOWN_ERR);
 
-  var operation = { cmd: OperationEnum.GetRemainingSec, alarm: this.id };
+  var operation = { cmd: OperationEnum.GetRemainingSec, alarm: parseInt(this.id) };
   var ret = sendSyncMessage(operation);
   if (ret.error)
-    throw new tizen.WebAPIException(tizen.WebAPIException.UNKNOWN_ERR);
+    return null;
 
   return ret.data['remainingSeconds'];
 };
@@ -153,6 +167,9 @@ tizen.AlarmRelative.prototype.getRemainingSeconds = function() {
 exports.add = function(alarm, applicationId, appControl) {
   var cmd = undefined;
   var alarmInfo = {};
+  if (arguments.length > 2 && !(appControl instanceof tizen.ApplicationControl))
+    throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+
   if (alarm instanceof tizen.AlarmAbsolute) {
     cmd = OperationEnum.AddAlarmAbs;
     // Convert milliseconds to seconds and round it.
@@ -177,11 +194,11 @@ exports.add = function(alarm, applicationId, appControl) {
   if (ret.error)
     throw new tizen.WebAPIException(tizen.WebAPIException.UNKNOWN_ERR);
 
-  defineReadOnlyProperty(alarm, 'id', ret.data['id']);
+  defineReadOnlyProperty(alarm, 'id', '' + ret.data['id']);
 };
 
 exports.remove = function(alarmId) {
-  var operation = { cmd: OperationEnum.RemoveAlarm, alarm: alarmId };
+  var operation = { cmd: OperationEnum.RemoveAlarm, alarm: parseInt(alarmId) };
   var ret = sendSyncMessage(operation);
   if (ret.error)
     throw new tizen.WebAPIException(tizen.WebAPIException.NOT_FOUND_ERR);
@@ -205,17 +222,17 @@ function parseAlarm(data) {
     var date = new Date(obj['date'] * 1000);
     var daysOfTheWeek = flagToDaysOfWeek(obj['weekFlag']);
     alarm = new tizen.AlarmAbsolute(date, daysOfTheWeek.length > 0 ? daysOfTheWeek : obj['period']);
-    defineReadOnlyProperty(alarm, 'id', obj['id']);
+    defineReadOnlyProperty(alarm, 'id', '' + obj['id']);
   } else if (obj['type'] === 'relative') {
     alarm = new tizen.AlarmRelative(obj['delay'], obj['period']);
-    defineReadOnlyProperty(alarm, 'id', obj['id']);
+    defineReadOnlyProperty(alarm, 'id', '' + obj['id']);
   }
 
   return alarm;
 }
 
 exports.get = function(alarmId) {
-  var operation = { cmd: OperationEnum.GetAlarm, alarm: alarmId };
+  var operation = { cmd: OperationEnum.GetAlarm, alarm: parseInt(alarmId) };
   var ret = sendSyncMessage(operation);
   if (ret.error)
     throw new tizen.WebAPIException(tizen.WebAPIException.NOT_FOUND_ERR);
