@@ -51,8 +51,10 @@ function flagToDaysOfWeek(flag) {
   return days;
 }
 
-function defineReadOnlyProperty(object, key, value) {
+function defineReadOnlyProperty(object, key, value, configurable) {
+  configurable = configurable || false;
   Object.defineProperty(object, key, {
+    configurable: configurable,
     enumerable: true,
     writable: false,
     value: value
@@ -75,7 +77,10 @@ defineReadOnlyProperty(exports, 'PERIOD_HOUR', 3600);
 defineReadOnlyProperty(exports, 'PERIOD_DAY', 86400);
 defineReadOnlyProperty(exports, 'PERIOD_WEEK', 604800);
 
-tizen.Alarm = function() {};
+tizen.Alarm = function() {
+  // set configurable as true so that this property can be re-defined in sub class
+  defineReadOnlyProperty(this, 'id', null, true);
+};
 tizen.Alarm.prototype.constructor = tizen.Alarm;
 
 tizen.AlarmAbsolute = function(date, periodOrDaysOfWeek) {
