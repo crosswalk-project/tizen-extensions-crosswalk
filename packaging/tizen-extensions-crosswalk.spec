@@ -76,6 +76,8 @@ BuildRequires: python
 Requires:      crosswalk
 # For Content API
 Requires:      media-thumbnail-server
+# For SSO API
+Requires:      libgsignon-glib
 
 %description
 Tizen Web APIs implemented using Crosswalk.
