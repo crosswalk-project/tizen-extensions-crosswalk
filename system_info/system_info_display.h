@@ -60,6 +60,7 @@ class SysInfoDisplay : public SysInfoObject {
   double physical_height_;
   double brightness_;
   int timeout_cb_id_;
+  int scale_factor_;
 
   DISALLOW_COPY_AND_ASSIGN(SysInfoDisplay);
 };
