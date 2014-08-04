@@ -38,13 +38,12 @@ BuildRequires: pkgconfig(capi-system-power)
 BuildRequires: pkgconfig(capi-system-runtime-info)
 BuildRequires: pkgconfig(capi-system-sensor)
 BuildRequires: pkgconfig(capi-system-system-settings)
+BuildRequires: pkgconfig(capi-telephony-sim)
 BuildRequires: pkgconfig(libtzplatform-config)
 %if "%{profile}" == "ivi"
 BuildRequires: pkgconfig(automotive-message-broker)
 %endif
-# For IVI, it doesn't need sim package.
 %if "%{profile}" == "mobile"
-BuildRequires: pkgconfig(capi-telephony-sim)
 BuildRequires: pkgconfig(contacts-service2)
 BuildRequires: pkgconfig(libpcrecpp)
 %endif
