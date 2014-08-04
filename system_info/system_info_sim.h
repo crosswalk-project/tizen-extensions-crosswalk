@@ -5,12 +5,16 @@
 #ifndef SYSTEM_INFO_SYSTEM_INFO_SIM_H_
 #define SYSTEM_INFO_SYSTEM_INFO_SIM_H_
 
-#if defined(TIZEN)
 #include <errno.h>
-#include <sim.h>
 #include <stdlib.h>
-#include <stdio.h>
+#if defined(TIZEN_MOBILE)
+#include <sim.h>
+#else
+#include <gio/gio.h>
+#include <glib.h>
+#include <glib-object.h>
 #endif
+
 #include <string>
 
 #include "common/picojson.h"
@@ -24,10 +28,17 @@ class SysInfoSim : public SysInfoObject {
     static SysInfoSim instance;
     return instance;
   }
-  ~SysInfoSim() {}
+  ~SysInfoSim();
   void Get(picojson::value& error, picojson::value& data);
   void StartListening();
   void StopListening();
+
+#if defined(TIZEN_MOBILE)
+  typedef int (*SIMGetterFunction1)(char** out);
+  typedef int (*SIMGetterFunction2)(char** out1, char** out2);
+
+  static void OnSimStateChanged(sim_state_e state, void *user_data);
+#endif
 
   enum SystemInfoSimState {
     SYSTEM_INFO_SIM_ABSENT = 0,
@@ -41,27 +52,15 @@ class SysInfoSim : public SysInfoObject {
     SYSTEM_INFO_SIM_UNKNOWN
   };
 
-#if defined(TIZEN)
-  typedef int (*SIMGetterFunction1)(char** out);
-  typedef int (*SIMGetterFunction2)(char** out1, char** out2);
-
-  static void OnSimStateChanged(sim_state_e state, void *user_data);
-#endif
-
   static const std::string name_;
 
  private:
-  explicit SysInfoSim()
-      : state_(SYSTEM_INFO_SIM_UNKNOWN),
-        operatorName_(""),
-        msisdn_(""),
-        iccid_(""),
-        mcc_(0),
-        mnc_(0),
-        msin_(""),
-        spn_("") {}
+  SysInfoSim();
 
-#if defined(TIZEN)
+  void SetJsonValues(picojson::value& data);
+  std::string ToSimStateString(SystemInfoSimState state);
+
+#if defined(TIZEN_MOBILE)
   bool QuerySIMStatus();
   bool QuerySIM(SIMGetterFunction1 getter,
                 std::string& member,
@@ -72,19 +71,35 @@ class SysInfoSim : public SysInfoObject {
   bool QuerySIM(SIMGetterFunction1 getter,
                 unsigned int& member,
                 const unsigned int& default_value = 0);
-  void SetJsonValues(picojson::value& data);
-  std::string ToSimStateString(SystemInfoSimState state);
   SystemInfoSimState GetSystemInfoSIMState(sim_state_e state);
+#else
+  void InitDbusConnection();
+  void DeInitDbusConnection();
+  void GetSimProperties();
+  void GetOperatorNameAndSpn();
+  void UpdateSimProperty(const gchar* key, GVariant* val);
+
+  static void OnSimPropertyChanged(GDBusConnection* conn,
+                                   const gchar* sender_name,
+                                   const gchar* object_path,
+                                   const gchar* iface,
+                                   const gchar* signal_name,
+                                   GVariant* parameters,
+                                   gpointer data);
 #endif
 
   SystemInfoSimState state_;
-  std::string operatorName_;
+  std::string operator_name_;
   std::string msisdn_;
   std::string iccid_;
   unsigned int mcc_;
   unsigned int mnc_;
   std::string msin_;
   std::string spn_;
+#if !defined(TIZEN_MOBILE)
+  GDBusConnection* conn_;
+  guint prop_changed_watch_;
+#endif
 
   DISALLOW_COPY_AND_ASSIGN(SysInfoSim);
 };

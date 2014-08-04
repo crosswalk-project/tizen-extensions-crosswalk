@@ -2,7 +2,6 @@
   'variables': {
     'extension_host_os%': 'desktop',
     'tizen%': '0',
-    'telephony_sim_available%': '<!(pkg-config --exists capi-telephony-sim; if [ $? = 0 ]; then echo true; else echo false; fi)',
     'extension_build_type%': '<(extension_build_type)',
     'extension_build_type%': 'Debug',
     'display_type%': 'x11',
@@ -31,7 +30,6 @@
       ['extension_host_os == "mobile"', { 'defines': ['TIZEN_MOBILE'] } ],
       ['extension_host_os == "ivi"', { 'defines': ['TIZEN_IVI'] } ],
       ['extension_host_os == "desktop"', { 'defines': ['GENERIC_DESKTOP'] } ],
-      ['telephony_sim_available == "true"', { 'defines': ['SYSTEMINFO_SIM_ACCESS'] } ],
       ['extension_build_type== "Debug"', {
         'defines': ['_DEBUG', ],
         'cflags': [ '-O0', '-g', ],
