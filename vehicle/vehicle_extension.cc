@@ -15,6 +15,10 @@ extern const char kSource_vehicle_api[];
 VehicleExtension::VehicleExtension() {
   SetExtensionName("tizen.vehicle");
   SetJavaScriptAPI(kSource_vehicle_api);
+
+  const char* entry_points[] = {"Zone", NULL};
+
+  SetExtraJSEntryPoints(entry_points);
 }
 
 VehicleExtension::~VehicleExtension() {

@@ -5,6 +5,8 @@
 #ifndef VEHICLE_VEHICLE_INSTANCE_H_
 #define VEHICLE_VEHICLE_INSTANCE_H_
 
+#include <string>
+
 #include "common/extension.h"
 #include "common/picojson.h"
 #include "vehicle/vehicle.h"
@@ -20,6 +22,9 @@ class VehicleInstance : public common::Instance {
   virtual void HandleSyncMessage(const char* msg);
 
   int ZoneToAMBZone(picojson::array);
+
+  void PostError(double callback_id, const std::string& method,
+                 const std::string& error);
 
   Vehicle* vehicle_;
 };
