@@ -17,7 +17,7 @@ class ApplicationInformation;
 // This class will represent the current application running this extension.
 class Application {
  public:
-  explicit Application(const std::string& pkg_id);
+  explicit Application(const std::string& app_id);
   ~Application();
 
   const std::string GetAppId();
@@ -30,10 +30,7 @@ class Application {
   const std::string Serialize();
 
  private:
-  bool RetrieveAppId();
-
   std::string app_id_;
-  std::string pkg_id_;
   GDBusProxy* running_app_proxy_;
 };
 
