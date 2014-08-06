@@ -125,23 +125,6 @@ int get_dir_entry_count(const char* path) {
   return count;
 }
 
-std::string GetAppId(const std::string& package_id) {
-  char* appid = NULL;
-  pkgmgrinfo_pkginfo_h pkginfo_handle;
-  int ret = pkgmgrinfo_pkginfo_get_pkginfo(package_id.c_str(), &pkginfo_handle);
-  if (ret != PMINFO_R_OK)
-    return std::string();
-  ret = pkgmgrinfo_pkginfo_get_mainappid(pkginfo_handle, &appid);
-  if (ret != PMINFO_R_OK) {
-    pkgmgrinfo_pkginfo_destroy_pkginfo(pkginfo_handle);
-    return std::string();
-  }
-
-  std::string retval(appid);
-  pkgmgrinfo_pkginfo_destroy_pkginfo(pkginfo_handle);
-  return retval;
-}
-
 std::string GetExecPath(const std::string& app_id) {
   char* exec_path = NULL;
   pkgmgrinfo_appinfo_h appinfo_handle;
@@ -169,20 +152,17 @@ std::string GetApplicationPath() {
     return std::string();
   }
 
-  std::string pkg_id = id_val.get<std::string>();
-  if (pkg_id.empty())
-    return std::string();
-
-  std::string app_id = GetAppId(pkg_id);
+  std::string app_id = id_val.get<std::string>();
   if (app_id.empty())
     return std::string();
+
   std::string exec_path = GetExecPath(app_id);
   if (exec_path.empty())
     return std::string();
 
-  size_t index = exec_path.find(pkg_id);
+  size_t index = exec_path.find(app_id);
   if (index != std::string::npos)
-    return exec_path.substr(0, index + pkg_id.length());
+    return exec_path.substr(0, index + app_id.length());
   return std::string();
 }
 

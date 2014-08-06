@@ -20,7 +20,7 @@ const char kRuntimeRunningAppInterface[] =
     "org.crosswalkproject.Running.Application1";
 
 // The runtime process exports object for each running app on the session bus.
-GDBusProxy* CreateRunningAppProxy(const std::string& xwalk_app_id) {
+GDBusProxy* CreateRunningAppProxy(const std::string& app_id) {
   GError* error = NULL;
   GDBusConnection* connection =
       g_bus_get_sync(G_BUS_TYPE_SESSION, NULL, &error);
@@ -31,8 +31,12 @@ GDBusProxy* CreateRunningAppProxy(const std::string& xwalk_app_id) {
     return NULL;
   }
 
-  std::string path =
-      std::string(kRuntimeRunningManagerPath) + "/" + xwalk_app_id;
+  std::string path(app_id);
+  // The [tizen_app_id] contains a dot, making it an invalid object path.
+  // For this reason we replace it with an underscore '_'.
+  std::replace(path.begin(), path.end(), '.', '_');
+  path = std::string(kRuntimeRunningManagerPath) + "/" + path;
+
   GDBusProxy* proxy = g_dbus_proxy_new_sync(
       connection, G_DBUS_PROXY_FLAGS_NONE, NULL, kRuntimeServiceName,
       path.c_str(), kRuntimeRunningAppInterface, NULL, &error);
@@ -48,8 +52,8 @@ GDBusProxy* CreateRunningAppProxy(const std::string& xwalk_app_id) {
 
 }  // namespace
 
-Application::Application(const std::string& pkg_id)
-    : pkg_id_(pkg_id),
+Application::Application(const std::string& app_id)
+    : app_id_(app_id),
       running_app_proxy_(NULL) {
 }
 
@@ -60,16 +64,10 @@ Application::~Application() {
 
 
 const std::string Application::GetAppId() {
-  if (app_id_.empty() && !RetrieveAppId())
-    return "";
   return app_id_;
 }
 
 ApplicationInformation Application::GetAppInfo() {
-  if (app_id_.empty() && !RetrieveAppId())
-    // Return an invalid ApplicationInformation by passing an empty app ID.
-    return ApplicationInformation("");
-
   return ApplicationInformation(app_id_);
 }
 
@@ -79,7 +77,7 @@ ApplicationContext Application::GetAppContext() {
 
 picojson::value* Application::Exit() {
   if (!running_app_proxy_) {
-    if (!(running_app_proxy_ = CreateRunningAppProxy(pkg_id_)))
+    if (!(running_app_proxy_ = CreateRunningAppProxy(app_id_)))
       return CreateResultMessage(WebApiAPIErrors::UNKNOWN_ERR);
   }
 
@@ -97,7 +95,7 @@ picojson::value* Application::Exit() {
 
 picojson::value* Application::Hide() {
   if (!running_app_proxy_) {
-    if (!(running_app_proxy_ = CreateRunningAppProxy(pkg_id_)))
+    if (!(running_app_proxy_ = CreateRunningAppProxy(app_id_)))
       return CreateResultMessage(WebApiAPIErrors::UNKNOWN_ERR);
   }
 
@@ -127,13 +125,4 @@ const std::string Application::Serialize() {
     result.reset(CreateResultMessage(obj));
   }
   return result->serialize();
-}
-
-bool Application::RetrieveAppId() {
-  app_id_ = ApplicationInformation::PkgIdToAppId(pkg_id_);
-  if (app_id_.empty()) {
-    std::cerr << "Can't translate app package ID to application ID.\n";
-    return false;
-  }
-  return true;
 }

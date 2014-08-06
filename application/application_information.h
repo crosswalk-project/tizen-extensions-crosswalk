@@ -15,9 +15,6 @@
 // failure reason.
 class ApplicationInformation {
  public:
-  // Translate app's package ID to application ID, only valid for XWalk apps.
-  static std::string PkgIdToAppId(const std::string& pkg_id);
-
   // Returns a object type value to caller. When success its "data" field will
   // contains an app info array. When fail its "error" field will contains error
   // info.

@@ -257,30 +257,7 @@ void RetrieveAllInstalledAppInfo(picojson::array& data,
     SetErrorMessage(error, "get_all");
 }
 
-int PkgIdToAppIdCallback(const pkgmgr_appinfo_h handle, void* user_data) {
-  char* app_id = NULL;
-  if (pkgmgr_appinfo_get_appid(handle, &app_id) != PMINFO_R_OK)
-    return 0;
-
-  std::string* data = static_cast<std::string*>(user_data);
-  (*data) = app_id;
-  return 0;
-}
-
 }  // namespace
-
-std::string ApplicationInformation::PkgIdToAppId(const std::string& pkg_id) {
-  pkgmgrinfo_pkginfo_h pkginfo_handle;
-  int ret = pkgmgrinfo_pkginfo_get_pkginfo(pkg_id.c_str(), &pkginfo_handle);
-  if (ret != PMINFO_R_OK)
-    return "";
-
-  std::string app_id;
-  // By now, we only have UI Crosswalk application.
-  pkgmgr_appinfo_get_list(
-      pkginfo_handle, PM_UI_APP, &PkgIdToAppIdCallback, &app_id);
-  return app_id;
-}
 
 picojson::value* ApplicationInformation::GetAllInstalled() {
   picojson::array data;
