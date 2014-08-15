@@ -27,13 +27,12 @@ function createPromise(msg) {
 }
 
 function _addConstProperty(obj, propertyKey, propertyValue) {
-  if (typeof propertyValue !== 'undefined')
-    Object.defineProperty(obj, propertyKey, {
-      configurable: true,
-      enumerable: true,
-      writable: false,
-      value: propertyValue
-    });
+  Object.defineProperty(obj, propertyKey, {
+    configurable: true,
+    enumerable: true,
+    writable: false,
+    value: propertyValue
+  });
 }
 
 function _addHiddenProperty(obj, propertyKey, propertyValue) {
@@ -180,8 +179,8 @@ function toNDEFRecord(rec) {
       break;
     case 'smartPoster':
     default:
-      ndef = new NDEFRecord(rec.recordType, rec.tnf,
-          rec.type, rec.payload, rec.id);
+      ndef = new NDEFRecord(rec.tnf, rec.type, rec.payload,
+          rec.id, rec.recordType);
       break;
   }
   v8tools.forceSetProperty(ndef, 'payload', rec.payload);
@@ -330,7 +329,7 @@ function NDEFMessage(data) {
   var records = data;
   if (Array.isArray(data) && data.length > 0 &&
       typeof data[0] === 'number')
-    records = [new NDEFRecord('unknown', 5, null, data)];
+    records = [new NDEFRecord(5, null, data, null, 'unknown')];
   _addConstProperty(this, 'records', records);
 }
 
@@ -356,7 +355,9 @@ window.NDEFMessage = NDEFMessage;
 // byte array
 // DOMString id
 
-function NDEFRecord(recordType, tnf, type, payload, id) {
+function NDEFRecord(tnf, type, payload, id, recordType) {
+  if (typeof recordType === 'undefined')
+    recordType = 'unknown';
   _addConstProperty(this, 'recordType', recordType);
   _addConstProperty(this, 'tnf', tnf);
   _addConstProperty(this, 'type', type);
@@ -379,7 +380,7 @@ window.NDEFRecord = NDEFRecord;
 ///////////////////////////////////////////////////////////////////////////////
 
 function NDEFRecordText(text, languageCode, encoding) {
-  NDEFRecord.call(this, 'text', 1, 'T');
+  NDEFRecord.call(this, 1, 'T', null, null, 'text');
   _addConstProperty(this, 'text', text);
   _addConstProperty(this, 'languageCode', languageCode);
   _addConstProperty(this, 'encoding', encoding);
@@ -394,7 +395,7 @@ window.NDEFRecordText = NDEFRecordText;
 
 // DOMString uri
 function NDEFRecordURI(uri) {
-  NDEFRecord.call(this, 'uri', 1, 'U');
+  NDEFRecord.call(this, 1, 'U', null, null, 'uri');
   _addConstProperty(this, 'uri', uri);
 }
 
@@ -408,7 +409,7 @@ window.NDEFRecordURI = NDEFRecordURI;
 // DOMString mimeType
 // byte array payload
 function NDEFRecordMedia(mimeType, payload) {
-  NDEFRecord.call(this, 'media', 2, mimeType, payload);
+  NDEFRecord.call(this, 2, mimeType, payload, null, 'media');
   _addConstProperty(this, 'mimeType', mimeType);
 }
 
@@ -429,7 +430,7 @@ window.NDEFRecordMedia = NDEFRecordMedia;
 
 function NDEFRecordSmartPoster(uri, titles, action,
     icons, targetSize, targetMIME) {
-  NDEFRecord.call(this, 'smartPoster', 3, 'Sp');
+  NDEFRecord.call(this, 3, 'Sp', null, null, 'smartPoster');
   _addConstProperty(this, 'uri', uri);
   _addConstProperty(this, 'titles', titles);
   _addConstProperty(this, 'action', action);
