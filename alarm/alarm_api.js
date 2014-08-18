@@ -107,8 +107,8 @@ tizen.AlarmAbsolute = function(date, periodOrDaysOfWeek) {
 
   defineReadOnlyProperty(this, 'period', periodValue);
   Object.defineProperty(this, 'daysOfTheWeek', {
-      enumerable: true,
-      get: function() { return local_daysOfTheWeek.slice(0); }
+    enumerable: true,
+    get: function() { return local_daysOfTheWeek.slice(0); }
   });
 
   if (!(this instanceof tizen.AlarmAbsolute))

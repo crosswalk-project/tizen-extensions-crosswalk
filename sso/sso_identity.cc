@@ -8,17 +8,35 @@
 #include "sso/sso_instance.h"
 #include "sso/sso_utils.h"
 
-IdentityFilterItem::IdentityFilterItem() {
+IdentityFilterItem::IdentityFilterItem()
+  : value_(NULL) {
 }
 
 IdentityFilterItem::~IdentityFilterItem() {
+  if (value_) g_variant_unref(value_);
+  value_ = NULL;
 }
 
 void IdentityFilterItem::FromJSON(const std::string& key,
     const picojson::value& value) {
   key_ = key;
-  if (value.contains("value_"))
-    value_ = value.get("value").to_str();
+  if (key_ == "Type") {
+    value_ = g_variant_new_int32(static_cast<gint32>(value.get<double>()));
+  } else if (key_ == "Owner") {
+    SecurityContext sc;
+    sc.FromJSON(value);
+    const std::string& sys = sc.sys_context();
+    const std::string& app = sc.app_context();
+    value_ = g_variant_new("(ss)", sys.empty() ? "" : sys.c_str(),
+        app.empty() ? "" : app.c_str());
+  } else if (key_ == "Caption") {
+    value_ = g_variant_new_string(value.to_str().c_str());
+  } else {
+    if (value_) g_variant_unref(value_);
+    value_ = NULL;
+    key_ = "";
+  }
+  if (value_) g_variant_ref(value_);
 }
 
 GHashTable* IdentityFilterItem::FromJSONValueArray(
@@ -27,13 +45,14 @@ GHashTable* IdentityFilterItem::FromJSONValueArray(
   if (!object.empty())
     filters = g_hash_table_new_full((GHashFunc) g_str_hash,
         (GEqualFunc) g_str_equal, (GDestroyNotify) g_free,
-        (GDestroyNotify) g_free);
+        (GDestroyNotify) g_variant_unref);
   picojson::object::const_iterator it;
   for (it = object.begin(); it != object.end(); ++it) {
     IdentityFilterItem item;
-    item.FromJSON(it->first, picojson::value(it->second));
-    g_hash_table_insert(filters, g_strdup(item.key_.c_str()),
-        g_strdup(item.value_.c_str()));
+    item.FromJSON(it->first, it->second);
+    if (item.value_)
+      g_hash_table_insert(filters, g_strdup(item.key_.c_str()),
+          g_variant_ref(item.value_));
   }
   return filters;
 }

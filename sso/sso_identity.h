@@ -39,7 +39,7 @@ class IdentityFilterItem {
 
  private:
   std::string key_;
-  std::string value_;
+  GVariant* value_;
 
   void FromJSON(const std::string& key, const picojson::value& value);
 };

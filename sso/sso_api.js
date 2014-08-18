@@ -107,15 +107,15 @@ function MechanismQueryResult(obj) {
   _addConstPropertyFromObject(this, 'mechanisms', obj);
 }
 
-function IdentityInfo(obj) {
-  _addConstPropertyFromObject(this, 'id', obj);
-  _addConstProperty(this, 'type', _convertToIdentityType(obj.type));
+function IdentityInfo(obj, id, type, owner) {
+  _addConstProperty(this, 'id', id);
+  _addConstProperty(this, 'type', type);
   _addPropertyFromObject(this, 'username', obj);
   _addPropertyFromObject(this, 'caption', obj);
   _addPropertyFromObject(this, 'secret', obj);
   _addPropertyFromObject(this, 'storeSecret', obj);
   _addPropertyFromObject(this, 'realms', obj);
-  _addConstPropertyFromObject(this, 'owner', obj);
+  _addConstProperty(this, 'owner', owner);
   _addPropertyFromObject(this, 'accessControlList', obj);
 }
 
@@ -170,7 +170,7 @@ function _getIdentityObjByJSId(jsid) {
   return identobj;
 }
 
-function _convertToIdentityType(stringtype) {
+function _convertToIdentType(stringtype) {
   if (stringtype == 'APPLICATION') return IdentityType.APPLICATION;
   else if (stringtype == 'WEB') return IdentityType.WEB;
   else if (stringtype == 'NETWORK') return IdentityType.NETWORK;
@@ -277,7 +277,9 @@ function handleAsyncCallError(msg) {
 function handleGetIdentity(msg) {
   var identobj = _getIdentityObjByJSId(msg.responseData.identityJSId);
   if (identobj) {
-    identobj.info = new IdentityInfo(msg.responseData.info);
+    identobj.info = new IdentityInfo(msg.responseData.info,
+        msg.responseData.info.id, _convertToIdentType(msg.responseData.info.type),
+        msg.responseData.info.owner);
     g_async_calls[msg.asyncOpId].resolve(identobj);
   } else {
     g_async_calls[msg.asyncOpId].reject(Error('Identity object not found for getidentity'));
@@ -300,7 +302,9 @@ function handleStartSession(msg) {
 function handleStore(msg) {
   var identobj = g_auth_service.getIdentityByJSId(msg.objectJSId);
   if (identobj != null) {
-    identobj.info.id = msg.responseData.identityId;
+    var info = new IdentityInfo(identobj.info, msg.responseData.identityId,
+        identobj.info.type, identobj.info.owner);
+    identobj.info = info;
     g_async_calls[msg.asyncOpId].resolve(identobj);
   } else {
     g_async_calls[msg.asyncOpId].reject(Error('Identity NOT FOUND'));
@@ -359,6 +363,9 @@ AuthService.prototype.queryMethods = function() {
 };
 
 AuthService.prototype.queryMechanisms = function(method) {
+  if (typeof method !== 'string' || method.length == 0)
+    return null;
+
   var msg = {
     'asyncOpCmd': 'queryMechanisms',
     'serviceJSId': this.jsid,
@@ -368,6 +375,18 @@ AuthService.prototype.queryMechanisms = function(method) {
 };
 
 AuthService.prototype.queryIdentities = function(filter) {
+  if (typeof filter !== 'object')
+    return null;
+
+  for (var key in filter) {
+    if (filter.hasOwnProperty(key)) {
+      if (key !== 'Type' && key !== 'Owner' && key !== 'Caption') {
+        return null;
+      }
+    }
+  }
+  filter['Type'] = _convertToIdentType(filter['Type']);
+
   var msg = {
     'asyncOpCmd': 'queryIdentities',
     'serviceJSId': this.jsid,
@@ -377,6 +396,9 @@ AuthService.prototype.queryIdentities = function(filter) {
 };
 
 AuthService.prototype.getIdentity = function(identity_id) {
+  if (isNaN(identity_id))
+    return null;
+
   var identobj = _getIdentityObj(identity_id);
   if (identobj == null) {
     identobj = new Identity(null);
@@ -392,11 +414,18 @@ AuthService.prototype.getIdentity = function(identity_id) {
 };
 
 AuthService.prototype.getIdentityByJSId = function(jsid) {
+  if (isNaN(jsid))
+    return null;
+
   return _getIdentityObjByJSId(jsid);
 };
 
 AuthService.prototype.createIdentity = function(info) {
-  var identobj = new Identity(new IdentityInfo(info));
+  if (typeof info !== 'object')
+    return null;
+
+  var identobj = new Identity(new IdentityInfo(info, info.id,
+      _convertToIdentType(info.type), info.owner));
   var msg = {
     'syncOpCmd': 'createIdentity',
     'serviceJSId': this.jsid,
@@ -431,6 +460,9 @@ function Identity(info) {
 }
 
 Identity.prototype.startSession = function(method) {
+  if (typeof method !== 'string' || method.length == 0)
+    return null;
+
   var msg = {
     'asyncOpCmd': 'startSession',
     'identityJSId': this.jsid,
@@ -441,7 +473,9 @@ Identity.prototype.startSession = function(method) {
 };
 
 Identity.prototype.getSessionByJSId = function(jsid) {
-  if (jsid == -1) return null;
+  if (isNaN(jsid) || jsid == -1)
+    return null;
+
   var sessobj = null;
   for (var i = 0; i < this.sessions.length; i++) {
     var sess = this.sessions[i];
@@ -454,6 +488,9 @@ Identity.prototype.getSessionByJSId = function(jsid) {
 };
 
 Identity.prototype.requestCredentialsUpdate = function(message) {
+  if (typeof message !== 'string')
+    return null;
+
   var msg = {
     'asyncOpCmd': 'requestCredentialsUpdate',
     'identityJSId': this.jsid,
@@ -472,6 +509,9 @@ Identity.prototype.store = function() {
 };
 
 Identity.prototype.addReference = function(reference) {
+  if (typeof reference !== 'string' || reference.length == 0)
+    return null;
+
   var msg = {
     'asyncOpCmd': 'addReference',
     'identityJSId': this.jsid,
@@ -481,6 +521,9 @@ Identity.prototype.addReference = function(reference) {
 };
 
 Identity.prototype.removeReference = function(reference) {
+  if (typeof reference !== 'string' || reference.length == 0)
+    return null;
+
   var msg = {
     'asyncOpCmd': 'removeReference',
     'identityJSId': this.jsid,
@@ -490,6 +533,9 @@ Identity.prototype.removeReference = function(reference) {
 };
 
 Identity.prototype.verifyUser = function(message) {
+  if (typeof message !== 'string')
+    return null;
+
   var msg = {
     'asyncOpCmd': 'verifyUser',
     'identityJSId': this.jsid,
@@ -499,6 +545,9 @@ Identity.prototype.verifyUser = function(message) {
 };
 
 Identity.prototype.verifyUserPrompt = function(params) {
+  if (typeof params !== 'object')
+    return;
+
   var msg = {
     'asyncOpCmd': 'verifyUserPrompt',
     'identityJSId': this.jsid,
@@ -524,10 +573,16 @@ Identity.prototype.signout = function() {
 };
 
 Identity.prototype.updateInfo = function(info) {
-  var old = this.info;
-  this.info = new IdentityInfo(info);
-  if (old != null)
-    this.info.id = old.id;
+  if (typeof info !== 'object')
+    return;
+
+  var obj = null;
+  if (this.info)
+    obj = new IdentityInfo(info, this.info.id, this.info.type, this.info.owner);
+  else
+    obj = new IdentityInfo(info, info.id, _convertToIdentType(info.type),
+                           info.owner);
+  this.info = obj;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -573,6 +628,9 @@ AuthSession.prototype.dispatchEvent = function(event) {
 };
 
 AuthSession.prototype.queryAvailableMechanisms = function(wantedMechanisms) {
+  if (typeof wantedMechanisms !== 'object')
+    return;
+
   var msg = {
     'asyncOpCmd': 'queryAvailableMechanisms',
     'sessionJSId': this.jsid,
@@ -582,6 +640,9 @@ AuthSession.prototype.queryAvailableMechanisms = function(wantedMechanisms) {
 };
 
 AuthSession.prototype.challenge = function(mechanism, sessionData) {
+  if (typeof mechanism !== 'string' || typeof sessionData !== 'object')
+    return;
+
   var msg = {
     'asyncOpCmd': 'challenge',
     'sessionJSId': this.jsid,
