@@ -15,6 +15,8 @@
         'download_instance_desktop.cc',
         'download_instance_tizen.cc',
         'download_utils.h',
+        '../common/virtual_fs.cc',
+        '../common/virtual_fs.h',
       ],
       'conditions': [
         ['tizen == 1', {

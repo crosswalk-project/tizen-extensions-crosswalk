@@ -8,7 +8,6 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <iconv.h>
-#include <pkgmgr-info.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <tzplatform_config.h>
@@ -19,33 +18,11 @@
 #include <utility>
 
 namespace {
-const unsigned kDefaultFileMode = 0755;
-
-const char kLocationCamera[] = "camera";
-const char kLocationMusic[] = "music";
-const char kLocationImages[] = "images";
-const char kLocationVideos[] = "videos";
-const char kLocationDownloads[] = "downloads";
-const char kLocationDocuments[] = "documents";
-const char kLocationRingtones[] = "ringtones";
-const char kLocationWgtPackage[] = "wgt-package";
-const char kLocationWgtPrivate[] = "wgt-private";
-const char kLocationWgtPrivateTmp[] = "wgt-private-tmp";
-
-const char kInternalStorage[] = "internal";
-const char kRemovableStorage[] = "removable";
-
-const char kStorageTypeInternal[] = "INTERNAL";
-const char kStorageTypeExternal[] = "EXTERNAL";
-const char kStorageStateMounted[] = "MOUNTED";
-const char kStorageStateRemoved[] = "REMOVED";
-const char kStorageStateUnmountable[] = "UNMOUNTABLE";
 
 const char kPlatformEncoding[] = "UTF-8";
 const size_t kBufferSize = 1024 * 4;
 
 unsigned int lastStreamId = 0;
-
 
 bool IsWritable(const struct stat& st) {
   if (st.st_mode & S_IWOTH)
@@ -57,133 +34,22 @@ bool IsWritable(const struct stat& st) {
   return false;
 }
 
-std::string JoinPath(const std::string& one, const std::string& another) {
-  return one + '/' + another;
+picojson::object StorageToJSON(Storage storage,
+    const std::string& label) {
+  picojson::object storage_object;
+  storage_object["label"] = picojson::value(label);
+  storage_object["type"] = picojson::value(storage.GetType());
+  storage_object["state"] = picojson::value(storage.GetState());
+  return storage_object;
 }
 
-// This function creates full path and parent directories when needed.
-// Similar to "mkdir -p".
-bool makePath(const std::string& path) {
-  // Path should start with '/' and contain at least 1 character after '/'.
-  if (path.empty() || path[0] != '/' || path.length() < 2)
-    return false;
-
-  struct stat st;
-  std::string dir = path;
-  if (stat(dir.c_str(), &st) == 0)
-    return true;
-
-  // Add trailing '/' if missing, so we can iterate till the end of the path.
-  if (dir[dir.size() - 1] != '/')
-    dir += '/';
-
-  for (auto iter = dir.begin(); iter != dir.end();) {
-    auto cur_iter = std::find(iter, dir.end(), '/');
-
-    // If '/' is found at the beginning of the string, iterate to the next '/'.
-    if (cur_iter == iter) {
-      ++iter;
-      cur_iter = std::find(iter, dir.end(), '/');
-    }
-
-    std::string new_path = std::string(dir.begin(), cur_iter);
-
-    // If path doesn't exist, try to create one and continue iteration.
-    // In case of error, stop iteration and return.
-    if (stat(new_path.c_str(), &st) != 0) {
-      if (mkdir(new_path.c_str(), kDefaultFileMode) != 0 && errno != EEXIST )
-          return false;
-    // If path exists and it is not a directory, stop iteration and return.
-    } else if (!S_ISDIR(st.st_mode)) {
-      return false;
-    }
-
-    // Advance iterator and create next parent folder.
-    iter = cur_iter;
-    if (cur_iter != dir.end())
-      ++iter;
-  }
-  return true;
-}
-
-int get_dir_entry_count(const char* path) {
-  int count = 0;
-  DIR* dir = opendir(path);
-  if (!dir)
-    return count;
-
-  struct dirent entry;
-  struct dirent *result;
-  int ret = readdir_r(dir, &entry, &result);
-
-  for (; ret == 0 && result != NULL; ret = readdir_r(dir, &entry, &result)) {
-    if (entry.d_type == DT_REG || entry.d_type == DT_DIR)
-      count++;
-  }
-
-  closedir(dir);
-  return count;
-}
-
-std::string GetExecPath(const std::string& app_id) {
-  char* exec_path = NULL;
-  pkgmgrinfo_appinfo_h appinfo_handle;
-  int ret = pkgmgrinfo_appinfo_get_appinfo(app_id.c_str(), &appinfo_handle);
-  if (ret != PMINFO_R_OK)
-    return std::string();
-  ret = pkgmgrinfo_appinfo_get_exec(appinfo_handle, &exec_path);
-  if (ret != PMINFO_R_OK) {
-    pkgmgrinfo_appinfo_destroy_appinfo(appinfo_handle);
-    return std::string();
-  }
-
-  std::string retval(exec_path);
-  pkgmgrinfo_appinfo_destroy_appinfo(appinfo_handle);
-  return retval;
-}
-
-std::string GetApplicationPath() {
-  std::string id_str = common::Extension::GetRuntimeVariable("app_id", 64);
-  picojson::value id_val;
-  std::istringstream buf(id_str);
-  std::string error = picojson::parse(id_val, buf);
-  if (!error.empty()) {
-    std::cerr << "Got invalid package ID." << std::endl;
-    return std::string();
-  }
-
-  std::string app_id = id_val.get<std::string>();
-  if (app_id.empty())
-    return std::string();
-
-  std::string exec_path = GetExecPath(app_id);
-  if (exec_path.empty())
-    return std::string();
-
-  size_t index = exec_path.find(app_id);
-  if (index != std::string::npos)
-    return exec_path.substr(0, index + app_id.length());
-  return std::string();
-}
-
-};  // namespace
+}  // namespace
 
 FilesystemInstance::FilesystemInstance() {
-  std::string app_path = GetApplicationPath();
-  if (!app_path.empty()) {
-    AddInternalStorage(kLocationWgtPackage, app_path);
-    AddInternalStorage(kLocationWgtPrivate, JoinPath(app_path, "private"));
-    AddInternalStorage(kLocationWgtPrivateTmp, JoinPath(app_path, "tmp"));
-  }
+}
 
-  AddInternalStorage(kLocationCamera, tzplatform_getenv(TZ_USER_CAMERA));
-  AddInternalStorage(kLocationMusic, tzplatform_getenv(TZ_USER_SOUNDS));
-  AddInternalStorage(kLocationImages, tzplatform_getenv(TZ_USER_IMAGES));
-  AddInternalStorage(kLocationVideos, tzplatform_getenv(TZ_USER_VIDEOS));
-  AddInternalStorage(kLocationDownloads, tzplatform_getenv(TZ_USER_DOWNLOADS));
-  AddInternalStorage(kLocationDocuments, tzplatform_getenv(TZ_USER_DOCUMENTS));
-  AddInternalStorage(kLocationRingtones, \
-    tzplatform_mkpath(TZ_USER_SHARE, "settings/Ringtones"));
+void FilesystemInstance::Initialize() {
+  vfs_.SetOnStorageChangedCb(OnStorageStateChanged, this);
 }
 
 FilesystemInstance::~FilesystemInstance() {
@@ -273,8 +139,8 @@ void FilesystemInstance::HandleFileSystemManagerResolve(
 
   mode = msg.contains("mode") ? msg.get("mode").to_str() : "rw";
 
-  size_t pos_wgt_pkg = location.find(kLocationWgtPackage);
-  size_t pos_ringtones = location.find(kLocationRingtones);
+  size_t pos_wgt_pkg = location.find(vfs_const::kLocationWgtPackage);
+  size_t pos_ringtones = location.find(vfs_const::kLocationRingtones);
 
   if (pos_wgt_pkg != std::string::npos || pos_ringtones != std::string::npos) {
     if (mode == "w" || mode == "rw" || mode == "a") {
@@ -286,7 +152,7 @@ void FilesystemInstance::HandleFileSystemManagerResolve(
 
   if (pos_wgt_pkg != std::string::npos ||
       pos_ringtones != std::string::npos ||
-      location.find(kLocationWgtPrivate) != std::string::npos)
+      location.find(vfs_const::kLocationWgtPrivate) != std::string::npos)
     check_if_inside_default = false;
 
   std::string real_path;
@@ -294,7 +160,7 @@ void FilesystemInstance::HandleFileSystemManagerResolve(
     real_path = location.substr(sizeof("file://") - 1);
     check_if_inside_default = false;
   } else {
-    real_path = GetRealPath(location);
+    real_path = vfs_.GetRealPath(location);
   }
 
   if (real_path.empty()) {
@@ -340,25 +206,23 @@ void FilesystemInstance::HandleFileSystemManagerResolve(
 
 void FilesystemInstance::HandleFileSystemManagerGetStorage(
       const picojson::value& msg) {
-  storage_foreach_device_supported(OnStorageDeviceSupported, this);
-  Storages::const_iterator it = storages_.find(msg.get("label").to_str());
-
-  if (it == storages_.end()) {
+  Storage storage;
+  std::string label = msg.get("label").to_str();
+  if (!vfs_.GetStorageByLabel(label, storage)) {
     PostAsyncErrorReply(msg, NOT_FOUND_ERR);
     return;
   }
 
-  picojson::object storage_object = it->second.toJSON(it->first);
+  picojson::object storage_object = StorageToJSON(storage, label);
   PostAsyncSuccessReply(msg, storage_object);
 }
 
 void FilesystemInstance::HandleFileSystemManagerListStorages(
       const picojson::value& msg) {
-  storage_foreach_device_supported(OnStorageDeviceSupported, this);
   picojson::array storage_objects;
-  Storages::const_iterator it = storages_.begin();
-  while (it != storages_.end()) {
-    picojson::object storage_object = it->second.toJSON(it->first);
+  Storages::const_iterator it = vfs_.begin();
+  while (it != vfs_.end()) {
+    picojson::object storage_object = StorageToJSON(it->second, it->first);
     storage_objects.push_back(picojson::value(storage_object));
     ++it;
   }
@@ -407,7 +271,7 @@ void FilesystemInstance::HandleFileOpenStream(const picojson::value& msg) {
     return;
   }
 
-  std::string real_path = GetRealPath(msg.get("fullPath").to_str());
+  std::string real_path = vfs_.GetRealPath(msg.get("fullPath").to_str());
   char* real_path_cstr = realpath(real_path.c_str(), NULL);
   if (!real_path_cstr) {
     free(real_path_cstr);
@@ -487,7 +351,7 @@ void FilesystemInstance::HandleFileDeleteDirectory(const picojson::value& msg) {
   }
 
   bool recursive = msg.get("recursive").evaluate_as_boolean();
-  std::string real_path = GetRealPath(msg.get("directoryPath").to_str());
+  std::string real_path = vfs_.GetRealPath(msg.get("directoryPath").to_str());
   if (real_path.empty()) {
     PostAsyncErrorReply(msg, INVALID_VALUES_ERR);
     return;
@@ -512,7 +376,7 @@ void FilesystemInstance::HandleFileDeleteFile(const picojson::value& msg) {
     return;
   }
 
-  std::string real_path = GetRealPath(msg.get("filePath").to_str());
+  std::string real_path = vfs_.GetRealPath(msg.get("filePath").to_str());
   if (real_path.empty()) {
     PostAsyncErrorReply(msg, INVALID_VALUES_ERR);
     return;
@@ -546,7 +410,7 @@ void FilesystemInstance::HandleFileListFiles(const picojson::value& msg) {
     return;
   }
 
-  std::string real_path = GetRealPath(msg.get("fullPath").to_str());
+  std::string real_path = vfs_.GetRealPath(msg.get("fullPath").to_str());
   if (real_path.empty()) {
     PostAsyncErrorReply(msg, INVALID_VALUES_ERR);
     return;
@@ -567,8 +431,8 @@ void FilesystemInstance::HandleFileListFiles(const picojson::value& msg) {
     if (!strcmp(entry.d_name, ".") || !strcmp(entry.d_name, ".."))
       continue;
 
-    a.push_back(picojson::value(JoinPath(msg.get("fullPath").to_str(),
-                                         entry.d_name)));
+    a.push_back(picojson::value(VirtualFS::JoinPath(
+        msg.get("fullPath").to_str(), entry.d_name)));
   }
 
   closedir(directory);
@@ -668,7 +532,7 @@ class PosixFile {
   bool unlink_when_done_;
  public:
   PosixFile(const std::string& path, int mode)
-      : fd_(open(path.c_str(), mode, kDefaultFileMode))
+      : fd_(open(path.c_str(), mode, vfs_const::kDefaultFileMode))
       , mode_(mode)
       , path_(path)
       , unlink_when_done_(mode & O_CREAT) {}
@@ -758,7 +622,7 @@ bool CopyElement(const std::string &from, const std::string &to) {
   }  // end file case
 
   // element is a directory, create if not exists
-  int status = mkdir(to.c_str(), kDefaultFileMode);
+  int status = mkdir(to.c_str(), vfs_const::kDefaultFileMode);
   if (status != 0 && errno != EEXIST) {
     std::cerr << "failed to create destination dir: " << to << std::endl;
     return false;
@@ -796,10 +660,10 @@ void FilesystemInstance::HandleFileCopyTo(const picojson::value& msg) {
 
   bool overwrite = msg.get("overwrite").evaluate_as_boolean();
   std::string real_origin_path =
-      GetRealPath(msg.get("originFilePath").to_str());
+      vfs_.GetRealPath(msg.get("originFilePath").to_str());
   std::string real_destination_path =
       ResolveImplicitDestination(real_origin_path,
-      GetRealPath(msg.get("destinationFilePath").to_str()));
+      vfs_.GetRealPath(msg.get("destinationFilePath").to_str()));
 
   if (!CopyAndRenameSanityChecks(msg, real_origin_path, real_destination_path,
                                  overwrite))
@@ -822,10 +686,10 @@ void FilesystemInstance::HandleFileMoveTo(const picojson::value& msg) {
 
   bool overwrite = msg.get("overwrite").evaluate_as_boolean();
   std::string real_origin_path =
-      GetRealPath(msg.get("originFilePath").to_str());
+      vfs_.GetRealPath(msg.get("originFilePath").to_str());
   std::string real_destination_path =
       ResolveImplicitDestination(real_origin_path,
-      GetRealPath(msg.get("destinationFilePath").to_str()));
+      vfs_.GetRealPath(msg.get("destinationFilePath").to_str()));
 
   if (!CopyAndRenameSanityChecks(msg, real_origin_path, real_destination_path,
                                  overwrite))
@@ -1243,20 +1107,20 @@ void FilesystemInstance::HandleFileCreateDirectory(const picojson::value& msg,
     return;
   }
 
-  std::string full_path = JoinPath(msg.get("fullPath").to_str(),
+  std::string full_path = VirtualFS::JoinPath(msg.get("fullPath").to_str(),
                                    msg.get("relativeDirPath").to_str());
   if (full_path.empty()) {
     SetSyncError(reply, INVALID_VALUES_ERR);
     return;
   }
 
-  std::string real_path = GetRealPath(full_path);
+  std::string real_path = vfs_.GetRealPath(full_path);
   if (real_path.empty()) {
     SetSyncError(reply, INVALID_VALUES_ERR);
     return;
   }
 
-  if (!makePath(real_path)) {
+  if (!VirtualFS::MakePath(real_path, vfs_const::kDefaultFileMode)) {
     SetSyncError(reply, IO_ERR);
     return;
   }
@@ -1275,21 +1139,22 @@ void FilesystemInstance::HandleFileCreateFile(const picojson::value& msg,
     return;
   }
 
-  std::string full_path = JoinPath(msg.get("fullPath").to_str(),
-                                   msg.get("relativeFilePath").to_str());
+  std::string full_path = VirtualFS::JoinPath(
+      msg.get("fullPath").to_str(),
+      msg.get("relativeFilePath").to_str());
   if (full_path.empty()) {
     SetSyncError(reply, INVALID_VALUES_ERR);
     return;
   }
 
-  std::string real_path = GetRealPath(full_path);
+  std::string real_path = vfs_.GetRealPath(full_path);
   if (real_path.empty()) {
     SetSyncError(reply, INVALID_VALUES_ERR);
     return;
   }
 
   int result = open(real_path.c_str(), O_CREAT | O_WRONLY | O_EXCL,
-        kDefaultFileMode);
+      vfs_const::kDefaultFileMode);
   if (result < 0) {
     SetSyncError(reply, IO_ERR);
     return;
@@ -1307,7 +1172,7 @@ void FilesystemInstance::HandleFileGetURI(const picojson::value& msg,
   }
   std::string full_path = msg.get("fullPath").to_str();
 
-  std::string real_path = GetRealPath(full_path);
+  std::string real_path = vfs_.GetRealPath(full_path);
   if (real_path.empty()) {
     SetSyncError(reply, INVALID_VALUES_ERR);
     return;
@@ -1320,7 +1185,7 @@ void FilesystemInstance::HandleFileGetURI(const picojson::value& msg,
   }
   free(real_path_c);
 
-  std::string uri_path = JoinPath("file:/", full_path);
+  std::string uri_path = VirtualFS::JoinPath("file:/", full_path);
 
   SetSyncSuccess(reply, uri_path);
 }
@@ -1336,14 +1201,14 @@ void FilesystemInstance::HandleFileResolve(const picojson::value& msg,
     return;
   }
 
-  std::string full_path = JoinPath(msg.get("fullPath").to_str(),
-                                   msg.get("relativeFilePath").to_str());
+  std::string full_path = VirtualFS::JoinPath(msg.get("fullPath").to_str(),
+      msg.get("relativeFilePath").to_str());
   if (full_path.empty()) {
     SetSyncError(reply, INVALID_VALUES_ERR);
     return;
   }
 
-  std::string real_path = GetRealPath(full_path);
+  std::string real_path = vfs_.GetRealPath(full_path);
   if (real_path.empty()) {
     SetSyncError(reply, INVALID_VALUES_ERR);
     return;
@@ -1366,7 +1231,7 @@ void FilesystemInstance::HandleFileStat(const picojson::value& msg,
     return;
   }
 
-  std::string real_path = GetRealPath(msg.get("fullPath").to_str());
+  std::string real_path = vfs_.GetRealPath(msg.get("fullPath").to_str());
   if (real_path.empty()) {
     SetSyncError(reply, INVALID_VALUES_ERR);
     return;
@@ -1389,7 +1254,7 @@ void FilesystemInstance::HandleFileStat(const picojson::value& msg,
   o["isDirectory"] = picojson::value(is_directory);
   if (is_directory)
     o["length"] = picojson::value(
-        static_cast<double>(get_dir_entry_count(real_path.c_str())));
+        static_cast<double>(VirtualFS::GetDirEntryCount(real_path.c_str())));
 
 
   picojson::value v(o);
@@ -1622,118 +1487,17 @@ void FilesystemInstance::ReadText(std::fstream* file, size_t num_chars,
   return;
 }
 
-std::string FilesystemInstance::GetRealPath(const std::string& fullPath) {
-  std::size_t pos = fullPath.find_first_of('/');
-  std::string virtual_root = fullPath;
-
-  if (pos != std::string::npos) {
-    virtual_root = fullPath.substr(0, pos);
-  }
-
-  Storages::const_iterator it = storages_.find(virtual_root);
-
-  if (it == storages_.end())
-    return std::string();
-
-  if (pos != std::string::npos)
-    return it->second.GetFullPath() + fullPath.substr(pos);
-
-  return it->second.GetFullPath();
+void FilesystemInstance::NotifyStorageStateChanged(const std::string& label,
+    Storage storage) {
+  picojson::object reply;
+  reply["storage"] = picojson::value(StorageToJSON(storage, label));
+  reply["cmd"] = picojson::value("storageChanged");
+  picojson::value value(reply);
+  PostMessage(value.serialize().c_str());
 }
 
-void FilesystemInstance::AddInternalStorage(
-    const std::string& label, const std::string& path) {
-  if (makePath(path))
-    storages_.insert(SorageLabelPair(label,
-                                     Storage(-1,
-                                             Storage::STORAGE_TYPE_INTERNAL,
-                                             Storage::STORAGE_STATE_MOUNTED,
-                                             path)));
-}
-
-void FilesystemInstance::AddStorage(int id,
-                                   storage_type_e type,
-                                   storage_state_e state,
-                                   const std::string& path) {
-  std::string label;
-  if (type == STORAGE_TYPE_INTERNAL)
-    label = kInternalStorage + std::to_string(id);
-  else if (type == STORAGE_TYPE_EXTERNAL)
-    label = kRemovableStorage + std::to_string(id);
-
-  storages_.insert(SorageLabelPair(label,
-                                   Storage(id,
-                                           type,
-                                           state,
-                                           path)));
-  if (std::find(watched_storages_.begin(),
-                watched_storages_.end(), id) != watched_storages_.end()) {
-    watched_storages_.push_back(id);
-    storage_set_state_changed_cb(id, OnStorageStateChanged, this);
-  }
-}
-
-void FilesystemInstance::NotifyStorageStateChanged(int id,
-                                                  storage_state_e state) {
-  for (Storages::iterator it = storages_.begin(); it != storages_.end(); ++it) {
-    if (it->second.GetId() == id) {
-      it->second.SetState(state);
-      picojson::object reply;
-      reply["storage"] = picojson::value(it->second.toJSON(it->first));
-      reply["cmd"] = picojson::value("storageChanged");
-      picojson::value value(reply);
-      PostMessage(value.serialize().c_str());
-      break;
-    }
-  }
-}
-
-bool FilesystemInstance::OnStorageDeviceSupported(
-    int id, storage_type_e type, storage_state_e state,
-    const char* path, void* user_data) {
-  reinterpret_cast<FilesystemInstance*>(user_data)->AddStorage(
-      id, type, state, path);
-  return true;
-}
-
-void FilesystemInstance::OnStorageStateChanged(
-    int id, storage_state_e state, void* user_data) {
+void FilesystemInstance::OnStorageStateChanged(const std::string& label,
+    Storage storage, void* user_data) {
   reinterpret_cast<FilesystemInstance*>(user_data)->NotifyStorageStateChanged(
-      id, state);
-}
-
-FilesystemInstance::Storage::Storage(
-    int id, int type, int state, const std::string& fullpath)
-  : id_(id),
-    type_(type),
-    state_(state),
-    fullpath_(fullpath) { }
-
-picojson::object FilesystemInstance::Storage::toJSON(
-    const std::string& label) const {
-  picojson::object storage_object;
-  storage_object["label"] = picojson::value(label);
-  storage_object["type"] = picojson::value(type());
-  storage_object["state"] = picojson::value(state());
-  return storage_object;
-}
-
-std::string FilesystemInstance::Storage::type() const {
-  return (type_ == Storage::STORAGE_TYPE_INTERNAL) ? kStorageTypeInternal :
-      kStorageTypeExternal;
-}
-
-std::string FilesystemInstance::Storage::state() const {
-  switch (state_) {
-  case Storage::STORAGE_STATE_MOUNTED:
-  case Storage::STORAGE_STATE_MOUNTED_READONLY:
-    return kStorageStateMounted;
-  case Storage::STORAGE_STATE_REMOVED:
-    return kStorageStateRemoved;
-  case Storage::STORAGE_STATE_UNMOUNTABLE:
-    return kStorageStateUnmountable;
-  default:
-    assert(!"Not reached");
-  }
-  return std::string();
+      label, storage);
 }

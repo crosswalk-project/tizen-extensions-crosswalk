@@ -212,6 +212,12 @@ void DownloadInstance::HandleStart(const picojson::value& msg) {
   DownloadArgs* args = new DownloadArgs(d->uid, this);
   args_.push_back(args);
 
+  if (d->destination.empty()) {
+    OnFailedInfo(args,
+        ToString(EnumToPChar(DOWNLOAD_ERROR_INVALID_DESTINATION)));
+    return;
+  }
+
   // create and start
   CHECK(download_create(&d->download_id), args);
   CHECK(download_set_state_changed_cb(d->download_id, OnStateChanged,

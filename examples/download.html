@@ -106,11 +106,11 @@ handle("button1", "Pause Download1", function() {
 });
 
 handle("bnstart2", "Start Download2", function() {
-  r2 = new tizen.DownloadRequest(url2, "Images"); // Test saving to specific folder
+  r2 = new tizen.DownloadRequest(url2, "images"); // Test saving to specific folder
 
   id2 = tizen.download.start(r2, listener);
   urls[id2] = url2;
-  output.value += "> asked to start download "+url2+" to Images folder\n";
+  output.value += "> asked to start download "+url2+" to images folder\n";
 });
 
 handle("button2", "Pause Download2", function() {

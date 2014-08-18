@@ -19,6 +19,8 @@
         'filesystem_extension.h',
         'filesystem_instance.cc',
         'filesystem_instance.h',
+        '../common/virtual_fs.cc',
+        '../common/virtual_fs.h',
       ],
       'includes': [
         '../common/pkg-config.gypi',

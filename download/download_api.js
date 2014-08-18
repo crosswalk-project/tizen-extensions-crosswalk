@@ -19,7 +19,7 @@ var asValidString = function(o) {
 };
 
 var ensureType = function(o, expected) {
-  if (typeof o != expected) {
+  if (typeof o != expected || o === undefined) {
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
   }
 };
@@ -240,9 +240,7 @@ exports.start = function(request, listener) {
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
   }
   requests[request.uid] = request;
-  // If listener is equal to 'undefined', 'listener !== null' is still true.
-  // So change condition 'listener !== null' to 'listener != null'.
-  if (listener != null) {
+  if (arguments.length > 1 && listener !== null) {
     ensureType(listener, 'object');
     exports.setListener(request.uid, listener);
   }
