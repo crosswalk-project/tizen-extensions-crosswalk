@@ -37,7 +37,9 @@
     <td><form>Method: <input type="text" name="serv_method" id="serv_method"><br></form></td>
   </tr>
   <tr><td><button onclick='queryIdentities()'>Query Identities</button></td>
-  <td><form>Filter(key1:val1,key2:val2,...):
+  <td><form>Filter(Input is json and keys can only be 'Type', 'Owner' or 'Caption'
+      e.g. {"Type":"WEB"} or {"Type":"APPLICATION"} or {"Type":"NETWORK"} or
+      {"Owner":{"sysContext":"*","appContext":"*"}} or {"Caption":"cap"}
       <input type="text" name="serv_filter" id="serv_filter"><br></form></td>
   </tr>
   <tr><td><button onclick='getIdentity()'>Get Identity</button></td>
@@ -153,23 +155,29 @@ function queryMethods() {
 
 function queryMechanisms() {
   var method = document.getElementById('serv_method').value;
-  tizen.sso.authService.queryMechanisms(method).then(function (result) {
-    _logData('QueryMechanisms successful: ' + JSON.stringify(result));},
-    function(err) {_logData('QueryMechanisms failed: ' + err);});
+  var res = tizen.sso.authService.queryMechanisms(method);
+  if (res != null) {
+    res.then(function (result) {
+      _logData('QueryMechanisms successful: ' + JSON.stringify(result));},
+          function(err) {_logData('QueryMechanisms failed: ' + err);});
+  } else {
+    _logData('mechanisms not found');
+  }
 }
 
 function queryIdentities() {
   var str = document.getElementById('serv_filter').value;
   var filters = {};
   if (typeof str === 'string' && str.length > 0) {
-    var ufilter = str.split(",");  
-    for (var i = 0; i < ufilter.length; i++) {
-      var keyval = ufilter[i].split(":");
-      filters[keyval[0]] = keyval[1];
-    }
+    filters = JSON.parse(str);
   }
-  tizen.sso.authService.queryIdentities(filters).then(onQueryIdentitiesComplete, function(err) {
-    _logData('QueryIdentities failed: ' + err);});
+  var res = tizen.sso.authService.queryIdentities(filters);
+  if (res != null) {
+    res.then(onQueryIdentitiesComplete, function(err) {
+      _logData('QueryIdentities failed: ' + err);});
+  } else {
+    _logData('identities not found');
+  }
 }
 
 function onQueryIdentitiesComplete(result) {
@@ -178,16 +186,17 @@ function onQueryIdentitiesComplete(result) {
 
 function getIdentity() {
   var id = parseFloat(document.getElementById('serv_identityid').value);
-  if (id == NaN) {
+  if (isNaN(id)) {
     _logData('Invalid id');
     return;
   }
   var res = tizen.sso.authService.getIdentity(id);
-  if (res != null)
+  if (res != null) {
     res.then(onGetIdentityComplete, function(err) {
-        _logData('GetIdentity failed: ' + err);});
-  else
-    _logData('Identity not found with the specified id');  
+      _logData('GetIdentity failed: ' + err);});
+  } else {
+    _logData('Identity not found with the specified id');
+  }
 }
 
 function onGetIdentityComplete(result) {
@@ -318,8 +327,13 @@ function startSession() {
   _logData('identity found with JSId: ' + identobj.jsid);
   var method = document.getElementById('ident_method').value;
   
-  identobj.startSession(method).then(onStartSessionComplete,
-    function(err) {_logData('startSession failed: ' + err);});
+  var res = identobj.startSession(method);
+  if (res != null) {
+    res.then(onStartSessionComplete,
+      function(err) {_logData('startSession failed: ' + err);});
+  } else {
+    _logData('Session cannot be started');
+  }
 }
 
 function onStartSessionComplete(sessionobj) {
@@ -352,10 +366,15 @@ function requestCredentialsUpdate() {
   }
   _logData('identity found with JSId: ' + identobj.jsid);
   var message = document.getElementById('ident_message').value;
-  
-  identobj.requestCredentialsUpdate(message).then(function(msg) {
-    document.form_out.form_text.value += "\n" + "requestCredentialsUpdate succeeded";},
-    function(err) {_logData('requestCredentialsUpdate failed: ' + err);});
+
+  var res = identobj.requestCredentialsUpdate(message);
+  if (res != null) {
+    res.then(function(msg) {document.form_out.form_text.value += "\n" +
+      "requestCredentialsUpdate succeeded";},
+          function(err) {_logData('requestCredentialsUpdate failed: ' + err);});
+  } else {
+    _logData('requestCredentialsUpdate failed');
+  }
 }
 
 function store(info) {
@@ -383,9 +402,13 @@ function addReference() {
   _logData('identity found with JSId: ' + identobj.jsid);
   var reference = document.getElementById('ident_addref').value;
   
-  identobj.addReference(reference).then(function(msg) {
-    _logData('addReference succeeded');},
-    function(err) {_logData('addReference failed: ' + err);});
+  var res = identobj.addReference(reference);
+  if (res != null) {
+    res.then(function(msg) {_logData('addReference succeeded');},
+      function(err) {_logData('addReference failed: ' + err);});
+  } else {
+    _logData('addreference failed');
+  }
 }
 
 function removeReference() {
@@ -398,9 +421,13 @@ function removeReference() {
   _logData('identity found with JSId: ' + identobj.jsid);
   var reference = document.getElementById('ident_remref').value;
   
-  identobj.removeReference(reference).then(function(msg) {
-    _logData('removeReference succeeded');},
-    function(err) {_logData('removeReference failed: ' + err);});
+  var res = identobj.removeReference(reference);
+  if (res != null) {
+    res.then(function(msg) {_logData('removeReference succeeded');},
+      function(err) {_logData('removeReference failed: ' + err);});
+  } else {
+    _logData('removeReference failed');
+  }
 }
 
 function removeIdentity() {
@@ -505,6 +532,8 @@ window.onload = function() {
     JSON.stringify([{"secContext":{"sysContext":"*","appContext":"*"},
     "method":"password","mechanisms":["password"]}]);
   document.getElementById('cident_owner').value = "*,*";
+  document.getElementById('serv_filter').value =
+      JSON.stringify({Type:"WEB",Owner:{"sysContext":"*","appContext":"*"},Caption:"cap"});
 };
 
 </script>
