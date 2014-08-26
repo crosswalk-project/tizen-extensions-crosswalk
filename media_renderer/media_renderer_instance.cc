@@ -9,41 +9,12 @@
 #include "common/picojson.h"
 #include "media_renderer/media_renderer_manager.h"
 
-MediaRendererInstance::MediaRendererInstance()
-    : worker_thread_(&MediaRendererInstance::InitWorkerThread, this) {
-  worker_thread_.detach();
+MediaRendererInstance::MediaRendererInstance() {
+  media_renderer_manager_ = new MediaRendererManager(this);
 }
 
 MediaRendererInstance::~MediaRendererInstance() {
-  g_main_loop_quit(worker_loop_);
   delete media_renderer_manager_;
-}
-
-gboolean MediaRendererInstance::CreateMediaRendererManager(void* data) {
-  if (!data) {
-    std::cerr << "Null pointer is passed to callback" << std::endl;
-    return FALSE;
-  }
-
-  MediaRendererInstance* instance = static_cast<MediaRendererInstance*>(data);
-  instance->media_renderer_manager_ = new MediaRendererManager(instance);
-  return FALSE;
-}
-
-void MediaRendererInstance::InitWorkerThread() {
-  GMainContext* context = g_main_context_default();
-  worker_loop_ = g_main_loop_new(context, FALSE);
-  g_main_context_push_thread_default(context);
-  GSource* source = g_idle_source_new();
-  g_source_set_callback(source,
-                        &MediaRendererInstance::CreateMediaRendererManager,
-                        this,
-                        NULL);
-  g_source_attach(source, context);
-  g_main_loop_run(worker_loop_);
-  g_source_destroy(source);
-  g_source_unref(source);
-  g_main_loop_unref(worker_loop_);
 }
 
 void MediaRendererInstance::HandleMessage(const char* message) {
