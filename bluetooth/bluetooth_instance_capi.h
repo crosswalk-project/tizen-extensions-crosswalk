@@ -103,6 +103,8 @@ class BluetoothInstance : public common::Instance {
   // Map JS reply_id to a C API callback
   std::map<std::string, std::string> callbacks_id_map_;
 
+  std::map<int, bool> socket_connected_map_;
+
   typedef std::vector<picojson::value> MessageQueue;
   MessageQueue queue_;
 

@@ -873,7 +873,8 @@ BluetoothDevice.prototype.connectToServiceByUUID =
     }
 
     if (socketSuccessCallback) {
-      var socket_cb = new BluetoothSocket(result.uuid, this, result);
+      var i = adapter.indexOfDevice(adapter.known_devices, result.peer);
+      var socket_cb = new BluetoothSocket(result.uuid, adapter.known_devices[i], result);
       socketSuccessCallback(socket_cb);
     }
   });
@@ -920,7 +921,7 @@ BluetoothDevice.prototype._updateProperties = function(device) {
 function BluetoothSocket(uuid, peer, msg) {
   _addConstProperty(this, 'uuid', uuid);
   _addConstProperty(this, 'peer', peer);
-  _addConstProperty(this, 'state', BluetoothSocketState.OPEN);
+  _addConstProperty(this, 'state', 'OPEN');
   this.onclose = null;
   this.onmessage = null;
   this.data = [];
@@ -933,20 +934,9 @@ function BluetoothSocket(uuid, peer, msg) {
   }
 }
 
-var BluetoothSocketState = {
-  'CLOSE': 1,
-  'OPEN': 2
-};
-Object.defineProperty(BluetoothSocket, 'BluetoothSocketState', {
-  configurable: false,
-  writable: false,
-  value: BluetoothSocketState
-});
-
-
 BluetoothSocket.prototype.writeData = function(data) {
   // make sure that socket is connected and opened.
-  if (this.state == BluetoothSocketState.CLOSE) {
+  if (this.state == 'CLOSED') {
     throw new tizen.WebAPIException(tizen.WebAPIException.UNKNOWN_ERR);
     return;
   }
@@ -986,7 +976,7 @@ BluetoothSocket.prototype.close = function() {
         var socket = adapter.sockets[i];
         if (socket.socket_fd === msg.socket_fd) {
           if (socket.onclose && typeof socket.onmessage === 'function') {
-            _addConstProperty(adapter.sockets[i], 'state', BluetoothSocketState.CLOSE);
+            _addConstProperty(adapter.sockets[i], 'state', 'CLOSED');
             socket.onclose();
           }
         }
@@ -1008,6 +998,7 @@ function BluetoothServiceHandler(name, uuid, msg) {
   _addConstProperty(this, 'name', name);
   _addConstProperty(this, 'uuid', uuid);
   _addConstProperty(this, 'isConnected', false);
+  this.onconnect = null;
 
   if (msg) {
     this.server_fd = msg.server_fd;
@@ -1038,7 +1029,12 @@ BluetoothServiceHandler.prototype.unregister = function(successCallback, errorCa
       return;
     }
 
-    _addConstProperty(this, 'isConnected', false);
+    for (var i in adapter.service_handlers) {
+      var service = adapter.service_handlers[i];
+      if (service.server_fd == result.socket_fd)
+        adapter.service_handlers.splice(i, 1);
+    }
+
     if (successCallback)
       successCallback();
   });
