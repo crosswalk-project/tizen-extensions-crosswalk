@@ -243,6 +243,14 @@ void BluetoothInstance::OnDiscoveryStateChanged(int result,
       obj->InternalPostMessage(picojson::value(o));
       break;
     }
+#ifdef NTB
+    case BT_ADAPTER_DEVICE_DISCOVERY_REMOVED: {
+      o["Address"] = picojson::value(discovery_info->remote_address);
+      o["cmd"] = picojson::value("DeviceRemoved");
+      obj->InternalPostMessage(picojson::value(o));
+      break;
+    }
+#endif
     default:
       LOG_ERR("Unknown discovery state callback!");
       break;

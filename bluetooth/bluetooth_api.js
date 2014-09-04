@@ -178,6 +178,9 @@ var handleDeviceRemoved = function(address) {
       break;
     }
   }
+
+  if (adapter.discovery_callbacks.ondevicedisappeared)
+    adapter.discovery_callbacks.ondevicedisappeared(address);
 };
 
 var handleDeviceUpdated = function(msg) {
