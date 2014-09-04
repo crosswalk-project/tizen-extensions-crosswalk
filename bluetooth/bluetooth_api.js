@@ -56,7 +56,7 @@ function Adapter() {
   this.isReady = false;
   this.service_handlers = [];
   this.sockets = [];
-  this.change_listener = null;
+  this.change_listener = {};
 }
 
 function validateAddress(address) {
@@ -202,7 +202,7 @@ var handleAdapterUpdated = function(msg) {
     _addConstProperty(defaultAdapter, 'address', msg.Address);
 
   if (msg.Powered) {
-    var powered = (msg.Powered === 'true') ? true : false;
+    var powered = (msg.Powered === 'true');
     _addConstProperty(defaultAdapter, 'powered', powered);
     if (listener && listener.onstatechanged) {
       adapter.change_listener.onstatechanged(powered);
@@ -210,7 +210,7 @@ var handleAdapterUpdated = function(msg) {
   }
 
   if (msg.Discoverable) {
-    var visibility = (msg.Discoverable === 'true') ? true : false;
+    var visibility = (msg.Discoverable === 'true');
 
     if (defaultAdapter.visible !== visibility && listener && listener.onvisibilitychanged) {
       adapter.change_listener.onvisibilitychanged(visibility);
@@ -272,29 +272,13 @@ var handleSocketClosed = function(msg) {
   }
 };
 
-var defaultAdapter = new BluetoothAdapter();
-
-exports.getDefaultAdapter = function() {
-  var msg = {
-    'cmd': 'GetDefaultAdapter'
-  };
-  var result = JSON.parse(extension.internal.sendSyncMessage(JSON.stringify(msg)));
-
-  if (!result.error) {
-    _addConstProperty(defaultAdapter, 'name', result.name);
-    _addConstProperty(defaultAdapter, 'address', result.address);
-    _addConstProperty(defaultAdapter, 'powered', result.powered);
-    _addConstProperty(defaultAdapter, 'visible', result.visible);
-
-    if (result.hasOwnProperty('address') && result.address != '')
-      adapter.isReady = true;
-  } else {
-    adapter.isReady = false;
-    throw new tizen.WebAPIException(tizen.WebAPIException.UNKNOWN_ERR);
-  }
-
-  return defaultAdapter;
-};
+function _addConstProperty(obj, propertyKey, propertyValue) {
+  Object.defineProperty(obj, propertyKey, {
+    configurable: true,
+    writable: false,
+    value: propertyValue
+  });
+}
 
 exports.deviceMajor = {};
 var deviceMajor = {
@@ -311,6 +295,7 @@ var deviceMajor = {
   'UNCATEGORIZED': { value: 0x1F, configurable: false, writable: false }
 };
 Object.defineProperties(exports.deviceMajor, deviceMajor);
+_addConstProperty(exports, 'deviceMajor', exports.deviceMajor);
 
 exports.deviceMinor = {};
 var deviceMinor = {
@@ -388,6 +373,7 @@ var deviceMinor = {
   'HEALTH_ANKLE_PROSTHESIS': { value: 0x0d, configurable: false, writable: false }
 };
 Object.defineProperties(exports.deviceMinor, deviceMinor);
+_addConstProperty(exports, 'deviceMinor', exports.deviceMinor);
 
 exports.deviceService = {};
 var deviceService = {
@@ -402,14 +388,31 @@ var deviceService = {
   'INFORMATION': { value: 0x0400, configurable: false, writable: false }
 };
 Object.defineProperties(exports.deviceService, deviceService);
+_addConstProperty(exports, 'deviceService', exports.deviceService);
 
-function _addConstProperty(obj, propertyKey, propertyValue) {
-  Object.defineProperty(obj, propertyKey, {
-    configurable: true,
-    writable: false,
-    value: propertyValue
-  });
-}
+var defaultAdapter = new BluetoothAdapter();
+
+exports.getDefaultAdapter = function() {
+  var msg = {
+    'cmd': 'GetDefaultAdapter'
+  };
+  var result = JSON.parse(extension.internal.sendSyncMessage(JSON.stringify(msg)));
+
+  if (!result.error) {
+    _addConstProperty(defaultAdapter, 'name', result.name);
+    _addConstProperty(defaultAdapter, 'address', result.address);
+    _addConstProperty(defaultAdapter, 'powered', result.powered);
+    _addConstProperty(defaultAdapter, 'visible', result.visible);
+
+    if (result.hasOwnProperty('address') && result.address != '')
+      adapter.isReady = true;
+  } else {
+    adapter.isReady = false;
+    throw new tizen.WebAPIException(tizen.WebAPIException.UNKNOWN_ERR);
+  }
+
+  return defaultAdapter;
+};
 
 function BluetoothAdapter() {
   _addConstProperty(this, 'name', '');
@@ -738,7 +741,7 @@ BluetoothAdapter.prototype.registerRFCOMMServiceByUUID =
       return;
     }
 
-    var service = new BluetoothServiceHandler(uuid, name, result);
+    var service = new BluetoothServiceHandler(uuid.toUpperCase(), name, result);
     adapter.service_handlers.push(service);
 
     if (serviceSuccessCallback) {
@@ -761,7 +764,7 @@ BluetoothAdapter.prototype.setChangeListener = function(listener) {
 };
 
 BluetoothAdapter.prototype.unsetChangeListener = function() {
-  adapter.change_listener = null;
+  adapter.change_listener = {};
 };
 
 var _deviceClassMask = {
@@ -789,36 +792,44 @@ function BluetoothDevice(msg) {
   _addConstProperty(this.deviceClass, 'minor', (msg.ClassMinor >> 2) & _deviceClassMask.MINOR);
   _addConstProperty(this.deviceClass, 'major', msg.ClassMajor & _deviceClassMask.MAJOR);
 
-  _addConstProperty(this, 'isBonded', (msg.Paired == 'true') ? true : false);
-  _addConstProperty(this, 'isTrusted', (msg.Trusted == 'true') ? true : false);
-  _addConstProperty(this, 'isConnected', (msg.Connected == 'true') ? true : false);
+  _addConstProperty(this, 'isBonded', (msg.Paired == 'true'));
+  _addConstProperty(this, 'isTrusted', (msg.Trusted == 'true'));
+  _addConstProperty(this, 'isConnected', (msg.Connected == 'true'));
 
   if (msg.UUIDs) {
+    var uuids_array = [];
     if (typeof msg.UUIDs === 'string') {
       // FIXME(clecou) BlueZ backend sends a string to convert it into an array
       // A better approach would be to adapt backends instances to have a single JSON protocol.
-      var uuids_array = [];
       uuids_array = msg.UUIDs.substring(msg.UUIDs.indexOf('[') + 1,
           msg.UUIDs.indexOf(']')).split(',');
       for (var i = 0; i < uuids_array.length; i++) {
         uuids_array[i] = uuids_array[i].substring(2, uuids_array[i].length - 1);
       }
-      _addConstProperty(this, 'uuids', uuids_array);
+
     } else {
       // Tizen C API backend directly sends an array
-      _addConstProperty(this, 'uuids', msg.UUIDs);
+      uuids_array = msg.UUIDs;
+      for (var i = 0; i < msg.UUIDs.length; i++)
+        _addConstProperty(uuids_array, i.toString(), msg.UUIDs[i].toUpperCase());
     }
+    _addConstProperty(this, 'uuids', uuids_array);
   }
 
   var services = (msg.ClassService >> 13) & _deviceClassMask.SERVICE;
   var services_array = [];
+  var index = 0;
 
-  // 11 is the number of bits in _deviceClassMask.SERVICE
-  for (var i = 0; i < 11; i++)
-    if ((services & (1 << i)) !== 0)
-      services_array.push(1 << i);
+  var SERVICE_CLASS_BITS_NUMBER = 11;
 
-    _addConstProperty(this.deviceClass, 'services', services_array);
+  for (var i = 0; i < SERVICE_CLASS_BITS_NUMBER; i++) {
+    if ((services & (1 << i)) !== 0) {
+      _addConstProperty(services_array, index.toString(), (1 << i));
+      index++;
+    }
+  }
+
+  _addConstProperty(this.deviceClass, 'services', services_array);
 }
 
 BluetoothDevice.prototype.connectToServiceByUUID =
@@ -833,7 +844,7 @@ BluetoothDevice.prototype.connectToServiceByUUID =
 
   var uuid_found = false;
   for (var i = 0; i < this.uuids.length; i++) {
-    if (this.uuids[i] == uuid) {
+    if (this.uuids[i] == uuid.toUpperCase()) {
       uuid_found = true;
       break;
     }
