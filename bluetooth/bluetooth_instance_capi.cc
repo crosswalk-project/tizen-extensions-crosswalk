@@ -19,14 +19,16 @@ BluetoothInstance::BluetoothInstance()
       adapter_enabled_(false),
       js_reply_needed_(false),
       stop_discovery_from_js_(false) {
-
-  CAPI(bt_initialize());
-  InitializeAdapter();
 }
 
 BluetoothInstance::~BluetoothInstance() {
   UninitializeAdapter();
   CAPI(bt_deinitialize());
+}
+
+void BluetoothInstance::Initialize() {
+  CAPI(bt_initialize());
+  InitializeAdapter();
 }
 
 void BluetoothInstance::HandleMessage(const char* message) {

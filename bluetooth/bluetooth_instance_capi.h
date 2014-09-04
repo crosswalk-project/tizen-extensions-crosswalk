@@ -48,6 +48,7 @@ class BluetoothInstance : public common::Instance {
   ~BluetoothInstance();
 
  private:
+  virtual void Initialize();
   virtual void HandleMessage(const char* msg);
   virtual void HandleSyncMessage(const char* msg);
 
