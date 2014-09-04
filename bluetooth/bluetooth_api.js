@@ -438,10 +438,11 @@ BluetoothAdapter.prototype.setName = function(name, successCallback, errorCallba
   postMessage(msg, function(result) {
     if (result.error != 0) {
       if (errorCallback) {
-        var error = new tizen.WebAPIError(tizen.WebAPIException.INVALID_VALUES_ERR);
+        var error = new tizen.WebAPIError(tizen.WebAPIException.UNKNOWN_ERR);
+        if (result.error == 1)
+          error = new tizen.WebAPIError(tizen.WebAPIException.INVALID_VALUES_ERR);
         errorCallback(error);
       }
-
       throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
       return;
     }
@@ -468,7 +469,7 @@ BluetoothAdapter.prototype.setPowered = function(state, successCallback, errorCa
   };
 
   postMessage(msg, function(result) {
-    if (result.error != 0) {
+    if (result.error) {
       if (errorCallback) {
         var error = new tizen.WebAPIError(tizen.WebAPIException.INVALID_VALUES_ERR);
         errorCallback(error);
@@ -504,10 +505,11 @@ BluetoothAdapter.prototype.setVisible = function(mode, successCallback, errorCal
   postMessage(msg, function(result) {
     if (result.error != 0) {
       if (errorCallback) {
-        var error = new tizen.WebAPIError(tizen.WebAPIException.INVALID_VALUES_ERR);
+        var error = new tizen.WebAPIError(tizen.WebAPIException.UNKNOWN_ERR);
+        if (result.error == 1)
+          error = new tizen.WebAPIError(tizen.WebAPIException.INVALID_VALUES_ERR);
         errorCallback(error);
       }
-
       throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
       return;
     }
@@ -534,7 +536,7 @@ BluetoothAdapter.prototype.discoverDevices = function(discoverySuccessCallback, 
     'cmd': 'DiscoverDevices'
   };
   postMessage(msg, function(result) {
-    if (result.error != 0) {
+    if (result.error) {
       if (errorCallback) {
         var error = new tizen.WebAPIError(tizen.WebAPIException.UNKNOWN_ERR);
         errorCallback(error);
@@ -561,7 +563,7 @@ BluetoothAdapter.prototype.stopDiscovery = function(successCallback, errorCallba
     'cmd': 'StopDiscovery'
   };
   postMessage(msg, function(result) {
-    if (result.error != 0) {
+    if (result.error) {
       if (errorCallback) {
         var error = new tizen.WebAPIError(tizen.WebAPIException.UNKNOWN_ERR);
         errorCallback(error);
@@ -631,7 +633,7 @@ BluetoothAdapter.prototype.createBonding = function(address, successCallback, er
   postMessage(msg, function(result) {
     var cb_device;
 
-    if (result.error != 0) {
+    if (result.error) {
       if (errorCallback) {
         var error = new tizen.WebAPIError(tizen.WebAPIException.INVALID_VALUES_ERR);
         errorCallback(error);
@@ -731,11 +733,9 @@ BluetoothAdapter.prototype.registerRFCOMMServiceByUUID =
   postMessage(msg, function(result) {
     if (result.error != 0) {
       if (errorCallback) {
-        var error;
+        var error = new tizen.WebAPIError(tizen.WebAPIException.UNKNOWN_ERR);
         if (result.error == 1)
-          error = new tizen.WebAPIError(tizen.WebAPIException.NOT_FOUND_ERR);
-        else
-          error = new tizen.WebAPIError(tizen.WebAPIException.UNKNOWN_ERR);
+          error = new tizen.WebAPIError(tizen.WebAPIException.INVALID_VALUES_ERR);
         errorCallback(error);
       }
       return;
@@ -864,9 +864,10 @@ BluetoothDevice.prototype.connectToServiceByUUID =
     if (result.error != 0) {
       if (errorCallback) {
         var error = new tizen.WebAPIError(tizen.WebAPIException.UNKNOWN_ERR);
+        if (result.error == 1)
+          error = new tizen.WebAPIError(tizen.WebAPIException.INVALID_VALUES_ERR);
         errorCallback(error);
       }
-
       throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
       return;
     }
@@ -1020,9 +1021,6 @@ BluetoothServiceHandler.prototype.unregister = function(successCallback, errorCa
     throw new tizen.WebAPIError(tizen.WebAPIException.TYPE_MISMATCH_ERR);
   }
 
-  if (adapter.checkServiceAvailability(errorCallback))
-    return;
-
   var msg = {
     'cmd': 'UnregisterServer',
     'server_fd': this.server_fd,
@@ -1030,7 +1028,7 @@ BluetoothServiceHandler.prototype.unregister = function(successCallback, errorCa
   };
 
   postMessage(msg, function(result) {
-    if (result.error != 0) {
+    if (result.error) {
       if (errorCallback) {
         var error = new tizen.WebAPIError(tizen.WebAPIException.UNKNOWN_ERR);
         errorCallback(error);
