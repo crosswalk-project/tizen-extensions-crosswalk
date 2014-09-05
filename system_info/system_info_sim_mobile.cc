@@ -4,12 +4,22 @@
 
 #include "system_info/system_info_sim.h"
 
-const std::string SysInfoSim::name_ = "SIM";
+SysInfoSim::SysInfoSim()
+    : state_(SYSTEM_INFO_SIM_UNKNOWN),
+      operator_name_(""),
+      msisdn_(""),
+      iccid_(""),
+      mcc_(0),
+      mnc_(0),
+      msin_(""),
+      spn_("") {}
+
+SysInfoSim::~SysInfoSim() {}
 
 void SysInfoSim::Get(picojson::value& error,
                      picojson::value& data) {
   if (!QuerySIMStatus() ||
-      !QuerySIM(sim_get_cphs_operator_name, operatorName_) ||
+      !QuerySIM(sim_get_cphs_operator_name, operator_name_) ||
       !QuerySIM(sim_get_subscriber_number, msisdn_) ||
       !QuerySIM(sim_get_icc_id, iccid_) ||
       !QuerySIM(sim_get_mcc, mcc_) ||
@@ -93,56 +103,6 @@ bool SysInfoSim::QuerySIM(SIMGetterFunction1 getter,
   return false;
 }
 
-void SysInfoSim::SetJsonValues(picojson::value& data) {
-  system_info::SetPicoJsonObjectValue(data, "state",
-      picojson::value(ToSimStateString(state_)));
-  system_info::SetPicoJsonObjectValue(data, "operatorName",
-      picojson::value(operatorName_));
-  system_info::SetPicoJsonObjectValue(data, "msisdn",
-      picojson::value(msisdn_));
-  system_info::SetPicoJsonObjectValue(data, "iccid",
-      picojson::value(iccid_));
-  system_info::SetPicoJsonObjectValue(data, "mcc",
-      picojson::value(static_cast<double>(mcc_)));
-  system_info::SetPicoJsonObjectValue(data, "mnc",
-      picojson::value(static_cast<double>(mnc_)));
-  system_info::SetPicoJsonObjectValue(data, "msin",
-      picojson::value(msin_));
-  system_info::SetPicoJsonObjectValue(data, "spn",
-      picojson::value(spn_));
-}
-
-std::string SysInfoSim::ToSimStateString(SystemInfoSimState state) {
-  std::string ret;
-  switch (state) {
-    case SYSTEM_INFO_SIM_ABSENT:
-      ret = "ABSENT";
-      break;
-    case SYSTEM_INFO_SIM_INITIALIZING:
-      ret = "INITIALIZING";
-      break;
-    case SYSTEM_INFO_SIM_READY:
-      ret = "READY";
-      break;
-    case SYSTEM_INFO_SIM_PIN_REQUIRED:
-      ret = "PIN_REQUIRED";
-      break;
-    case SYSTEM_INFO_SIM_PUB_REQUIRED:
-      ret = "PUB_REQUIRED";
-      break;
-    case SYSTEM_INFO_SIM_NETWORK_LOCKED:
-      ret = "NETWORK_LOCKED";
-      break;
-    case SYSTEM_INFO_SIM_SIM_LOCKED:
-      ret = "SIM_LOCKED";
-      break;
-    case SYSTEM_INFO_SIM_UNKNOWN:
-    default:
-      ret = "UNKNOWN";
-  }
-  return ret;
-}
-
 void SysInfoSim::StartListening() {
   sim_set_state_changed_cb(OnSimStateChanged, this);
 }
@@ -180,7 +140,7 @@ void SysInfoSim::OnSimStateChanged(sim_state_e state, void *user_data) {
   picojson::value data = picojson::value(picojson::object());
 
   sim->state_ = sim->GetSystemInfoSIMState(state);
-  if (!sim->QuerySIM(sim_get_cphs_operator_name, sim->operatorName_) ||
+  if (!sim->QuerySIM(sim_get_cphs_operator_name, sim->operator_name_) ||
       !sim->QuerySIM(sim_get_subscriber_number, sim->msisdn_) ||
       !sim->QuerySIM(sim_get_icc_id, sim->iccid_) ||
       !sim->QuerySIM(sim_get_mcc, sim->mcc_) ||

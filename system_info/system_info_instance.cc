@@ -40,7 +40,7 @@
 #include "system_info/system_info_locale.h"
 #include "system_info/system_info_network.h"
 #include "system_info/system_info_peripheral.h"
-#if defined(SYSTEMINFO_SIM_ACCESS)
+#if defined(TIZEN)
 #include "system_info/system_info_sim.h"
 #endif
 #include "system_info/system_info_storage.h"
@@ -69,7 +69,7 @@ void SystemInfoInstance::InstancesMapInitialize() {
   RegisterClass<SysInfoLocale>();
   RegisterClass<SysInfoNetwork>();
   RegisterClass<SysInfoPeripheral>();
-#if defined(SYSTEMINFO_SIM_ACCESS)
+#if defined(TIZEN)
   RegisterClass<SysInfoSim>();
 #endif
   RegisterClass<SysInfoStorage>();
