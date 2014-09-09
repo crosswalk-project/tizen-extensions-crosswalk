@@ -6,15 +6,30 @@
 #define SYSTEM_INFO_SYSTEM_INFO_STORAGE_H_
 
 #include <glib.h>
-#if defined(GENERIC_DESKTOP)
 #include <libudev.h>
-#endif
+
+#include <map>
 #include <string>
 
 #include "common/picojson.h"
 #include "common/utils.h"
 #include "system_info/system_info_instance.h"
 #include "system_info/system_info_utils.h"
+
+enum StorageUnitType {
+  UNKNOWN = 0,
+  INTERNAL,
+  USB_HOST,
+  MMC
+};
+
+struct SysInfoDeviceStorageUnit {
+  double available_capacity;
+  double capacity;
+  int id;
+  bool is_removable;
+  StorageUnitType type;
+};
 
 class SysInfoStorage : public SysInfoObject {
  public:
@@ -30,25 +45,24 @@ class SysInfoStorage : public SysInfoObject {
   static const std::string name_;
 
  private:
-  explicit SysInfoStorage();
-  bool Update(picojson::value& error);
+  SysInfoStorage();
+  void GetAllAvailableStorageDevices();
+  void InitStorageMonitor();
+  void QueryAllAvailableStorageUnits();
+  void MakeStorageUnit(SysInfoDeviceStorageUnit& unit, udev_device* dev) const;
+  std::string ToStorageUnitTypeString(StorageUnitType type);
+  void UpdateStorageList();
   static gboolean OnUpdateTimeout(gpointer user_data);
 
   int timeout_cb_id_;
+  int udev_monitor_fd_;
   picojson::value units_;
+  udev* udev_;
+  udev_enumerate* enumerate_;
+  udev_monitor* udev_monitor_;
 
-#if defined(GENERIC_DESKTOP)
-  void GetDetails(const std::string& mnt_fsname,
-                  const std::string& mnt_dir,
-                  picojson::value& error,
-                  picojson::value& unit);
-  std::string GetDevPathFromMountPath(const std::string& mnt_path);
-
-  struct udev* udev_;
-#elif defined(TIZEN)
-  bool GetInternal(picojson::value& error, picojson::value& unit);
-  bool GetMMC(picojson::value& error, picojson::value& unit);
-#endif
+  typedef std::map<int, SysInfoDeviceStorageUnit> StoragesMap;
+  StoragesMap storages_;
 
   DISALLOW_COPY_AND_ASSIGN(SysInfoStorage);
 };

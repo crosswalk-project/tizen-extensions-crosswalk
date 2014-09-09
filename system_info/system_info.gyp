@@ -93,8 +93,6 @@
         'system_info_sim_mobile.cc',
         'system_info_storage.cc',
         'system_info_storage.h',
-        'system_info_storage_desktop.cc',
-        'system_info_storage_tizen.cc',
         'system_info_utils.cc',
         'system_info_utils.h',
         'system_info_wifi_network.cc',
