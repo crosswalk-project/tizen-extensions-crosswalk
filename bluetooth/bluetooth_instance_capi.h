@@ -48,6 +48,7 @@ class BluetoothInstance : public common::Instance {
   ~BluetoothInstance();
 
  private:
+  virtual void Initialize();
   virtual void HandleMessage(const char* msg);
   virtual void HandleSyncMessage(const char* msg);
 
@@ -65,6 +66,11 @@ class BluetoothInstance : public common::Instance {
   void HandleSocketWriteData(const picojson::value& msg);
   void HandleCloseSocket(const picojson::value& msg);
   void HandleUnregisterServer(const picojson::value& msg);
+  void HandleRegisterSinkApp(const picojson::value& msg);
+  void HandleUnregisterSinkApp(const picojson::value& msg);
+  void HandleConnectToSource(const picojson::value& msg);
+  void HandleDisconnectSource(const picojson::value& msg);
+  void HandleSendHealthData(const picojson::value& msg);
 
   void InternalPostMessage(picojson::value v);
   void InternalSetSyncReply(picojson::value v);
@@ -99,8 +105,20 @@ class BluetoothInstance : public common::Instance {
 
   static void OnSocketHasData(bt_socket_received_data_s* data, void* user_data);
 
+  static void OnHdpConnected(int result, const char* remote_address,
+      const char* app_id, bt_hdp_channel_type_e type, unsigned int channel,
+      void* user_data);
+
+  static void OnHdpDisconnected(int result, const char* remote_address,
+      unsigned int channel, void* user_data);
+
+  static void OnHdpDataReceived(unsigned int channel, const char* data,
+      unsigned int size, void* user_data);
+
   // Map JS reply_id to a C API callback
   std::map<std::string, std::string> callbacks_id_map_;
+
+  std::map<int, bool> socket_connected_map_;
 
   typedef std::vector<picojson::value> MessageQueue;
   MessageQueue queue_;

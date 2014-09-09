@@ -20,6 +20,9 @@
 <button id="button12">Click 12</button>
 <button id="button13">Click 13</button>
 <button id="button14">Click 14</button>
+<button id="button15">Click 15</button>
+<button id="button16">Click 16</button>
+<button id="button17">Click 17</button>
 
 <pre id="console"></pre>
 <script src="js/js-test-pre.js"></script>
@@ -46,9 +49,13 @@ function handle(button, text, callback) {
 var oldName = "";
 var oldVisible = false;
 
-var CHAT_SERVICE_UUID = "5BCE9431-6C75-32AB-AFE0-2EC108A30860";
+var CHAT_SERVICE_UUID = "00001101-0000-1000-8000-00805F9B34FB";
+
 var chatServiceHandler = null;
 var clientSocket = null;
+
+var healthProfileHandler = null;
+var healthApp = null;
 
 function validateAddress(address) {
   if (typeof address !== 'string')
@@ -262,6 +269,20 @@ function sendMessage(msg) {
   }
 }
 
+function healthRegisterSuccess(app) {
+  output.value += '\nRegistered application: ' + app.name;
+  healthApp = app;
+}
+
+function healthRegisterError(e) {
+  output.value += '\nFailed to register application: ' + e.message;
+};
+
+function healthUnregisterSuccess() {
+  output.value += '\nApplication: ' + healthApp.name + ' is unregistered';
+  healthApp = null;
+}
+
 var onErrorCallback = function(e) {
   output.value += '\n[ERROR] Failed: ' + e.message;
 };
@@ -342,4 +363,33 @@ handle("button14", "Send message", function() {
 
   sendMessage(message);
 });
+
+handle("button15", "getBluetoothProfileHandler", function() {
+  output.value += '\n\n## get Health profile handler ##';
+  healthProfileHandler = adapter.getBluetoothProfileHandler("HEALTH");
+  output.value += '\n profile handler returns: ' + healthProfileHandler.profileType;
+});
+
+handle("button16", "Register Sink App", function() {
+  output.value += '\n\n## register Sink Application: testSinkApp ##';
+  if (!healthProfileHandler) {
+      output.value += '\nPlease get profile handler first !!!';
+      return;
+  }
+  healthProfileHandler.registerSinkApplication(4100, "testSinkApp", healthRegisterSuccess, healthRegisterError);
+});
+
+handle("button17", "Unregister Sink App", function() {
+  output.value += '\n\n## Unregister Sink Application: testSinkApp ##';
+  if (!healthProfileHandler) {
+      output.value += '\nPlease get profile handler first !!!';
+      return;
+  }
+  if (!healthApp) {
+      output.value += '\nNo sink app registered: nothing to do...';
+      return;
+  }
+  healthApp.unregister(healthUnregisterSuccess);
+});
+
 </script>
