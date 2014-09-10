@@ -23,12 +23,23 @@ static picojson::value toJSONValueArray(GVariant* values) {
   picojson::array array;
   GVariantIter iter;
   GVariant* child;
-  gint value;
+  gdouble value;
+
+  if (!values)
+    return picojson::value(array);
 
   g_variant_iter_init(&iter, values);
-  while (g_variant_iter_next(&iter, "{d}", &value))
-    array.push_back(picojson::value(static_cast<double>(value)));
+  while (g_variant_iter_next(&iter, "d", &value))
+    array.push_back(picojson::value(value));
+
   return picojson::value(array);
+}
+
+void
+MediaRenderer::PropertyChanged(GDBusProxy* proxy,
+    GVariant* changed_properties,
+    GStrv invalidated_properties,
+    gpointer user_data) {
 }
 
 MediaRenderer::MediaRenderer(common::Instance* instance,
@@ -74,6 +85,12 @@ MediaRenderer::MediaRenderer(common::Instance* instance,
       object_path.c_str(),
       NULL,
       &gerror);
+
+  g_signal_connect(
+      mprisplayer_proxy_,
+      "g-properties-changed",
+      G_CALLBACK(MediaRenderer::PropertyChanged),
+      this);
 
   if (gerror) {
     g_error_free(gerror);
@@ -129,7 +146,9 @@ picojson::value MediaRenderer::ToJSON() {
       (mprismediaplayer2_player_get_current_track(mprisplayer_proxy_)));
   controller_object["speed"] = picojson::value(
       mprismediaplayer2_player_get_rate(mprisplayer_proxy_));
-
+  controller_object["playSpeeds"] = toJSONValueArray(
+      mprismediaplayer2_player_get_transport_play_speeds(
+          mprisplayer_proxy_));
   object_["controller"] = picojson::value(controller_object);
 
   return picojson::value(object_);
@@ -279,7 +298,7 @@ void MediaRenderer::Mute(const picojson::value& value) {
 
   mprismediaplayer2_player_set_mute(
       mprisplayer_proxy_,
-      (gboolean)value.get("mute").get<double>());
+      (gboolean)value.get("mute").get<bool>());
   PostResult("setMuteCompleted", value.get("asyncCallId").get<double>());
 }
 
@@ -304,7 +323,7 @@ void MediaRenderer::SetVolume(const picojson::value& value) {
     PostError(async_call_id);
     return;
   }
-  mprismediaplayer2_player_set_rate(
+  mprismediaplayer2_player_set_volume(
       mprisplayer_proxy_,
       value.get("volume").get<double>());
   PostResult("setVolumeCompleted", value.get("asyncCallId").get<double>());

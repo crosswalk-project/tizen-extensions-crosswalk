@@ -47,7 +47,7 @@ void MediaRendererInstance::HandleMessage(const char* message) {
     media_renderer_manager_->HandleNext(v);
   else if (cmd == "previous")
     media_renderer_manager_->HandlePrevious(v);
-  else if (cmd == "mute")
+  else if (cmd == "setMute")
     media_renderer_manager_->HandleMute(v);
   else if (cmd == "setSpeed")
     media_renderer_manager_->HandleSetSpeed(v);

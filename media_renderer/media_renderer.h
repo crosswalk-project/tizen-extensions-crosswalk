@@ -46,7 +46,7 @@ class MediaRenderer {
   void PostResult(const std::string& completed_operation,
                   double async_operation_id);
   void PostError(double async_operation_id);
-
+  static void PropertyChanged(GDBusProxy* proxy, GVariant*, GStrv, gpointer);
   CALLBACK_METHOD_WITH_ID(OnOpenURI, GObject*, GAsyncResult*, MediaRenderer);
   CALLBACK_METHOD_WITH_ID(OnPrefetchURI, GObject*,
       GAsyncResult*, MediaRenderer);

@@ -60,32 +60,23 @@ function previous(id) {
   renderers[id].controller.previous();
 }
 
-function mute(id) {
+function setMute(id) {
   mute = !mute;
   renderers[id].controller.mute(mute);
 }
 
 function setSpeed(id) {
-  if (speed > 0.9)
-    speed = 0.5;
-  else
-    speed = 1.0;
+  speed = (speed > 1.0) ? 1.0 : 2.0;
   renderers[id].controller.setSpeed(speed);
 }
 
 function setVolume(id) {
-  if (volume > 0.9)
-    volume = 0.5;
-  else
-    volume = 1.0;
+  volume = (volume > 0.5) ? 0.5 : 1.0;
   renderers[id].controller.setVolume(volume);
 }
 
 function gotoTrack(id) {
-  if (track == 1)
-    track = 2;
-  else
-    track = 1;
+  track = (track == 1) ? 2 : 1;
   var renderer = renderers[id];
   var controller = renderer.controller;
   renderers[id].controller.gotoTrack(track);
@@ -115,7 +106,7 @@ function onRendererFound(event) {
   addButton(rendererControls, event, 'Stop', 'stop(this.id)');
   addButton(rendererControls, event, 'Next', 'next(this.id)');
   addButton(rendererControls, event, 'Previous', 'openURI(this.id)');
-  addButton(rendererControls, event, 'Mute', 'mute(this.id)');  
+  addButton(rendererControls, event, 'Mute', 'setMute(this.id)');
   addButton(rendererControls, event, 'setSpeed', 'setSpeed(this.id)');
   addButton(rendererControls, event, 'setVolume', 'setVolume(this.id)');
   addButton(rendererControls, event, 'gotoTrack', 'gotoTrack(this.id)');
