@@ -21,6 +21,7 @@
         'time/time.gyp:*',
         'tizen/tizen.gyp:*',
         'utils/utils.gyp:*',
+        'web_setting/web_setting.gyp:*',
       ],
       'conditions': [
         [ 'tizen == 1', {
