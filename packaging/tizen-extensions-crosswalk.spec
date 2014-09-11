@@ -15,7 +15,6 @@ Group:      Development/Libraries
 Summary:    Tizen Web APIs implemented using Crosswalk
 URL:        https://github.com/otcshare/tizen-extensions-crosswalk
 Source0:    %{name}-%{version}.tar.gz
-Source1:    %{name}.in
 Source2:    %{name}.png
 Source3:    %{_bluetooth_demo_package}
 Source4:    %{_examples_package}
@@ -116,13 +115,10 @@ Sample Tizen volume control application that demonstrates the Tizen AudioSystem 
 %setup -q
 
 cp %{SOURCE1001} .
-cp %{SOURCE1} .
 cp %{SOURCE2} .
 cp %{SOURCE3} .
 cp %{SOURCE4} .
 cp %{SOURCE5} .
-
-sed "s|@LIB_INSTALL_DIR@|%{_libdir}|g" %{name}.in > %{name}
 
 %build
 
@@ -142,7 +138,6 @@ ninja -C out/Default %{?_smp_mflags}
 %install
 
 # Binary wrapper.
-install -m 755 -D %{name} %{buildroot}%{_bindir}/%{name}
 install -m 755 -D %{SOURCE3} %{buildroot}%{_bindir}/%{_bluetooth_demo_package}
 install -m 755 -D %{SOURCE4} %{buildroot}%{_bindir}/%{_examples_package}
 install -m 755 -D %{SOURCE5} %{buildroot}%{_bindir}/%{_system_info_demo_package}
@@ -208,7 +203,6 @@ install -p -D %{name}.png %{buildroot}%{_desktop_icondir}/%{_audiosystem_demo_pa
 %files
 # TODO(rakuco): This causes problems on 2.1 when creating the package.
 # %license LICENSE
-%{_bindir}/%{name}
 %{_libdir}/%{name}/libtizen*.so
 
 %files -n %{_bluetooth_demo_package}
