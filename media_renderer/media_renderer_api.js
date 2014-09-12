@@ -104,7 +104,7 @@ function handleMediaRendererFound(msg) {
 
 function handleMediaRendererLost(msg) {
   var event = new CustomEvent('rendererlost');
-  _addConstProperty(event, 'id', msg.lostRendererId);
+  _addConstProperty(event, 'id', msg.rendererId);
   g_media_renderer_manager.dispatchEvent(event);
   if (g_media_renderer_manager.onrendererlost)
     g_media_renderer_manager.onrendererlost(event);
@@ -198,7 +198,6 @@ function MediaRenderer(obj) {
   _addConstPropertyFromObject(this, 'deviceType', obj);
   _addConstPropertyFromObject(this, 'protocolInfo', obj);
   _addConstProperty(this, 'controller', new MediaController(obj.controller));
-  this.oncontainerchanged = null;
 }
 
 MediaRenderer.prototype.openURI = function(mediaURI, metaData) {
@@ -286,7 +285,7 @@ MediaController.prototype.previous = function() {
 
 MediaController.prototype.mute = function(mute) {
   var msg = {
-    'cmd': 'mute',
+    'cmd': 'setMute',
     'rendererId': this.id,
     'mute': mute
   };
