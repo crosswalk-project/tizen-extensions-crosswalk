@@ -1,8 +1,0 @@
-#!/bin/sh
-
-if [ ! -f /usr/bin/xwalk ]; then
-   echo "The xwalk binary could not be found. Exiting."
-   exit 1
-fi
-
-exec /usr/bin/xwalk --allow-external-extensions-for-remote-sources --external-extensions-path=@LIB_INSTALL_DIR@/tizen-extensions-crosswalk "$@"
