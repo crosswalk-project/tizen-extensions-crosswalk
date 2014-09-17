@@ -268,7 +268,6 @@ var handleSocketClosed = function(msg) {
       if (socket.onclose && typeof socket.onmessage === 'function')
         socket.onclose();
 
-      _addConstProperty(socket, 'isConnected', false);
       return;
     }
   }
