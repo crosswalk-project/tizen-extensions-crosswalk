@@ -10,6 +10,7 @@
 
 #include <pkgmgr-info.h>
 #include <tzplatform_config.h>
+#include <unistd.h>
 
 #include <cassert>
 #include <algorithm>
@@ -19,6 +20,8 @@
 #include "common/extension.h"
 
 namespace {
+
+const uid_t GLOBAL_USER = tzplatform_getuid(TZ_SYS_GLOBALAPP_USER);
 
 const char kInternalStorage[] = "internal";
 const char kRemovableStorage[] = "removable";
@@ -140,7 +143,12 @@ int VirtualFS::GetDirEntryCount(const char* path) {
 std::string VirtualFS::GetAppId(const std::string& package_id) {
   char* appid = NULL;
   pkgmgrinfo_pkginfo_h pkginfo_handle;
-  int ret = pkgmgrinfo_pkginfo_get_pkginfo(package_id.c_str(), &pkginfo_handle);
+  uid_t uid = getuid();
+  int ret = (uid != GLOBAL_USER) ?
+             pkgmgrinfo_pkginfo_get_usr_pkginfo(package_id.c_str(),
+                                                uid, &pkginfo_handle) :
+             pkgmgrinfo_pkginfo_get_pkginfo(package_id.c_str(),
+                                            &pkginfo_handle);
   if (ret != PMINFO_R_OK)
     return std::string();
   ret = pkgmgrinfo_pkginfo_get_mainappid(pkginfo_handle, &appid);
@@ -157,7 +165,12 @@ std::string VirtualFS::GetAppId(const std::string& package_id) {
 std::string VirtualFS::GetExecPath(const std::string& app_id) {
   char* exec_path = NULL;
   pkgmgrinfo_appinfo_h appinfo_handle;
-  int ret = pkgmgrinfo_appinfo_get_appinfo(app_id.c_str(), &appinfo_handle);
+  uid_t uid = getuid();
+  int ret = (uid != GLOBAL_USER) ?
+             pkgmgrinfo_appinfo_get_usr_appinfo(app_id.c_str(),
+                                                uid, &appinfo_handle) :
+             pkgmgrinfo_appinfo_get_appinfo(app_id.c_str(),
+                                            &appinfo_handle);
   if (ret != PMINFO_R_OK)
     return std::string();
   ret = pkgmgrinfo_appinfo_get_exec(appinfo_handle, &exec_path);

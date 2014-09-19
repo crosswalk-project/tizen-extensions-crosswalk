@@ -7,6 +7,7 @@
 #include <app_manager.h>
 #include <aul.h>
 #include <pkgmgr-info.h>
+#include <tzplatform_config.h>
 #include <unistd.h>
 
 #include <algorithm>
@@ -21,6 +22,8 @@
 #include "tizen/tizen.h"
 
 namespace {
+
+const uid_t GLOBAL_USER = tzplatform_getuid(TZ_SYS_GLOBALAPP_USER);
 
 // Application information events.
 const char kOkayEvent[] = "ok";
@@ -175,13 +178,17 @@ picojson::value* ApplicationManager::LaunchApp(const std::string& app_id) {
 
 picojson::value* ApplicationManager::GetAppMetaData(const std::string& app_id) {
   pkgmgrinfo_appinfo_h handle;
-  if (pkgmgrinfo_appinfo_get_appinfo(app_id.c_str(), &handle) != PMINFO_R_OK)
+  uid_t uid = getuid();
+  int ret = (uid != GLOBAL_USER) ?
+             pkgmgrinfo_appinfo_get_usr_appinfo(app_id.c_str(),
+                                                uid, &handle) :
+             pkgmgrinfo_appinfo_get_appinfo(app_id.c_str(),
+                                            &handle);
+  if (ret != PMINFO_R_OK)
     return CreateResultMessage(WebApiAPIErrors::NOT_FOUND_ERR);
-
   // The first boolean will set to false if AppMetaDataCallback fail.
   auto data = std::make_tuple(true, picojson::array());
-  int ret = pkgmgrinfo_appinfo_foreach_metadata(
-      handle, AppMetaDataCallback, &data);
+  ret = pkgmgrinfo_appinfo_foreach_metadata(handle, AppMetaDataCallback, &data);
   pkgmgrinfo_appinfo_destroy_appinfo(handle);
   if (ret != PMINFO_R_OK || !std::get<0>(data))
     return CreateResultMessage(WebApiAPIErrors::UNKNOWN_ERR);
