@@ -28,20 +28,49 @@ void VehicleInstance::HandleMessage(const char* message) {
 
   std::string method = v.get("method").to_str();
 
+  Zone::Type amb_zone = 0;
+  if (v.contains("zone")) {
+    picojson::value zone = v.get("zone");
+    if (zone.is<picojson::object>() && zone.contains("value")) {
+      picojson::array zones = zone.get("value").get<picojson::array>();
+      amb_zone = ZoneToAMBZone(zones);
+    } else {
+      int callback_id = -1;
+      if (v.contains("asyncCallId"))
+        callback_id = v.get("asyncCallId").get<double>();
+      PostError(callback_id, method, "invalid_zone");
+      return;
+    }
+  }
+
   if (method == "get") {
     std::string attribute = v.get("name").to_str();
     int callback_id = v.get("asyncCallId").get<double>();
     Zone::Type amb_zone = 0;
-    if (v.contains("zone")) {
-      picojson::value zone = v.get("zone");
-      picojson::array zones = zone.get("value").get<picojson::array>();
-      amb_zone = ZoneToAMBZone(zones);
-    }
 
     std::transform(attribute.begin(), attribute.begin() + 1, attribute.begin(),
                    ::toupper);
 
     vehicle_->Get(attribute, amb_zone, callback_id);
+  } else if (method == "zones") {
+    std::string attribute = v.get("name").to_str();
+    int callback_id = v.get("asyncCallId").get<double>();
+    std::transform(attribute.begin(), attribute.begin() + 1, attribute.begin(),
+                   ::toupper);
+
+    vehicle_->GetZones(attribute, callback_id);
+  } else if (method == "subscribe") {
+    std::string attribute = v.get("name").to_str();
+    std::transform(attribute.begin(), attribute.begin() + 1, attribute.begin(),
+                   ::toupper);
+
+    vehicle_->Subscribe(attribute, amb_zone);
+  } else if (method == "unsubscribe") {
+    std::string attribute = v.get("name").to_str();
+    std::transform(attribute.begin(), attribute.begin() + 1, attribute.begin(),
+                   ::toupper);
+
+    vehicle_->Unsubscribe(attribute, amb_zone);
   }
 }
 
@@ -70,4 +99,22 @@ int VehicleInstance::ZoneToAMBZone(picojson::array zones) {
   }
 
   return amb_zone;
+}
+
+void VehicleInstance::PostError(double callback_id, const std::string& method,
+                                const std::string& error) {
+  picojson::object msg;
+  msg["method"] = picojson::value(method);
+  msg["error"] = picojson::value(true);
+  msg["value"] = picojson::value(error);
+  if (callback_id != -1) {
+    msg["asyncCallId"] =
+        picojson::value(static_cast<double>(callback_id));
+  }
+
+  std::string message = picojson::value(msg).serialize();
+
+  DebugOut() << "Error Reply message: " << message << endl;
+
+  PostMessage(message.c_str());
 }
