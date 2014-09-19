@@ -44,8 +44,9 @@
         [ 'extension_host_os == "ivi"', {
           'dependencies': [
             'audiosystem/audiosystem.gyp:*',
-            'vehicle/vehicle.gyp:*',
             'sso/sso.gyp:*',
+            'telephony/telephony.gyp:*',
+            'vehicle/vehicle.gyp:*',
           ],
         }],
       ],
