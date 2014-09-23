@@ -149,10 +149,10 @@ bool SessionData::InsertKnownData(const std::string& key,
     g_value_init(val, G_TYPE_UINT);
     g_value_set_uint(val, (guint) obj.get("userPromptPolicy").get<double>());
     g_hash_table_insert(data_, g_strdup(key.c_str()), val);
-  } else if (key == "window_id") {
+  } else if (key == "windowId") {
     val = g_new0(GValue, 1);
     g_value_init(val, G_TYPE_INT);
-    g_value_set_int(val, (gint) obj.get("window_id").get<double>());
+    g_value_set_int(val, (gint) obj.get("windowId").get<double>());
     g_hash_table_insert(data_, g_strdup(key.c_str()), val);
   } else {
     inserted = false;
