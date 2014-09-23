@@ -21,8 +21,8 @@ void SecurityContext::FromJSON(const picojson::value& value) {
 
 picojson::value SecurityContext::ToJSON() const {
   picojson::value::object object;
-  object["sys_context"] = picojson::value(sys_context_);
-  object["app_context"] = picojson::value(app_context_);
+  object["sysContext"] = picojson::value(sys_context_);
+  object["appContext"] = picojson::value(app_context_);
   return picojson::value(object);
 }
 
@@ -49,7 +49,7 @@ void ACLEntry::FromJSON(const picojson::value& value) {
 picojson::value ACLEntry::ToJSON() const {
   picojson::value::object object;
   if (security_context_.ContainsData())
-    object["security_context"] = security_context_.ToJSON();
+    object["securityContext"] = security_context_.ToJSON();
   if (!method_.empty())
     object["method"] = picojson::value(method_);
   if (!mechanisms_.empty())
@@ -236,7 +236,7 @@ picojson::value SSOIdentityInfo::ToJSON() const {
   if (str)
     object["username"] = picojson::value(std::string(str));
 
-  object["store_secret"] = picojson::value(
+  object["storeSecret"] = picojson::value(
       static_cast<bool>(signon_identity_info_get_storing_secret(info_)));
 
   str = signon_identity_info_get_caption(info_);
@@ -254,7 +254,7 @@ picojson::value SSOIdentityInfo::ToJSON() const {
 
   std::vector<ACLEntry> acl = GetACL(info_);
   if (!acl.empty())
-    object["access_control_list"] = ACLEntry::ToJSONValueArray(acl);
+    object["accessControlList"] = ACLEntry::ToJSONValueArray(acl);
 
   return picojson::value(object);
 }
