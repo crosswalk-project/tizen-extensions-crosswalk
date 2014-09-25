@@ -31,7 +31,7 @@ class SysInfoPeripheral : public SysInfoObject {
   static const std::string name_;
 
  private:
-  explicit SysInfoPeripheral() {}
+  SysInfoPeripheral() {}
 
 #if defined(TIZEN)
   void SetWFD(int wfd);

@@ -34,7 +34,7 @@ class SysInfoCpu : public SysInfoObject {
   static const std::string name_;
 
  private:
-  explicit SysInfoCpu()
+  SysInfoCpu()
       : load_(0.0),
         old_total_(0),
         old_used_(0),

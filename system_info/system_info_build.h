@@ -41,7 +41,7 @@ class SysInfoBuild : public SysInfoObject {
   static const std::string name_;
 
  private:
-  explicit SysInfoBuild()
+  SysInfoBuild()
       : timeout_cb_id_(0) {}
 
   bool UpdateHardware();

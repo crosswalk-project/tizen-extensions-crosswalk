@@ -126,9 +126,8 @@ void SysInfoSim::UpdateSimProperty(const gchar* key, GVariant* var_val) {
       state_ = SYSTEM_INFO_SIM_UNKNOWN;
     else if (g_strcmp0(lock, "corppuk") == 0)
       state_ = SYSTEM_INFO_SIM_UNKNOWN;
-    else {
+    else
       state_ = SYSTEM_INFO_SIM_INITIALIZING;
-    }
   }
 }
 

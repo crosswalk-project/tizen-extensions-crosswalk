@@ -32,7 +32,7 @@ class SysInfoLocale : public SysInfoObject {
   static const std::string name_;
 
  private:
-  explicit SysInfoLocale();
+  SysInfoLocale();
   bool GetLanguage();
   bool GetCountry();
 

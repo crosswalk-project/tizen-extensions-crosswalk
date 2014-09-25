@@ -51,7 +51,7 @@ class SysInfoNetwork : public SysInfoObject {
   static const std::string name_;
 
  private:
-  explicit SysInfoNetwork();
+  SysInfoNetwork();
   void PlatformInitialize();
 
   bool Update(picojson::value& error);

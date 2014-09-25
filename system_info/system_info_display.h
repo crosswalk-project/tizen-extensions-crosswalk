@@ -45,7 +45,7 @@ class SysInfoDisplay : public SysInfoObject {
   static const std::string name_;
 
  private:
-  explicit SysInfoDisplay();
+  SysInfoDisplay();
 
   static gboolean OnUpdateTimeout(gpointer user_data);
   bool UpdateSize();
