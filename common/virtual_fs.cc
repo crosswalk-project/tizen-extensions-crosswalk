@@ -54,18 +54,26 @@ VirtualFS::VirtualFS() {
   std::string app_path = GetApplicationPath();
   if (!app_path.empty()) {
     AddInternalStorage(vfs_const::kLocationWgtPackage, app_path);
-    AddInternalStorage(vfs_const::kLocationWgtPrivate, JoinPath(app_path, "private"));
-    AddInternalStorage(vfs_const::kLocationWgtPrivateTmp, JoinPath(app_path, "tmp"));
+    AddInternalStorage(vfs_const::kLocationWgtPrivate,
+                       JoinPath(app_path, "private"));
+    AddInternalStorage(vfs_const::kLocationWgtPrivateTmp,
+                       JoinPath(app_path, "tmp"));
   }
 
-  AddInternalStorage(vfs_const::kLocationCamera, tzplatform_getenv(TZ_USER_CAMERA));
-  AddInternalStorage(vfs_const::kLocationMusic, tzplatform_getenv(TZ_USER_SOUNDS));
-  AddInternalStorage(vfs_const::kLocationImages, tzplatform_getenv(TZ_USER_IMAGES));
-  AddInternalStorage(vfs_const::kLocationVideos, tzplatform_getenv(TZ_USER_VIDEOS));
-  AddInternalStorage(vfs_const::kLocationDownloads, tzplatform_getenv(TZ_USER_DOWNLOADS));
-  AddInternalStorage(vfs_const::kLocationDocuments, tzplatform_getenv(TZ_USER_DOCUMENTS));
+  AddInternalStorage(vfs_const::kLocationCamera,
+                     tzplatform_getenv(TZ_USER_CAMERA));
+  AddInternalStorage(vfs_const::kLocationMusic,
+                     tzplatform_getenv(TZ_USER_SOUNDS));
+  AddInternalStorage(vfs_const::kLocationImages,
+                     tzplatform_getenv(TZ_USER_IMAGES));
+  AddInternalStorage(vfs_const::kLocationVideos,
+                     tzplatform_getenv(TZ_USER_VIDEOS));
+  AddInternalStorage(vfs_const::kLocationDownloads,
+                     tzplatform_getenv(TZ_USER_DOWNLOADS));
+  AddInternalStorage(vfs_const::kLocationDocuments,
+                     tzplatform_getenv(TZ_USER_DOCUMENTS));
   AddInternalStorage(vfs_const::kLocationRingtones,
-      tzplatform_mkpath(TZ_USER_SHARE, "settings/Ringtones"));
+                     tzplatform_mkpath(TZ_USER_SHARE, "settings/Ringtones"));
   storage_changed_cb_ = NULL;
   cb_user_data_ = NULL;
 }
