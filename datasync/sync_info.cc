@@ -6,6 +6,12 @@
 
 namespace datasync {
 
+    // lots of style errors
+    void someFunction()
+    {
+        int* i = NULL;
+    }
+
 std::string SyncInfo::SyncModeToString(SyncMode mode) {
   switch (mode) {
     case MANUAL_MODE:
