@@ -35,7 +35,7 @@ class SysInfoBattery : public SysInfoObject {
   static const std::string name_;
 
  private:
-  explicit SysInfoBattery();
+  SysInfoBattery();
   bool Update(picojson::value& error);
   void SetData(picojson::value& data);
 

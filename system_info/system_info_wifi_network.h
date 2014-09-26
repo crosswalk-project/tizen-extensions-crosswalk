@@ -41,7 +41,7 @@ class SysInfoWifiNetwork : public SysInfoObject {
   static const std::string name_;
 
  private:
-  explicit SysInfoWifiNetwork();
+  SysInfoWifiNetwork();
   void PlatformInitialize();
 
   bool Update(picojson::value& error);

@@ -31,7 +31,7 @@ class SysInfoCellularNetwork : public SysInfoObject {
   static const std::string name_;
 
  private:
-  explicit SysInfoCellularNetwork() {}
+  SysInfoCellularNetwork() {}
 
 #if defined(TIZEN)
   void SendUpdate();

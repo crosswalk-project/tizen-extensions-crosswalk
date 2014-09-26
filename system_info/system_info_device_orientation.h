@@ -38,7 +38,7 @@ class SysInfoDeviceOrientation : public SysInfoObject {
   static const std::string name_;
 
  private:
-  explicit SysInfoDeviceOrientation()
+  SysInfoDeviceOrientation()
       : status_(PORTRAIT_PRIMARY),
         sensorHandle_(0) {}
 

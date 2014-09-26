@@ -17,7 +17,8 @@ class WebSetting {
   ~WebSetting();
 
   std::unique_ptr<picojson::value> RemoveAllCookies();
-  std::unique_ptr<picojson::value> SetUserAgentString(const std::string& user_agent);
+  std::unique_ptr<picojson::value> SetUserAgentString(
+      const std::string& user_agent);
 
  private:
   std::string app_id_;
