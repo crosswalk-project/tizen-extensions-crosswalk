@@ -125,7 +125,7 @@ class BluetoothInstance : public common::Instance {
 
   bool is_js_context_initialized_;
   bool adapter_enabled_;
-  bool js_reply_needed_;
+  bool get_default_adapter_;
   bool stop_discovery_from_js_;
 };
 

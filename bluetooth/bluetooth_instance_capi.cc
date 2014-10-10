@@ -17,7 +17,7 @@ inline const char* BoolToString(bool b) {
 BluetoothInstance::BluetoothInstance()
     : is_js_context_initialized_(false),
       adapter_enabled_(false),
-      js_reply_needed_(false),
+      get_default_adapter_(false),
       stop_discovery_from_js_(false) {
 }
 
@@ -99,7 +99,7 @@ void BluetoothInstance::OnStateChanged(int result,
 
   obj->adapter_enabled_ = (adapter_state == BT_ADAPTER_ENABLED) ? true : false;
 
-  if (obj->js_reply_needed_) {
+  if (obj->get_default_adapter_) {
     // FIXME(clecou) directly call 'GetDefaultAdapter' once NTB is integrated.
     // After testing, 100 ms is necessary to really get a powered adapter.
     g_timeout_add(100, obj->GetDefaultAdapter, obj);
@@ -510,7 +510,7 @@ gboolean BluetoothInstance::GetDefaultAdapter(gpointer user_data) {
   // fill known_devices array on javascript side.
   CAPI(bt_adapter_foreach_bonded_device(OnKnownBondedDevice, obj));
 
-  obj->js_reply_needed_ = false;
+  obj->get_default_adapter_ = false;
 
   return FALSE;
 }
@@ -531,17 +531,6 @@ void BluetoothInstance::InitializeAdapter() {
   CAPI(bt_hdp_set_connection_state_changed_cb(OnHdpConnected, OnHdpDisconnected,
       this));
   CAPI(bt_hdp_set_data_received_cb(OnHdpDataReceived, this));
-
-  bt_adapter_state_e state = BT_ADAPTER_DISABLED;
-  CAPI(bt_adapter_get_state(&state));
-
-  // Most of the C API functions require as precondition to previously had
-  // called bt_adapter_enable(). So if adapter is turned OFF, we enable it.
-  if (state == BT_ADAPTER_DISABLED) {
-    CAPI(bt_adapter_enable());
-  } else {
-    adapter_enabled_ = true;
-  }
 }
 
 void BluetoothInstance::UninitializeAdapter() {
@@ -559,12 +548,32 @@ void BluetoothInstance::UninitializeAdapter() {
 }
 
 void BluetoothInstance::HandleGetDefaultAdapter(const picojson::value& msg) {
+  get_default_adapter_ = true;
+  bt_adapter_state_e state = BT_ADAPTER_DISABLED;
+  CAPI(bt_adapter_get_state(&state));
+
+  // Most of the C API functions require as precondition to previously had
+  // called bt_adapter_enable(). So if adapter is turned OFF, we enable it.
+  if (state == BT_ADAPTER_DISABLED) {
+    CAPI(bt_adapter_enable());
+  } else {
+    adapter_enabled_ = true;
+  }
+
+#ifdef NTB
   if (!adapter_enabled_) {
-    js_reply_needed_ = true;
     return;
   }
 
   GetDefaultAdapter(this);
+#else
+  if (adapter_enabled_) {
+    // Hackish way in order to activate org.projectx.bt dbus service
+    // and start bt-service daemon
+    char* name = NULL;
+    CAPI(bt_adapter_get_name(&name));
+  }
+#endif
 }
 
 void BluetoothInstance::HandleSetAdapterProperty(const picojson::value& msg) {

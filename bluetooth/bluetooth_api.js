@@ -394,22 +394,23 @@ _addConstProperty(exports, 'deviceService', exports.deviceService);
 var defaultAdapter = new BluetoothAdapter();
 
 exports.getDefaultAdapter = function() {
-  var msg = {
-    'cmd': 'GetDefaultAdapter'
-  };
-  var result = JSON.parse(extension.internal.sendSyncMessage(JSON.stringify(msg)));
+  if (!defaultAdapter.name) {
+    var msg = { 'cmd': 'GetDefaultAdapter' };
 
-  if (!result.error) {
-    _addConstProperty(defaultAdapter, 'name', result.name);
-    _addConstProperty(defaultAdapter, 'address', result.address);
-    _addConstProperty(defaultAdapter, 'powered', result.powered);
-    _addConstProperty(defaultAdapter, 'visible', result.visible);
+    var result = JSON.parse(extension.internal.sendSyncMessage(JSON.stringify(msg)));
 
-    if (result.hasOwnProperty('address') && result.address != '')
-      adapter.isReady = true;
-  } else {
-    adapter.isReady = false;
-    throw new tizen.WebAPIException(tizen.WebAPIException.UNKNOWN_ERR);
+    if (!result.error) {
+      _addConstProperty(defaultAdapter, 'name', result.name);
+      _addConstProperty(defaultAdapter, 'address', result.address);
+      _addConstProperty(defaultAdapter, 'powered', result.powered);
+      _addConstProperty(defaultAdapter, 'visible', result.visible);
+
+      if (result.hasOwnProperty('address') && result.address != '')
+        adapter.isReady = true;
+    } else {
+      adapter.isReady = false;
+      throw new tizen.WebAPIException(tizen.WebAPIException.UNKNOWN_ERR);
+    }
   }
 
   return defaultAdapter;
