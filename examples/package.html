@@ -1,0 +1,169 @@
+<html>
+<h1>Tizen Package API</h1>
+<body>
+Input package path to Install: <input type="text" id="pkg_install" value="/home/app/content/Downloads/HangOnMan_0.0.2_2013-10-11_182519.wgt"></input>
+<input type="button" value="Install" onclick="handleInstall()"></input>
+<br>
+<br>Package Installation Status:</br>
+<textarea id="install_output" rows="5" cols="64"></textarea>
+
+<br>
+<br>
+Input package ID to Uninstall: <input type="text" id="pkg_remove" value="nrT4AQuzWO"></input>
+<input type="button" value="Uninstall" onclick="handleUninstall()"></input>
+<br>
+<br>Package Uninstallation Status:</br>
+<textarea id="remove_output" rows="5" cols="64"></textarea>
+
+<br>
+<br>
+Input package id: <input type="text" id="pkg_id" value="nrT4AQuzWO"></input>
+<input type="button" value="GePackageInfo" onclick="handleGetPkgInfo()"></input>
+<br>
+<br>Package Information:</br>
+<textarea id="pkg_info" rows="10" cols="64"></textarea>
+
+<br>
+<br>
+<input type="button" value="GetPackagesInfo" onclick="handleGetPkgsInfo()"></input>
+<br>
+<br>Packages Information:</br>
+<textarea id="pkgs_id" rows="5" cols="64"></textarea>
+
+<br>
+<br>
+<input type="button" value="AddPackageInfoEvent" onclick="handleAddPkgInfoEvent()"></input>
+<input type="button" value="RemovePackageInfoEvent" onclick="handleRemovePkgInfoEvent()"></input>
+<br>
+<br>Notifications:</br>
+<textarea id="pkg_event" rows="6" cols="64"></textarea>
+
+<pre id="console"></pre>
+<script src="js/js-test-pre.js"></script>
+<script>
+
+function handleInstall() {
+  try {
+    var pkg_install = document.getElementById("pkg_install");
+    var output = document.getElementById("install_output");
+    var onInstallation = {
+      onprogress: function(packageId, percentage) {
+        output.value += "On installation(" + packageId + ") : progress(" + percentage + ")" + "\n";
+      },
+      oncomplete: function(packageId) {
+        output.value += "Installation(" + packageId + ") Complete" + "\n";
+      }
+    };
+    var onError = function(error) {
+      output.value += "Error occurred on installation : " + error.name + "\n";
+    };
+    // FIXME(babu): https://crosswalk-project.org/jira/browse/XWALK-2564
+    /*tizen.filesystem.resolve(pkg_install.value,
+     function (file) {
+       console.log("file path : " + file.path);
+       //tizen.package.install(file.toURI(), onInstallation, onError);
+     },
+     function (err) {
+       output.value += "Error occurred on resolve : " + err.name + "\n";
+     },
+     "r");*/
+     tizen.package.install(pkg_install.value, onInstallation, onError);
+  } catch (err) {
+    debug(err.name);
+  }
+}
+
+function handleUninstall() {
+  try {
+    var pkg_remove = document.getElementById("pkg_remove");
+    var output = document.getElementById("remove_output");
+    var onUninstallation = {
+      onprogress: function(packageId, percentage) {
+        output.value += "On Uninstallation(" + packageId + ") : progress(" + percentage + ")" + "\n";
+      },
+      oncomplete: function(packageId) {
+        output.value += "Uninstallation(" + packageId + ") Complete" + "\n";
+      }
+    };
+    var onerror = function(error) {
+      output.value += "Error occurred on Uninstallation : " + error.name + "\n";
+    };
+
+    tizen.package.uninstall(pkg_remove.value, onUninstallation, onerror);
+  } catch (err) {
+    debug(err.name);
+  }
+}
+
+function handleGetPkgInfo() {
+  try {
+    var pkg_id = document.getElementById("pkg_id");
+    var info = (pkg_id.value === "current app") ?
+        tizen.package.getPackageInfo() :
+        tizen.package.getPackageInfo(pkg_id.value);
+
+    var output = document.getElementById("pkg_info");
+    output.value += "Current Package ID: " + info.id + "\n";
+    output.value += "name: " + info.name + "\n";
+    output.value += "iconPath: " + info.iconPath + "\n";
+    output.value += "version: " + info.version + "\n";
+    output.value += "totalSize: " + info.totalSize + "\n";
+    output.value += "dataSize: " + info.dataSize + "\n";
+    output.value += "lastModified: " + info.lastModified+ "\n";
+    output.value += "author: " + info.author + "\n";
+    output.value += "description: " + info.description + "\n";
+    output.value += "appIds: " + info.appIds + "\n";
+  } catch (err) {
+    debug(err.name);
+  }
+}
+
+function handleGetPkgsInfo() {
+  try {
+    var output = document.getElementById("pkgs_id");
+    var onsuccess = function(pkgs) {
+      for (var i = 0; i < pkgs.length; i++) {
+        output.value += "Package id["+i+"]: " + pkgs[i].id + "\n";
+      }
+    };
+
+    var onerror = function(error) {
+      output.value += "Fail to get packages info: " + error.name;
+    };
+
+    tizen.package.getPackagesInfo(onsuccess, onerror);
+  } catch (err) {
+    debug(err.name);
+  }
+}
+
+function handleAddPkgInfoEvent() {
+  try {
+    var output = document.getElementById("pkg_event");
+    tizen.package.setPackageInfoEventListener({
+      oninstalled: function(pkginfo) {
+        output.value += "install package name:" + pkginfo.name + "\n";
+      },
+      onupdated: function(pkginfo) {
+        output.value += "update package name:" + pkginfo.name + "\n";
+      },
+      onuninstalled: function(pkgid) {
+        output.value += "uninstalled package id:" + pkgid + '\n';
+      }
+    });
+  } catch(err) {
+    debug(err.name);
+  }
+}
+
+function handleRemovePkgInfoEvent() {
+  try {
+    tizen.package.unsetPackageInfoEventListener();
+  } catch (err) {
+    debug(err.name);
+  }
+}
+
+</script>
+</body>
+</html>
