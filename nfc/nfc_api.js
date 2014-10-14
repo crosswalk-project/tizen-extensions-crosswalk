@@ -114,10 +114,10 @@ extension.setMessageListener(function(json) {
     case 'messageread':
       handleMessageRead(msg);
       break;
-    case 'readNDEF':
+    case 'readNdef':
       handleReadNDEF(msg);
       break;
-    case 'sendNDEF':
+    case 'sendNdef':
       handleAsyncCallSuccess(msg.asyncCallId);
       break;
     case 'getPayload':
@@ -262,13 +262,13 @@ NFCManager.prototype.stopPoll = function() {
 function NFCTag() {}
 
 NFCTag.prototype.readNDEF = function() {
-  return createPromise({'cmd': 'readNDEF'});
+  return createPromise({'cmd': 'readNdef'});
 };
 
 // NDEFMessage message
 NFCTag.prototype.writeNDEF = function(message) {
   var msg = {
-    'cmd': 'writeNDEF',
+    'cmd': 'writeNdef',
     'message': message
   };
   return createPromise(msg);
@@ -290,7 +290,7 @@ derive(NFCPeer, EventTargetInterface);
 // NDEFMessage message
 NFCPeer.prototype.sendNDEF = function(message) {
   var msg = {
-    'cmd': 'sendNDEF',
+    'cmd': 'sendNdef',
     'message': message
   };
   return createPromise(msg);
