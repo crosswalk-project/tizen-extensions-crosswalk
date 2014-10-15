@@ -76,6 +76,8 @@ BuildRequires: python
 Requires:      crosswalk
 # For Content API
 Requires:      media-thumbnail-server
+# For Datasync API
+Requires:      oma-ds-agent
 
 %description
 Tizen Web APIs implemented using Crosswalk.
