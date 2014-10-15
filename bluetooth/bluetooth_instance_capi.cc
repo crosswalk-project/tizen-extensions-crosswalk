@@ -179,7 +179,12 @@ void BluetoothInstance::OnDiscoveryStateChanged(int result,
         o["cmd"] = picojson::value("");
         o["reply_id"] =
             picojson::value(obj->callbacks_id_map_["StopDiscovery"]);
+#ifdef NTB
         o["error"] = picojson::value(result != 0);
+#else
+        // bluetooth-frwk always returns an error when user stops discovery
+        o["error"] = picojson::value(false);
+#endif
       } else {
         // discovery stop was not initiated by JS. It was done by a timeout...
         o["cmd"] = picojson::value("DiscoveryFinished");
