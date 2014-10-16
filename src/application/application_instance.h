@@ -6,6 +6,7 @@
 #define APPLICATION_APPLICATION_INSTANCE_H_
 
 #include <functional>
+#include <memory>
 
 #include "common/extension.h"
 #include "common/picojson.h"
@@ -31,15 +32,22 @@ class ApplicationInstance : public common::Instance {
   void HandleRegisterAppInfoEvent();
   void HandleUnregisterAppInfoEvent();
   void HandleGetAppMetaData(const picojson::value& msg);
+  void HandleGetRequestedAppControl();
+  void HandleReplyResult(const picojson::value& msg);
+  void HandleReplyFailure();
 
   // Asynchronous message handlers.
   void HandleGetAppsInfo(const picojson::value& msg);
   void HandleGetAppsContext(const picojson::value& msg);
   void HandleKillApp(const picojson::value& msg);
   void HandleLaunchApp(const picojson::value& msg);
+  void HandleLaunchAppControl(const picojson::value& msg);
+  void HandleFindAppControl(const picojson::value& msg);
 
   void ReturnMessageAsync(double callback_id, picojson::value& value);
   void PostAppInfoEventMessage(picojson::object& events);
+  void SendSyncReplyInternalError();
+  std::unique_ptr<picojson::value> GetUnknownErrorResult();
 
   ApplicationExtension* extension_;
 };

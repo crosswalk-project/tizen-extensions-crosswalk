@@ -1,4 +1,5 @@
 // Copyright (c) 2014 Intel Corporation. All rights reserved.
+// Copyright (c) 2015 Samsung Electronics Co., Ltd All Rights Reserved
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -6,7 +7,9 @@
 
 #include <app_manager.h>
 #include <aul.h>
+#include <bundle.h>
 #include <pkgmgr-info.h>
+#include <package_manager.h>
 #include <tzplatform_config.h>
 #include <unistd.h>
 
@@ -16,9 +19,11 @@
 // https://codereview.chromium.org/269013009/
 #include <tuple>  // NOLINT
 
+#include "application/application.h"
 #include "application/application_extension_utils.h"
 #include "application/application_information.h"
 #include "application/application_instance.h"
+#include "application/application_requested_control.h"
 #include "tizen/tizen.h"
 
 namespace {
@@ -101,6 +106,36 @@ int AppMetaDataCallback(const char* key, const char* value, void* data) {
   return 0;
 }
 
+bool AddAppControlToService(const ApplicationControl& app_control,
+    service_h service) {
+  if (service_set_operation(service, app_control.operation().c_str())
+      != SERVICE_ERROR_NONE) {
+    return false;
+  }
+  if (!app_control.mime().empty()) {
+    if (service_set_mime(service, app_control.mime().c_str())
+      != SERVICE_ERROR_NONE) {
+      return false;
+    }
+  }
+  if (!app_control.uri().empty()) {
+    if (service_set_uri(service, app_control.uri().c_str())
+        != SERVICE_ERROR_NONE) {
+      return false;
+    }
+  }
+  if (!app_control.category().empty()) {
+    if (service_set_category(service, app_control.category().c_str())
+        != SERVICE_ERROR_NONE) {
+      return false;
+    }
+  }
+  if (!AddAppControlDataArrayToService(app_control.app_control_data_array(),
+     service))
+    return false;
+  return true;
+}
+
 }  // namespace
 
 ApplicationManager::ApplicationManager()
@@ -175,6 +210,92 @@ picojson::value* ApplicationManager::LaunchApp(const std::string& app_id) {
   return CreateResultMessage();
 }
 
+picojson::value* ApplicationManager::LaunchAppControl(
+    const ApplicationControl& app_control, const std::string& app_id,
+    int reply_callback_id,
+    ReplyCallback post_callback) {
+  service_h service;
+  if (service_create(&service) != SERVICE_ERROR_NONE) {
+    return CreateResultMessage(WebApiAPIErrors::UNKNOWN_ERR);
+  }
+
+  if (!AddAppControlToService(app_control, service)) {
+    return CreateResultMessage(WebApiAPIErrors::UNKNOWN_ERR);
+  }
+  if (!app_id.empty()) {
+    service_set_app_id(service, app_id.c_str());
+  }
+
+  std::unique_ptr<CallbackData> callback_data(
+      new CallbackData(reply_callback_id, post_callback, this));
+  reply_callbacks_.insert(std::make_pair(reply_callback_id,
+      std::move(callback_data)));
+
+  if (service_send_launch_request(service,
+      [](service_h request, service_h reply, service_result_e result,
+          void* user_data) {
+        int reply_id = 0;
+        ReplyCallback callback;
+        ApplicationManager* that = nullptr;
+
+        std::tie(reply_id, callback, that) =
+            *static_cast<CallbackData*>(user_data);
+
+        // TODO(t.iwanek): validate that...
+
+        that->reply_callbacks_.erase(that->reply_callbacks_.find(reply_id));
+        picojson::object ret;
+        if (result == SERVICE_RESULT_SUCCEEDED) {
+          std::unique_ptr<ApplicationControl> app_control =
+              ApplicationControl::ApplicationControlFromService(reply);
+          picojson::array array;
+          for (const auto& item : app_control->app_control_data_array())
+            array.push_back(*item->ToJson());
+          ret["data"] = picojson::value(array);
+        } else {
+          ret["error"] = picojson::value(static_cast<double>(
+              WebApiAPIErrors::FAILURE_RESPONSE_ERR));
+        }
+
+        picojson::value value(ret);
+        callback(value, reply_id);
+      }, reply_callbacks_[reply_callback_id].get()) != SERVICE_ERROR_NONE) {
+    (void) service_destroy(service);
+    return CreateResultMessage(WebApiAPIErrors::UNKNOWN_ERR);
+  }
+  (void) service_destroy(service);
+  return new picojson::value(picojson::object());
+}
+
+picojson::value* ApplicationManager::FindAppControl(
+    const ApplicationControl& app_control) {
+  picojson::object result;
+  picojson::array output_array;
+  service_h service;
+  service_create(&service);
+
+  if (!AddAppControlToService(app_control, service))
+    return CreateResultMessage(WebApiAPIErrors::UNKNOWN_ERR);
+
+  std::vector<ApplicationInformation> appInfos;
+  if (service_foreach_app_matched(service,
+        [](service_h service, const char* appid, void* user_data) {
+          std::vector<ApplicationInformation>* infos =
+              static_cast<std::vector<ApplicationInformation>*>(user_data);
+          Application application(appid);
+          infos->push_back(application.GetAppInfo());
+          return true;
+      }, &appInfos) != SERVICE_ERROR_NONE)
+    return CreateResultMessage(WebApiAPIErrors::UNKNOWN_ERR);
+  service_destroy(service);
+
+  for (auto& info : appInfos) {
+    output_array.push_back(info.Value());
+  }
+
+  result["data"] = picojson::value(output_array);
+  return new picojson::value(result);
+}
 
 picojson::value* ApplicationManager::GetAppMetaData(const std::string& app_id) {
   pkgmgrinfo_appinfo_h handle;
@@ -194,6 +315,46 @@ picojson::value* ApplicationManager::GetAppMetaData(const std::string& app_id) {
     return CreateResultMessage(WebApiAPIErrors::UNKNOWN_ERR);
 
   return CreateResultMessage(std::get<1>(data));
+}
+
+picojson::value* ApplicationManager::GetRequestedAppControl(
+    const std::string& encoded_bundle) {
+  picojson::object result;
+  auto requested =
+      ApplicationRequestedControl::GetRequestedApplicationControl(
+          encoded_bundle);
+  if (!requested)
+    return CreateResultMessage(WebApiAPIErrors::UNKNOWN_ERR);
+  auto json = requested->ToJson();
+  if (!json)
+    return CreateResultMessage(WebApiAPIErrors::UNKNOWN_ERR);
+  result["data"] = *json;
+  return new picojson::value(result);
+}
+
+picojson::value* ApplicationManager::ReplyResult(
+    const std::vector<std::unique_ptr<ApplicationControlData>>& data,
+    const std::string& encoded_bundle) {
+  std::unique_ptr<ApplicationRequestedControl> requested =
+      ApplicationRequestedControl::GetRequestedApplicationControl(
+          encoded_bundle);
+  if (!requested)
+    return CreateResultMessage(WebApiAPIErrors::UNKNOWN_ERR);
+  if (!requested->app_control()->ReplyResult(data, encoded_bundle))
+    return CreateResultMessage(WebApiAPIErrors::NOT_FOUND_ERR);
+  return CreateResultMessage();
+}
+
+picojson::value* ApplicationManager::ReplyFailure(
+    const std::string& encoded_bundle) {
+  std::unique_ptr<ApplicationRequestedControl> requested =
+      ApplicationRequestedControl::GetRequestedApplicationControl(
+          encoded_bundle);
+  if (!requested)
+    return CreateResultMessage(WebApiAPIErrors::UNKNOWN_ERR);
+  if (!requested->app_control()->ReplyFailure(encoded_bundle))
+    return CreateResultMessage(WebApiAPIErrors::NOT_FOUND_ERR);
+  return CreateResultMessage();
 }
 
 picojson::value* ApplicationManager::RegisterAppInfoEvent(

@@ -12,6 +12,10 @@
         'application_api.js',
         'application_context.cc',
         'application_context.h',
+        'application_control.cc',
+        'application_control.h',
+        'application_control_data.cc',
+        'application_control_data.h',
         'application_extension.cc',
         'application_extension.h',
         'application_extension_utils.h',
@@ -21,6 +25,8 @@
         'application_instance.h',
         'application_manager.cc',
         'application_manager.h',
+        'application_requested_control.cc',
+        'application_requested_control.h',
       ],
       'conditions': [
         ['tizen == 1', {
@@ -31,6 +37,7 @@
             'packages': [
               'appcore-common',
               'capi-appfw-app-manager',
+              'capi-appfw-application',
               'capi-appfw-package-manager',
               'pkgmgr',
               'pkgmgr-info',

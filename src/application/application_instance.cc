@@ -4,13 +4,17 @@
 
 #include "application/application_instance.h"
 
+#include <map>
 #include <memory>
 #include <iostream>
 #include <string>
 #include <sstream>
+#include <utility>
+#include <vector>
 
 #include "application/application.h"
 #include "application/application_context.h"
+#include "application/application_control.h"
 #include "application/application_extension.h"
 #include "application/application_information.h"
 #include "application/application_manager.h"
@@ -18,7 +22,13 @@
 namespace {
 
 const char kJSCallbackKey[] = "_callback";
+const char kJSReplyCallbackKey[] = "reply_callback";
 const char kAppInfoEventCallback[] = "_appInfoEventCallback";
+const char kEncodedBundle[] = "encoded_bundle";
+
+// FIXME: This is forced by GetRuntimeVariable how actually works
+// Therefore bundle is limited to some size  -> 1MB
+const unsigned kEncodedBundleMaxLength = 1024 * 1024;
 
 double GetJSCallbackId(const picojson::value& msg) {
   assert(msg.contains(kJSCallbackKey));
@@ -62,8 +72,12 @@ void ApplicationInstance::HandleMessage(const char* msg) {
     HandleKillApp(v);
   } else if (cmd == "LaunchApp") {
     HandleLaunchApp(v);
+  } else if (cmd == "LaunchAppControl") {
+    HandleLaunchAppControl(v);
+  } else if (cmd == "FindAppControl") {
+    HandleFindAppControl(v);
   } else {
-    std::cout << "ASSERT NOT REACHED.\n";
+    std::cout << "ASSERT NOT REACHED. UNKNOWN COMMAND: " << cmd << std::endl;
   }
 }
 
@@ -94,8 +108,14 @@ void ApplicationInstance::HandleSyncMessage(const char* msg) {
     HandleUnregisterAppInfoEvent();
   } else if (cmd == "GetAppMetaData") {
     HandleGetAppMetaData(v);
+  } else if (cmd == "ReplyResult") {
+    HandleReplyResult(v);
+  } else if (cmd == "ReplyFailure") {
+    HandleReplyFailure();
+  } else if (cmd == "GetRequestedAppControl") {
+    HandleGetRequestedAppControl();
   } else {
-    std::cout << "ASSERT NOT REACHED.\n";
+    std::cout << "ASSERT NOT REACHED. UNKNOWN COMMAND: " << cmd << std::endl;
   }
 }
 
@@ -162,6 +182,67 @@ void ApplicationInstance::HandleGetAppMetaData(const picojson::value& msg) {
   SendSyncReply(result->serialize().c_str());
 }
 
+void ApplicationInstance::HandleGetRequestedAppControl() {
+  std::unique_ptr<picojson::value> result(
+      extension_->app_manager()->GetRequestedAppControl(
+          extension_->GetRuntimeVariable(kEncodedBundle,
+              kEncodedBundleMaxLength)));
+  SendSyncReply(result->serialize().c_str());
+}
+
+void ApplicationInstance::HandleReplyResult(const picojson::value& msg) {
+  if (!msg.contains("data") || !msg.get("data").is<picojson::array>()) {
+    SendSyncReplyInternalError();
+    return;
+  }
+
+  const picojson::array& array = msg.get("data").get<picojson::array>();
+
+  std::vector<std::unique_ptr<ApplicationControlData> > data;
+
+  for (const auto& item : array) {
+    if (!item.contains("key") ||
+        !item.get("key").is<std::string>() ||
+        !item.contains("value") ||
+        !item.get("value").is<picojson::array>()) {
+      SendSyncReplyInternalError();
+      return;
+    }
+    const picojson::array& array =
+        item.get("value").get<picojson::array>();
+    std::unique_ptr<std::vector<std::string>> values(
+        new std::vector<std::string>());
+    for (const auto& value : array) {
+      if (!value.is<std::string>()) {
+        SendSyncReplyInternalError();
+        return;
+      }
+      values->push_back(value.get<std::string>());
+    }
+
+    std::unique_ptr<ApplicationControlData> app_control_data(
+        new ApplicationControlData(
+            item.get("key").get<std::string>(),
+            std::move(values)));
+
+    data.push_back(std::move(app_control_data));
+  }
+
+  std::unique_ptr<picojson::value> result(
+      extension_->app_manager()->ReplyResult(data,
+         extension_->GetRuntimeVariable(kEncodedBundle,
+             kEncodedBundleMaxLength)));
+  SendSyncReply(result->serialize().c_str());
+}
+
+void ApplicationInstance::HandleReplyFailure() {
+  std::unique_ptr<picojson::value> result(
+      extension_->app_manager()->ReplyFailure(
+          extension_->GetRuntimeVariable(kEncodedBundle,
+              kEncodedBundleMaxLength)));
+  SendSyncReply(result->serialize().c_str());
+}
+
 void ApplicationInstance::HandleGetAppsInfo(const picojson::value& msg) {
   std::unique_ptr<picojson::value> result(
       ApplicationInformation::GetAllInstalled());
@@ -187,6 +268,55 @@ void ApplicationInstance::HandleLaunchApp(const picojson::value& msg) {
   ReturnMessageAsync(GetJSCallbackId(msg), *result);
 }
 
+void ApplicationInstance::HandleLaunchAppControl(const picojson::value& msg) {
+  std::string app_id;
+  if (msg.contains("id") && msg.get("id").is<std::string>())
+    app_id = msg.get("id").get<std::string>();
+  if (!msg.contains(kJSReplyCallbackKey) ||
+      !msg.get(kJSReplyCallbackKey).is<double>()) {
+    ReturnMessageAsync(GetJSCallbackId(msg), *GetUnknownErrorResult());
+    return;
+  }
+  int reply_callback_id = static_cast<int>(
+      msg.get(kJSReplyCallbackKey).get<double>());
+
+  if (!msg.contains("appControl")) {
+    ReturnMessageAsync(GetJSCallbackId(msg), *GetUnknownErrorResult());
+    return;
+  }
+  std::unique_ptr<ApplicationControl> control =
+      ApplicationControl::ApplicationControlFromJSON(msg.get("appControl"));
+  if (!control) {
+    ReturnMessageAsync(GetJSCallbackId(msg), *GetUnknownErrorResult());
+    return;
+  }
+
+  std::unique_ptr<picojson::value> result(
+      extension_->app_manager()->LaunchAppControl(*control, app_id,
+          reply_callback_id,
+          [this](picojson::value& value, int reply_id) {
+            ReturnMessageAsync(reply_id, value);
+          }));
+
+  ReturnMessageAsync(GetJSCallbackId(msg), *result);
+}
+
+void ApplicationInstance::HandleFindAppControl(const picojson::value& msg) {
+  if (!msg.contains("appControl")) {
+    ReturnMessageAsync(GetJSCallbackId(msg), *GetUnknownErrorResult());
+  }
+  std::unique_ptr<ApplicationControl> control =
+      ApplicationControl::ApplicationControlFromJSON(msg.get("appControl"));
+  if (!control) {
+    ReturnMessageAsync(GetJSCallbackId(msg), *GetUnknownErrorResult());
+    return;
+  }
+
+  std::unique_ptr<picojson::value> result(
+      extension_->app_manager()->FindAppControl(*control));
+  ReturnMessageAsync(GetJSCallbackId(msg), *result);
+}
+
 void ApplicationInstance::ReturnMessageAsync(double callback_id,
                                              picojson::value& value) {
   SetJSCallbackId(value, callback_id);
@@ -196,4 +326,15 @@ void ApplicationInstance::ReturnMessageAsync(double callback_id,
 void ApplicationInstance::PostAppInfoEventMessage(picojson::object& events) {
   events[kJSCallbackKey] = picojson::value(kAppInfoEventCallback);
   PostMessage(picojson::value(events).serialize().c_str());
+}
+
+void ApplicationInstance::SendSyncReplyInternalError() {
+  SendSyncReply(GetUnknownErrorResult()->serialize().c_str());
+}
+
+std::unique_ptr<picojson::value> ApplicationInstance::GetUnknownErrorResult() {
+  picojson::object result;
+  result.insert(std::make_pair("error",
+      picojson::value(static_cast<double>(WebApiAPIErrors::UNKNOWN_ERR))));
+  return std::unique_ptr<picojson::value>(new picojson::value(result));
 }
