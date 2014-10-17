@@ -627,6 +627,14 @@ BluetoothAdapter.prototype.createBonding = function(address, successCallback, er
   if (adapter.checkServiceAvailability(errorCallback))
     return;
 
+  var index = adapter.indexOfDevice(adapter.known_devices, address);
+  if (index == -1) {
+    var error = new tizen.WebAPIError(tizen.WebAPIException.NOT_FOUND_ERR);
+    if (errorCallback)
+      errorCallback(error);
+    return;
+  }
+
   var msg = {
     'cmd': 'CreateBonding',
     'address': address
