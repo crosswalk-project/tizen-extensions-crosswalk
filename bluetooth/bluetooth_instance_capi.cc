@@ -92,10 +92,6 @@ void BluetoothInstance::HandleSyncMessage(const char* message) {
 void BluetoothInstance::OnStateChanged(int result,
     bt_adapter_state_e adapter_state, void* user_data) {
   BluetoothInstance* obj = static_cast<BluetoothInstance*>(user_data);
-  if (!obj) {
-    LOG_ERR("user_data is NULL");
-    return;
-  }
 
   obj->adapter_enabled_ = (adapter_state == BT_ADAPTER_ENABLED) ? true : false;
 
@@ -117,10 +113,6 @@ void BluetoothInstance::OnStateChanged(int result,
 
 void BluetoothInstance::OnNameChanged(char* name, void* user_data) {
   BluetoothInstance* obj = static_cast<BluetoothInstance*>(user_data);
-  if (!obj) {
-    LOG_ERR("user_data is NULL");
-    return;
-  }
 
   picojson::value::object o;
 
@@ -135,10 +127,6 @@ void BluetoothInstance::OnNameChanged(char* name, void* user_data) {
 void BluetoothInstance::OnVisibilityChanged(int result,
     bt_adapter_visibility_mode_e visibility_mode, void* user_data) {
   BluetoothInstance* obj = static_cast<BluetoothInstance*>(user_data);
-  if (!obj) {
-    LOG_ERR("user_data is NULL");
-    return;
-  }
 
   picojson::value::object o;
 
@@ -158,10 +146,6 @@ void BluetoothInstance::OnDiscoveryStateChanged(int result,
     bt_adapter_device_discovery_state_e discovery_state,
     bt_adapter_device_discovery_info_s* discovery_info, void* user_data) {
   BluetoothInstance* obj = static_cast<BluetoothInstance*>(user_data);
-  if (!obj) {
-    LOG_ERR("user_data is NULL");
-    return;
-  }
 
   picojson::value::object o;
 
@@ -253,14 +237,9 @@ void BluetoothInstance::OnDiscoveryStateChanged(int result,
 bool BluetoothInstance::OnKnownBondedDevice(bt_device_info_s* device_info,
     void* user_data) {
   BluetoothInstance* obj = static_cast<BluetoothInstance*>(user_data);
-  if (!obj) {
-    LOG_ERR("user_data is NULL!");
-    return false;
-  }
-  if (!device_info) {
+
+  if (!device_info)
     LOG_ERR("device_info is NULL!");
-    return false;
-  }
 
   picojson::value::object o;
   char* alias = device_info->remote_name;
@@ -294,14 +273,9 @@ bool BluetoothInstance::OnKnownBondedDevice(bt_device_info_s* device_info,
 void BluetoothInstance::OnBondCreated(int result, bt_device_info_s* device_info,
     void* user_data) {
   BluetoothInstance* obj = static_cast<BluetoothInstance*>(user_data);
-  if (!obj) {
-    LOG_ERR("user_data is NULL!");
-    return;
-  }
-  if (!device_info) {
+
+  if (!device_info)
     LOG_ERR("device_info is NULL!");
-    return;
-  }
 
   picojson::value::object o;
   o["cmd"] = picojson::value("");
@@ -316,15 +290,9 @@ void BluetoothInstance::OnBondDestroyed(int result, char* remote_address,
     void* user_data) {
   BluetoothInstance* obj = static_cast<BluetoothInstance*>(user_data);
 
-  if (!obj) {
-    LOG_ERR("user_data is NULL!");
-    return;
-  }
-
-  if (!remote_address) {
+  if (!remote_address)
     LOG_ERR("remote_address is NULL!");
-    return;
-  }
+
   picojson::value::object o;
   o["cmd"] = picojson::value("");
   o["reply_id"] = picojson::value(obj->callbacks_id_map_["DestroyBonding"]);
@@ -339,14 +307,9 @@ void BluetoothInstance::OnSocketConnected(int result,
     bt_socket_connection_s* connection,
     void* user_data) {
   BluetoothInstance* obj = static_cast<BluetoothInstance*>(user_data);
-  if (!obj) {
-    LOG_ERR("user_data is NULL!");
-    return;
-  }
-  if (!connection) {
+
+  if (!connection)
     LOG_ERR("connection is NULL!");
-    return;
-  }
 
   picojson::value::object o;
   o["error"] = picojson::value(result != 0);
@@ -391,14 +354,10 @@ void BluetoothInstance::OnSocketConnected(int result,
 void BluetoothInstance::OnSocketHasData(bt_socket_received_data_s* data,
                                         void* user_data) {
   BluetoothInstance* obj = static_cast<BluetoothInstance*>(user_data);
-  if (!obj) {
-    LOG_ERR("user_data is NULL");
-    return;
-  }
-  if (!data) {
+
+  if (!data)
     LOG_ERR("data is NULL");
-    return;
-  }
+
   picojson::value::object o;
   o["cmd"] = picojson::value("SocketHasData");
   o["socket_fd"] = picojson::value(static_cast<double>(data->socket_fd));
@@ -410,10 +369,6 @@ void BluetoothInstance::OnHdpConnected(int result, const char* remote_address,
     const char* app_id, bt_hdp_channel_type_e type, unsigned int channel,
     void* user_data) {
   BluetoothInstance* obj = static_cast<BluetoothInstance*>(user_data);
-  if (!obj) {
-    LOG_ERR("user_data is NULL");
-    return;
-  }
 
   picojson::value::object o;
   o["error"] = picojson::value(result != 0);
@@ -431,10 +386,6 @@ void BluetoothInstance::OnHdpConnected(int result, const char* remote_address,
 void BluetoothInstance::OnHdpDisconnected(int result,
     const char* remote_address, unsigned int channel, void* user_data) {
   BluetoothInstance* obj = static_cast<BluetoothInstance*>(user_data);
-  if (!obj) {
-    LOG_ERR("user_data is NULL");
-    return;
-  }
 
   picojson::value::object o;
   o["error"] = picojson::value(result != 0);
@@ -450,10 +401,6 @@ void BluetoothInstance::OnHdpDisconnected(int result,
 void BluetoothInstance::OnHdpDataReceived(unsigned int channel,
     const char* data, unsigned int size, void* user_data) {
   BluetoothInstance* obj = static_cast<BluetoothInstance*>(user_data);
-  if (!obj) {
-    LOG_ERR("user_data is NULL");
-    return;
-  }
 
   picojson::value::object o;
   o["reply_id"] = picojson::value(obj->callbacks_id_map_["SendHealthData"]);
@@ -466,10 +413,6 @@ void BluetoothInstance::OnHdpDataReceived(unsigned int channel,
 
 gboolean BluetoothInstance::GetDefaultAdapter(gpointer user_data) {
   BluetoothInstance* obj = static_cast<BluetoothInstance*>(user_data);
-  if (!obj) {
-    LOG_ERR("user_data is NULL");
-    return TRUE;
-  }
 
   picojson::value::object o;
 

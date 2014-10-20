@@ -678,12 +678,20 @@ BluetoothAdapter.prototype.destroyBonding = function(address, successCallback, e
     throw new tizen.WebAPIError(tizen.WebAPIException.TYPE_MISMATCH_ERR);
   }
 
+  if (adapter.checkServiceAvailability(errorCallback))
+    return;
+
   if (!validateAddress(address)) {
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
   }
 
-  if (adapter.checkServiceAvailability(errorCallback))
+  var index = adapter.indexOfDevice(adapter.known_devices, address);
+  if (index == -1) {
+    var error = new tizen.WebAPIError(tizen.WebAPIException.NOT_FOUND_ERR);
+    if (errorCallback)
+      errorCallback(error);
     return;
+  }
 
   var msg = {
     'cmd': 'DestroyBonding',
@@ -718,7 +726,7 @@ BluetoothAdapter.prototype.destroyBonding = function(address, successCallback, e
       // BlueZ backends update the device state automatically when catching dbus signals
       // A better approach would be to adapt backends instances to have a single JSON protocol.
       if (result.capi)
-        _addConstProperty(adapter.known_devices[i], 'isBonded', false);
+        adapter.known_devices.splice(i, 1);
 
       successCallback(cb_device);
     }
