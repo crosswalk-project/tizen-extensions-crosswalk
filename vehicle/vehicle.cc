@@ -9,7 +9,6 @@
 #include <gio/gio.h>
 #include <glib.h>
 #include <listplusplus.h>
-#include <superptr.hpp>
 
 #include <algorithm>
 #include <map>
@@ -83,6 +82,8 @@ picojson::value GetBasic(GVariant* value) {
     v = picojson::value(static_cast<double>(GVS<uint64_t>::value(value)));
   } else if (type == "b") {
     v = picojson::value(GVS<bool>::value(value));
+  } else if (type == "s") {
+    v = picojson::value(g_variant_get_string(value, nullptr));
   }
 
   return v;
@@ -253,9 +254,22 @@ static void SignalCallback(GDBusConnection* connection,
 Vehicle::Vehicle(common::Instance* instance)
   : main_loop_(g_main_loop_new(0, FALSE)),
     thread_(Vehicle::SetupMainloop, this),
-    instance_(instance) {
+    instance_(instance),
+    manager_proxy_(nullptr) {
   CallbackInfo::instance = instance_;
   thread_.detach();
+
+  GError* error = nullptr;
+
+  dbus_connection_ = amb::make_super(g_bus_get_sync(G_BUS_TYPE_SYSTEM,
+                                                    nullptr,
+                                                    &error));
+
+  auto errorPtr = amb::make_super(error);
+  if (errorPtr) {
+    DebugOut() << "Error getting bus: "
+               << errorPtr->message << std::endl;
+  }
 }
 
 Vehicle::~Vehicle() {
@@ -285,13 +299,13 @@ void Vehicle::Get(const std::string& property, Zone::Type zone, double ret_id) {
   GError* error = nullptr;
 
   auto properties_proxy = amb::make_super(
-      g_dbus_proxy_new_for_bus_sync(G_BUS_TYPE_SYSTEM,
-                                    G_DBUS_PROXY_FLAGS_NONE, NULL,
-                                    amb_service,
-                                    obj_pstr.c_str(),
-                                    prop_iface,
-                                    NULL,
-                                    &error));
+      g_dbus_proxy_new_sync(dbus_connection_.get(),
+                            G_DBUS_PROXY_FLAGS_NONE, NULL,
+                            amb_service,
+                            obj_pstr.c_str(),
+                            prop_iface,
+                            NULL,
+                            &error));
 
   auto error_ptr = amb::make_super(error);
 
@@ -310,7 +324,7 @@ void Vehicle::Get(const std::string& property, Zone::Type zone, double ret_id) {
 }
 
 void Vehicle::GetZones(const std::string& object_name, double ret_id) {
-  auto manager_proxy = amb::make_super(GetAutomotiveManager());
+  GDBusProxy* manager_proxy = GetAutomotiveManager();
 
   if (!manager_proxy) {
     return;
@@ -319,7 +333,7 @@ void Vehicle::GetZones(const std::string& object_name, double ret_id) {
   GError* error(nullptr);
 
   auto zones_variant = amb::make_super(
-      g_dbus_proxy_call_sync(manager_proxy.get(),
+      g_dbus_proxy_call_sync(manager_proxy,
                              "ZonesForObjectName",
                              g_variant_new("(s)",
                                            object_name.c_str()),
@@ -357,7 +371,7 @@ void Vehicle::GetZones(const std::string& object_name, double ret_id) {
     auto value_ptr = amb::make_super(value);
     int v = 0;
 
-    g_variant_get(value_ptr.get(), "(i)", &v);
+    g_variant_get(value_ptr.get(), "i", &v);
     zones_array.push_back(v);
   }
 
@@ -373,7 +387,7 @@ void Vehicle::GetZones(const std::string& object_name, double ret_id) {
 }
 
 std::string Vehicle::FindProperty(const std::string& object_name, int zone) {
-  auto manager_proxy = amb::make_super(GetAutomotiveManager());
+  GDBusProxy* manager_proxy = GetAutomotiveManager();
 
   if (!manager_proxy) {
     return "";
@@ -382,7 +396,7 @@ std::string Vehicle::FindProperty(const std::string& object_name, int zone) {
   GError* error(nullptr);
 
   auto object_path_variant = amb::make_super(
-      g_dbus_proxy_call_sync(manager_proxy.get(),
+      g_dbus_proxy_call_sync(manager_proxy,
                              "FindObjectForZone",
                              g_variant_new("(si)",
                                            object_name.c_str(),
@@ -416,24 +430,27 @@ std::string Vehicle::FindProperty(const std::string& object_name, int zone) {
 }
 
 GDBusProxy* Vehicle::GetAutomotiveManager() {
-  GError* error = nullptr;
-  GDBusProxy* am =
-      g_dbus_proxy_new_for_bus_sync(G_BUS_TYPE_SYSTEM,
-                                    G_DBUS_PROXY_FLAGS_NONE, NULL,
-                                    amb_service,
-                                    "/",
-                                    "org.automotive.Manager",
-                                    NULL,
-                                    &error);
+  if (manager_proxy_)
+    return manager_proxy_.get();
 
+  GError* error = nullptr;
+  auto proxy = g_dbus_proxy_new_sync(dbus_connection_.get(),
+                                     G_DBUS_PROXY_FLAGS_NONE, NULL,
+                                     amb_service,
+                                     "/",
+                                     "org.automotive.Manager",
+                                     NULL,
+                                     &error);
+  manager_proxy_ = amb::make_super(proxy);
   auto error_ptr = amb::make_super(error);
 
   if (error_ptr) {
-     DebugOut() << "error calling GetAutomotiveManager: "
-                << error_ptr->message << endl;
+    DebugOut() << "error calling GetAutomotiveManager: "
+               << error_ptr->message << endl;
+    return nullptr;
   }
 
-  return am;
+  return manager_proxy_.get();
 }
 
 void Vehicle::SetupMainloop(void* data) {
@@ -466,14 +483,14 @@ void Vehicle::Subscribe(const std::string& object_name, Zone::Type zone) {
     GError* proxy_error = nullptr;
 
     auto properties_proxy =
-        amb::make_super(g_dbus_proxy_new_for_bus_sync(G_BUS_TYPE_SYSTEM,
-                                                      G_DBUS_PROXY_FLAGS_NONE,
-                                                      NULL,
-                                                      amb_service,
-                                                      object_path.c_str(),
-                                                      prop_iface,
-                                                      NULL,
-                                                      &proxy_error));
+        amb::make_super(g_dbus_proxy_new_sync(dbus_connection_.get(),
+                                              G_DBUS_PROXY_FLAGS_NONE,
+                                              NULL,
+                                              amb_service,
+                                              object_path.c_str(),
+                                              prop_iface,
+                                              NULL,
+                                              &proxy_error));
 
     auto proxy_error_ptr = amb::make_super(proxy_error);
 
@@ -526,8 +543,7 @@ void Vehicle::Subscribe(const std::string& object_name, Zone::Type zone) {
     }
 
     object->handle =
-        g_dbus_connection_signal_subscribe(g_bus_get_sync(G_BUS_TYPE_SYSTEM,
-                                                          NULL, NULL),
+        g_dbus_connection_signal_subscribe(dbus_connection_.get(),
                                            amb_service,
                                            prop_iface,
                                            "PropertiesChanged",
