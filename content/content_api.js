@@ -43,6 +43,12 @@ extension.setMessageListener(function(msg) {
   }
 });
 
+function parseDate(date) {
+  if (typeof(date) !== 'string' || date === '')
+    return null;
+  return new Date(date);
+}
+
 function Folder(uri, id, type, title) {
   Object.defineProperties(this, {
     'directoryURI': { writable: false, value: uri, enumerable: true },
@@ -63,15 +69,15 @@ function Content(editableAttributes, id, name, type, mimeType, title, contentURI
     'title': { writable: false, value: title, enumerable: true },
     'contentURI': { writable: false, value: contentURI, enumerable: true },
     'thumnailURIs': { writable: false, value: thumnailURIs, enumerable: true },
-    'releaseDate': { writable: false, value: releaseDate, enumerable: true },
-    'modifiedDate': { writable: false, value: modifiedDate, enumerable: true },
+    'releaseDate': { writable: false, value: parseDate(releaseDate), enumerable: true },
+    'modifiedDate': { writable: false, value: parseDate(modifiedDate), enumerable: true },
     'size': { writable: false, value: size, enumerable: true },
     'description': { writable: true, value: description, enumerable: true },
     'rating': { writable: true, value: rating, enumerable: true }
   });
 }
 
-function ContentAudio(obj, album, genres, artists, composer, copyright,
+function AudioContent(obj, album, genres, artists, composer, copyright,
     bitrate, trackNumber, duration) {
   Object.defineProperties(obj, {
     'album': { writable: false, value: album, enumerable: true },
@@ -85,7 +91,7 @@ function ContentAudio(obj, album, genres, artists, composer, copyright,
   });
 }
 
-function ContentImage(obj, geolocation, width, height, orientation) {
+function ImageContent(obj, geolocation, width, height, orientation) {
   Object.defineProperties(obj, {
     'geolocation': { writable: true, value: geolocation, enumerable: true },
     'width': { writable: false, value: width, enumerable: true },
@@ -94,7 +100,7 @@ function ContentImage(obj, geolocation, width, height, orientation) {
   });
 }
 
-function ContentVideo(obj, geolocation, album, artists, duration, width, height) {
+function VideoContent(obj, geolocation, album, artists, duration, width, height) {
   Object.defineProperties(obj, {
     'geolocation': { writable: true, value: geolocation, enumerable: true },
     'album': { writable: false, value: album, enumerable: true },
@@ -188,7 +194,7 @@ ContentManager.prototype.find = function(onsuccess, onerror, directoryId,
             content.rating);
 
         if (content.type == 'AUDIO') {
-          ContentAudio(jsonContent,
+          AudioContent(jsonContent,
               content.album,
               content.genres,
               content.artists,
@@ -199,14 +205,14 @@ ContentManager.prototype.find = function(onsuccess, onerror, directoryId,
               content.duration);
         } else if (content.type == 'IMAGE') {
           var geolocation = new tizen.SimpleCoordinates(content.latitude, content.longitude);
-          ContentImage(jsonContent,
+          ImageContent(jsonContent,
               geolocation,
               content.width,
               content.height,
               content.orientation);
         } else if (content.type == 'VIDEO') {
           var geolocation = new tizen.SimpleCoordinates(content.latitude, content.longitude);
-          ContentVideo(jsonContent,
+          VideoContent(jsonContent,
               geolocation,
               content.album,
               content.artists,

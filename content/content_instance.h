@@ -96,7 +96,7 @@ class ContentFolder {
 
 class ContentItem {
  public:
-  ContentItem() : size_(0), rating_(0), bitrate_(0), trackNumber_(0),
+  ContentItem() : size_(0), rating_(0), bitrate_(0), track_number_(0),
       duration_(0), width_(0), height_(0), latitude_(DEFAULT_GEOLOCATION),
       longitude_(DEFAULT_GEOLOCATION) {
     editable_attributes_.push_back("name");
@@ -113,59 +113,59 @@ class ContentItem {
     return editable_attributes_;
   }
   const std::string& id() const { return id_; }
-  void setID(const std::string& id) { id_ = id; }
+  void set_id(const std::string& id) { id_ = id; }
   const std::string& name() const { return name_; }
-  void setName(const std::string& name) { name_ = name; }
+  void set_name(const std::string& name) { name_ = name; }
   const std::string& type() const { return type_; }
-  void setType(const std::string& type) { type_ = type;}
-  const std::string& mimeType() const { return mimeType_; }
-  void setMimeType(const std::string& mimeType) { mimeType_ = mimeType; }
+  void set_type(const std::string& type) { type_ = type;}
+  const std::string& mime_type() const { return mime_type_; }
+  void set_mime_type(const std::string& mime_type) { mime_type_ = mime_type; }
   const std::string& title() const { return title_; }
-  void setTitle(const std::string& title) { title_ = title;}
-  const std::string& contentURI() const { return contentURI_; }
-  void setContentURI(const std::string& uri) { contentURI_ = uri; }
-  const std::string& thumbnailURIs() const { return thumbnailURIs_; }
-  void setThumbnailURIs(const std::string& uris) { thumbnailURIs_ = uris; }
-  const std::string& releaseDate() const { return releaseDate_; }
-  void setReleaseDate(const std::string releaseDate) {
-    releaseDate_ = releaseDate; }
-  const std::string& modifiedDate() const { return modifiedDate_; }
-  void setModifiedDate(const std::string& modifiedDate) {
-    modifiedDate_ = modifiedDate; }
+  void set_title(const std::string& title) { title_ = title;}
+  const std::string& content_uri() const { return content_uri_; }
+  void set_content_uri(const std::string& uri) { content_uri_ = uri; }
+  const std::string& thumbnail_uris() const { return thumbnail_uris_; }
+  void set_thumbnail_uris(const std::string& uris) { thumbnail_uris_ = uris; }
+  const std::string& release_date() const { return release_date_; }
+  void set_release_date(const std::string release_date) {
+    release_date_ = release_date; }
+  const std::string& modified_date() const { return modified_date_; }
+  void set_modified_date(const std::string& modified_date) {
+    modified_date_ = modified_date; }
   uint64_t size() const { return size_; }
-  void setSize(const uint64_t size) { size_ = size; }
+  void set_size(const uint64_t size) { size_ = size; }
   const std::string& description() const { return description_; }
-  void setDescription(const std::string& desc) { description_ = desc; }
+  void set_description(const std::string& desc) { description_ = desc; }
   uint64_t rating() const { return rating_; }
-  void setRating(uint64_t rating) { rating_ = rating; }
+  void set_rating(uint64_t rating) { rating_ = rating; }
   // type = AUDIO and VIDEO
   const std::string& album() const { return album_; }
-  void setAlbum(const std::string& album) { album_ = album;}
+  void set_album(const std::string& album) { album_ = album;}
   const std::string& genres() const { return genres_; }
-  void setGenres(const std::string& genres) { genres_ = genres;}
+  void set_genres(const std::string& genres) { genres_ = genres;}
   const std::string& artists() const { return artists_; }
-  void setArtists(const std::string& artists) { artists_ = artists;}
+  void set_artists(const std::string& artists) { artists_ = artists;}
   const std::string& composer() const { return composer_; }
-  void setComposer(const std::string& composer) { composer_ = composer;}
+  void set_composer(const std::string& composer) { composer_ = composer;}
   const std::string& copyright() const { return copyright_; }
-  void setCopyright(const std::string& copyright) { copyright_ = copyright;}
-  uint64_t bitrate() const { return rating_; }
-  void setBitrate(uint64_t bitrate) { bitrate_ = bitrate; }
-  uint64_t trackNumber() const { return bitrate_; }
-  void setTrackNumber(uint64_t num) { trackNumber_ = num; }
+  void set_copyright(const std::string& copyright) { copyright_ = copyright;}
+  uint64_t bitrate() const { return bitrate_; }
+  void set_bitrate(uint64_t bitrate) { bitrate_ = bitrate; }
+  uint64_t track_number() const { return track_number_; }
+  void set_track_number(uint64_t num) { track_number_ = num; }
   int duration() const { return duration_; }
-  void setDuration(int duration) { duration_ = duration; }
+  void set_duration(int duration) { duration_ = duration; }
   // type = IMAGE
   uint64_t width() const { return width_; }
-  void setWidth(uint64_t width) { width_ = width; }
+  void set_width(uint64_t width) { width_ = width; }
   uint64_t height() const { return height_; }
-  void setHeight(uint64_t height) { height_ = height; }
+  void set_height(uint64_t height) { height_ = height; }
   const std::string& orientation() const { return orientation_; }
-  void setOrientation(const std::string& orintatin) {orientation_ = orintatin;}
+  void set_orientation(const std::string& orintatin) {orientation_ = orintatin;}
   double latitude() const { return latitude_; }
-  void setLatitude(double latitude) { latitude_ = latitude; }
+  void set_latitude(double latitude) { latitude_ = latitude; }
   double longitude() const { return longitude_; }
-  void setLongitude(double longitude) { longitude_ = longitude; }
+  void set_longitude(double longitude) { longitude_ = longitude; }
 
 #ifdef DEBUG_ITEM
   void print(void);
@@ -176,12 +176,12 @@ class ContentItem {
   std::string id_;
   std::string name_;
   std::string type_;
-  std::string mimeType_;
+  std::string mime_type_;
   std::string title_;
-  std::string contentURI_;
-  std::string thumbnailURIs_;
-  std::string releaseDate_;
-  std::string modifiedDate_;
+  std::string content_uri_;
+  std::string thumbnail_uris_;
+  std::string release_date_;
+  std::string modified_date_;
   uint64_t size_;
   std::string description_;
   uint64_t rating_;
@@ -193,7 +193,7 @@ class ContentItem {
   std::string composer_;
   std::string copyright_;
   uint64_t bitrate_;
-  uint16_t trackNumber_;
+  uint16_t track_number_;
   int duration_;
 
   // type = IMAGE
