@@ -5,19 +5,19 @@
 #ifndef DATASYNC_DATASYNC_INSTANCE_H_
 #define DATASYNC_DATASYNC_INSTANCE_H_
 
-#include <memory>
 #include <string>
 
 #include "common/extension.h"
 #include "common/picojson.h"
 
+#include "datasync/datasync_extension.h"
 #include "datasync/datasync_manager.h"
 
 namespace datasync {
 
 class DatasyncInstance : public common::Instance {
  public:
-  DatasyncInstance();
+  explicit DatasyncInstance(DatasyncExtension& extension);
   virtual ~DatasyncInstance();
 
   void ReplyAsyncOnCompleted(int key, const std::string& profile_id);
@@ -63,7 +63,7 @@ class DatasyncInstance : public common::Instance {
   void HandleStartSync(const picojson::value& arg, int callback_id);
   void HandleStopSync(const picojson::value& arg);
 
-  std::unique_ptr<DataSyncManager> manager_;
+  DatasyncExtension& extension_;
 };
 
 }  // namespace datasync

@@ -21,8 +21,13 @@ DatasyncExtension::DatasyncExtension() {
 
 DatasyncExtension::~DatasyncExtension() {}
 
+DataSyncManager& DatasyncExtension::manager() {
+  // Initialize API on first request
+  return DataSyncManager::Instance();
+}
+
 common::Instance* DatasyncExtension::CreateInstance() {
-  return new DatasyncInstance;
+  return new DatasyncInstance(*this);
 }
 
 }  // namespace datasync

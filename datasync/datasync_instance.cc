@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include <memory>
+
 #include "datasync/datasync_instance.h"
 
 #include "datasync/datasync_log.h"
@@ -11,11 +13,13 @@
 
 namespace datasync {
 
-DatasyncInstance::DatasyncInstance()
-    : manager_(new DataSyncManager(*this)) {
+DatasyncInstance::DatasyncInstance(DatasyncExtension& extension)
+    : extension_(extension) {
 }
 
-DatasyncInstance::~DatasyncInstance() {}
+DatasyncInstance::~DatasyncInstance() {
+  extension_.manager().UnregisterInstanceCallbacks(this);
+}
 
 void DatasyncInstance::HandleMessage(const char* msg) {
   // this is stub, no async messages
@@ -169,13 +173,13 @@ void DatasyncInstance::ReplyAsyncOnProgress(int key,
 }
 
 void DatasyncInstance::HandleGetMaxProfilesNum(const picojson::value&) {
-  manager_->GetMaxProfilesNum().Success([this](unsigned max){
+  extension_.manager().GetMaxProfilesNum().Success([this](unsigned max){
     ReplySyncAnswer(serialization::ToJson(max));
   });
 }
 
 void DatasyncInstance::HandleGetProfilesNum(const picojson::value&) {
-  manager_->GetProfilesNum().Success([this](unsigned num) {
+  extension_.manager().GetProfilesNum().Success([this](unsigned num) {
     ReplySyncAnswer(serialization::ToJson(num));
   }).Failure([this](const Error& e) {
     MakeExceptionAndReply(e);
@@ -186,7 +190,8 @@ void DatasyncInstance::HandleGet(const picojson::value& arg) {
   std::unique_ptr<std::string> profile_id =
       serialization::FromJson<std::string>(arg);
   if (profile_id) {
-    manager_->Get(*profile_id).Success([this](SyncProfileInfoPtr profileInfo) {
+    extension_.manager().Get(*profile_id).Success(
+        [this](SyncProfileInfoPtr profileInfo) {
       ReplySyncAnswer(serialization::ToJson(*profileInfo));
     }).Failure([this](const Error& e) {
       MakeExceptionAndReply(e);
@@ -198,7 +203,8 @@ void DatasyncInstance::HandleGet(const picojson::value& arg) {
 }
 
 void DatasyncInstance::HandleGetAll(const picojson::value&) {
-  manager_->GetAll().Success([this](SyncProfileInfoListPtr profileInfoList) {
+  extension_.manager().GetAll()
+      .Success([this](SyncProfileInfoListPtr profileInfoList) {
     picojson::array array;
 
     for (const auto& element : *profileInfoList) {
@@ -215,8 +221,8 @@ void DatasyncInstance::HandleGetLastSyncStatistics(const picojson::value& arg) {
   std::unique_ptr<std::string> profile_id =
       serialization::FromJson<std::string>(arg);
   if (profile_id) {
-    manager_->GetLastSyncStatistics(*profile_id)
-        .Success([this](SyncStatisticsListPtr statisticsList) {
+    extension_.manager().GetLastSyncStatistics(*profile_id).Success(
+        [this](SyncStatisticsListPtr statisticsList) {
       picojson::array array;
 
       for (const auto& element : *statisticsList) {
@@ -237,7 +243,7 @@ void DatasyncInstance::HandleAdd(const picojson::value& arg) {
   std::unique_ptr<SyncProfileInfo> profile =
       serialization::FromJson<SyncProfileInfo>(arg);
   if (profile) {
-    manager_->Add(*profile).Success([this](std::string id) {
+    extension_.manager().Add(*profile).Success([this](std::string id) {
       ReplySyncAnswer(serialization::ToJson(id));
     }).Failure([this](const Error& e) {
       MakeExceptionAndReply(e);
@@ -252,7 +258,7 @@ void DatasyncInstance::HandleUpdate(const picojson::value& arg) {
   std::unique_ptr<SyncProfileInfo> profile =
       serialization::FromJson<SyncProfileInfo>(arg);
   if (profile) {
-    manager_->Update(*profile).Success([this]() {
+    extension_.manager().Update(*profile).Success([this]() {
       ReplySyncUndefinedAnswer();
     }).Failure([this](const Error& e) {
       MakeExceptionAndReply(e);
@@ -267,7 +273,7 @@ void DatasyncInstance::HandleRemove(const picojson::value& arg) {
   std::unique_ptr<std::string> profile_id =
       serialization::FromJson<std::string>(arg);
   if (profile_id) {
-    manager_->Remove(*profile_id).Success([this]() {
+    extension_.manager().Remove(*profile_id).Success([this]() {
       ReplySyncUndefinedAnswer();
     }).Failure([this](const Error& e) {
       MakeExceptionAndReply(e);
@@ -283,7 +289,8 @@ void DatasyncInstance::HandleStartSync(
   std::unique_ptr<std::string> profile_id =
       serialization::FromJson<std::string>(arg);
   if (profile_id) {
-    manager_->StartSync(*profile_id, callback_id).Success([this]() {
+    extension_.manager().StartSync(*profile_id, callback_id, this).Success(
+        [this]() {
       ReplySyncUndefinedAnswer();
     }).Failure([this](const Error& e) {
       MakeExceptionAndReply(e);
@@ -298,7 +305,7 @@ void DatasyncInstance::HandleStopSync(const picojson::value& arg) {
   std::unique_ptr<std::string> profile_id =
       serialization::FromJson<std::string>(arg);
   if (profile_id) {
-    manager_->StopSync(*profile_id).Success([this]() {
+    extension_.manager().StopSync(*profile_id).Success([this]() {
       ReplySyncUndefinedAnswer();
     }).Failure([this](const Error& e) {
       MakeExceptionAndReply(e);
