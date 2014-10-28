@@ -8,12 +8,27 @@
 #include <abstractpropertytype.h>
 #include <gio/gio.h>
 #include <glib.h>
+#include <superptr.hpp>
 
 #include <string>
 #include <thread> // NOLINT
 #include <vector>
 
 #include "common/picojson.h"
+
+namespace amb {
+
+template <>
+struct traits<GDBusConnection> {
+  struct delete_functor {
+    void operator()(GDBusConnection* p) const {
+      if (p != nullptr)
+        g_dbus_connection_close_sync(p, nullptr, nullptr);
+    }
+  };
+};
+
+}  // namespace amb
 
 namespace common {
 
@@ -79,6 +94,9 @@ class Vehicle {
   common::Instance* instance_;
 
   std::vector<ObjectZone*> amb_objects_;
+
+  amb::super_ptr<GDBusProxy> manager_proxy_;
+  amb::super_ptr<GDBusConnection> dbus_connection_;
 };
 
 #endif  // VEHICLE_VEHICLE_H_
