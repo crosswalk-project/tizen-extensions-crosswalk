@@ -46,6 +46,9 @@ BuildRequires: pkgconfig(automotive-message-broker)
 BuildRequires: pkgconfig(capi-telephony-sim)
 BuildRequires: pkgconfig(contacts-service2)
 BuildRequires: pkgconfig(libpcrecpp)
+BuildRequires: pkgconfig(sync-agent)
+# For Datasync API
+Requires:      oma-ds-agent
 %endif
 BuildRequires: pkgconfig(capi-web-favorites)
 BuildRequires: pkgconfig(capi-web-url-download)
@@ -64,7 +67,6 @@ BuildRequires: pkgconfig(pkgmgr)
 BuildRequires: pkgconfig(pkgmgr-info)
 BuildRequires: pkgconfig(pmapi)
 BuildRequires: pkgconfig(tapi)
-BuildRequires: pkgconfig(sync-agent)
 BuildRequires: pkgconfig(vconf)
 %if %{with wayland}
 BuildRequires: pkgconfig(wayland-client)
@@ -76,8 +78,6 @@ BuildRequires: python
 Requires:      crosswalk
 # For Content API
 Requires:      media-thumbnail-server
-# For Datasync API
-Requires:      oma-ds-agent
 
 %description
 Tizen Web APIs implemented using Crosswalk.
