@@ -100,7 +100,7 @@ void SessionData::InsertData(const std::string& key,
   if (obj.is<bool>()) {
     val = g_new0(GValue, 1);
     g_value_init(val, G_TYPE_BOOLEAN);
-    g_value_set_boolean(val, (gboolean) obj.get("renewToken").get<bool>());
+    g_value_set_boolean(val, (gboolean) obj.get<bool>());
     g_hash_table_insert(data_, g_strdup(key.c_str()), val);
   } else if (obj.is<std::string>()) {
     val = g_new0(GValue, 1);

@@ -1,0 +1,188 @@
+<html>
+<head>
+<title>SSO example</title>
+</head>
+<body>
+<style type="text/css">
+  .topleftcorner {
+    position:relative;
+    width: 50%;
+  }
+  .toprightcorner {
+    position:absolute;
+    top:0;
+    right:0;
+    width: 50%;
+    height:100%
+  }
+  .topcenter {
+    position: absolute;
+    width: 100%;
+    left: 100%;
+    top: 0%;
+    height:100%
+  }
+</style>
+<h3>SSO Google OAuth client example</h3>
+<div id='serviceContainer' class="topleftcorner">
+<table id="service" border="5" width="100%">
+  <tr>
+    <th colspan="2">
+      <H3><BR>Identity management</H3>
+    </th>
+  </tr>
+    <th>API</th>
+    <th>Arguments</th>
+  <tr><td><button onclick='queryIdentities()'>List Identities</button></td>
+  </tr>
+  <tr>
+    <td><button onclick='createIdentity()'>Create Identity</button></td>
+    <td><form>Identity name:
+    <input type="text" name="cident_caption" id="cident_caption"></form>
+  </tr>
+  <tr>
+    <td><button onclick='removeIdentity()'>Remove Identity</button></td>
+    <td><form>Identity id:
+    <input type="number" name="remove_identity_id" id="remove_identity_id"></form>
+  </tr>
+</table>
+
+<table id="session" border="5" width="100%">
+  <tr>
+    <th colspan="2">
+      <H3><BR>Authentication session</H3>
+    </th>
+  </tr>
+    <th>API</th>
+    <th>Arguments</th>
+  <tr><td><button onclick='getAccessToken()'>Get access token</button></td>
+    <td><form>Identity id:
+    <input type="number" name="get_token_identity_id" id="get_token_identity_id">
+    </form>
+  </tr>
+</table>
+
+</div>
+<div id='resultContainer' class="toprightcorner">
+<form name='form_out'>
+  <textarea name="form_text" id="form_text" style="width:100%; height:100%"></textarea>
+</form>
+</div>
+
+<script>
+
+function _logData(data) {
+  document.form_out.form_text.value = data + '\n\n' + document.form_out.form_text.value;
+}
+
+function queryIdentities() {
+  var res = tizen.sso.authService.queryIdentities({});
+  if (res != null) {
+    res.then(onQueryIdentitiesComplete, function(err) {
+      _logData('QueryIdentities failed: ' + err);});
+  } else {
+    _logData('identities not found');
+  }
+}
+
+function onQueryIdentitiesComplete(result) {
+  _logData('QueryIdentities successful: ' + JSON.stringify(result));
+}
+
+function createIdentity() {
+  var info = {
+    'caption': document.getElementById('cident_caption').value,
+    'realms': ['google.com'],
+    'accessControlList': [{"method": "oauth", "mechanisms": ["*"]}]
+  };
+  var res = tizen.sso.authService.createIdentity(info);
+  if (res.syncOpErrorMsg != null) {
+    _logData('Identity creation FAILED with error: ' + res.asyncOpErrorMsg);
+    return;
+  }
+  
+  res.identity.store().then(function(msg) {
+    _logData('Identity store succeeded with resp: ' + JSON.stringify(msg));},
+    function(err) {_logData('Identity store failed: ' + err);});
+}
+
+function removeIdentity() {
+  var id = parseInt(document.getElementById('remove_identity_id').value);
+  if (isNaN(id)) {
+    _logData('Invalid id');
+    return;
+  }
+  var res = tizen.sso.authService.getIdentity(id);
+  if (res != null) {
+    res.then(onGetIdentityForRemovalComplete, function(err) {
+      _logData('GetIdentity failed: ' + err);});
+  } else {
+    _logData('Identity not found with the specified id');
+  }
+}
+
+function onGetIdentityForRemovalComplete(identobj) {
+  identobj.remove().then(onIdentityRemoved,
+    function(err) {_logData('remove failed: ' + err);});
+}
+
+function onIdentityRemoved(ident) {
+  _logData('Identity has been removed');
+}
+
+function getAccessToken() {
+  var id = parseInt(document.getElementById('get_token_identity_id').value);
+  if (isNaN(id)) {
+    _logData('Invalid id');
+    return;
+  }
+  var res = tizen.sso.authService.getIdentity(id);
+  if (res != null) {
+    res.then(onGetIdentityForAccessTokenComplete, function(err) {
+      _logData('GetIdentity failed: ' + err);});
+  } else {
+    _logData('Identity not found with the specified id');
+  }
+}
+
+function onGetIdentityForAccessTokenComplete(identobj) {
+  identobj.startSession('oauth').then(onSessionStarted,
+    function(err) {_logData('starting session failed: ' + err);});
+}
+
+function onSessionStarted(session) {
+    // the client id and secret are specific to this example app
+    // if you develop something based on this example, get your own
+    // client id and secret at https://console.developers.google.com/project
+    //
+    // The meaning of these parameters is explained at
+    // http://gsignon-docs.accounts-sso.googlecode.com/git/gsignond-plugin-oauth/GSignondOauthPlugin.html
+    var session_data = {
+      'ClientId': '988702115901-hter2d0t0vso6vc65ielc3t2vd13lvum.apps.googleusercontent.com',
+      'ClientSecret': 'G0nyBM2q0jEdAq5vpFjPkt9W',
+      'UiPolicy': 0,
+      'ResponseType': 'code',
+      'AuthHost': 'accounts.google.com',
+      'AuthPath': '/o/oauth2/auth',
+      'RedirectUri': 'http://localhost:9004',
+      'Scope': 'profile',
+      'ForceClientAuthViaRequestBody': true,
+      'TokenHost': 'accounts.google.com',
+      'TokenPath': '/o/oauth2/token'
+    };
+
+    session.challenge("oauth2", session_data).then(onSessionResponse,
+    function(err) {_logData('session challenge failed: ' + err);});
+}
+
+function onSessionResponse(response) {
+    _logData('AccessToken: ' + response.AccessToken + '\nDuration: ' +
+        response.Duration + '\nRefreshToken: ' + response.RefreshToken +
+        '\nScope: ' + response.Scope + '\nTimestamp: ' + response.Timestamp +
+        '\nTokenType: ' + response.TokenType);
+}
+
+</script>
+
+</body>
+</html>
