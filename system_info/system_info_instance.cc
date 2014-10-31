@@ -69,7 +69,7 @@ void SystemInfoInstance::InstancesMapInitialize() {
   RegisterClass<SysInfoLocale>();
   RegisterClass<SysInfoNetwork>();
   RegisterClass<SysInfoPeripheral>();
-#if defined(TIZEN)
+#if defined(TIZEN_IVI) || defined(TIZEN_MOBILE)
   RegisterClass<SysInfoSim>();
 #endif
   RegisterClass<SysInfoStorage>();
