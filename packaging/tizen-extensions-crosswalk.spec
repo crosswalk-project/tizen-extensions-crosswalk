@@ -204,8 +204,7 @@ install -p -D %{name}.png %{buildroot}%{_desktop_icondir}/%{_system_info_demo_pa
 install -p -D %{name}.png %{buildroot}%{_desktop_icondir}/%{_audiosystem_demo_package}.png
 
 %files
-# TODO(rakuco): This causes problems on 2.1 when creating the package.
-# %license LICENSE
+%license LICENSE LICENSE.AL2
 %{_libdir}/%{name}/libtizen*.so
 
 %files -n %{_bluetooth_demo_package}
