@@ -351,6 +351,7 @@ void MediaRenderer::PostResult(
   picojson::value::object object;
   object["cmd"] = picojson::value(completed_operation);
   object["asyncCallId"] = picojson::value(async_operation_id);
+  object["renderer"] = ToJSON();
   picojson::value value(object);
   instance_->PostMessage(value.serialize().c_str());
 }
