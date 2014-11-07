@@ -240,22 +240,28 @@ void PhoneInstance::HandleSignal(GDBusConnection* connection,
     const gchar* state = NULL;
     const gchar* line_id = NULL;
     const gchar* contact = NULL;
+    picojson::value contact_obj;
+    std::string contact_err = "No contact info";
     GVariantIter* iter;
     GVariant* value;
 
     g_variant_get(parameters, "(a{sv})", &iter);
     while (g_variant_iter_next(iter, "{sv}", &key, &value)) {
-      if (!strcmp(key, "state"))
+      if (!strcmp(key, "state")) {
         state = g_variant_get_string(value, NULL);
-      else if (!strcmp(key, "line_id"))
+      } else if (!strcmp(key, "line_id")) {
         line_id = g_variant_get_string(value, NULL);
-      else if (!strcmp(key, "contact"))
+      } else if (!strcmp(key, "contact")) {
         contact = g_variant_get_string(value, NULL);
+        contact_err = picojson::parse(contact_obj, contact,
+                                      contact + strlen(contact));
+      }
     }
     picojson::value::object o;
     o["state"] = state ? picojson::value(state) : picojson::value("");
     o["line_id"] = line_id ? picojson::value(line_id) : picojson::value("");
-    o["contact"] = contact ? picojson::value(contact) : picojson::value("");
+    o["contact"] = contact_err.empty() ? picojson::value(contact_obj)
+                                       : picojson::value("");
     picojson::value v(o);
     instance->SendSignal(picojson::value(signal_name), v);
   } else if (!strcmp(signal_name, "CallHistoryChanged") ||
