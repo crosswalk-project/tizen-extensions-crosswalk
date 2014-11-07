@@ -72,7 +72,7 @@ class SysInfoSim : public SysInfoObject {
                 unsigned int& member,
                 const unsigned int& default_value = 0);
   SystemInfoSimState GetSystemInfoSIMState(sim_state_e state);
-#else
+#elif defined(TIZEN_IVI)
   void InitDbusConnection();
   void DeInitDbusConnection();
   void GetSimProperties();
@@ -96,7 +96,7 @@ class SysInfoSim : public SysInfoObject {
   unsigned int mnc_;
   std::string msin_;
   std::string spn_;
-#if !defined(TIZEN_MOBILE)
+#if defined(TIZEN_IVI)
   GDBusConnection* conn_;
   guint prop_changed_watch_;
 #endif

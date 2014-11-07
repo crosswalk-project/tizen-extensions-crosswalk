@@ -12,6 +12,10 @@
         'sources/': [['exclude', '_mobile\\.cc$|mobile/']],
         'includes/': [['exclude', '_mobile\\.gypi$|mobile/']],
       }],
+      ['extension_host_os != "ivi"', {
+        'sources/': [['exclude', '_ivi\\.cc$|ivi/']],
+        'includes/': [['exclude', '_ivi\\.gypi$|ivi/']],
+      }],
       ['extension_host_os != "desktop"', {
         'sources/': [['exclude', '_desktop\\.cc$|desktop/']],
         'includes/': [['exclude', '_desktop\\.gypi$|desktop/']],
