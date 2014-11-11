@@ -49,7 +49,7 @@ class SysInfoStorage : public SysInfoObject {
   void GetAllAvailableStorageDevices();
   void InitStorageMonitor();
   void QueryAllAvailableStorageUnits();
-  void MakeStorageUnit(SysInfoDeviceStorageUnit& unit, udev_device* dev) const;
+  bool MakeStorageUnit(SysInfoDeviceStorageUnit& unit, udev_device* dev) const;
   std::string ToStorageUnitTypeString(StorageUnitType type);
   void UpdateStorageList();
   static gboolean OnUpdateTimeout(gpointer user_data);
