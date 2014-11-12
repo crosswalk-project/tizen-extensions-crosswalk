@@ -99,26 +99,30 @@ void SysInfoStorage::QueryAllAvailableStorageUnits() {
     if (strcmp(type, "disk"))
       continue;
     SysInfoDeviceStorageUnit unit;
-    MakeStorageUnit(unit, dev);
-    storages_[unit.id] = unit;
+    if (MakeStorageUnit(unit, dev))
+      storages_[unit.id] = unit;
     udev_device_unref(dev);
   }
 }
 
-void SysInfoStorage::MakeStorageUnit(SysInfoDeviceStorageUnit& unit,
+bool SysInfoStorage::MakeStorageUnit(SysInfoDeviceStorageUnit& unit,
                                      udev_device* dev) const {
-  unit.id = udev_device_get_devnum(dev);
-  unit.capacity = std::stof(udev_device_get_sysattr_value(dev, "size")) * 512;
-  if (std::stoi(udev_device_get_sysattr_value(dev, "removable"))) {
+  const char* removable = udev_device_get_sysattr_value(dev, "removable");
+  if (!removable)
+    return false;
+
+  if (std::stoi(removable)) {
     unit.type = USB_HOST;
     unit.is_removable = true;
   } else {
     unit.type = INTERNAL;
     unit.is_removable = false;
   }
-
+  unit.id = udev_device_get_devnum(dev);
+  unit.capacity = std::stof(udev_device_get_sysattr_value(dev, "size")) * 512;
   // TODO(qjia7): Find which attri reflects available capacity in udev.
   unit.available_capacity = 0.0;
+  return true;
 }
 
 std::string SysInfoStorage::ToStorageUnitTypeString(StorageUnitType type) {
@@ -157,8 +161,8 @@ void SysInfoStorage::UpdateStorageList() {
     std::string action = udev_device_get_action(dev);
     if (action == "add") {
       SysInfoDeviceStorageUnit unit;
-      MakeStorageUnit(unit, dev);
-      storages_[unit.id] = unit;
+      if (MakeStorageUnit(unit, dev))
+        storages_[unit.id] = unit;
     } else if (action == "remove") {
       storages_.erase(dev_id);
     }
