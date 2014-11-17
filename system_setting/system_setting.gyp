@@ -14,6 +14,8 @@
         'system_setting_instance.h',
         'system_setting_instance_desktop.cc',
         'system_setting_instance_tizen.cc',
+        'system_setting_locale.cc',
+        'system_setting_locale.h',
       ],
       'conditions': [
         ['tizen == 1', {
