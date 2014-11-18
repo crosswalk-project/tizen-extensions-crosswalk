@@ -9,6 +9,7 @@
 #include <media_filter.h>
 
 #include <assert.h>
+#include <time.h>
 
 #include <iostream>
 #include <fstream>
@@ -40,6 +41,25 @@ std::string getUriPath(const std::string uri) {
   else
     return "";
 }
+
+// Tizen video meta APIs return date format "%Y:%m:%d %H:%M:%S",
+// while standard JavaScript Date accept format as "%Y-%m-%d %H:%M:%S".
+// So we need this conversion function.
+std::string ConvertToJSDateString(const char* date) {
+  struct tm result;
+  if (strptime(date, "%Y:%m:%d %H:%M:%S", &result) == NULL) {
+    return "";
+  }
+
+  char output_date[20];
+  memset(output_date, 0, 20);
+  if (!strftime(output_date, 20, "%Y-%m-%d %H:%M:%S", &result)) {
+    return "";
+  }
+
+  return std::string(output_date);
+}
+
 }  // namespace
 
 unsigned ContentInstance::m_instanceCount = 0;
@@ -303,15 +323,15 @@ void ContentInstance::HandleFindReply(
     o[STR_ID] = picojson::value(item->id());
     o[STR_NAME] = picojson::value(item->name());
     o["type"] = picojson::value(item->type());
-    o["mimeType"] = picojson::value(item->mimeType());
+    o["mimeType"] = picojson::value(item->mime_type());
     o["title"] = picojson::value(item->title());
-    o["contentURI"] = picojson::value(item->contentURI());
+    o["contentURI"] = picojson::value(item->content_uri());
     picojson::value::array uris;
-    uris.push_back(picojson::value(item->thumbnailURIs()));
+    uris.push_back(picojson::value(item->thumbnail_uris()));
     o["thumbnailURIs"] = picojson::value(uris);
-    o["releaseDate"] = picojson::value(item->releaseDate());
+    o["releaseDate"] = picojson::value(item->release_date());
     o["modifiedDate"] =
-      picojson::value(item->modifiedDate());
+      picojson::value(item->modified_date());
     o["size"] = picojson::value(static_cast<double>(item->size()));
     o[STR_DESCRIPTION] = picojson::value(item->description());
     o[STR_RATING] = picojson::value(static_cast<double>(item->rating()));
@@ -330,7 +350,7 @@ void ContentInstance::HandleFindReply(
       o["copyright"] = picojson::value(item->copyright());
       o["bitrate"] = picojson::value(static_cast<double>(item->bitrate()));
       o["trackNumber"] = picojson::value(
-          static_cast<double>(item->trackNumber()));
+          static_cast<double>(item->track_number()));
       o["duration"] = picojson::value(static_cast<double>(item->duration()));
     } else if (item->type() == "IMAGE") {
       o["width"] = picojson::value(static_cast<double>(item->width()));
@@ -488,40 +508,40 @@ void ContentItem::init(media_info_h handle) {
   // even the return code is MEDIA_CONTENT_ERROR_NONE.
 
   if (media_info_get_media_id(handle, &pc) == MEDIA_CONTENT_ERROR_NONE && pc) {
-    setID(pc);
+    set_id(pc);
     free(pc);
   }
 
   if (media_info_get_mime_type(handle, &pc) == MEDIA_CONTENT_ERROR_NONE && pc) {
-    setMimeType(pc);
+    set_mime_type(pc);
     free(pc);
   }
 
   if (media_info_get_title(handle, &pc) == MEDIA_CONTENT_ERROR_NONE && pc) {
-    setTitle(pc);
+    set_title(pc);
     free(pc);
   }
 
   if (media_info_get_display_name(handle,
       &pc) == MEDIA_CONTENT_ERROR_NONE && pc) {
-    setName(pc);
+    set_name(pc);
     free(pc);
   }
 
   if (media_info_get_file_path(handle, &pc) == MEDIA_CONTENT_ERROR_NONE && pc) {
-    setContentURI(createUriFromLocalPath(pc));
+    set_content_uri(createUriFromLocalPath(pc));
     free(pc);
   }
 
   if (media_info_get_thumbnail_path(handle,
       &pc) == MEDIA_CONTENT_ERROR_NONE && pc) {
-    setThumbnailURIs(createUriFromLocalPath(pc));
+    set_thumbnail_uris(createUriFromLocalPath(pc));
     free(pc);
   }
 
   if (media_info_get_description(handle,
       &pc) == MEDIA_CONTENT_ERROR_NONE && pc) {
-    setDescription(pc);
+    set_description(pc);
     free(pc);
   }
 
@@ -529,36 +549,36 @@ void ContentItem::init(media_info_h handle) {
   if (media_info_get_modified_time(handle, &date) == MEDIA_CONTENT_ERROR_NONE) {
     char tmp[26];
     ctime_r(&date, tmp);
-    setModifiedDate(tmp);
+    set_modified_date(tmp);
   }
 
   int i = 0;
   if (media_info_get_rating(handle, &i) == MEDIA_CONTENT_ERROR_NONE)
-    setRating(i);
+    set_rating(i);
 
   unsigned long long ll; // NOLINT
   if (media_info_get_size(handle, &ll) == MEDIA_CONTENT_ERROR_NONE)
-    setSize(ll);
+    set_size(ll);
 
   media_content_type_e type;
   if (media_info_get_media_type(handle, &type) == MEDIA_CONTENT_ERROR_NONE) {
     if (type == MEDIA_CONTENT_TYPE_IMAGE) {
-      setType("IMAGE");
+      set_type("IMAGE");
 
       image_meta_h image;
       if (media_info_get_image(handle, &image) == MEDIA_CONTENT_ERROR_NONE) {
         if (image_meta_get_width(image, &i) == MEDIA_CONTENT_ERROR_NONE)
-          setWidth(i);
+          set_width(i);
 
         if (image_meta_get_height(image, &i) == MEDIA_CONTENT_ERROR_NONE)
-          setHeight(i);
+          set_height(i);
 
         double d;
         if (media_info_get_latitude(handle, &d) == MEDIA_CONTENT_ERROR_NONE)
-          setLatitude(d);
+          set_latitude(d);
 
        if (media_info_get_longitude(handle, &d) == MEDIA_CONTENT_ERROR_NONE)
-          setLongitude(d);
+          set_longitude(d);
 
         media_content_orientation_e orientation;
         if (image_meta_get_orientation(image, &orientation)
@@ -577,105 +597,106 @@ void ContentItem::init(media_info_h handle) {
             case 8: result = "ROTATE_270"; break;
             default: result = "Unknown"; break;
           }
-          setOrientation(result);
+          set_orientation(result);
         }
         image_meta_destroy(image);
       }
     } else if (type == MEDIA_CONTENT_TYPE_VIDEO) {
-      setType("VIDEO");
+      set_type("VIDEO");
 
       video_meta_h video;
       if (media_info_get_video(handle, &video) == MEDIA_CONTENT_ERROR_NONE) {
         if (video_meta_get_recorded_date(video,
             &pc) == MEDIA_CONTENT_ERROR_NONE && pc) {
-          setReleaseDate(pc);
+          set_release_date(ConvertToJSDateString(pc));
           free(pc);
         }
 
         if (video_meta_get_album(video,
             &pc) == MEDIA_CONTENT_ERROR_NONE && pc) {
-          setAlbum(pc);
+          set_album(pc);
           free(pc);
         }
 
         if (video_meta_get_artist(video,
             &pc) == MEDIA_CONTENT_ERROR_NONE && pc) {
-          setArtists(pc);
+          set_artists(pc);
           free(pc);
         }
 
         if (video_meta_get_width(video, &i) == MEDIA_CONTENT_ERROR_NONE) {
-          setWidth(i);
+          set_width(i);
         }
 
         if (video_meta_get_height(video, &i) == MEDIA_CONTENT_ERROR_NONE) {
-          setHeight(i);
+          set_height(i);
         }
 
         if (video_meta_get_duration(video, &i) == MEDIA_CONTENT_ERROR_NONE) {
-          setDuration(i);
+          set_duration(i);
         }
 
         double d;
         if (media_info_get_latitude(handle, &d) == MEDIA_CONTENT_ERROR_NONE)
-          setLatitude(d);
+          set_latitude(d);
 
         if (media_info_get_longitude(handle, &d) == MEDIA_CONTENT_ERROR_NONE)
-          setLongitude(d);
+          set_longitude(d);
 
         video_meta_destroy(video);
       }
-    } else if (type == MEDIA_CONTENT_TYPE_MUSIC) {
-      setType("AUDIO");
+    } else if (type == MEDIA_CONTENT_TYPE_MUSIC ||
+        type == MEDIA_CONTENT_TYPE_SOUND) {
+      set_type("AUDIO");
 
       audio_meta_h audio;
       if (media_info_get_audio(handle, &audio) == MEDIA_CONTENT_ERROR_NONE) {
         if (audio_meta_get_recorded_date(audio,
             &pc) == MEDIA_CONTENT_ERROR_NONE && pc) {
-          setReleaseDate(pc);
+          set_release_date(ConvertToJSDateString(pc));
           free(pc);
         }
 
         if (audio_meta_get_album(audio,
             &pc) == MEDIA_CONTENT_ERROR_NONE && pc) {
-          setAlbum(pc);
+          set_album(pc);
           free(pc);
         }
 
         if (audio_meta_get_artist(audio,
             &pc) == MEDIA_CONTENT_ERROR_NONE && pc) {
-          setArtists(pc);
+          set_artists(pc);
           free(pc);
         }
 
         if (audio_meta_get_composer(audio,
             &pc) == MEDIA_CONTENT_ERROR_NONE && pc) {
-          setComposer(pc);
+          set_composer(pc);
           free(pc);
         }
 
         if (audio_meta_get_duration(audio, &i) == MEDIA_CONTENT_ERROR_NONE)
-          setDuration(i);
+          set_duration(i);
 
         if (audio_meta_get_copyright(audio,
             &pc) == MEDIA_CONTENT_ERROR_NONE && pc) {
-          setCopyright(pc);
+          set_copyright(pc);
           free(pc);
         }
 
         if (audio_meta_get_track_num(audio,
             &pc) == MEDIA_CONTENT_ERROR_NONE && pc) {
           i = atoi(pc);
-          setTrackNumber(i);
+          set_track_number(i);
           free(pc);
         }
 
         if (audio_meta_get_bit_rate(audio, &i) == MEDIA_CONTENT_ERROR_NONE)
-          setBitrate(i);
+          set_bitrate(i);
       }
       audio_meta_destroy(audio);
     } else if (type == MEDIA_CONTENT_TYPE_OTHERS) {
-      setType("OTHER");
+      set_type("OTHER");
     }
   }
 }
