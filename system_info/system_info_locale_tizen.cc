@@ -101,6 +101,9 @@ bool SysInfoLocale::GetLanguage() {
     return false;
 
   language_ = std::string(language_info);
+  //language_info may be en_US.utf8
+  std::size_t found = language_.find_first_of(".");
+  language_ = language_.substr(0, found);
   free(language_info);
 
   return true;
@@ -113,6 +116,9 @@ bool SysInfoLocale::GetCountry() {
     return false;
 
   country_ = std::string(country_info);
+  //country_info may be en_US.utf8
+  std::size_t found = country_.find_first_of(".");
+  country_ = country_.substr(0, found);
   free(country_info);
 
   return true;
