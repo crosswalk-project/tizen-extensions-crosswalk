@@ -4,9 +4,9 @@
 
 #include "datasync/datasync_manager.h"
 
+#include "common/scope_exit.h"
 #include "datasync/datasync_instance.h"
 #include "datasync/datasync_log.h"
-#include "datasync/datasync_scoped_exit.h"
 #include "datasync/sync_info.h"
 #include "datasync/sync_service_info.h"
 #include "datasync/sync_profile_info.h"
@@ -255,25 +255,43 @@ namespace datasync {
 
 bool DataSyncManager::sync_agent_initialized_ = false;
 
-DataSyncManager::DataSyncManager(DatasyncInstance& parent)
-    : instance_(parent) {
+DataSyncManager::DataSyncManager() {
   // initialize sync agent once per process
-  if (sync_agent_initialized_) {
+  sync_agent_ds_error_e ds_err = SYNC_AGENT_DS_SUCCESS;
+  if (!sync_agent_initialized_) {
+    LogInfo("Initialize the datasync manager");
+    ds_err = sync_agent_ds_init();
+    if (SYNC_AGENT_DS_SUCCESS != ds_err) {
+      LogError("Failed to init oma ds.");
+      return;
+    }
+  }
+  // API was initialized and requires deinitialization
+  sync_agent_initialized_ = true;
+
+  sync_agent_event_error_e err = sync_agent_set_noti_callback(
+      1, [](sync_agent_event_data_s* d, void* ud) {
+           return static_cast<DataSyncManager*>(ud)->StateChangedCallback(d);
+         },
+      static_cast<void*>(this));
+  if (err != SYNC_AGENT_EVENT_SUCCESS) {
+    LogError("Platform error while setting state changed cb");
     return;
   }
 
-  LogInfo("Initialize the datasync manager");
-  sync_agent_ds_error_e ds_err = sync_agent_ds_init();
-  if (SYNC_AGENT_DS_SUCCESS != ds_err) {
-    LogError("Failed to init oma ds.");
-  } else {
-    sync_agent_initialized_ = true;
+  err = sync_agent_set_noti_callback(
+      2, [](sync_agent_event_data_s* d, void* ud) {
+          return static_cast<DataSyncManager*>(ud)->ProgressCallback(d);
+        },
+      static_cast<void*>(this));
+  if (err != SYNC_AGENT_EVENT_SUCCESS) {
+    LogError("Platform error while setting progress cb");
   }
 }
 
 DataSyncManager::~DataSyncManager() {
-// TODO(t.iwanek): sync-agent crashes internally..
-// sync-agent should fix it's deinitialization
+  // TODO(t.iwanek): sync-agent crashes internally..
+  // sync-agent should fix it's deinitialization
 }
 
 ResultOrError<std::string> DataSyncManager::Add(SyncProfileInfo& profile_info) {
@@ -284,7 +302,7 @@ ResultOrError<std::string> DataSyncManager::Add(SyncProfileInfo& profile_info) {
   GList* profile_list = nullptr;
   GList* iter = nullptr;
 
-  ScopedExit exit([&profile_name, &profile_h](){
+  auto exit = common::MakeScopeExit([&profile_name, &profile_h](){
     if (profile_name) {
       free(profile_name);
     }
@@ -405,7 +423,7 @@ ResultOrError<std::string> DataSyncManager::Add(SyncProfileInfo& profile_info) {
 ResultOrError<void> DataSyncManager::Update(SyncProfileInfo& profile_info) {
   ds_profile_h profile_h = nullptr;
 
-  ScopedExit exit([&profile_h]() {
+  auto exit = common::MakeScopeExit([&profile_h]() {
     if (profile_h) {
       sync_agent_ds_free_profile_info(profile_h);
     }
@@ -492,7 +510,7 @@ ResultOrError<void> DataSyncManager::Update(SyncProfileInfo& profile_info) {
 ResultOrError<void> DataSyncManager::Remove(const std::string& id) {
   ds_profile_h profile_h = nullptr;
 
-  ScopedExit exit([&profile_h]() {
+  auto exit = common::MakeScopeExit([&profile_h]() {
     if (profile_h) {
       sync_agent_ds_free_profile_info(profile_h);
     }
@@ -551,7 +569,7 @@ ResultOrError<SyncProfileInfoPtr> DataSyncManager::Get(
   ds_profile_h profile_h = nullptr;
   GList* category_list = nullptr;
 
-  ScopedExit exit([&category_list, &profile_h]() {
+  auto exit = common::MakeScopeExit([&category_list, &profile_h]() {
     if (category_list) {
       g_list_free(category_list);
     }
@@ -653,7 +671,7 @@ ResultOrError<SyncProfileInfoListPtr> DataSyncManager::GetAll() const {
 
   ds_profile_h profile_h = nullptr;
 
-  ScopedExit exit([&profile_list, &profile_h, &iter]() {
+  auto exit = common::MakeScopeExit([&profile_list, &profile_h, &iter]() {
     LogDebug("Free profiles list.");
     for (iter = profile_list; iter != nullptr; iter = g_list_next(iter)) {
       sync_agent_ds_free_profile_info((ds_profile_h)iter->data);
@@ -773,10 +791,11 @@ ResultOrError<SyncProfileInfoListPtr> DataSyncManager::GetAll() const {
 }
 
 ResultOrError<void> DataSyncManager::StartSync(
-    const std::string& profile_id_str, int callback_id) {
+    const std::string& profile_id_str, int callback_id,
+    DatasyncInstance* instance) {
   ds_profile_h profile_h = nullptr;
 
-  ScopedExit exit([&profile_h]() {
+  auto exit = common::MakeScopeExit([&profile_h]() {
     if (profile_h) {
       sync_agent_ds_free_profile_info(profile_h);
     }
@@ -794,26 +813,6 @@ ResultOrError<void> DataSyncManager::StartSync(
         "Platform error while getting a profile");
   }
 
-  err = sync_agent_set_noti_callback(
-      1, [](sync_agent_event_data_s* d, void* ud) {
-           return static_cast<DataSyncManager*>(ud)->StateChangedCallback(d);
-         },
-      static_cast<void*>(this));
-  if (SYNC_AGENT_EVENT_SUCCESS != err) {
-    return Error("Exception",
-        "Platform error while setting state changed cb");
-  }
-
-  err = sync_agent_set_noti_callback(
-      2, [](sync_agent_event_data_s* d, void* ud) {
-           return static_cast<DataSyncManager*>(ud)->ProgressCallback(d);
-         },
-      static_cast<void*>(this));
-  if (SYNC_AGENT_EVENT_SUCCESS != err) {
-    return Error("Exception",
-        "Platform error while setting progress cb");
-  }
-
   ret = sync_agent_ds_start_sync(profile_h);
   if (SYNC_AGENT_DS_SUCCESS != ret && SYNC_AGENT_DS_SYNCHRONISING != ret) {
     return Error("Exception",
@@ -821,7 +820,7 @@ ResultOrError<void> DataSyncManager::StartSync(
   }
 
   if (callback_id >= 0) {
-    callbacks_.insert({profile_id, callback_id});
+    callbacks_.insert({profile_id, std::make_pair(callback_id, instance)});
   }
 
   return {};
@@ -831,7 +830,7 @@ ResultOrError<void> DataSyncManager::StopSync(
     const std::string& profile_id_str) {
   ds_profile_h profile_h = nullptr;
 
-  ScopedExit exit([&profile_h]() {
+  auto exit = common::MakeScopeExit([&profile_h]() {
     if (profile_h) {
       sync_agent_ds_free_profile_info(profile_h);
     }
@@ -857,12 +856,26 @@ ResultOrError<void> DataSyncManager::StopSync(
   return {};
 }
 
+void DataSyncManager::UnregisterInstanceCallbacks(DatasyncInstance* instance) {
+  for (auto it = callbacks_.begin(); it != callbacks_.end(); ) {
+    if (it->second.second == instance)
+      it = callbacks_.erase(it);
+    else
+      ++it;
+  }
+}
+
+DataSyncManager& DataSyncManager::Instance() {
+  static DataSyncManager manager;
+  return manager;
+}
+
 ResultOrError<SyncStatisticsListPtr> DataSyncManager::GetLastSyncStatistics(
     const std::string& profile_str_id) const {
   ds_profile_h profile_h = nullptr;
   GList* statistics_list = nullptr;
 
-  ScopedExit exit([&statistics_list, &profile_h]() {
+  auto exit = common::MakeScopeExit([&statistics_list, &profile_h]() {
     if (statistics_list) {
       g_list_free(statistics_list);
     }
@@ -968,33 +981,34 @@ int DataSyncManager::StateChangedCallback(sync_agent_event_data_s* request) {
                              << ", error: " << error);
 
   if (profile_dir_name) {
-    std::string profileDirNameStr(profile_dir_name);
+    std::string profile_dir_name_str(profile_dir_name);
 
     // truncate the rest
-    profileDirNameStr.resize(4);
-    int profileId = std::stoi(profileDirNameStr);
+    profile_dir_name_str.resize(4);
+    int profile_id = std::stoi(profile_dir_name_str);
 
-    auto it = callbacks_.find(profileId);
+    auto it = callbacks_.find(profile_id);
     if (it != callbacks_.end()) {
-      int callback_id = it->second;
+      int callback_id = it->second.first;
+      DatasyncInstance* instance = it->second.second;
       callbacks_.erase(it);
 
-      if (nullptr == progress) {
+      if (!progress) {
         LogWarning("nullptr status.");
-        instance_.ReplyAsyncOnFailed(callback_id, profileDirNameStr,
+        instance->ReplyAsyncOnFailed(callback_id, profile_dir_name_str,
                                      UNKNOWN_ERR, "Exception",
                                      "nullptr status");
       } else if (0 == strncmp(progress, "DONE", 4)) {
-        instance_.ReplyAsyncOnCompleted(callback_id, profileDirNameStr);
+        instance->ReplyAsyncOnCompleted(callback_id, profile_dir_name_str);
       } else if (0 == strncmp(progress, "CANCEL", 6)) {
-        instance_.ReplyAsyncOnStopped(callback_id, profileDirNameStr);
+        instance->ReplyAsyncOnStopped(callback_id, profile_dir_name_str);
       } else if (0 == strncmp(progress, "ERROR", 5)) {
-        instance_.ReplyAsyncOnFailed(callback_id, profileDirNameStr,
+        instance->ReplyAsyncOnFailed(callback_id, profile_dir_name_str,
                                      UNKNOWN_ERR, "Exception",
                                      "Datasync failed");
       } else {
         LogInfo("Undefined status");
-        instance_.ReplyAsyncOnFailed(callback_id, profileDirNameStr,
+        instance->ReplyAsyncOnFailed(callback_id, profile_dir_name_str,
                                      UNKNOWN_ERR, "Exception",
                                      "Undefined status");
       }
@@ -1056,21 +1070,22 @@ int DataSyncManager::ProgressCallback(sync_agent_event_data_s* request) {
 
     auto it = callbacks_.find(profile_id);
     if (it != callbacks_.end()) {
-      int callback_id = it->second;
+      int callback_id = it->second.first;
+      DatasyncInstance* instance = it->second.second;
 
       if (SYNC_AGENT_SRC_URI_CONTACT == uri) {
-        instance_.ReplyAsyncOnProgress(callback_id, profile_dir_name_str,
+        instance->ReplyAsyncOnProgress(callback_id, profile_dir_name_str,
                                        is_from_server, synced_per_db,
                                        total_per_db,
                                        SyncServiceInfo::CONTACT_SERVICE_TYPE);
       } else if (SYNC_AGENT_SRC_URI_CALENDAR == uri) {
-        instance_.ReplyAsyncOnProgress(callback_id, profile_dir_name_str,
+        instance->ReplyAsyncOnProgress(callback_id, profile_dir_name_str,
                                        is_from_server, synced_per_db,
                                        total_per_db,
                                        SyncServiceInfo::EVENT_SERVICE_TYPE);
       } else {
         LogWarning("Wrong service type");
-        instance_.ReplyAsyncOnFailed(callback_id, profile_dir_name_str,
+        instance->ReplyAsyncOnFailed(callback_id, profile_dir_name_str,
                                      UNKNOWN_ERR, "Exception",
                                      "Wrong service type");
       }

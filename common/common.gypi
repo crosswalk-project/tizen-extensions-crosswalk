@@ -69,6 +69,7 @@
       'extension.cc',
       'extension.h',
       'picojson.h',
+      'scope_exit.h',
       'utils.h',
       'XW_Extension.h',
       'XW_Extension_EntryPoints.h',

@@ -9,6 +9,7 @@
 
 #include <map>
 #include <string>
+#include <utility>
 
 #include "common/utils.h"
 #include "datasync/datasync_error.h"
@@ -19,11 +20,11 @@ namespace datasync {
 
 class DatasyncInstance;
 
-class DataSyncManager {
+class DataSyncManager final {
  public:
-  typedef std::map<int, int> ProfileIdToCallbackIdMap;
+  typedef std::pair<int, DatasyncInstance*> CallbackPair;
+  typedef std::map<int, CallbackPair> ProfileIdToCallbackMap;
 
-  explicit DataSyncManager(DatasyncInstance& parent);
   ~DataSyncManager();
 
   ResultOrError<std::string> Add(SyncProfileInfo& profile_info);
@@ -39,16 +40,21 @@ class DataSyncManager {
   ResultOrError<SyncStatisticsListPtr> GetLastSyncStatistics(
       const std::string& profile_str_id) const;
 
-  ResultOrError<void> StartSync(
-      const std::string& profile_id_str, int callback_id);
+  ResultOrError<void> StartSync(const std::string& profile_id_str,
+      int callback_id, DatasyncInstance* instance);
   ResultOrError<void> StopSync(const std::string& profile_id_str);
 
+  void UnregisterInstanceCallbacks(DatasyncInstance* instance);
+
+  static DataSyncManager& Instance();
+
  private:
+  DataSyncManager();
+
   int StateChangedCallback(sync_agent_event_data_s* request);
   int ProgressCallback(sync_agent_event_data_s* request);
 
-  DatasyncInstance& instance_;
-  ProfileIdToCallbackIdMap callbacks_;
+  ProfileIdToCallbackMap callbacks_;
 
   static bool sync_agent_initialized_;
 
