@@ -197,10 +197,7 @@ void SystemInfoInstance::HandleGetCapabilities() {
   if (system_info_get_platform_string(
       "tizen.org/feature/input.keyboard.layout",
       &s) == SYSTEM_INFO_ERROR_NONE) {
-    if (s != NULL && s != "none")
-      o["inputKeyboardLayout"] = picojson::value(true);
-    else
-      o["inputKeyboardLayout"] = picojson::value(false);
+    o["inputKeyboardLayout"] = picojson::value(s != NULL && s != "none");
     free(s);
   }
 
