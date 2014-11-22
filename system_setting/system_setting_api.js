@@ -5,7 +5,8 @@ var systemSettingTypes = {
   'HOME_SCREEN': 0,
   'LOCK_SCREEN': 1,
   'INCOMING_CALL': 2,
-  'NOTIFICATION_EMAIL': 3
+  'NOTIFICATION_EMAIL': 3,
+  'LOCALE' : 4
 };
 var _callbacks = {};
 var _next_reply_id = 0;

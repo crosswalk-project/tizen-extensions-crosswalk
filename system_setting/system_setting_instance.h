@@ -22,6 +22,7 @@ class SystemSettingInstance : public common::Instance {
     LOCK_SCREEN = 1,
     INCOMING_CALL = 2,
     NOTIFICATION_EMAIL = 3,
+    LOCALE = 4
   };
 
   // common::Instance implementation.
