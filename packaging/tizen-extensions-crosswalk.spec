@@ -8,7 +8,7 @@
 %define _audiosystem_demo_package tizen-extensions-crosswalk-audiosystem-demo
 
 Name:       tizen-extensions-crosswalk
-Version:    0.119
+Version:    0.120
 Release:    0
 License:    BSD-3-Clause and Apache-2.0
 Group:      Development/Libraries
