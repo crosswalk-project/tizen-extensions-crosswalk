@@ -37,7 +37,7 @@ void SystemSettingInstance::OnPropertyHandled(const char* reply_id,
   o["_reply_id"] = picojson::value(reply_id);
   if (value)
     o["_file"] = picojson::value(value);
-  o["_error"] = picojson::value(static_cast<double>(ret));
+  o["_error"] = picojson::value(ret != 0);
 
   picojson::value v(o);
   PostMessage(v.serialize().c_str());

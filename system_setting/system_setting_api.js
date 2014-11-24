@@ -19,10 +19,10 @@ extension.setMessageListener(function(message) {
     delete m._reply_id;
     delete m._error;
     delete _callbacks[_reply_id];
-    if (_error === 0) {
+    if (!_error) {
       handler[0](m._file);
     } else if (handler[1]) {
-      handler[1](new tizen.WebAPIError(_error));
+      handler[1](new tizen.WebAPIError(tizen.WebAPIException.UNKNOWN_ERR));
     }
     delete m._file;
   } else {
