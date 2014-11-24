@@ -16,20 +16,6 @@
 
 #include "common/picojson.h"
 
-namespace amb {
-
-template <>
-struct traits<GDBusConnection> {
-  struct delete_functor {
-    void operator()(GDBusConnection* p) const {
-      if (p != nullptr)
-        g_dbus_connection_close_sync(p, nullptr, nullptr);
-    }
-  };
-};
-
-}  // namespace amb
-
 namespace common {
 
 class Instance;
