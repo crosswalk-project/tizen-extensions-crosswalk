@@ -59,6 +59,7 @@ exports = g_media_renderer_manager;
 var g_media_renderer_manager_listeners = {};
 g_media_renderer_manager_listeners['rendererfound'] = [];
 g_media_renderer_manager_listeners['rendererlost'] = [];
+var g_media_renderers = [];
 
 extension.setMessageListener(function(json) {
   var msg = JSON.parse(json);
@@ -72,18 +73,19 @@ extension.setMessageListener(function(json) {
     case 'getRenderersCompleted':
       handleGetRenderersCompleted(msg);
       break;
-    case 'openURICompleted':
-    case 'prefetchURICompleted':
-    case 'cancelCompleted':
     case 'playCompleted':
     case 'pauseCompleted':
     case 'stopCompleted':
     case 'nextCompleted':
     case 'previousCompleted':
-    case 'muteCompleted':
+    case 'setMuteCompleted':
     case 'setSpeedCompleted':
     case 'setVolumeCompleted':
     case 'gotoTrackCompleted':
+      handleStatusChanged(msg);
+    case 'openURICompleted':
+    case 'prefetchURICompleted':
+    case 'cancelCompleted':
       handleAsyncCallSuccess(msg);
       break;
     case 'asyncCallError':
@@ -96,18 +98,35 @@ extension.setMessageListener(function(json) {
 
 function handleMediaRendererFound(msg) {
   var event = new CustomEvent('rendererfound');
-  _addConstProperty(event, 'renderer', new MediaRenderer(msg.renderer));
+  g_media_renderers[msg.renderer.id] = new MediaRenderer(msg.renderer);
+  _addConstProperty(event, 'renderer', g_media_renderers[msg.renderer.id]);
   g_media_renderer_manager.dispatchEvent(event);
   if (g_media_renderer_manager.onrendererfound)
     g_media_renderer_manager.onrendererfound(event);
 }
 
 function handleMediaRendererLost(msg) {
+  g_media_renderers[msg.rendererId] = null;
   var event = new CustomEvent('rendererlost');
   _addConstProperty(event, 'id', msg.rendererId);
   g_media_renderer_manager.dispatchEvent(event);
   if (g_media_renderer_manager.onrendererlost)
     g_media_renderer_manager.onrendererlost(event);
+}
+
+function handleStatusChanged(msg) {
+  var event = new CustomEvent('statuschanged');
+  _addConstPropertyFromObject(event, 'playbackStatus', msg.renderer.controller);
+  _addConstPropertyFromObject(event, 'muted', msg.renderer.controller);
+  _addConstPropertyFromObject(event, 'volume', msg.renderer.controller);
+  _addConstPropertyFromObject(event, 'track', msg.renderer.controller);
+  _addConstPropertyFromObject(event, 'speed', msg.renderer.controller);
+
+  var renderer = g_media_renderers[msg.renderer.id];
+  renderer.controller.dispatchEvent(event);
+  if (renderer.controller.onstatuschanged) {
+    renderer.controller.onstatuschanged(event);
+  }
 }
 
 function handleAsyncCallSuccess(msg) {
@@ -131,18 +150,18 @@ function MediaRendererManager() {
   this.onrendererlost = null;
 }
 
-function isValidType(type) {
+function isValidMediaRendererManagerEventType(type) {
   return (type === 'rendererlost' || type === 'rendererfound');
 }
 
 MediaRendererManager.prototype.addEventListener = function(type, callback) {
-  if (callback != null && isValidType(type))
+  if (callback != null && isValidMediaRendererManagerEventType(type))
     if (~~g_media_renderer_manager_listeners[type].indexOf(callback))
       g_media_renderer_manager_listeners[type].push(callback);
 };
 
 MediaRendererManager.prototype.removeEventListener = function(type, callback) {
-  if (callback == null || !isValidType(type))
+  if (callback == null || !isValidMediaRendererManagerEventType(type))
     return;
 
   var index = g_media_renderer_manager_listeners[type].indexOf(callback);
@@ -153,7 +172,7 @@ MediaRendererManager.prototype.removeEventListener = function(type, callback) {
 MediaRendererManager.prototype.dispatchEvent = function(event) {
   var handled = true;
 
-  if (typeof event !== 'object' || !isValidType(event.type))
+  if (typeof event !== 'object' || !isValidMediaRendererManagerEventType(event.type))
     return false;
 
   g_media_renderer_manager_listeners[event.type].forEach(function(callback) {
@@ -232,6 +251,41 @@ MediaRenderer.prototype.cancel = function() {
 // MediaController
 ///////////////////////////////////////////////////////////////////////////////
 
+function isValidMediaControllerEventType(type) {
+  return (type === 'statuschanged');
+}
+
+MediaController.prototype.addEventListener = function(type, callback) {
+  if (callback != null &&
+      isValidMediaControllerEventType(type) &&
+      ~~this.media_controller_listeners[type].indexOf(callback))
+    this.media_controller_listeners[type].push(callback);
+};
+
+MediaController.prototype.removeEventListener = function(type, callback) {
+  if (callback == null || !isValidMediaControllerEventType(type))
+    return;
+
+  var index = this.media_controller_listeners[type].indexOf(callback);
+  if (~index)
+    this.media_controller_listeners[type].slice(index, 1);
+};
+
+MediaController.prototype.dispatchEvent = function(event) {
+  var handled = true;
+
+  if (typeof event !== 'object' || !isValidMediaControllerEventType(event.type))
+    return false;
+
+  this.media_controller_listeners[event.type].forEach(function(callback) {
+    var res = callback(event);
+    if (!res)
+      handled = false;
+  });
+
+  return handled;
+};
+
 function MediaController(obj) {
   _addConstPropertyFromObject(this, 'id', obj);
   _addConstPropertyFromObject(this, 'playbackStatus', obj);
@@ -241,6 +295,8 @@ function MediaController(obj) {
   _addConstPropertyFromObject(this, 'speed', obj);
   _addConstPropertyFromObject(this, 'playSpeeds', obj);
   this.onstatuschanged = null;
+  this.media_controller_listeners = {};
+  this.media_controller_listeners['statuschanged'] = [];
 }
 
 MediaController.prototype.play = function() {
