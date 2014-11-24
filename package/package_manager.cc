@@ -90,23 +90,10 @@ picojson::value* PackageManager::InstallPackage(
 picojson::value* PackageManager::UnInstallPackage(
     const char* pkg_id,
     double callback_id) {
-  // FIXME(babu): Carshes on calling package_manager_request_uninstall()
-  // if package is not installed. API must be fixed before we remove this.
-  pkgmgr_pkginfo_h handle;
-  uid_t uid = getuid();
-  int ret = (uid != GLOBAL_USER) ?
-      pkgmgr_pkginfo_get_usr_pkginfo(pkg_id, uid, &handle) :
-      pkgmgr_pkginfo_get_pkginfo(pkg_id, &handle);
-
-  if (ret != PKGMGR_R_OK)
-    return CreateResultMessage(WebApiAPIErrors::UNKNOWN_ERR);
-
-  pkgmgr_pkginfo_destroy_pkginfo(handle);
-
   int request_id;
-  ret = package_manager_request_uninstall(request_handle_,
-                                          pkg_id,
-                                          &request_id);
+  int ret = package_manager_request_uninstall(request_handle_,
+                                              pkg_id,
+                                              &request_id);
   if (ret != PACKAGE_MANAGER_ERROR_NONE)
     return CreateResultMessage(WebApiAPIErrors::UNKNOWN_ERR);
 
