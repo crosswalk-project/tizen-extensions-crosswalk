@@ -147,7 +147,7 @@ exports.getAppInfo = function(appId) {
 
 exports.getAppsInfo = function(onsuccess, onerror) {
   if ((typeof onsuccess !== 'function') ||
-      (onerror && typeof onerror !== 'function'))
+      (arguments.length > 1 && typeof onerror !== 'function'))
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
 
   var callbackId = asyncCallbacks.setup(function(result) {
@@ -180,7 +180,7 @@ exports.getAppContext = function(contextId) {
 
 exports.getAppsContext = function(onsuccess, onerror) {
   if ((typeof onsuccess !== 'function') ||
-      (onerror && typeof onerror !== 'function'))
+      (arguments.length > 1 && typeof onerror !== 'function'))
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
 
   var callbackId = asyncCallbacks.setup(function(result) {
