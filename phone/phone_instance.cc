@@ -81,10 +81,10 @@ void PhoneInstance::HandleMessage(const char* msg) {
         std::string("CallChanged"), v);
   } else if (cmd == "AddCallHistoryEntryAddedListener") {
     HandleAddListener(call_history_entry_added_listener_id_,
-        std::string("CallHistoryEntryAddedChanged"), v);
+        std::string("CallHistoryEntryAdded"), v);
   } else if (cmd == "RemoveCallHistoryEntryAddedListener") {
     HandleRemoveListener(call_history_entry_added_listener_id_,
-        std::string("CallHistoryEntryAddedChanged"), v);
+        std::string("CallHistoryEntryAdded"), v);
   } else if (cmd == "AddCallHistoryChangedListener") {
     HandleAddListener(call_history_changed_listener_id_,
         std::string("CallHistoryChanged"), v);
