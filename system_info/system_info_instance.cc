@@ -87,7 +87,7 @@ void SystemInfoInstance::HandleGetPropertyValue(const picojson::value& input,
 
   system_info::SetPicoJsonObjectValue(error, "message", picojson::value(""));
   std::string prop = input.get("prop").to_str();
-  classes_iterator it= classes_.find(prop);
+  classes_iterator it = classes_.find(prop);
 
   if (it == classes_.end()) {
     system_info::SetPicoJsonObjectValue(error, "message",
@@ -108,7 +108,7 @@ void SystemInfoInstance::HandleGetPropertyValue(const picojson::value& input,
 
 void SystemInfoInstance::HandleStartListening(const picojson::value& input) {
   std::string prop = input.get("prop").to_str();
-  classes_iterator it= classes_.find(prop);
+  classes_iterator it = classes_.find(prop);
 
   if (it != classes_.end()) {
     (it->second).AddListener(this);
@@ -117,7 +117,7 @@ void SystemInfoInstance::HandleStartListening(const picojson::value& input) {
 
 void SystemInfoInstance::HandleStopListening(const picojson::value& input) {
   std::string prop = input.get("prop").to_str();
-  classes_iterator it= classes_.find(prop);
+  classes_iterator it = classes_.find(prop);
 
   if (it != classes_.end()) {
     (it->second).RemoveListener(this);

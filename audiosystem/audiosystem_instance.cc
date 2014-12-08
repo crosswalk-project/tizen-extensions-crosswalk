@@ -49,7 +49,7 @@ void AudioSystemInstance::InitContext() {
     context_.reset(new AudioSystemContext());
 
   if (!t_)
-    t_= new std::thread(AudioSystemInstance::RunLoop);
+    t_ = new std::thread(AudioSystemInstance::RunLoop);
 }
 
 // static
