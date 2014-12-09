@@ -4,8 +4,6 @@
 
 #include "bluetooth/bluetooth_instance.h"
 
-#include "common/picojson.h"
-
 static void getPropertyValue(const char* key, GVariant* value,
     picojson::value::object& o) {
   if (!strcmp(key, "Class")) {

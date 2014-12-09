@@ -5,6 +5,7 @@
 #include "bluetooth/bluetooth_instance.h"
 
 #include "common/picojson.h"
+#include "tizen/tizen.h"
 
 BluetoothInstance::BluetoothInstance() {
   PlatformInitialize();
@@ -85,11 +86,11 @@ void BluetoothInstance::OnDiscoveryStarted(GObject*, GAsyncResult* res) {
   o["cmd"] = picojson::value("");
   o["reply_id"] = picojson::value(discover_callback_id_);
 
-  int errorCode = 0;
+  int errorCode = NO_ERROR;
   if (!result) {
     g_printerr("Error discovering: %s\n", error->message);
     g_error_free(error);
-    errorCode = 1;
+    errorCode = UNKNOWN_ERR;
   }
 
   o["error"] = picojson::value(static_cast<double>(errorCode));
@@ -117,7 +118,7 @@ void BluetoothInstance::OnDiscoveryStopped(GObject* source, GAsyncResult* res) {
   o["cmd"] = picojson::value("");
   o["reply_id"] = picojson::value(stop_discovery_callback_id_);
   stop_discovery_callback_id_.clear();
-  o["error"] = picojson::value(static_cast<double>(0));
+  o["error"] = picojson::value(static_cast<double>(NO_ERROR));
   picojson::value v(o);
   InternalPostMessage(v);
 }
@@ -149,7 +150,7 @@ void BluetoothInstance::AdapterInfoToValue(picojson::value::object& o) {
   bool visible = (adapter_info_["Discoverable"] == "true") ? true : false;
   o["visible"] = picojson::value(visible);
 
-  o["error"] = picojson::value(static_cast<double>(0));
+  o["error"] = picojson::value(static_cast<double>(NO_ERROR));
 }
 
 void BluetoothInstance::AdapterSendGetDefaultAdapterReply() {
