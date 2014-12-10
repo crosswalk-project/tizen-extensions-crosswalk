@@ -48,7 +48,6 @@
             'audiosystem/audiosystem.gyp:*',
             'sso/sso.gyp:*',
             'telephony/telephony.gyp:*',
-            'vehicle/vehicle.gyp:*',
           ],
         }],
       ],
