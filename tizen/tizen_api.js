@@ -1,4 +1,5 @@
 // Copyright (c) 2013 Intel Corporation. All rights reserved.
+// Copyright (c) 2014 Samsung Electronics Co., Ltd All Rights Reserved
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -209,13 +210,22 @@ exports.AttributeRangeFilter = function(attrName, start, end) {
     throw new exports.WebAPIException(exports.WebAPIException.TYPE_MISMATCH_ERR);
   }
 
-  Object.defineProperties(this, {
-    'attributeName': { writable: true, enumerable: true, value: attrName },
-    'initialValue': {
-      writable: true,
-      enumerable: true,
-      value: start === undefined ? null : start },
-    'endValue': { writable: true, enumerable: true, value: end === undefined ? null : end }
+  var attributeName_ = attrName;
+
+  Object.defineProperty(this, 'attributeName', {
+    enumerable: true,
+    get: function() { return attributeName_; },
+    set: function(value) {
+      if (value !== null) attributeName_ = value;
+    }
+  });
+  Object.defineProperty(this, 'initialValue', {
+    writable: true,
+    enumerable: true,
+    value: start === undefined ? null : start
+  });
+  Object.defineProperty(this, 'endValue', {
+    writable: true, enumerable: true, value: end === undefined ? null : end
   });
 };
 exports.AttributeRangeFilter.prototype = new exports.AbstractFilter();
