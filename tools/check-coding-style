@@ -26,7 +26,7 @@ FILTERS="-readability/streams,-runtime/references"
 
 # TODO(cmarcelo): Skipping directories so we can enable style
 # gradually, since it wasn't enforced before.
-cpplint.py --filter="$FILTERS" $(find . \
+cpplint.py --root=src --filter="$FILTERS" $(find . \
                                ! -path './out*' ! -path './.git*' \
                                ! -path './demos' ! -path './examples' \
                                ! -path './packaging' \
