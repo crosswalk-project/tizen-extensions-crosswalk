@@ -6,18 +6,18 @@
 
 #include <sys/types.h>
 #include <sys/socket.h>
-
-// FIXME: C++0x removed support for typeof. bluetooth.h requires it, so until
-// bluetooth.h is fixed to use something future safe, use the GCC intrinsic
-// __typeof__ as replacement.
-#define typeof(x) __typeof__(x)
-
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/rfcomm.h>
 
 #include <list>
 
 #include "common/picojson.h"
+#include "tizen/tizen.h"
+
+// FIXME: C++0x removed support for typeof. bluetooth.h requires it, so until
+// bluetooth.h is fixed to use something future safe, use the GCC intrinsic
+// __typeof__ as replacement.
+#define typeof(x) __typeof__(x)
 
 namespace {
 
@@ -319,7 +319,7 @@ void BluetoothInstance::OnGotAdapterProperties(GObject*, GAsyncResult* res) {
 
     o["cmd"] = picojson::value("");
     o["reply_id"] = picojson::value(callbacks_map_["Powered"]);
-    o["error"] = picojson::value(static_cast<double>(0));
+    o["error"] = picojson::value(static_cast<double>(NO_ERROR));
 
     InternalPostMessage(picojson::value(o));
 
@@ -349,9 +349,9 @@ void BluetoothInstance::OnAdapterPropertySet(
     g_error_free(error);
     // No matter the error info here, BlueZ4's documentation says the only
     // error that can be raised here is org.bluez.Error.InvalidArguments.
-    o["error"] = picojson::value(static_cast<double>(1));
+    o["error"] = picojson::value(static_cast<double>(INVALID_VALUES_ERR));
   } else {
-    o["error"] = picojson::value(static_cast<double>(0));
+    o["error"] = picojson::value(static_cast<double>(NO_ERROR));
   }
 
   InternalPostMessage(picojson::value(o));
@@ -452,7 +452,7 @@ void BluetoothInstance::OnBluetoothServiceVanished(GDBusConnection* connection,
 
 void BluetoothInstance::AdapterSetPowered(const picojson::value& msg) {
   bool powered = msg.get("value").get<bool>();
-  int error = 0;
+  int error = NO_ERROR;
 
   OnAdapterPropertySetData* property_set_callback_data_ =
       new OnAdapterPropertySetData;
@@ -527,13 +527,13 @@ void BluetoothInstance::OnAdapterCreateBonding(GObject*, GAsyncResult* res) {
   picojson::value::object o;
   o["cmd"] = picojson::value("");
   o["reply_id"] = picojson::value(callbacks_map_["CreateBonding"]);
-  o["error"] = picojson::value(static_cast<double>(0));
+  o["error"] = picojson::value(static_cast<double>(NO_ERROR));
 
   if (!result) {
     g_printerr("\n\nError on creating adapter bonding: %s\n", error->message);
     g_error_free(error);
 
-    o["error"] = picojson::value(static_cast<double>(1));
+    o["error"] = picojson::value(static_cast<double>(UNKNOWN_ERR));
   } else {
     g_variant_unref(result);
   }
@@ -549,13 +549,13 @@ void BluetoothInstance::OnAdapterDestroyBonding(GObject*, GAsyncResult* res) {
   picojson::value::object o;
   o["cmd"] = picojson::value("");
   o["reply_id"] = picojson::value(callbacks_map_["DestroyBonding"]);
-  o["error"] = picojson::value(static_cast<double>(0));
+  o["error"] = picojson::value(static_cast<double>(NO_ERROR));
 
   if (!result) {
     g_printerr("\n\nError on destroying adapter bonding: %s\n", error->message);
     g_error_free(error);
 
-    o["error"] = picojson::value(static_cast<double>(2));
+    o["error"] = picojson::value(static_cast<double>(UNKNOWN_ERR));
   } else {
     g_variant_unref(result);
   }
@@ -576,7 +576,7 @@ void BluetoothInstance::OnFoundDevice(GObject*, GAsyncResult* res) {
 
     o["cmd"] = picojson::value("");
     o["reply_id"] = picojson::value(callbacks_map_["DestroyBonding"]);
-    o["error"] = picojson::value(static_cast<double>(1));
+    o["error"] = picojson::value(static_cast<double>(UNKNOWN_ERR));
 
     InternalPostMessage(picojson::value(o));
     callbacks_map_.erase("DestroyBonding");
@@ -808,7 +808,7 @@ void BluetoothInstance::OnServiceAddRecord(GObject* object, GAsyncResult* res) {
   o["reply_id"] = picojson::value(callbacks_map_["RFCOMMListen"]);
 
   if (!result) {
-    o["error"] = picojson::value(static_cast<double>(1));
+    o["error"] = picojson::value(static_cast<double>(UNKNOWN_ERR));
 
     close(pending_listen_socket_);
 
@@ -833,7 +833,7 @@ void BluetoothInstance::OnServiceAddRecord(GObject* object, GAsyncResult* res) {
 
     g_variant_get(result, "(u)", &handle);
 
-    o["error"] = picojson::value(static_cast<double>(0));
+    o["error"] = picojson::value(static_cast<double>(NO_ERROR));
     o["server_fd"] = picojson::value(static_cast<double>(sk));
     o["sdp_handle"] = picojson::value(static_cast<double>(handle));
     o["channel"] = picojson::value(static_cast<double>(rfcomm_get_channel(sk)));
@@ -972,7 +972,7 @@ void BluetoothInstance::HandleCloseSocket(const picojson::value& msg) {
   picojson::value::object o;
   o["cmd"] = picojson::value("");
   o["reply_id"] = msg.get("reply_id");
-  o["error"] = picojson::value(static_cast<double>(0));
+  o["error"] = picojson::value(static_cast<double>(NO_ERROR));
 
   picojson::value v(o);
   InternalPostMessage(v);
@@ -985,9 +985,9 @@ void BluetoothInstance::OnServiceRemoveRecord(
   picojson::value::object o;
 
   if (!result) {
-    o["error"] = picojson::value(static_cast<double>(1));
+    o["error"] = picojson::value(static_cast<double>(UNKNOWN_ERR));
   } else {
-    o["error"] = picojson::value(static_cast<double>(0));
+    o["error"] = picojson::value(static_cast<double>(NO_ERROR));
     g_variant_unref(result);
   }
 

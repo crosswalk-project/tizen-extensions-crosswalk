@@ -13,6 +13,17 @@ var postMessage = function(msg, callback) {
   extension.postMessage(JSON.stringify(msg));
 };
 
+function checkPostError(msg, errorCallback) {
+  if (msg.error == tizen.WebAPIException.NO_ERROR)
+    return false;
+
+  if (errorCallback) {
+    var error = new tizen.WebAPIError(msg.error);
+    errorCallback(error);
+  }
+  return true;
+}
+
 extension.setMessageListener(function(json) {
   var msg = JSON.parse(json);
   if (msg.cmd == 'BondedDevice')
@@ -33,8 +44,7 @@ extension.setMessageListener(function(json) {
     handleSocketHasData(msg);
   else if (msg.cmd == 'SocketClosed')
     handleSocketClosed(msg);
-
-  if (msg.reply_id) { // Then we are dealing with postMessage return.
+  else { // Then we are dealing with postMessage return.
     var reply_id = msg.reply_id;
     var callback = _callbacks[reply_id];
     if (callback) {
@@ -399,7 +409,7 @@ exports.getDefaultAdapter = function() {
 
     var result = JSON.parse(extension.internal.sendSyncMessage(JSON.stringify(msg)));
 
-    if (!result.error) {
+    if (result.error != tizen.WebAPIException.NO_ERROR) {
       _addConstProperty(defaultAdapter, 'name', result.name);
       _addConstProperty(defaultAdapter, 'address', result.address);
       _addConstProperty(defaultAdapter, 'powered', result.powered);
@@ -407,6 +417,7 @@ exports.getDefaultAdapter = function() {
 
       if (result.hasOwnProperty('address') && result.address != '')
         adapter.isReady = true;
+
     } else {
       adapter.isReady = false;
       throw new tizen.WebAPIException(tizen.WebAPIException.UNKNOWN_ERR);
@@ -431,6 +442,12 @@ BluetoothAdapter.prototype.setName = function(name, successCallback, errorCallba
   if (adapter.checkServiceAvailability(errorCallback))
     return;
 
+  if (name === defaultAdapter.name) {
+    if (successCallback)
+      successCallback();
+    return;
+  }
+
   var msg = {
     'cmd': 'SetAdapterProperty',
     'property': 'Name',
@@ -438,16 +455,10 @@ BluetoothAdapter.prototype.setName = function(name, successCallback, errorCallba
   };
 
   postMessage(msg, function(result) {
-    if (result.error != 0) {
-      if (errorCallback) {
-        var error = new tizen.WebAPIError(tizen.WebAPIException.UNKNOWN_ERR);
-        if (result.error == 1)
-          error = new tizen.WebAPIError(tizen.WebAPIException.INVALID_VALUES_ERR);
-        errorCallback(error);
-      }
-      throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+    if (checkPostError(result, errorCallback))
       return;
-    }
+
+    handleAdapterUpdated(result);
 
     if (successCallback)
       successCallback();
@@ -459,8 +470,9 @@ BluetoothAdapter.prototype.setPowered = function(state, successCallback, errorCa
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
   }
 
-  if ((state === defaultAdapter.powered) && successCallback) {
-    successCallback();
+  if (state === defaultAdapter.powered) {
+    if (successCallback)
+      successCallback();
     return;
   }
 
@@ -471,15 +483,10 @@ BluetoothAdapter.prototype.setPowered = function(state, successCallback, errorCa
   };
 
   postMessage(msg, function(result) {
-    if (result.error) {
-      if (errorCallback) {
-        var error = new tizen.WebAPIError(tizen.WebAPIException.INVALID_VALUES_ERR);
-        errorCallback(error);
-        return;
-      }
+    if (checkPostError(result, errorCallback))
+      return;
 
-      throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
-    }
+    handleAdapterUpdated(result);
 
     if (successCallback)
       successCallback();
@@ -505,16 +512,10 @@ BluetoothAdapter.prototype.setVisible = function(mode, successCallback, errorCal
   };
 
   postMessage(msg, function(result) {
-    if (result.error != 0) {
-      if (errorCallback) {
-        var error = new tizen.WebAPIError(tizen.WebAPIException.UNKNOWN_ERR);
-        if (result.error == 1)
-          error = new tizen.WebAPIError(tizen.WebAPIException.INVALID_VALUES_ERR);
-        errorCallback(error);
-      }
-      throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+    if (checkPostError(result, errorCallback))
       return;
-    }
+
+    handleAdapterUpdated(result);
 
     if (successCallback)
       successCallback();
@@ -538,13 +539,8 @@ BluetoothAdapter.prototype.discoverDevices = function(discoverySuccessCallback, 
     'cmd': 'DiscoverDevices'
   };
   postMessage(msg, function(result) {
-    if (result.error) {
-      if (errorCallback) {
-        var error = new tizen.WebAPIError(tizen.WebAPIException.UNKNOWN_ERR);
-        errorCallback(error);
-      }
+    if (checkPostError(result, errorCallback))
       return;
-    }
 
     adapter.discovery_callbacks = discoverySuccessCallback;
 
@@ -565,13 +561,8 @@ BluetoothAdapter.prototype.stopDiscovery = function(successCallback, errorCallba
     'cmd': 'StopDiscovery'
   };
   postMessage(msg, function(result) {
-    if (result.error) {
-      if (errorCallback) {
-        var error = new tizen.WebAPIError(tizen.WebAPIException.UNKNOWN_ERR);
-        errorCallback(error);
-      }
+    if (checkPostError(result, errorCallback))
       return;
-    }
 
     if (successCallback)
       successCallback();
@@ -643,15 +634,8 @@ BluetoothAdapter.prototype.createBonding = function(address, successCallback, er
   postMessage(msg, function(result) {
     var cb_device;
 
-    if (result.error) {
-      if (errorCallback) {
-        var error = new tizen.WebAPIError(tizen.WebAPIException.INVALID_VALUES_ERR);
-        errorCallback(error);
-      }
-
-      throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+    if (checkPostError(result, errorCallback))
       return;
-    }
 
     if (successCallback) {
       var known_devices = adapter.known_devices;
@@ -701,17 +685,8 @@ BluetoothAdapter.prototype.destroyBonding = function(address, successCallback, e
   postMessage(msg, function(result) {
     var cb_device;
 
-    if (result.error != 0) {
-      if (errorCallback) {
-        var error_type = (result.error == 1) ?
-            tizen.WebAPIException.NOT_FOUND_ERR : tizen.WebAPIException.UNKNOWN_ERR;
-        var error = new tizen.WebAPIError(error_type);
-        errorCallback(error);
-      }
-
-      throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+    if (checkPostError(result, errorCallback))
       return;
-    }
 
     if (successCallback) {
       var known_devices = adapter.known_devices;
@@ -749,15 +724,8 @@ BluetoothAdapter.prototype.registerRFCOMMServiceByUUID =
   };
 
   postMessage(msg, function(result) {
-    if (result.error != 0) {
-      if (errorCallback) {
-        var error = new tizen.WebAPIError(tizen.WebAPIException.UNKNOWN_ERR);
-        if (result.error == 1)
-          error = new tizen.WebAPIError(tizen.WebAPIException.INVALID_VALUES_ERR);
-        errorCallback(error);
-      }
+    if (checkPostError(result, errorCallback))
       return;
-    }
 
     var service = new BluetoothServiceHandler(uuid.toUpperCase(), name, result);
     adapter.service_handlers.push(service);
@@ -898,16 +866,8 @@ BluetoothDevice.prototype.connectToServiceByUUID =
   };
 
   postMessage(msg, function(result) {
-    if (result.error != 0) {
-      if (errorCallback) {
-        var error = new tizen.WebAPIError(tizen.WebAPIException.UNKNOWN_ERR);
-        if (result.error == 1)
-          error = new tizen.WebAPIError(tizen.WebAPIException.INVALID_VALUES_ERR);
-        errorCallback(error);
-      }
-      throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+    if (checkPostError(result, errorCallback))
       return;
-    }
 
     var i = adapter.indexOfDevice(adapter.known_devices, result.peer);
     var socket = new BluetoothSocket(result.uuid, adapter.known_devices[i], result);
@@ -998,7 +958,7 @@ BluetoothSocket.prototype.close = function() {
   };
 
   postMessage(msg, function(result) {
-    if (result.error) {
+    if (checkPostError(result, errorCallback)) {
       console.log('Can\'t close socket (' + this.socket_fd + ').');
       throw new tizen.WebAPIException(tizen.WebAPIException.UNKNOWN_ERR);
       return;
@@ -1023,11 +983,12 @@ BluetoothSocket.prototype.close = function() {
 
 function BluetoothClass() {}
 BluetoothClass.prototype.hasService = function(service) {
-  for (var i = 0; i < this.services.length; i++)
+  for (var i = 0; i < this.services.length; i++) {
     if (this.services[i] === service)
       return true;
+  }
 
-    return false;
+  return false;
 };
 
 function BluetoothServiceHandler(name, uuid, msg) {
@@ -1055,15 +1016,8 @@ BluetoothServiceHandler.prototype.unregister = function(successCallback, errorCa
   };
 
   postMessage(msg, function(result) {
-    if (result.error) {
-      if (errorCallback) {
-        var error = new tizen.WebAPIError(tizen.WebAPIException.UNKNOWN_ERR);
-        errorCallback(error);
-      }
-
-      throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
+    if (checkPostError(result, errorCallback))
       return;
-    }
 
     for (var i in adapter.service_handlers) {
       var service = adapter.service_handlers[i];
@@ -1102,12 +1056,9 @@ BluetoothHealthApplication.prototype.unregister =
   var app = this;
 
   postMessage(msg, function(result) {
-    if (result.error) {
-      if (errorCallback) {
-        var error = new tizen.WebAPIError(tizen.WebAPIException.UNKNOWN_ERR);
-        errorCallback(error);
-      }
-    }
+    if (checkPostError(result, errorCallback))
+      return;
+
     if (app.app_id)
       delete adapter.health_apps[app.app_id];
 
@@ -1131,13 +1082,8 @@ BluetoothHealthProfileHandler.prototype.registerSinkApplication =
   };
 
   postMessage(msg, function(result) {
-    if (result.error) {
-      if (errorCallback) {
-        var error = new tizen.WebAPIError(tizen.WebAPIException.UNKNOWN_ERR);
-        errorCallback(error);
-      }
+    if (checkPostError(result, errorCallback))
       return;
-    }
 
     if (successCallback) {
       var application = new BluetoothHealthApplication(dataType, name, result);
@@ -1163,15 +1109,8 @@ BluetoothHealthProfileHandler.prototype.connectToSource =
   };
 
   postMessage(msg, function(result) {
-    if (result.error != 0) {
-      if (errorCallback) {
-        var error = new tizen.WebAPIError(tizen.WebAPIException.UNKNOWN_ERR);
-        if (result.error == 1)
-          error = new tizen.WebAPIError(tizen.WebAPIException.INVALID_VALUES_ERR);
-        errorCallback(error);
-      }
+    if (checkPostError(result, errorCallback))
       return;
-    }
 
     if (successCallback) {
       var i = adapter.indexOfDevice(adapter.known_devices, result.address);
@@ -1204,13 +1143,8 @@ BluetoothHealthChannel.prototype.close = function() {
   var channel = this;
 
   postMessage(msg, function(result) {
-    if (result.error != 0) {
-      if (errorCallback) {
-        var error = new tizen.WebAPIError(tizen.WebAPIException.UNKNOWN_ERR);
-        errorCallback(error);
-      }
+    if (checkPostError(result, errorCallback))
       return;
-    }
 
     _addConstProperty(channel, 'isConnected', false);
     if (adapter.health_channel_listener.onclose)
@@ -1233,7 +1167,7 @@ BluetoothHealthChannel.prototype.sendData = function(data) {
   };
 
   postMessage(msg, function(result) {
-    if (result.error != 0) {
+    if (result.error != tizen.WebAPIException.NO_ERROR) {
       var error = new tizen.WebAPIError(tizen.WebAPIException.UNKNOWN_ERR);
       return 0;
     }
