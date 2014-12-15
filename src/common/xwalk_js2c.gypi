@@ -4,7 +4,7 @@
       'rule_name': 'xwalk_js2c',
       'extension': 'js',
       'inputs': [
-        '../tools/generate_api.py',
+        '../../tools/generate_api.py',
       ],
       'outputs': [
         '<(SHARED_INTERMEDIATE_DIR)/<(RULE_INPUT_ROOT).cc'
