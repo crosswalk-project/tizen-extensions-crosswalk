@@ -173,8 +173,8 @@ var FilterMatchFlag = {
 
 exports.AttributeFilter = function(attrName, matchFlag, matchValue) {
   if (this && this.constructor == exports.AttributeFilter &&
-      (typeof(attrName) === 'string' || attrname instanceof String) &&
-      matchFlag && matchFlag in FilterMatchFlag) {
+      (typeof(attrName) === 'string' || attrName instanceof String) &&
+      (matchFlag === undefined || matchFlag in FilterMatchFlag)) {
     Object.defineProperties(this, {
       'attributeName': { writable: false, enumerable: true, value: attrName },
       'matchFlag': {
