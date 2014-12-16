@@ -35,7 +35,11 @@ char* GetDuidProperty();
 const char kOfonoService[] = "org.ofono";
 const char kOfonoManagerPath[] = "/";
 const char kOfonoManagerIface[] = "org.ofono.Manager";
+const char kOfonoModemIface[] = "org.ofono.Modem";
 const char kOfonoNetworkRegistrationIface[] = "org.ofono.NetworkRegistration";
+const char kOfonoConnectionManagerIface[] = "org.ofono.ConnectionManager";
+const char kOfonoConnectionContextIface[] = "org.ofono.ConnectionContext";
+const char kOfonoSimManagerIface[] = "org.ofono.SimManager";
 
 GDBusConnection* GetDbusConnection();
 std::string OfonoGetModemPath(GDBusConnection* bus_conn);

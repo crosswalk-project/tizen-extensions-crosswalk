@@ -81,7 +81,7 @@ std::string OfonoGetModemPath(GDBusConnection* bus_conn) {
   if (!modems_result) {
     std::cout << "ofono GetModems failed: " << error->message << std::endl;
     g_error_free(error);
-    return NULL;
+    return std::string("");
   }
 
   std::string result_path;

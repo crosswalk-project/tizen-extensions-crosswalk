@@ -33,7 +33,6 @@
 #include "common/picojson.h"
 #include "system_info/system_info_battery.h"
 #include "system_info/system_info_build.h"
-#include "system_info/system_info_cellular_network.h"
 #include "system_info/system_info_cpu.h"
 #include "system_info/system_info_device_orientation.h"
 #include "system_info/system_info_display.h"
@@ -41,6 +40,7 @@
 #ifdef GENERIC_DESKTOP
 #include "system_info/system_info_network_desktop.h"
 #else
+#include "system_info/system_info_cellular_network.h"
 #include "system_info/system_info_network_tizen.h"
 #include "system_info/system_info_sim.h"
 #endif
@@ -64,7 +64,6 @@ SystemInfoInstance::~SystemInfoInstance() {
 void SystemInfoInstance::InstancesMapInitialize() {
   RegisterClass<SysInfoBattery>();
   RegisterClass<SysInfoBuild>();
-  RegisterClass<SysInfoCellularNetwork>();
   RegisterClass<SysInfoCpu>();
   RegisterClass<SysInfoDeviceOrientation>();
   RegisterClass<SysInfoDisplay>();
@@ -73,6 +72,7 @@ void SystemInfoInstance::InstancesMapInitialize() {
 #ifdef GENERIC_DESKTOP
   RegisterClass<SysInfoNetworkDesktop>();
 #else
+  RegisterClass<SysInfoCellularNetwork>();
   RegisterClass<SysInfoNetworkTizen>();
   RegisterClass<SysInfoSim>();
 #endif
