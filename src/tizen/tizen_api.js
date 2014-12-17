@@ -175,18 +175,22 @@ exports.AttributeFilter = function(attrName, matchFlag, matchValue) {
   if (this && this.constructor == exports.AttributeFilter &&
       (typeof(attrName) === 'string' || attrName instanceof String) &&
       (matchFlag === undefined || matchFlag in FilterMatchFlag)) {
-    Object.defineProperties(this, {
-      'attributeName': { writable: false, enumerable: true, value: attrName },
-      'matchFlag': {
-        writable: false,
-        enumerable: true,
-        value: matchValue !== undefined ? (matchFlag ? matchFlag : 'EXACTLY') : 'EXISTS'
-      },
-      'matchValue': {
-        writable: false,
-        enumerable: true,
-        value: matchValue === undefined ? null : matchValue
-      }
+    var attributeName_ = attrName;
+
+    Object.defineProperty(this, 'attributeName', {
+      enumerable: true,
+      get: function() { return attributeName_; },
+      set: function(value) { if (value != null) attributeName_ = value; }
+    });
+    Object.defineProperty(this, 'matchFlag', {
+      writable: false,
+      enumerable: true,
+      value: matchValue !== undefined ? (matchFlag ? matchFlag : 'EXACTLY') : 'EXISTS'
+    });
+    Object.defineProperty(this, 'matchValue', {
+      writable: false,
+      enumerable: true,
+      value: matchValue === undefined ? null : matchValue
     });
   } else {
     throw new exports.WebAPIException(exports.WebAPIException.TYPE_MISMATCH_ERR);
@@ -216,7 +220,7 @@ exports.AttributeRangeFilter = function(attrName, start, end) {
     enumerable: true,
     get: function() { return attributeName_; },
     set: function(value) {
-      if (value !== null) attributeName_ = value;
+      if (value != null) attributeName_ = value;
     }
   });
   Object.defineProperty(this, 'initialValue', {
