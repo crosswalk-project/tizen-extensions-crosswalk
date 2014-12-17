@@ -5,6 +5,7 @@
 #include "media_renderer/media_renderer.h"
 
 #include <map>
+
 #include "common/extension.h"
 
 namespace {
@@ -22,7 +23,6 @@ static picojson::value toJSONValue(const gchar* value) {
 static picojson::value toJSONValueArray(GVariant* values) {
   picojson::array array;
   GVariantIter iter;
-  GVariant* child;
   gdouble value;
 
   if (!values)
@@ -35,8 +35,7 @@ static picojson::value toJSONValueArray(GVariant* values) {
   return picojson::value(array);
 }
 
-void
-MediaRenderer::PropertyChanged(GDBusProxy* proxy,
+void MediaRenderer::PropertyChanged(GDBusProxy* proxy,
     GVariant* changed_properties,
     GStrv invalidated_properties,
     gpointer user_data) {
@@ -395,12 +394,12 @@ void MediaRenderer::OnHostFile(
       res,
       &gerror)) {
     mprismediaplayer2_player_call_open_uri_ex(
-    mprisplayer_proxy_,
-    uploaded_path,
-    uploaded_path,
-    cancellable_,
-    OnOpenURICallBack,
-    new CallbackData(this, async_id));
+        mprisplayer_proxy_,
+        uploaded_path,
+        uploaded_path,
+        cancellable_,
+        OnOpenURICallBack,
+        new CallbackData(this, async_id));
   } else {
     PostError(async_id);
   }
@@ -414,7 +413,6 @@ void MediaRenderer::OnPrefetchURI(
     GAsyncResult* res,
     double async_id) {
   GError* gerror = NULL;
-  GVariant* objects;
   guint totalItems;
 
   if (mprismediaplayer2_player_call_open_next_uri_finish(
