@@ -50,7 +50,6 @@ void AudioGroup::UpdateInfo(
 
 picojson::value::object AudioGroup::ToJsonObject() const {
   picojson::value::object reply;
-  picojson::array array;
 
   reply["id"] = picojson::value(static_cast<double>(index_));
   reply["label"] = picojson::value(label_);
