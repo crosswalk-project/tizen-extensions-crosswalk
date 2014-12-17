@@ -26,7 +26,7 @@ static std::list<GCancellable*> cancellables;
 static GCancellable* new_cancellable() {
   GCancellable* cancellable = g_cancellable_new();
 
-  cancellables.push_back(cancellable);;
+  cancellables.push_back(cancellable);
 
   return cancellable;
 }
@@ -184,18 +184,18 @@ void BluetoothInstance::OnSignal(GDBusProxy* proxy, gchar* sender,
 void BluetoothInstance::OnDeviceSignal(
     GDBusProxy* proxy, gchar* sender, gchar* signal,
     GVariant* parameters, gpointer data) {
-  BluetoothInstance* handler = reinterpret_cast<BluetoothInstance*>(data);
+  // We only want PropertyChanged ones.
+  if (strcmp(signal, "PropertyChanged"))
+    return;
+
   const char* iface = g_dbus_proxy_get_interface_name(proxy);
 
   // We only want org.bluez.Device signals.
   if (strcmp(iface, "org.bluez.Device"))
     return;
 
-  // More specifically, PropertyChanged ones.
-  if (strcmp(signal, "PropertyChanged"))
-    return;
-
   const char* path = g_dbus_proxy_get_object_path(proxy);
+  BluetoothInstance* handler = reinterpret_cast<BluetoothInstance*>(data);
 
   std::map<std::string, std::string>::iterator it =
       handler->object_path_address_map_.find(path);
@@ -223,17 +223,17 @@ void BluetoothInstance::OnDeviceSignal(
 void BluetoothInstance::OnManagerSignal(GDBusProxy* proxy, gchar* sender_name,
                                         gchar* signal, GVariant* parameters,
                                         gpointer user_data) {
-  BluetoothInstance* handler = reinterpret_cast<BluetoothInstance*>(user_data);
+  // We only want DefaultAdapterChanged ones
+  if (strcmp(signal, "DefaultAdapterChanged"))
+    return;
+
   const char* iface = g_dbus_proxy_get_interface_name(proxy);
 
   // We only want org.bluez.Manager signals.
   if (strcmp(iface, "org.bluez.Manager"))
     return;
 
-  // More specifically, DefaultAdapterChanged ones.
-  if (strcmp(signal, "DefaultAdapterChanged"))
-    return;
-
+  BluetoothInstance* handler = reinterpret_cast<BluetoothInstance*>(user_data);
   const char* path;
   g_variant_get(parameters, "(o)", &path);
 
