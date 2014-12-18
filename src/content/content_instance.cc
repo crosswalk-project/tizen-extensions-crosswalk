@@ -100,6 +100,8 @@ void ContentInstance::HandleMessage(const char* message) {
     HandleFindRequest(v);
   } else if (cmd == "ContentManager.scanFile") {
     HandleScanFileRequest(v);
+  } else if (cmd == "ContentManager.updateBatch") {
+    HandleUpdateBatchRequest(v);
   } else {
     std::cerr << "Message " + cmd + " is not supported.\n";
   }
@@ -206,12 +208,14 @@ bool ContentInstance::HandleUpdateRequest(const picojson::value& msg) {
     no_error = false;
   }
 
-  if (msg.contains(STR_RATING) &&
-      media_info_set_rating(handle,
-          std::stoi(msg.get(STR_RATING).to_str()))
-              != MEDIA_CONTENT_ERROR_NONE) {
-    std::cerr << "media_info_set_rating: error" << std::endl;
-    no_error = false;
+  if (msg.contains(STR_RATING)) {
+    int i = std::stoi(msg.get(STR_RATING).to_str());
+    if (i >= 0 && i <= 10) {
+      if (media_info_set_rating(handle, i) != MEDIA_CONTENT_ERROR_NONE) {
+        std::cerr << "media_info_set_rating: error" << std::endl;
+        no_error = false;
+      }
+    }
   }
 
   // Commit the changes to DB
@@ -221,6 +225,18 @@ bool ContentInstance::HandleUpdateRequest(const picojson::value& msg) {
   }
 
   return no_error;
+}
+
+void ContentInstance::HandleUpdateBatchRequest(const picojson::value& msg) {
+  picojson::array list = msg.get("content").get<picojson::array>();
+
+  for (picojson::array::const_iterator i = list.begin(); i != list.end(); ++i) {
+    if (!HandleUpdateRequest((*i))) {
+      PostAsyncErrorReply(msg, WebApiAPIErrors::INVALID_MODIFICATION_ERR);
+      return;
+    }
+  }
+  PostAsyncSuccessReply(msg);
 }
 
 void ContentInstance::HandleGetDirectoriesRequest(const picojson::value& msg) {
@@ -707,23 +723,23 @@ void ContentItem::print(void) {
   std::cout << "ID: " << id() << std::endl;
   std::cout << "Name: " << name() << std::endl;
   std::cout << "Type: " << type() << std::endl;
-  std::cout << "MIME: " << mimeType() << std::endl;
+  std::cout << "MIME: " << mime_type() << std::endl;
   std::cout << "Title: " << title() << std::endl;
-  std::cout << "URI: " << contentURI() << std::endl;
-  std::cout << "ThumbnailURIs: " << thumbnailURIs() << std::endl;
-  std::cout << "Modified: " << modifiedDate();
+  std::cout << "URI: " << content_uri() << std::endl;
+  std::cout << "ThumbnailURIs: " << thumbnail_uris() << std::endl;
+  std::cout << "Modified: " << modified_date();
   std::cout << "Size: " << size() << std::endl;
   std::cout << "Description: " << description() << std::endl;
   std::cout << "Rating: " << rating() << std::endl;
   if (type() == "AUDIO") {
-    std::cout << "Release Date: " << releaseDate() << std::endl;
+    std::cout << "Release Date: " << release_date() << std::endl;
     std::cout << "Album: " << album() << std::endl;
     std::cout << "Genres: " << genres() << std::endl;
     std::cout << "Artists: " << artists() << std::endl;
     std::cout << "Composer: " << composer() << std::endl;
     std::cout << "Copyright: " << copyright() << std::endl;
     std::cout << "Bitrate: " << bitrate() << std::endl;
-    std::cout << "Track num: " << trackNumber() << std::endl;
+    std::cout << "Track num: " << track_number() << std::endl;
     std::cout << "Duration: " << duration() << std::endl;
   } else if (type() == "IMAGE") {
     std::cout << "Width/Height: " << width() << "/" << height() << std::endl;

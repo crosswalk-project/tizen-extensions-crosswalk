@@ -33,6 +33,7 @@ class ContentInstance : public common::Instance {
   virtual void HandleSyncMessage(const char* msg);
 
   bool HandleUpdateRequest(const picojson::value& json);
+  void HandleUpdateBatchRequest(const picojson::value& json);
   void HandleGetDirectoriesRequest(const picojson::value& json);
   void HandleGetDirectoriesReply(const picojson::value& json,
     ContentFolderList *);
