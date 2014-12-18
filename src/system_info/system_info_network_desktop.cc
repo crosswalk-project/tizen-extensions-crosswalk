@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "system_info/system_info_network.h"
+#include "system_info/system_info_network_desktop.h"
 
 #include <NetworkManager.h>
 
@@ -17,18 +17,10 @@ const char sDeviceInterface[] = "org.freedesktop.NetworkManager.Device";
 
 }  // namespace
 
-SysInfoNetwork::SysInfoNetwork()
-    : type_(SYSTEM_INFO_NETWORK_UNKNOWN) {
-  PlatformInitialize();
-}
-
-SysInfoNetwork::~SysInfoNetwork() {}
-
-void SysInfoNetwork::PlatformInitialize() {
-  active_connection_ = "";
-  active_device_ = "";
-  device_type_ = NM_DEVICE_TYPE_UNKNOWN;
-
+SysInfoNetworkDesktop::SysInfoNetworkDesktop()
+    : active_connection_(""),
+      active_device_(""),
+      device_type_(NM_DEVICE_TYPE_UNKNOWN) {
   g_dbus_proxy_new_for_bus(G_BUS_TYPE_SYSTEM,
       G_DBUS_PROXY_FLAGS_NONE,
       NULL,
@@ -40,13 +32,20 @@ void SysInfoNetwork::PlatformInitialize() {
       this);
 }
 
-void SysInfoNetwork::StartListening() {
+SysInfoNetworkDesktop::~SysInfoNetworkDesktop() {}
+
+void SysInfoNetworkDesktop::StartListening() {}
+
+void SysInfoNetworkDesktop::StopListening() {}
+
+void SysInfoNetworkDesktop::Get(picojson::value& error,
+                                picojson::value& data) {
+  SetData(data);
+  system_info::SetPicoJsonObjectValue(error, "message", picojson::value(""));
 }
 
-void SysInfoNetwork::StopListening() {
-}
-
-void SysInfoNetwork::OnNetworkManagerCreated(GObject*, GAsyncResult* res) {
+void SysInfoNetworkDesktop::OnNetworkManagerCreated(GObject*,
+                                                    GAsyncResult* res) {
   GError* err = 0;
   GDBusProxy* proxy = g_dbus_proxy_new_for_bus_finish(res, &err);
 
@@ -66,10 +65,11 @@ void SysInfoNetwork::OnNetworkManagerCreated(GObject*, GAsyncResult* res) {
 
   // FIXME(halton): NetworkManager does not support g-properties-changed signal.
   g_signal_connect(proxy, "g-signal",
-      G_CALLBACK(SysInfoNetwork::OnNetworkManagerSignal), this);
+      G_CALLBACK(SysInfoNetworkDesktop::OnNetworkManagerSignal), this);
 }
 
-void SysInfoNetwork::OnActiveConnectionCreated(GObject*, GAsyncResult* res) {
+void SysInfoNetworkDesktop::OnActiveConnectionCreated(GObject*,
+                                                      GAsyncResult* res) {
   GError* err = 0;
   GDBusProxy* proxy = g_dbus_proxy_new_for_bus_finish(res, &err);
 
@@ -87,10 +87,10 @@ void SysInfoNetwork::OnActiveConnectionCreated(GObject*, GAsyncResult* res) {
   UpdateActiveDevice(value);
 
   g_signal_connect(proxy, "g-signal",
-      G_CALLBACK(SysInfoNetwork::OnActiveConnectionsSignal), this);
+      G_CALLBACK(SysInfoNetworkDesktop::OnActiveConnectionsSignal), this);
 }
 
-void SysInfoNetwork::OnDevicesCreated(GObject*, GAsyncResult* res) {
+void SysInfoNetworkDesktop::OnDevicesCreated(GObject*, GAsyncResult* res) {
   GError* err = 0;
   GDBusProxy* proxy = g_dbus_proxy_new_for_bus_finish(res, &err);
 
@@ -108,12 +108,7 @@ void SysInfoNetwork::OnDevicesCreated(GObject*, GAsyncResult* res) {
   UpdateDeviceType(value);
 }
 
-bool SysInfoNetwork::Update(picojson::value& error) {
-  // type_ will be updated by NM signals
-  return true;
-}
-
-SystemInfoNetworkType SysInfoNetwork::ToNetworkType(guint device_type) {
+SystemInfoNetworkType SysInfoNetworkDesktop::ToNetworkType(guint device_type) {
   SystemInfoNetworkType ret = SYSTEM_INFO_NETWORK_UNKNOWN;
 
   switch (device_type) {
@@ -134,7 +129,7 @@ SystemInfoNetworkType SysInfoNetwork::ToNetworkType(guint device_type) {
   return ret;
 }
 
-void SysInfoNetwork::UpdateActiveConnection(GVariant* value) {
+void SysInfoNetworkDesktop::UpdateActiveConnection(GVariant* value) {
   if (!value || !g_variant_n_children(value)) {
     active_connection_ = "";
     active_device_ = "";
@@ -170,7 +165,7 @@ void SysInfoNetwork::UpdateActiveConnection(GVariant* value) {
       this);
 }
 
-void SysInfoNetwork::UpdateActiveDevice(GVariant* value) {
+void SysInfoNetworkDesktop::UpdateActiveDevice(GVariant* value) {
   if (!value || !g_variant_n_children(value)) {
     active_device_ = "";
     SendUpdate(NM_DEVICE_TYPE_UNKNOWN);
@@ -204,11 +199,11 @@ void SysInfoNetwork::UpdateActiveDevice(GVariant* value) {
       this);
 }
 
-void SysInfoNetwork::UpdateDeviceType(GVariant* value) {
+void SysInfoNetworkDesktop::UpdateDeviceType(GVariant* value) {
   SendUpdate(g_variant_get_uint32(value));
 }
 
-void SysInfoNetwork::SendUpdate(guint new_device_type) {
+void SysInfoNetworkDesktop::SendUpdate(guint new_device_type) {
   if (device_type_ == new_device_type)
     return;
 
@@ -228,12 +223,13 @@ void SysInfoNetwork::SendUpdate(guint new_device_type) {
   PostMessageToListeners(output);
 }
 
-void SysInfoNetwork::OnNetworkManagerSignal(GDBusProxy* proxy,
-                                            gchar* sender,
-                                            gchar* signal,
-                                            GVariant* parameters,
-                                            gpointer user_data) {
-  SysInfoNetwork* self = reinterpret_cast<SysInfoNetwork*>(user_data);
+void SysInfoNetworkDesktop::OnNetworkManagerSignal(GDBusProxy* proxy,
+                                                   gchar* sender,
+                                                   gchar* signal,
+                                                   GVariant* parameters,
+                                                   gpointer user_data) {
+  SysInfoNetworkDesktop* self =
+      reinterpret_cast<SysInfoNetworkDesktop*>(user_data);
 
   if (strcmp(signal, "PropertiesChanged") != 0)
     return;
@@ -252,12 +248,13 @@ void SysInfoNetwork::OnNetworkManagerSignal(GDBusProxy* proxy,
   g_variant_iter_free(iter);
 }
 
-void SysInfoNetwork::OnActiveConnectionsSignal(GDBusProxy* proxy,
-                                               gchar* sender,
-                                               gchar* signal,
-                                               GVariant* parameters,
-                                               gpointer user_data) {
-  SysInfoNetwork* self = reinterpret_cast<SysInfoNetwork*>(user_data);
+void SysInfoNetworkDesktop::OnActiveConnectionsSignal(GDBusProxy* proxy,
+                                                      gchar* sender,
+                                                      gchar* signal,
+                                                      GVariant* parameters,
+                                                      gpointer user_data) {
+  SysInfoNetworkDesktop* self =
+      reinterpret_cast<SysInfoNetworkDesktop*>(user_data);
 
   if (strcmp(signal, "PropertiesChanged") != 0)
     return;
