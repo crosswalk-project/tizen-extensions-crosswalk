@@ -60,10 +60,15 @@ function Folder(uri, id, type, title) {
 
 function Content(editableAttributes, id, name, type, mimeType, title, contentURI, thumnailURIs,
     releaseDate, modifiedDate, size, description, rating) {
+  var rating_ = rating, name_ = name;
   Object.defineProperties(this, {
     'editableAttributes': { writable: false, value: editableAttributes, enumerable: true },
     'id': { writable: false, value: id, enumerable: true },
-    'name': { writable: true, value: name, enumerable: true },
+    'name': {
+      enumerable: true,
+      set: function(v) { if (v != null) name_ = v},
+      get: function() { return name_; }
+    },
     'type': { writable: false, value: type, enumerable: true },
     'mimeType': { writable: false, value: mimeType, enumerable: true },
     'title': { writable: false, value: title, enumerable: true },
@@ -73,7 +78,11 @@ function Content(editableAttributes, id, name, type, mimeType, title, contentURI
     'modifiedDate': { writable: false, value: parseDate(modifiedDate), enumerable: true },
     'size': { writable: false, value: size, enumerable: true },
     'description': { writable: true, value: description, enumerable: true },
-    'rating': { writable: true, value: rating, enumerable: true }
+    'rating': {
+      enumerable: true,
+      set: function(v) { if (v != null && v >= 0 && v <= 10) rating_ = v; },
+      get: function() { return rating_; }
+    }
   });
 }
 
@@ -92,11 +101,16 @@ function AudioContent(obj, album, genres, artists, composer, copyright,
 }
 
 function ImageContent(obj, geolocation, width, height, orientation) {
+  var orientation_ = orientation;
   Object.defineProperties(obj, {
     'geolocation': { writable: true, value: geolocation, enumerable: true },
     'width': { writable: false, value: width, enumerable: true },
     'height': { writable: false, value: height, enumerable: true },
-    'orientation': { writable: true, value: orientation, enumerable: true }
+    'orientation': {
+      enumerable: true,
+      set: function(v) { if (v != null) orientation_ = v; },
+      get: function() { return orientation_; }
+    }
   });
 }
 
@@ -129,6 +143,18 @@ ContentManager.prototype.updateBatch = function(content, onsuccess, onerror) {
   if (!xwalk.utils.validateArguments('o?ff', arguments)) {
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
   }
+
+  postMessage({
+    cmd: 'ContentManager.updateBatch',
+    content: content
+  }, function(result) {
+    if (result.isError) {
+      if (onerror)
+        onerror(new tizen.WebAPIError(result.errorCode));
+    } else if (onsuccess) {
+      onsuccess();
+    }
+  });
 };
 
 ContentManager.prototype.getDirectories = function(onsuccess, onerror) {
