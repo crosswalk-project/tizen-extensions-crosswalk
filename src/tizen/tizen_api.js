@@ -142,13 +142,21 @@ exports.AbstractFilter = function() {};
 //   attribute SortModeOrder order;
 // };
 exports.SortMode = function(attrName, order) {
-  if (!(typeof(attrName) === 'string' || attrname instanceof String) ||
+  if (!(typeof(attrName) === 'string' || attrName instanceof String) ||
       order && (order != 'DESC' && order != 'ASC'))
     throw new exports.WebAPIException(exports.WebAPIException.TYPE_MISMATCH_ERR);
 
-  Object.defineProperties(this, {
-    'attributeName': { writable: false, enumerable: true, value: attrName },
-    'order': { writable: false, enumerable: true, value: order || 'ASC' }
+  var attributeName_ = attrName;
+  var order_ = order != null ? order : 'ASC';
+  Object.defineProperty(this, 'attributeName', {
+    enumerable: true,
+    get: function() { return attributeName_; },
+    set: function(value) { if (value != null) attributeName_ = value; }
+  });
+  Object.defineProperty(this, 'order', {
+    enumerable: true,
+    get: function() { return order_; },
+    set: function(value) { if (value == 'ASC' || value == 'DESC') order_ = value; }
   });
 };
 exports.SortMode.prototype.constructor = exports.SortMode;
@@ -174,8 +182,10 @@ var FilterMatchFlag = {
 exports.AttributeFilter = function(attrName, matchFlag, matchValue) {
   if (this && this.constructor == exports.AttributeFilter &&
       (typeof(attrName) === 'string' || attrName instanceof String) &&
-      (matchFlag === undefined || matchFlag in FilterMatchFlag)) {
+      (matchFlag == null || matchFlag in FilterMatchFlag)) {
     var attributeName_ = attrName;
+    var matchFlag_ = matchFlag == null ? 'EXACTLY' : matchFlag;
+    var matchValue_ = matchValue == null ? null : matchValue;
 
     Object.defineProperty(this, 'attributeName', {
       enumerable: true,
@@ -183,14 +193,14 @@ exports.AttributeFilter = function(attrName, matchFlag, matchValue) {
       set: function(value) { if (value != null) attributeName_ = value; }
     });
     Object.defineProperty(this, 'matchFlag', {
-      writable: false,
       enumerable: true,
-      value: matchValue !== undefined ? (matchFlag ? matchFlag : 'EXACTLY') : 'EXISTS'
+      get: function() { return matchFlag_; },
+      set: function(value) { if (value in FilterMatchFlag) matchFlag_ = value; }
     });
     Object.defineProperty(this, 'matchValue', {
-      writable: false,
       enumerable: true,
-      value: matchValue === undefined ? null : matchValue
+      get: function() { return matchValue_; },
+      set: function(value) { value === undefined ? matchValue_ = null : matchValue_ = value }
     });
   } else {
     throw new exports.WebAPIException(exports.WebAPIException.TYPE_MISMATCH_ERR);
@@ -215,13 +225,10 @@ exports.AttributeRangeFilter = function(attrName, start, end) {
   }
 
   var attributeName_ = attrName;
-
   Object.defineProperty(this, 'attributeName', {
     enumerable: true,
     get: function() { return attributeName_; },
-    set: function(value) {
-      if (value != null) attributeName_ = value;
-    }
+    set: function(value) { if (value != null) attributeName_ = value; }
   });
   Object.defineProperty(this, 'initialValue', {
     writable: true,
@@ -229,7 +236,9 @@ exports.AttributeRangeFilter = function(attrName, start, end) {
     value: start === undefined ? null : start
   });
   Object.defineProperty(this, 'endValue', {
-    writable: true, enumerable: true, value: end === undefined ? null : end
+    writable: true,
+    enumerable: true,
+    value: end === undefined ? null : end
   });
 };
 exports.AttributeRangeFilter.prototype = new exports.AbstractFilter();
@@ -252,13 +261,17 @@ exports.CompositeFilter = function(type, filters) {
     throw new exports.WebAPIException(exports.WebAPIException.TYPE_MISMATCH_ERR);
   }
 
-  Object.defineProperties(this, {
-    'type': { writable: false, enumerable: true, value: type },
-    'filters': {
-      writable: false,
-      enumerable: true,
-      value: filters === undefined ? null : filters
-    }
+  var type_ = type;
+  var filters_ = filters;
+  Object.defineProperty(this, 'type', {
+    enumerable: true,
+    get: function() { return type_; },
+    set: function(value) { if (value in CompositeFilterType) type_ = value; }
+  });
+  Object.defineProperty(this, 'filters', {
+    enumerable: true,
+    get: function() { return filters_; },
+    set: function(value) { if (value != null) filters_ = value; }
   });
 };
 exports.CompositeFilter.prototype = new exports.AbstractFilter();
@@ -276,9 +289,22 @@ exports.SimpleCoordinates = function(latitude, longitude) {
   if (!(typeof(latitude) === 'number' || typeof(longitude) === 'number'))
     throw new exports.WebAPIException(exports.WebAPIException.TYPE_MISMATCH_ERR);
 
-  Object.defineProperties(this, {
-    'latitude': { writable: false, enumerable: true, value: latitude },
-    'longitude': { writable: false, enumerable: true, value: longitude }
+  var latitude_ = latitude;
+  var longitude_ = longitude;
+  Object.defineProperty(this, 'latitude', {
+    enumerable: true,
+    get: function() { return latitude_; },
+    set: function(value) {
+      if (value != null && typeof(latitude) === 'number') latitude_ = value;
+    }
   });
+  Object.defineProperty(this, 'longitude', {
+    enumerable: true,
+    get: function() { return longitude_; },
+    set: function(value) {
+      if (value != null && typeof(longitude) === 'number') longitude_ = value;
+    }
+  });
+
 };
 exports.SimpleCoordinates.prototype.constructor = exports.SimpleCoordinates;
