@@ -64,28 +64,17 @@ int CapiErrorToJs(int err) {
   } while (0)
 
 // same CAPI macro for sync messages
-#define CAPI_SYNC(fnc, inst)                                                   \
+#define CAPI_SYNC(fnc)                                                         \
   do {                                                                         \
     int _er = (fnc);                                                           \
     if (_er != BT_ERROR_NONE) {                                                \
       LOG_ERR(#fnc " failed with error: " << _er);                             \
-      inst->SendSyncError(_er);                                                \
+      SendSyncError(_er);                                                      \
       return;                                                                  \
     }                                                                          \
   } while (0)
 
-// same CAPI macro for sync messages but returning FALSE
-#define CAPI_SYNC2(fnc, inst)                                                  \
-  do {                                                                         \
-    int _er = (fnc);                                                           \
-    if (_er != BT_ERROR_NONE) {                                                \
-      LOG_ERR(#fnc " failed with error: " << _er);                             \
-      inst->SendSyncError(_er);                                                \
-      return FALSE;                                                            \
-    }                                                                          \
-  } while (0)
-
-BluetoothInstance::BluetoothInstance() : get_default_adapter_(false) {}
+BluetoothInstance::BluetoothInstance() : are_bond_devices_known_(false) {}
 
 void BluetoothInstance::Initialize() {
   // Initialize bluetooth CAPIs and register all needed callbacks.
@@ -181,12 +170,10 @@ void BluetoothInstance::OnStateChanged(int result,
     bt_adapter_state_e adapter_state, void* user_data) {
   BluetoothInstance* obj = static_cast<BluetoothInstance*>(user_data);
 
-  if (obj->get_default_adapter_) {
-    // FIXME(clecou) directly call 'GetDefaultAdapter' once NTB is integrated.
-    // After testing, 100 ms is necessary to really get a powered adapter.
-    g_timeout_add(100, obj->GetDefaultAdapter, obj);
-    return;
-  }
+  // fill known_devices array on javascript side when bluetooth is enabled
+  // the first time.
+  if (!obj->are_bond_devices_known_)
+    bt_adapter_foreach_bonded_device(OnKnownBondedDevice, obj);
 
   picojson::value::object o;
   o["Powered"] = picojson::value(
@@ -328,6 +315,7 @@ bool BluetoothInstance::OnKnownBondedDevice(bt_device_info_s* device_info,
   o["Trusted"] = picojson::value(BoolToString(device_info->is_authorized));
   o["Connected"] = picojson::value(BoolToString(device_info->is_connected));
   obj->SendCmdToJs(kBondedDevice, o);
+  obj->are_bond_devices_known_ = true;
   return true;
 }
 
@@ -444,17 +432,15 @@ void BluetoothInstance::OnHdpDataReceived(unsigned int channel,
   obj->PostAsyncReply(kSendHealthData, kNoError, o);
 }
 
-gboolean BluetoothInstance::GetDefaultAdapter(gpointer user_data) {
-  BluetoothInstance* obj = static_cast<BluetoothInstance*>(user_data);
-
+void BluetoothInstance::HandleGetDefaultAdapter(const picojson::value& msg) {
   char* name = NULL;
-  CAPI_SYNC2(bt_adapter_get_name(&name), obj);
+  CAPI_SYNC(bt_adapter_get_name(&name));
 
   char* address = NULL;
-  CAPI_SYNC2(bt_adapter_get_address(&address), obj);
+  CAPI_SYNC(bt_adapter_get_address(&address));
 
   bt_adapter_state_e state = BT_ADAPTER_DISABLED;
-  CAPI_SYNC2(bt_adapter_get_state(&state), obj);
+  CAPI_SYNC(bt_adapter_get_state(&state));
 
   bool powered = false;
   bool visible = false;
@@ -464,7 +450,7 @@ gboolean BluetoothInstance::GetDefaultAdapter(gpointer user_data) {
     bt_adapter_visibility_mode_e mode =
         BT_ADAPTER_VISIBILITY_MODE_NON_DISCOVERABLE;
 
-    CAPI_SYNC2(bt_adapter_get_visibility(&mode, NULL), obj);
+    CAPI_SYNC(bt_adapter_get_visibility(&mode, NULL));
     visible = (mode > 0) ? true : false;
   }
 
@@ -474,30 +460,12 @@ gboolean BluetoothInstance::GetDefaultAdapter(gpointer user_data) {
   o["powered"] = picojson::value(powered);
   o["visible"] = picojson::value(visible);
   picojson::value v(o);
-  obj->SendSyncReply(v.serialize().c_str());
+  SendSyncReply(v.serialize().c_str());
 
-  // Retrieve already bonded devices linked to the adapter in order to
-  // fill known_devices array on javascript side.
-  bt_adapter_foreach_bonded_device(OnKnownBondedDevice, obj);
-
-  obj->get_default_adapter_ = false;
-
-  return FALSE;
-}
-
-void BluetoothInstance::HandleGetDefaultAdapter(const picojson::value& msg) {
-  get_default_adapter_ = true;
-  bt_adapter_state_e state = BT_ADAPTER_DISABLED;
-  CAPI_SYNC(bt_adapter_get_state(&state), this);
-
-  // Most of the C API functions require as precondition to previously had
-  // called bt_adapter_enable(). So if adapter is turned OFF, we enable it.
-  if (state == BT_ADAPTER_DISABLED) {
-    CAPI_SYNC(bt_adapter_enable(), this);
-    return;
-  }
-
-  GetDefaultAdapter(this);
+  // fill known_devices array on javascript side if bluetooth is enabled.
+  // else we do it when receiving bluetooth enabled event the first time.
+  if (powered)
+    bt_adapter_foreach_bonded_device(OnKnownBondedDevice, this);
 }
 
 void BluetoothInstance::HandleSetAdapterProperty(const picojson::value& msg) {
@@ -578,7 +546,7 @@ void BluetoothInstance::HandleSocketWriteData(const picojson::value& msg) {
   int socket = static_cast<int>(msg.get("socket_fd").get<double>());
 
   CAPI_SYNC(bt_socket_send_data(socket, data.c_str(),
-                                static_cast<int>(data.size())), this);
+                                static_cast<int>(data.size())));
 
   picojson::value::object o;
   o["size"] = picojson::value(static_cast<double>(data.size()));
