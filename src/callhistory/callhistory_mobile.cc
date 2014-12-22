@@ -792,6 +792,7 @@ int CallHistoryInstance::HandleRemoveBatch(const picojson::value& msg) {
           uidlist << id << ", ";
         #endif
       } else {
+        delete[] ids;
         return err;
       }
   }
