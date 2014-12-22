@@ -17,20 +17,22 @@
         'system_setting_locale.cc',
         'system_setting_locale.h',
       ],
+      'variables': {
+        'packages': [
+          'gio-2.0',
+        ]
+      },
+      'includes': [
+        '../common/pkg-config.gypi',
+      ],
       'conditions': [
         ['tizen == 1', {
-          'includes': [
-            '../common/pkg-config.gypi',
-          ],
           'variables': {
             'packages': [
               'capi-system-system-settings',
               'vconf',
             ]
           },
-          'includes': [
-            '../common/pkg-config.gypi',
-          ],
         }],
       ],
     },
