@@ -11,7 +11,7 @@
           'gio-2.0',
           'bluez',
         ],
-        'bluetooth%': 'tizen_capi',
+        'bluetooth%': '<!(bash identify_bluetooth_type.sh)',
       },
       'includes': [
         '../common/pkg-config.gypi',
