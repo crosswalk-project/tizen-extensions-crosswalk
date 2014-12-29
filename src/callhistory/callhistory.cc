@@ -58,7 +58,7 @@ common::Extension* CreateExtension() {
 extern const char kSource_callhistory_api[];
 
 CallHistoryExtension::CallHistoryExtension() {
-  const char* entry_points[] = { NULL };
+  const char* entry_points[] = { nullptr };
   SetExtraJSEntryPoints(entry_points);
   SetExtensionName("tizen.callhistory");
   SetJavaScriptAPI(kSource_callhistory_api);
