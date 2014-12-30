@@ -27,47 +27,47 @@ static void getPropertyValue(const char* key, GVariant* value,
 void BluetoothInstance::OnPropertiesChanged(GDBusProxy* proxy,
     GVariant* changed_properties, const gchar* const* invalidated_properties,
     gpointer data) {
+  if (!g_variant_n_children(changed_properties))
+    return;
 
   const char* interface = g_dbus_proxy_get_interface_name(proxy);
   BluetoothInstance* handler = reinterpret_cast<BluetoothInstance*>(data);
 
-  if (g_variant_n_children(changed_properties) > 0) {
-    GVariantIter* iter;
-    const gchar* key;
-    GVariant* value;
-    picojson::value::object o;
+  GVariantIter* iter;
+  const gchar* key;
+  GVariant* value;
+  picojson::value::object o;
 
-    g_variant_get(changed_properties, "a{sv}", &iter);
+  g_variant_get(changed_properties, "a{sv}", &iter);
 
-    if (!strcmp(interface, "org.bluez.Device1")) {
-      DeviceMap::iterator it =
-          handler->known_devices_.find(g_dbus_proxy_get_object_path(proxy));
+  if (!strcmp(interface, "org.bluez.Device1")) {
+    DeviceMap::iterator it =
+        handler->known_devices_.find(g_dbus_proxy_get_object_path(proxy));
 
-      if (it == handler->known_devices_.end())
-        return;
+    if (it == handler->known_devices_.end())
+      return;
 
-      o["cmd"] = picojson::value("DeviceUpdated");
+    o["cmd"] = picojson::value("DeviceUpdated");
 
-      while (g_variant_iter_loop(iter, "{&sv}", &key, &value))
-        getPropertyValue(key, value, o);
+    while (g_variant_iter_loop(iter, "{&sv}", &key, &value))
+      getPropertyValue(key, value, o);
 
-      GVariant* addr = g_dbus_proxy_get_cached_property(it->second, "Address");
-      char* str = g_variant_print(addr, true);
-      o["Address"] = picojson::value(str);
-      g_free(str);
-      g_variant_unref(addr);
-    } else if (!strcmp(interface, "org.bluez.Adapter1")) {
-      o["cmd"] = picojson::value("AdapterUpdated");
+    GVariant* addr = g_dbus_proxy_get_cached_property(it->second, "Address");
+    char* str = g_variant_print(addr, true);
+    o["Address"] = picojson::value(str);
+    g_free(str);
+    g_variant_unref(addr);
+  } else if (!strcmp(interface, "org.bluez.Adapter1")) {
+    o["cmd"] = picojson::value("AdapterUpdated");
 
-      while (g_variant_iter_loop(iter, "{&sv}", &key, &value)) {
-        getPropertyValue(key, value, o);
-        handler->adapter_info_[key] = o[key].get<std::string>();
-      }
+    while (g_variant_iter_loop(iter, "{&sv}", &key, &value)) {
+      getPropertyValue(key, value, o);
+      handler->adapter_info_[key] = o[key].get<std::string>();
     }
-    g_variant_iter_free(iter);
-    picojson::value v(o);
-    handler->InternalPostMessage(v);
   }
+  g_variant_iter_free(iter);
+  picojson::value v(o);
+  handler->InternalPostMessage(v);
 }
 
 void BluetoothInstance::OnDBusObjectAdded(GDBusObjectManager* manager,
@@ -207,10 +207,10 @@ void BluetoothInstance::HandleGetDefaultAdapter(
   o["name"] = picojson::value(adapter_info_["Name"]);
   o["address"] = picojson::value(adapter_info_["Address"]);
 
-  bool powered = (adapter_info_["Powered"] == "true") ? true : false;
+  bool powered = (adapter_info_["Powered"] == "true");
   o["powered"] = picojson::value(powered);
 
-  bool visible = (adapter_info_["Discoverable"] == "true") ? true : false;
+  bool visible = (adapter_info_["Discoverable"] == "true");
   o["visible"] = picojson::value(visible);
 
   // This is the JS API entry point, so we should clean our message queue
@@ -267,29 +267,30 @@ void BluetoothInstance::DeviceFound(GObject*, GAsyncResult* res) {
 }
 
 void BluetoothInstance::DeviceRemoved(GDBusObject* object) {
-  if (object) {
-    DeviceMap::iterator it =
-        known_devices_.find(g_dbus_object_get_object_path(object));
+  if (!object)
+    return;
 
-    if (it == known_devices_.end())
-      return;
+  DeviceMap::iterator it =
+      known_devices_.find(g_dbus_object_get_object_path(object));
 
-    picojson::value::object o;
-    o["cmd"] = picojson::value("DeviceRemoved");
+  if (it == known_devices_.end())
+    return;
 
-    GVariant* value = g_dbus_proxy_get_cached_property(it->second, "Address");
-    char* value_str = g_variant_print(value, true);
-    o["Address"] = picojson::value(value_str);
+  picojson::value::object o;
+  o["cmd"] = picojson::value("DeviceRemoved");
 
-    picojson::value v(o);
-    InternalPostMessage(v);
+  GVariant* value = g_dbus_proxy_get_cached_property(it->second, "Address");
+  char* value_str = g_variant_print(value, true);
+  o["Address"] = picojson::value(value_str);
 
-    g_object_unref(it->second);
-    known_devices_.erase(it);
+  picojson::value v(o);
+  InternalPostMessage(v);
 
-    g_free(value_str);
-    g_variant_unref(value);
-  }
+  g_object_unref(it->second);
+  known_devices_.erase(it);
+
+  g_free(value_str);
+  g_variant_unref(value);
 }
 
 void BluetoothInstance::KnownDeviceFound(GObject*, GAsyncResult* res) {

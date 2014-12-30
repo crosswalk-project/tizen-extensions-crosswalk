@@ -144,10 +144,10 @@ void BluetoothInstance::AdapterInfoToValue(picojson::value::object& o) {
   o["name"] = picojson::value(adapter_info_["Name"]);
   o["address"] = picojson::value(adapter_info_["Address"]);
 
-  bool powered = (adapter_info_["Powered"] == "true") ? true : false;
+  bool powered = (adapter_info_["Powered"] == "true");
   o["powered"] = picojson::value(powered);
 
-  bool visible = (adapter_info_["Discoverable"] == "true") ? true : false;
+  bool visible = (adapter_info_["Discoverable"] == "true");
   o["visible"] = picojson::value(visible);
 
   o["error"] = picojson::value(static_cast<double>(NO_ERROR));
