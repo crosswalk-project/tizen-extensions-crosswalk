@@ -456,7 +456,7 @@ bool TelephonyBackend::InitCall(TelephonyCall* call, const std::string& cid,
     // format is <service_id>/voicecall<xx>
     size_t i = cid.find("voicecall");
     if (i <= 0)
-      return 0;
+      return false;
 
     std::string sid = cid.substr(0, i - 1);
     call->service = FindService(sid);
