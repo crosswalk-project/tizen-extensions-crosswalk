@@ -10,6 +10,7 @@
 
 #include <contacts.h>
 
+#include <memory>
 #include <sstream>
 
 namespace {
@@ -778,7 +779,7 @@ int CallHistoryInstance::HandleRemoveBatch(const picojson::value& msg) {
   picojson::array json_arr = arr.get<picojson::array>();
   int id;
   int count = json_arr.size();
-  int* ids = new int[count];
+  std::unique_ptr<int[]> ids(new int[count]);
   #if !NODEBUG
     std::ostringstream uidlist;
     uidlist.str("");
@@ -792,13 +793,11 @@ int CallHistoryInstance::HandleRemoveBatch(const picojson::value& msg) {
           uidlist << id << ", ";
         #endif
       } else {
-        delete[] ids;
         return err;
       }
   }
 
   err = contacts_db_delete_records(CALLH_VIEW_URI, ids, count);
-  delete[] ids;
   return MapContactErrors(err);
 }
 
@@ -826,7 +825,7 @@ int CallHistoryInstance::HandleRemoveAll(const picojson::value& msg) {
     }
 
     // now we have an array of id's to be removed
-    int* ids = new int(count);
+    std::unique_ptr<int[]> ids(new int[count]);
     CHK_MAP(contacts_record_create(CALLH_VIEW_URI, &rec));
     CHK_MAP(contacts_list_first(*plist));
 
