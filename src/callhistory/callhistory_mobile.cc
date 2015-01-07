@@ -77,7 +77,7 @@ int MapAttrName(std::string &att) {
 template <typename T>
 class ScopeGuard {
  public:
-  ScopeGuard() { var_ = reinterpret_cast<T>(NULL); }
+  ScopeGuard() { var_ = reinterpret_cast<T>(nullptr); }
   ~ScopeGuard() { LOG_ERR("ScopeGuard: type not supported"); }
   T* operator&() { return &var_; }  // NOLINT "unary & is dangerous"
   void operator=(T& var) { var_ = var; }
@@ -126,7 +126,7 @@ picojson::value JsonFromInt(int val) {
 picojson::value JsonFromTime(time_t val) {
   char timestr[40];
   // Instead "struct tm* tms = localtime(&val);" use the reentrant version.
-  time_t tme = time(NULL);
+  time_t tme = time(nullptr);
   struct tm tm_s = {0};
   localtime_r(&tme, &tm_s);
   struct tm* tms = &tm_s;
@@ -376,8 +376,8 @@ int MapAttributeFilter(contacts_filter_h& filter,
     if (match_flag != STR_MATCH_EXACTLY)
       return CONTACTS_ERROR_INVALID_PARAMETER;
 
-    const char* val = value.to_str().c_str();
-    CHK(contacts_filter_add_str(filter, prop_id, mflag, val));
+    CHK(contacts_filter_add_str(filter, prop_id, mflag,
+                                value.to_str().c_str()));
   } else if (attr == kRemoteParties || attr == kRemoteParty) {
     // Valid matchflags: all flags.
     prop_id = CALLH_ATTR_ADDRESS;
@@ -395,8 +395,8 @@ int MapAttributeFilter(contacts_filter_h& filter,
     else if (match_flag == STR_MATCH_EXISTS)
       mflag = CONTACTS_MATCH_EXISTS;
 
-    const char* val = value.to_str().c_str();
-    CHK(contacts_filter_add_str(filter, prop_id, mflag, val));
+    CHK(contacts_filter_add_str(filter, prop_id, mflag,
+                                value.to_str().c_str()));
   } else {
     LOG_ERR("MapAttributeFilter " << attr << " not supported");
     return CONTACTS_ERROR_INTERNAL;
@@ -466,7 +466,7 @@ int AddCompositeFilter(contacts_filter_h& filter,
     return CONTACTS_ERROR_INVALID_PARAMETER;
 
   ScopeGuard<contacts_filter_h> filt;
-  contacts_filter_h* pfilt = NULL;
+  contacts_filter_h* pfilt = nullptr;
   if (filter_op == CALLH_FILTER_NONE || is_empty) {
     pfilt = &filter;
   } else if (filter_op == CALLH_FILTER_OR || filter_op == CALLH_FILTER_AND) {
@@ -495,7 +495,7 @@ int AddAttributeFilter(contacts_filter_h& filter,
                        int filter_op,
                        bool& is_empty) {
   ScopeGuard<contacts_filter_h> filt;
-  contacts_filter_h* pfilt = NULL;
+  contacts_filter_h* pfilt = nullptr;
   if (filter_op == CALLH_FILTER_NONE || is_empty) {
     pfilt = &filter;
   } else if (filter_op == CALLH_FILTER_OR || filter_op == CALLH_FILTER_AND) {
@@ -525,7 +525,7 @@ int AddRangeFilter(contacts_filter_h& filter,
                    int filter_op,
                    bool& is_empty) {
   ScopeGuard<contacts_filter_h> filt;
-  contacts_filter_h* pfilt = NULL;
+  contacts_filter_h* pfilt = nullptr;
   if (filter_op == CALLH_FILTER_NONE || is_empty) {
     pfilt = &filter;
   } else if (filter_op == CALLH_FILTER_OR || filter_op == CALLH_FILTER_AND) {
@@ -575,9 +575,9 @@ int HandleFindResults(contacts_list_h list, picojson::value::object& resp) {
   picojson::value::array result;
 
   for (unsigned int i = 0; i < total; i++) {
-    contacts_record_h record = NULL;
+    contacts_record_h record = nullptr;
     CHK(contacts_list_get_current_record_p(list, &record));
-    if (record != NULL) {  // read the fields and create JSON attributes
+    if (record) {  // read the fields and create JSON attributes
       picojson::value::object o;
       CHK(SerializeEntry(record, o));
       result.push_back(picojson::value(o));
@@ -596,6 +596,12 @@ int HandleFindResults(contacts_list_h list, picojson::value::object& resp) {
 // Handling database notifications through Contacts API;
 // 'changes' is a string, and yes, we need to PARSE it...
 void NotifyDatabaseChange(const char* view, char* changes, void* user_data) {
+  CallHistoryInstance* chi = static_cast<CallHistoryInstance*>(user_data);
+  if (!chi->IsValid()) {
+    LOG_ERR("CallHistory: invalid notification callback");
+    return;
+  }
+
   picojson::value::object out;  // output JSON object
   picojson::value::array added;  // full records
   picojson::value::array changed;  // full records
@@ -603,23 +609,22 @@ void NotifyDatabaseChange(const char* view, char* changes, void* user_data) {
 
   char  delim[] = ",:";
   char* rest;
-  char* chtype  = NULL;
-  char* chid    = NULL;
+  char* chtype  = nullptr;
+  char* chid    = nullptr;
   int changetype, uid, err = NO_ERROR;
   bool ins = false;
-  contacts_record_h record = NULL;
 
   chtype = strtok_r(changes, delim, &rest);
   while (chtype) {
     changetype = atoi((const char*)chtype);
-    chid = strtok_r(NULL, delim, &rest);
+    chid = strtok_r(nullptr, delim, &rest);
     uid = atoi((const char*)chid);
     switch (changetype) {
       case CONTACTS_CHANGE_INSERTED:
         ins = true;
       case CONTACTS_CHANGE_UPDATED:
-        if (!ins &&
-            check(contacts_db_get_record(CALLH_VIEW_URI, uid, &record))) {
+        contacts_record_h record = nullptr;
+        if (check(contacts_db_get_record(CALLH_VIEW_URI, uid, &record))) {
           picojson::value::object val;
           if (check(SerializeEntry(record, val))) {
             if (ins)
@@ -638,7 +643,7 @@ void NotifyDatabaseChange(const char* view, char* changes, void* user_data) {
         err = DATABASE_ERR;
         break;
     }
-    chtype = strtok_r(NULL, delim, &rest);
+    chtype = strtok_r(nullptr, delim, &rest);
   }
 
   out["cmd"] = picojson::value("notif");
@@ -648,11 +653,7 @@ void NotifyDatabaseChange(const char* view, char* changes, void* user_data) {
   out["deleted"] = picojson::value(deleted);
   picojson::value v(out);
 
-  CallHistoryInstance* chi = static_cast<CallHistoryInstance*>(user_data);
-  if (chi->IsValid())
-    chi->PostMessage(v.serialize().c_str());
-  else
-    LOG_ERR("CallHistory: invalid notification callback");
+  chi->PostMessage(v.serialize().c_str());
 }
 
 }  // namespace
@@ -679,11 +680,10 @@ bool CallHistoryInstance::ReleaseBackend() {
 
 // Register a single native listener for all JS ones; dispatch at JS side.
 int CallHistoryInstance::HandleAddListener() {
-  if (listenerCount_ == 0) {  // Do actual registration only on first request.
-    void* user_data = reinterpret_cast<void*>(this);
+  if (!listenerCount_) {  // Do actual registration only on first request.
     int err = contacts_db_add_changed_cb_with_info(CALLH_VIEW_URI,
                                                    NotifyDatabaseChange,
-                                                   user_data);
+                                                   this);
     if (check(err))
       listenerCount_++;
     return MapContactErrors(err);
@@ -693,19 +693,20 @@ int CallHistoryInstance::HandleAddListener() {
 }
 
 int CallHistoryInstance::HandleRemoveListener() {
-  if (listenerCount_ == 0) {
+  if (!listenerCount_) {
     return UNKNOWN_ERR;
-  } else if (--listenerCount_ == 0) {
+  }
+  --listenerCount_;
+  if (!listenerCount_) {
     return UnregisterListener();
   }
   return NO_ERROR;
 }
 
 int CallHistoryInstance::UnregisterListener() {
-  void* user_data = reinterpret_cast<void*>(this);
   int err = contacts_db_remove_changed_cb_with_info(CALLH_VIEW_URI,
                                                     NotifyDatabaseChange,
-                                                    user_data);
+                                                    this);
   return MapContactErrors(err);
 }
 
@@ -729,7 +730,6 @@ int CallHistoryInstance::HandleFind(const picojson::value& input,
     if (!sa.is<picojson::null>())
       sortAttr = sa.to_str();
     sa = sortmode.get("order");
-    std::string sortorder;
     if (!sa.is<picojson::null>() && (sa.to_str() == STR_SORT_ASC))
       asc = true;
   }
@@ -770,10 +770,9 @@ int CallHistoryInstance::HandleRemove(const picojson::value& msg) {
 }
 
 int CallHistoryInstance::HandleRemoveBatch(const picojson::value& msg) {
-  int err = TYPE_MISMATCH_ERR;
   picojson::value arr = msg.get("uids");
   if (!arr.is<picojson::array>()) {
-    return err;
+    return TYPE_MISMATCH_ERR;
   }
 
   picojson::array json_arr = arr.get<picojson::array>();
@@ -793,11 +792,11 @@ int CallHistoryInstance::HandleRemoveBatch(const picojson::value& msg) {
           uidlist << id << ", ";
         #endif
       } else {
-        return err;
+        return TYPE_MISMATCH_ERR;
       }
   }
 
-  err = contacts_db_delete_records(CALLH_VIEW_URI, ids, count);
+  int err = contacts_db_delete_records(CALLH_VIEW_URI, ids, count);
   return MapContactErrors(err);
 }
 
@@ -805,7 +804,7 @@ int CallHistoryInstance::HandleRemoveBatch(const picojson::value& msg) {
 // elements in one operation. Need to fetch all the records, fetch id's
 // and remove them one by one, or in batches
 int CallHistoryInstance::HandleRemoveAll(const picojson::value& msg) {
-  contacts_record_h rec  = NULL;  // should not be destroyed by us;
+  contacts_record_h rec  = nullptr;  // should not be destroyed by us;
   ScopeGuard<contacts_list_h> list;
   contacts_list_h *plist;
   int limit = 200;  // initial batch size
@@ -820,7 +819,7 @@ int CallHistoryInstance::HandleRemoveAll(const picojson::value& msg) {
     CHK_MAP(contacts_db_get_all_records(CALLH_VIEW_URI, 0, limit, &list));
     plist = &list;
     CHK_MAP(contacts_list_get_count(*plist, &count));
-    if (count == 0) {
+    if (!count) {
       return NO_ERROR;
     }
 
