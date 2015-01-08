@@ -192,7 +192,7 @@ bool SysInfoDisplay::UpdateBrightness() {
     brightness_ = 1.0;
     return true;
   }
-  int max_val = atoi(str_val);
+  double max_val = strtod(str_val, NULL);
   free(str_val);
 
   str_val = system_info::ReadOneLine(ACPI_BACKLIGHT_DIR"/brightness");
@@ -201,7 +201,7 @@ bool SysInfoDisplay::UpdateBrightness() {
     brightness_ = 1.0;
     return true;
   }
-  int val = atoi(str_val);
+  double val = strtod(str_val, NULL);
   free(str_val);
 
   brightness_ = val / max_val;
