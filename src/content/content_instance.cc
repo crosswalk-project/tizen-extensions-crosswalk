@@ -145,8 +145,6 @@ void ContentInstance::PostAsyncSuccessReply(const picojson::value& msg,
 
 void ContentInstance::HandleSyncMessage(const char* message) {
   picojson::value v;
-  picojson::value::object o;
-
   std::string err;
   picojson::parse(v, message, message + strlen(message), &err);
   if (!err.empty()) {
