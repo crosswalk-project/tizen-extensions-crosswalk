@@ -165,14 +165,15 @@ void AlarmInstance::HandleGetAlarm(const picojson::value& msg) {
 
 void AlarmInstance::HandleGetAllAlarms() {
   std::vector<std::shared_ptr<AlarmInfo> > alarms;
-
   int ret = alarm_manager_->GetAllAlarms(alarms);
   picojson::array alarm_infos;
-  for (int i = 0; i < alarms.size(); i++) {
-    alarm_infos.push_back(picojson::value(alarms[i]->Serialize()));
+  if (!ret) {
+    for (int i = 0; i < alarms.size(); i++) {
+      alarm_infos.push_back(picojson::value(alarms[i]->Serialize()));
+    }
   }
 
-  SendSyncMessage(0, picojson::value(alarm_infos));
+  SendSyncMessage(ret, picojson::value(alarm_infos));
 }
 
 void AlarmInstance::HandleRemoveAlarm(const picojson::value& msg) {
