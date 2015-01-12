@@ -163,7 +163,7 @@ void ContentInstance::HandleSyncMessage(const char* message) {
     rc = media_content_set_db_updated_cb(MediaContentChangeCallback, this);
   } else if (cmd == "ContentManager.unsetChangeListener") {
     rc = media_content_unset_db_updated_cb();
-  } else if ("ContentManager.update") {
+  } else if (cmd == "ContentManager.update") {
     if (HandleUpdateRequest(v.get("content")))
       rc = MEDIA_CONTENT_ERROR_NONE;
   } else {
