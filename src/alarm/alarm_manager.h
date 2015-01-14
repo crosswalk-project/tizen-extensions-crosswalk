@@ -28,7 +28,7 @@ class AlarmManager {
 
  private:
   service_h CreateAppLaunchService(const std::string& app_id) const;
-  void DestoryService(service_h service) const;
+  void DestroyService(service_h service) const;
   int StoreAlarmInService(service_h service, AlarmInfo* alarm) const;
   int RestoreAlarmFromService(service_h service, AlarmInfo* alarm) const;
   bool CheckOwnership(int alarm_id) const;
