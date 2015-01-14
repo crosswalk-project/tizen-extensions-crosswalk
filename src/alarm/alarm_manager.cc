@@ -41,14 +41,14 @@ int AlarmManager::ScheduleAlarm(const std::string& app_id,
 
   int ret = StoreAlarmInService(service, alarm);
   if (ret) {
-    DestoryService(service);
+    DestroyService(service);
     std::cerr << "Failed to store the alarm information." << std::endl;
     return ret;
   }
 
   ret = service_add_extra_data(service, kHostAppIdKey, host_app_id_.c_str());
   if (ret) {
-    DestoryService(service);
+    DestroyService(service);
     std::cerr << "Failed to store host application ID." << std::endl;
     return ret;
   }
@@ -70,7 +70,7 @@ int AlarmManager::ScheduleAlarm(const std::string& app_id,
         alarm->period(), &alarm_id);
   }
   alarm->SetId(alarm_id);
-  DestoryService(service);
+  DestroyService(service);
 
   if (ret) {
     std::cerr << "Failed to schedule an alarm." << std::endl;
@@ -132,12 +132,12 @@ int AlarmManager::RemoveAlarm(int alarm_id) const {
     return ret;
 
   if (!CheckOwnership(service)) {
-    DestoryService(service);
+    DestroyService(service);
     return -1;
   }
 
   ret = alarm_cancel(alarm_id);
-  DestoryService(service);
+  DestroyService(service);
   return ret;
 }
 
@@ -163,14 +163,14 @@ int AlarmManager::GetAlarm(int alarm_id, AlarmInfo* alarm) const {
     return ret;
 
   if (!CheckOwnership(service)) {
-    DestoryService(service);
+    DestroyService(service);
     return -1;
   }
 
   ret = RestoreAlarmFromService(service, alarm);
   alarm->SetId(alarm_id);
 
-  DestoryService(service);
+  DestroyService(service);
   return ret;
 }
 
@@ -203,7 +203,7 @@ AlarmManager::CreateAppLaunchService(const std::string& app_id) const {
   return service;
 }
 
-void AlarmManager::DestoryService(service_h service) const {
+void AlarmManager::DestroyService(service_h service) const {
   if (service_destroy(service))
     std::cerr << "Failed to call service_destroy()" << std::endl;
 }
@@ -244,7 +244,7 @@ bool AlarmManager::CheckOwnership(int alarm_id) const {
     return false;
 
   bool passed = CheckOwnership(service);
-  DestoryService(service);
+  DestroyService(service);
 
   return passed;
 }
