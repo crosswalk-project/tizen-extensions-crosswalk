@@ -54,21 +54,30 @@ int AlarmManager::ScheduleAlarm(const std::string& app_id,
   }
 
   int alarm_id = 0;
-  if (alarm->type() == AlarmInfo::ABSOLUTE) {
-    time_t tval = static_cast<time_t>(alarm->date());
-    struct tm date_tm = {0};
-    localtime_r(&tval, &date_tm);
-    if (alarm->weekflag()) {
-      ret = alarm_schedule_with_recurrence_week_flag(service, &date_tm,
-          alarm->weekflag(), &alarm_id);
-    } else {
-      ret = alarm_schedule_at_date(service, &date_tm, alarm->period(),
-          &alarm_id);
+  switch (alarm->type()) {
+    case AlarmInfo::AlarmType::ABSOLUTE: {
+      time_t tval = static_cast<time_t>(alarm->date());
+      struct tm date_tm = {0};
+      localtime_r(&tval, &date_tm);
+      if (alarm->weekflag()) {
+        ret = alarm_schedule_with_recurrence_week_flag(service, &date_tm,
+            alarm->weekflag(), &alarm_id);
+      } else {
+        ret = alarm_schedule_at_date(service, &date_tm, alarm->period(),
+            &alarm_id);
+      }
+      break;
     }
-  } else if (alarm->type() == AlarmInfo::RELATIVE) {
-    ret = alarm_schedule_after_delay(service, alarm->delay(),
-        alarm->period(), &alarm_id);
+    case AlarmInfo::AlarmType::RELATIVE:
+      ret = alarm_schedule_after_delay(service, alarm->delay(),
+          alarm->period(), &alarm_id);
+      break;
+    default:
+      std::cerr << "Wrong alarm type." << std::endl;
+      ret = -1;
+      break;
   }
+
   alarm->SetId(alarm_id);
   DestoryService(service);
 

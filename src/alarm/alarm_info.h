@@ -24,7 +24,7 @@ class AlarmInfo {
 
   int id() const { return id_; }
   void SetId(int id) { id_ = id; }
-  int type() const { return type_; }
+  AlarmType type() const { return type_; }
   int date() const { return date_; }
   int delay() const { return delay_; }
   int period() const { return period_; }
