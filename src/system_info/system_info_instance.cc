@@ -38,11 +38,13 @@
 #include "system_info/system_info_device_orientation.h"
 #include "system_info/system_info_display.h"
 #include "system_info/system_info_locale.h"
-#include "system_info/system_info_network.h"
-#include "system_info/system_info_peripheral.h"
-#if defined(TIZEN)
+#ifdef GENERIC_DESKTOP
+#include "system_info/system_info_network_desktop.h"
+#else
+#include "system_info/system_info_network_tizen.h"
 #include "system_info/system_info_sim.h"
 #endif
+#include "system_info/system_info_peripheral.h"
 #include "system_info/system_info_storage.h"
 #include "system_info/system_info_utils.h"
 #include "system_info/system_info_wifi_network.h"
@@ -67,9 +69,11 @@ void SystemInfoInstance::InstancesMapInitialize() {
   RegisterClass<SysInfoDeviceOrientation>();
   RegisterClass<SysInfoDisplay>();
   RegisterClass<SysInfoLocale>();
-  RegisterClass<SysInfoNetwork>();
   RegisterClass<SysInfoPeripheral>();
-#if defined(TIZEN_IVI) || defined(TIZEN_MOBILE)
+#ifdef GENERIC_DESKTOP
+  RegisterClass<SysInfoNetworkDesktop>();
+#else
+  RegisterClass<SysInfoNetworkTizen>();
   RegisterClass<SysInfoSim>();
 #endif
   RegisterClass<SysInfoStorage>();

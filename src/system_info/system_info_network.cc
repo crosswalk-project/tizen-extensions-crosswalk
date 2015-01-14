@@ -6,19 +6,6 @@
 
 const std::string SysInfoNetwork::name_ = "NETWORK";
 
-void SysInfoNetwork::Get(picojson::value& error,
-                         picojson::value& data) {
-  if (!Update(error)) {
-    if (error.get("message").to_str().empty())
-      system_info::SetPicoJsonObjectValue(error, "message",
-          picojson::value("Get network type faild."));
-    return;
-  }
-
-  SetData(data);
-  system_info::SetPicoJsonObjectValue(error, "message", picojson::value(""));
-}
-
 std::string
 SysInfoNetwork::ToNetworkTypeString(SystemInfoNetworkType type) {
   std::string ret;

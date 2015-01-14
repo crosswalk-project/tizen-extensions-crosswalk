@@ -9,6 +9,11 @@
 #include <pthread.h>
 #include <unistd.h>
 
+#if defined(TIZEN) && !defined(TIZEN_MOBILE)
+#include <gio/gio.h>
+#include <glib.h>
+#include <glib-object.h>
+#endif
 #include <string>
 
 #include "common/picojson.h"
@@ -24,9 +29,18 @@ namespace system_info {
 
 // The default timeout interval is set to 1s to match the top update interval.
 const int default_timeout_interval = 1000;
-#if defined(TIZEN)
+#ifdef TIZEN
 char* GetDuidProperty();
-#endif
+#ifndef TIZEN_MOBILE
+const char kOfonoService[] = "org.ofono";
+const char kOfonoManagerPath[] = "/";
+const char kOfonoManagerIface[] = "org.ofono.Manager";
+const char kOfonoNetworkRegistrationIface[] = "org.ofono.NetworkRegistration";
+
+GDBusConnection* GetDbusConnection();
+char* OfonoGetModemPath(GDBusConnection* bus_conn);
+#endif  // TIZEN_MOBILE
+#endif  // TIZEN
 int ReadOneByte(const char* path);
 // Free the returned value after using.
 char* ReadOneLine(const char* path);
