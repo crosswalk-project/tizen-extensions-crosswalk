@@ -76,6 +76,7 @@ std::unique_ptr<picojson::value> WebSetting::RemoveAllCookies() {
     g_error_free(error);
     return CreateResultMessage(WebApiAPIErrors::UNKNOWN_ERR);
   }
+  g_variant_unref(result);
   return CreateResultMessage();
 }
 
@@ -96,5 +97,6 @@ std::unique_ptr<picojson::value> WebSetting::SetUserAgentString(
     g_error_free(error);
     return CreateResultMessage(WebApiAPIErrors::UNKNOWN_ERR);
   }
+  g_variant_unref(result);
   return CreateResultMessage();
 }
