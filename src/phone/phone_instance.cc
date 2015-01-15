@@ -236,7 +236,7 @@ void PhoneInstance::HandleSignal(GDBusConnection* connection,
 
     instance->SendSignal(picojson::value(signal_name), value);
   } else if (!strcmp(signal_name, "CallChanged")) {
-    const gchar* key = NULL;
+    gchar* key = NULL;
     const gchar* state = NULL;
     const gchar* line_id = NULL;
     const gchar* contact = NULL;
@@ -256,6 +256,8 @@ void PhoneInstance::HandleSignal(GDBusConnection* connection,
         contact_err = picojson::parse(contact_obj, contact,
                                       contact + strlen(contact));
       }
+      g_free(key);
+      g_variant_unref(value);
     }
     picojson::value::object o;
     o["state"] = state ? picojson::value(state) : picojson::value("");
@@ -373,7 +375,7 @@ void PhoneInstance::HandleActiveCall(const picojson::value& msg) {
     SendSyncErrorReply(UNKNOWN_ERR);
   } else {
     picojson::value::object o;
-    const gchar* key = NULL;
+    gchar* key = NULL;
     const gchar* state = NULL;
     const gchar* line_id = NULL;
     const gchar* contact = NULL;
@@ -388,6 +390,9 @@ void PhoneInstance::HandleActiveCall(const picojson::value& msg) {
         line_id = g_variant_get_string(value, NULL);
       else if (!strcmp(key, "contact"))
         contact = g_variant_get_string(value, NULL);
+
+      g_free(key);
+      g_variant_unref(value);
     }
 
     o["state"] = state ? picojson::value(state) : picojson::value("");
