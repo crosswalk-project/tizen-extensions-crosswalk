@@ -72,7 +72,7 @@ GDBusConnection* GetDbusConnection() {
   return bus_conn;
 }
 
-char* OfonoGetModemPath(GDBusConnection* bus_conn) {
+std::string OfonoGetModemPath(GDBusConnection* bus_conn) {
   GError* error = NULL;
   GVariant* modems_result = g_dbus_connection_call_sync(bus_conn,
       kOfonoService, kOfonoManagerPath, kOfonoManagerIface,
@@ -84,9 +84,10 @@ char* OfonoGetModemPath(GDBusConnection* bus_conn) {
     return NULL;
   }
 
-  char* result_path = NULL;
+  std::string result_path;
   GVariantIter* modems_iter;
   g_variant_get(modems_result, "(a(oa{sv}))", &modems_iter);
+  g_variant_unref(modems_result);
 
   gchar* path;
   GVariant* modem_properties;
@@ -97,36 +98,31 @@ char* OfonoGetModemPath(GDBusConnection* bus_conn) {
 
     GVariantIter* properties_iter;
     g_variant_get(modem_properties, "a{sv}", &properties_iter);
+    g_variant_unref(modem_properties);
 
     bool hardware_flag = false;
     gchar* key;
     GVariant* var_val;
-    while (g_variant_iter_next(properties_iter, "{sv}", &key, &var_val)) {
-      if (g_strcmp0(key, "Type") != 0)
-        continue;
-
-      const char* modem_type = g_variant_get_string(var_val, NULL);
-      if (g_strcmp0(modem_type, "hardware") == 0) {
-        result_path = path;
-        hardware_flag = true;
-      } else if (g_strcmp0(modem_type, "sap") == 0) {
-        result_path = path;
+    while (g_variant_iter_next(properties_iter, "{sv}", &key, &var_val) &&
+           !hardware_flag) {
+      if (g_strcmp0(key, "Type") == 0) {
+        const char* modem_type = g_variant_get_string(var_val, NULL);
+        if (g_strcmp0(modem_type, "hardware") == 0) {
+          result_path = std::string(path);
+          hardware_flag = true;
+        } else if (g_strcmp0(modem_type, "sap") == 0) {
+          result_path = std::string(path);
+        }
       }
-      break;
+      g_free(key);
+      g_variant_unref(var_val);
     }
+    g_free(path);
     g_variant_iter_free(properties_iter);
-    g_free(key);
-    g_variant_unref(var_val);
-
     if (hardware_flag)
       break;
   }
-
-  g_free(path);
   g_variant_iter_free(modems_iter);
-  g_variant_unref(modems_result);
-  g_variant_unref(modem_properties);
-
   return result_path;
 }
 #endif  // TIZEN_MOBILE
