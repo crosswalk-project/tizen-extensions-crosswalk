@@ -42,6 +42,8 @@ std::string getLocale() {
                                               NULL,
                                               &error);
 
+  g_object_unref(proxy);
+
   if (error)  {
     LOGGER_E("Error getting locale: " << error->message);
     g_error_free(error);
