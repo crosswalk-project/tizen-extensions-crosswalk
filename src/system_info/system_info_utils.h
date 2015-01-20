@@ -38,7 +38,7 @@ const char kOfonoManagerIface[] = "org.ofono.Manager";
 const char kOfonoNetworkRegistrationIface[] = "org.ofono.NetworkRegistration";
 
 GDBusConnection* GetDbusConnection();
-char* OfonoGetModemPath(GDBusConnection* bus_conn);
+std::string OfonoGetModemPath(GDBusConnection* bus_conn);
 #endif  // TIZEN_MOBILE
 #endif  // TIZEN
 int ReadOneByte(const char* path);

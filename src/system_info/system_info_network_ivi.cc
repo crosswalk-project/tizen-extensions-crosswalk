@@ -24,12 +24,12 @@ void SysInfoNetworkTizen::StartListening() {
   vconf_notify_key_changed(VCONFKEY_NETWORK_STATUS,
       (vconf_callback_fn)OnNetworkTypeChanged, this);
 
-  if (!conn_ || !modem_path_)
+  if (!conn_ || modem_path_.empty())
     return;
   cellular_network_type_changed_watch_ = g_dbus_connection_signal_subscribe(
       conn_, system_info::kOfonoService,
       system_info::kOfonoNetworkRegistrationIface, "PropertyChanged",
-      modem_path_, NULL, G_DBUS_SIGNAL_FLAGS_NONE,
+      modem_path_.c_str(), NULL, G_DBUS_SIGNAL_FLAGS_NONE,
       OnCellularNetworkTypeChanged, this, NULL);
 }
 
@@ -44,14 +44,14 @@ void SysInfoNetworkTizen::StopListening() {
 }
 
 void SysInfoNetworkTizen::GetCellularNetworkType() {
-  if (!conn_ || !modem_path_) {
+  if (!conn_ || modem_path_.empty()) {
     type_ = SYSTEM_INFO_NETWORK_UNKNOWN;
     return;
   }
 
   GError* error = NULL;
   GVariant* var = g_dbus_connection_call_sync(conn_, system_info::kOfonoService,
-      modem_path_, system_info::kOfonoNetworkRegistrationIface,
+      modem_path_.c_str(), system_info::kOfonoNetworkRegistrationIface,
       "GetProperties", NULL, NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, &error);
 
   if (!var) {
@@ -62,17 +62,18 @@ void SysInfoNetworkTizen::GetCellularNetworkType() {
     return;
   }
 
-  gchar* key;
   GVariantIter* iter;
-  GVariant* var_val;
   g_variant_get(var, "(a{sv})", &iter);
-  while (g_variant_iter_next(iter, "{sv}", &key, &var_val))
+  gchar* key;
+  GVariant* var_val;
+  while (g_variant_iter_next(iter, "{sv}", &key, &var_val)) {
     UpdateCellularNetwork(key, var_val);
+    g_free(key);
+    g_variant_unref(var_val);
+  }
 
   g_variant_unref(var);
-  g_free(key);
   g_variant_iter_free(iter);
-  g_variant_unref(var_val);
 }
 
 void SysInfoNetworkTizen::UpdateCellularNetwork(const gchar* key,

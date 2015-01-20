@@ -7,6 +7,8 @@
 
 #include <vconf.h>
 
+#include <string>
+
 #include "system_info/system_info_network.h"
 
 class SysInfoNetworkTizen : public SysInfoNetwork, public SysInfoObject {
@@ -38,7 +40,7 @@ class SysInfoNetworkTizen : public SysInfoNetwork, public SysInfoObject {
 
   guint cellular_network_type_changed_watch_;
   GDBusConnection* conn_;
-  const char* modem_path_;
+  std::string modem_path_;
 #endif
 
   DISALLOW_COPY_AND_ASSIGN(SysInfoNetworkTizen);
