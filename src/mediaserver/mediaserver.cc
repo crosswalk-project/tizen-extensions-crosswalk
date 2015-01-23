@@ -148,7 +148,7 @@ static picojson::value toJSONValue(const gchar* value) {
 
 static picojson::value toJSONValueArray(const gchar* const* values) {
   picojson::array array;
-  while (*values)
+  while (values != NULL && *values)
     array.push_back(picojson::value(*values++));
   return picojson::value(array);
 }
