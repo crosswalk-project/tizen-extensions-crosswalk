@@ -72,9 +72,7 @@ class SysInfoSim : public SysInfoObject {
                 unsigned int& member,
                 const unsigned int& default_value = 0);
   SystemInfoSimState GetSystemInfoSIMState(sim_state_e state);
-#elif defined(TIZEN_IVI)
-  void InitDbusConnection();
-  void DeInitDbusConnection();
+#else
   void GetSimProperties();
   void GetOperatorNameAndSpn();
   void UpdateSimProperty(const gchar* key, GVariant* val);
@@ -98,6 +96,7 @@ class SysInfoSim : public SysInfoObject {
   std::string spn_;
 #if defined(TIZEN_IVI)
   GDBusConnection* conn_;
+  std::string modem_path_;
   guint prop_changed_watch_;
 #endif
 
