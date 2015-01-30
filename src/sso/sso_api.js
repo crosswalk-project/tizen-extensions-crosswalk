@@ -3,12 +3,19 @@
 // found in the LICENSE file.
 
 ///////////////////////////////////////////////////////////////////////////////
-// Utilities
+// Utility functions and objects
 ///////////////////////////////////////////////////////////////////////////////
 
 var g_next_async_call_id = 0;
 var g_async_calls = {};
 var g_next_obj_id = 0;
+var v8tools = requireNative('v8tools');
+
+var PropertyFlag = {
+  CONFIGURABLE: 1,
+  ENUMERABLE: 2,
+  WRITEABLE: 4
+};
 
 function AsyncCall(resolve, reject, command) {
   this.resolve = resolve;
@@ -41,33 +48,135 @@ function _isCommandInProgress(command) {
   return false;
 }
 
-function _addConstProperty(obj, propertyKey, propertyValue) {
+function _addProperty(obj, propertyKey, propertyValue, propertyMask) {
   Object.defineProperty(obj, propertyKey, {
-    configurable: true,
-    enumerable: true,
-    writable: false,
+    configurable: Boolean(propertyMask & PropertyFlag.CONFIGURABLE),
+    enumerable: Boolean(propertyMask & PropertyFlag.ENUMERABLE),
+    writable: Boolean(propertyMask & PropertyFlag.WRITEABLE),
     value: propertyValue
   });
 }
 
-function _addConstPropertyFromObject(obj, propertyKey, propObject) {
-  if (!propObject.hasOwnProperty(propertyKey))
-    return;
-  Object.defineProperty(obj, propertyKey, {
-    configurable: false,
-    enumerable: true,
-    writable: false,
-    value: propObject[propertyKey]});
+function _addReadOnlyProperty(obj, propertyKey, propertyValue) {
+  _addProperty(obj, propertyKey, propertyValue, PropertyFlag.ENUMERABLE);
 }
 
-function _addPropertyFromObject(obj, propertyKey, propObject) {
-  if (!propObject.hasOwnProperty(propertyKey))
-    return;
-  Object.defineProperty(obj, propertyKey, {
-    configurable: false,
-    enumerable: true,
-    writable: true,
-    value: propObject[propertyKey]});
+function _addHiddenProperty(obj, propertyKey, propertyValue) {
+  _addProperty(obj, propertyKey, propertyValue, PropertyFlag.WRITEABLE);
+}
+
+function _addReadWriteProperty(obj, propertyKey, propertyValue) {
+  _addProperty(obj, propertyKey, propertyValue, PropertyFlag.ENUMERABLE | PropertyFlag.WRITEABLE);
+}
+
+function derive(child, parent) {
+  child.prototype = Object.create(parent.prototype);
+  child.prototype.constructor = child;
+  _addProperty(child.prototype, 'constructor', child, PropertyFlag.WRITEABLE);
+}
+
+function EventTargetInterface(eventListeners, isValidType) {
+  _addHiddenProperty(this, 'listeners', eventListeners);
+  _addHiddenProperty(this, 'isValidType', isValidType);
+}
+
+EventTargetInterface.prototype.addEventListener = function(type, callback) {
+  if (callback != null && typeof callback === 'function' &&
+      this.isValidType == type && this.listeners[type].indexOf(callback) != -1) {
+    this.listeners[type].push(callback);
+  }
+};
+
+EventTargetInterface.prototype.removeEventListener = function(type, callback) {
+  if (callback != null && typeof callback === 'function' &&
+      this.isValidType == type) {
+    var index = this.listeners[type].indexOf(callback);
+    if (index >= 0)
+      this.listeners[type].slice(index, 1);
+  }
+};
+
+EventTargetInterface.prototype.dispatchEvent = function(event) {
+  if (typeof event !== 'object' || !this.isValidType == event.type)
+    return false;
+
+  var handled = true;
+  this.listeners[event.type].forEach(function(callback) {
+    var res = callback(event);
+    if (!res && handled)
+      handled = false;
+  });
+  return handled;
+};
+
+function _updateIdentityProps(src, dest) {
+  for (var prop in src) {
+    if (src.hasOwnProperty(prop) && src[prop] && dest.hasOwnProperty(prop))
+      dest[prop] = src[prop];
+  }
+}
+
+function _getSessionObj(identity, sessionJsId) {
+  var session = null;
+  if (sessionJsId <= -1 || identity == null)
+    return null;
+  for (var j = 0; j < identity.sessions.length; j++) {
+    if (identity.sessions[j].jsid == sessionJsId) {
+      session = identity.sessions[j];
+      break;
+    }
+  }
+  return session;
+}
+
+function _getSessionObjByMethod(identity, method) {
+  var session = null;
+  if (typeof method !== 'string' || method.length == 0 || identity == null)
+    return null;
+  for (var j = 0; j < identity.sessions.length; j++) {
+    if (identity.sessions[j].method == method) {
+      session = identity.sessions[j];
+      break;
+    }
+  }
+  return session;
+}
+
+function _getSessionObjByJSId(sessionJsId) {
+  if (sessionJsId <= -1)
+    return null;
+  var identities = _sso.authService.identities;
+  var session = null;
+  for (var j = 0; j < identities.length; j++) {
+    session = _getSessionObj(identities[j], sessionJsId);
+    if (session)
+      break;
+  }
+  return session;
+}
+
+function _getIdentityObj(identities, key, value) {
+  var identity = null;
+  for (var i = 0; i < identities.length; i++) {
+    var ident = identities[i];
+    if (identities[i].hasOwnProperty(key) && identities[i][key] == value) {
+      identity = identities[i];
+      break;
+    }
+  }
+  return identity;
+}
+
+function _convertToIdentType(identType) {
+  if (isNaN(identType)) {
+    if (identType == 'APPLICATION')
+      return IdentityType.APPLICATION;
+    else if (identType == 'NETWORK')
+      return IdentityType.NETWORK;
+  }
+
+  return (identType == IdentityType.APPLICATION || identType == IdentityType.NETWORK) ?
+      identType : IdentityType.WEB;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -75,9 +184,9 @@ function _addPropertyFromObject(obj, propertyKey, propObject) {
 ///////////////////////////////////////////////////////////////////////////////
 
 var IdentityType = {
-  APPLICATION: 0,
-  WEB: 1,
-  NETWORK: 2
+  APPLICATION: 1,
+  WEB: 2,
+  NETWORK: 4
 };
 
 var SessionState = {
@@ -102,91 +211,53 @@ var UserPromptPolicy = {
   VALIDATION: 3
 };
 
-function MechanismQueryResult(obj) {
-  _addConstPropertyFromObject(this, 'method', obj);
-  _addConstPropertyFromObject(this, 'mechanisms', obj);
+function IdentityInfo(info) {
+  var type = _convertToIdentType((info && info.hasOwnProperty('type') && info.type) || 'WEB');
+  _addReadWriteProperty(this, 'type', Number(type));
+  _addReadWriteProperty(this, 'username',
+      String((info && info.hasOwnProperty('username') && info.username)) || null);
+  _addReadWriteProperty(this, 'caption',
+      String((info && info.hasOwnProperty('caption') && info.caption)) || null);
+  _addReadWriteProperty(this, 'secret',
+      String((info && info.hasOwnProperty('secret') && info.secret)) || null);
+  _addReadWriteProperty(this, 'storeSecret',
+      Boolean((info && info.hasOwnProperty('storeSecret') && info.storeSecret) || false));
+  _addReadWriteProperty(this, 'realms', (info && info.hasOwnProperty('realms') && info.realms) ||
+      null);
+  _addReadWriteProperty(this, 'owner', (info && info.hasOwnProperty('owner') && info.owner) ||
+      null);
+  _addReadWriteProperty(this, 'accessControlList',
+      (info && info.hasOwnProperty('accessControlList') && info.accessControlList) || null);
 }
 
-function IdentityInfo(obj, id, type, owner) {
-  _addConstProperty(this, 'id', id);
-  _addConstProperty(this, 'type', type);
-  _addPropertyFromObject(this, 'username', obj);
-  _addPropertyFromObject(this, 'caption', obj);
-  _addPropertyFromObject(this, 'secret', obj);
-  _addPropertyFromObject(this, 'storeSecret', obj);
-  _addPropertyFromObject(this, 'realms', obj);
-  _addConstProperty(this, 'owner', owner);
-  _addPropertyFromObject(this, 'accessControlList', obj);
-}
+function IdentityInfoSerialized(info, id) {
+  if (info == null)
+    return null;
 
-function _destroyIdentity(ident) {
-  var msg = {
-    'asyncOpCmd': 'destroyIdentity',
-    'serviceJSId': g_auth_service.jsid,
-    'identityJSId': ident.jsid
-  };
-  return _createPromise(msg);
-}
-
-function _getSessionObj(sessionJSId) {
-  var sessobj = null;
-  if (sessionJSId == -1) return null;
-  for (var i = 0; i < g_identities.length; i++) {
-    var identity = g_identities[i];
-    for (var j = 0; j < identity.sessions.length; j++) {
-      var sess = identity.sessions[j];
-      if (sess.jsid == sessionJSId) {
-        sessobj = sess;
-        break;
-      }
-    }
-  }
-  return sessobj;
-}
-
-function _getIdentityObj(id) {
-  if (id == -1) return null;
-  var identobj = null;
-  for (var i = 0; i < g_identities.length; i++) {
-    var curr_ident = g_identities[i];
-    if (curr_ident.info.id == id) {
-      identobj = curr_ident;
-      break;
-    }
-  }
-  return identobj;
-}
-
-function _getIdentityObjByJSId(jsid) {
-  if (jsid == -1) return null;
-  var identobj = null;
-  for (var i = 0; i < g_identities.length; i++) {
-    var curr_ident = g_identities[i];
-    if (curr_ident.jsid == jsid) {
-      identobj = curr_ident;
-      break;
-    }
-  }
-  return identobj;
-}
-
-function _convertToIdentType(stringtype) {
-  if (stringtype == 'APPLICATION') return IdentityType.APPLICATION;
-  else if (stringtype == 'WEB') return IdentityType.WEB;
-  else if (stringtype == 'NETWORK') return IdentityType.NETWORK;
-  else return IdentityType.WEB;
+  if (info.hasOwnProperty('type') && info.type != null)
+    this.type = info.type;
+  if (id != null)
+    this.id = id;
+  if (info.hasOwnProperty('username') && info.username != null)
+    this.username = info.username;
+  if (info.hasOwnProperty('caption') && info.caption != null)
+    this.caption = info.caption;
+  if (info.hasOwnProperty('secret') && info.secret != null)
+    this.secret = info.secret;
+  if (info.hasOwnProperty('storeSecret') && info.storeSecret != null)
+    this.storeSecret = info.storeSecret;
+  if (info.hasOwnProperty('realms') && info.realms != null)
+    this.realms = info.realms;
+  if (info.hasOwnProperty('owner') && info.owner != null)
+    this.owner = info.owner;
+  if (info.hasOwnProperty('accessControlList') &&
+      info.accessControlList != null)
+    this.accessControlList = info.accessControlList;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Extension msg listener and utility functions
+// Extension msg listener and handlers
 ///////////////////////////////////////////////////////////////////////////////
-var g_identities = [];
-var g_auth_service = new AuthService();
-exports.authService = g_auth_service;
-
-var g_auth_session_listeners = {};
-g_auth_session_listeners['statechanged'] = [];
-
 extension.setMessageListener(function(json) {
   var msg = JSON.parse(json);
   if (msg.asyncOpErrorMsg != null) {
@@ -200,7 +271,6 @@ extension.setMessageListener(function(json) {
       case 'queryMechanisms':
       case 'queryIdentities':
       case 'clear':
-      case 'destroyIdentity':
       case 'requestCredentialsUpdate':
       case 'addReference':
       case 'removeReference':
@@ -210,11 +280,14 @@ extension.setMessageListener(function(json) {
       case 'cancel':
         handleAsyncCallSuccess(msg);
         break;
+      case 'createIdentity':
+        handleCreateIdentity(msg);
+        break;
       case 'getIdentity':
         handleGetIdentity(msg);
         break;
-      case 'startSession':
-        handleStartSession(msg);
+      case 'getSession':
+        handleGetSession(msg);
         break;
       case 'store':
         handleStore(msg);
@@ -235,17 +308,20 @@ extension.setMessageListener(function(json) {
   } else if (msg.info != null) {
     switch (msg.info.info) {
       case 'signedout':
-        var identobj = g_auth_service.getIdentityByJSId(msg.objectJSId);
-        if (identobj != null && identobj.onsignedout) identobj.onsignedout(identobj);
+        var identities = _sso.authService.identities;
+        var identity = _getIdentityObj(identities, 'jsid', msg.objectJSId);
+        if (identity && typeof identity.onsignedout === 'function')
+          identity.onsignedout(identity);
         break;
       case 'removed':
         if (_isCommandInProgress('remove'))
           break;
-        var identobj = g_auth_service.getIdentityByJSId(msg.objectJSId);
-        if (identobj != null) {
-          if (identobj.onremoved) identobj.onremoved(identobj);
-          g_identities.splice(g_identities.indexOf(identobj), 1);
-          _destroyIdentity(identobj);
+        var identities = _sso.authService.identities;
+        var identity = _getIdentityObj(identities, 'jsid', msg.objectJSId);
+        if (identity) {
+          if (typeof identity.onremoved === 'function')
+            identity.onremoved(identity);
+          identities.splice(identities.indexOf(identity), 1);
         }
         break;
       case 'sessionStateChanged':
@@ -264,34 +340,48 @@ function handleAsyncCallSuccess(msg) {
 }
 
 function handleAsyncCallError(msg) {
+  var identities = _sso.authService.identities;
   if (msg.asyncOpCmd == 'getIdentity') {
-    var identobj = g_auth_service.getIdentityByJSId(
-        msg.responseData.identityJSId);
-    if (identobj != null)
-      g_identities.splice(g_identities.indexOf(identobj), 1);
+    var identity = _getIdentityObj(identities, 'jsid', msg.responseData.identityJSId);
+    if (identity != null)
+      identities.splice(identities.indexOf(identity), 1);
   }
   g_async_calls[msg.asyncOpId].reject(Error(msg.asyncOpErrorMsg));
   delete g_async_calls[msg.asyncOpId];
 }
 
+function handleCreateIdentity(msg) {
+  var identities = _sso.authService.identities;
+  var identity = _getIdentityObj(identities, 'jsid', msg.responseData.identityJSId);
+  if (identity != null) {
+    g_async_calls[msg.asyncOpId].resolve(identity);
+  } else {
+    g_async_calls[msg.asyncOpId].reject(Error('Identity object not found for create Identity'));
+  }
+  delete g_async_calls[msg.asyncOpId];
+}
+
 function handleGetIdentity(msg) {
-  var identobj = _getIdentityObjByJSId(msg.responseData.identityJSId);
-  if (identobj) {
-    identobj.info = new IdentityInfo(msg.responseData.info,
-        msg.responseData.info.id, _convertToIdentType(msg.responseData.info.type),
-        msg.responseData.info.owner);
-    g_async_calls[msg.asyncOpId].resolve(identobj);
+  var identities = _sso.authService.identities;
+  var identity = _getIdentityObj(identities, 'jsid', msg.responseData.identityJSId);
+  if (identity instanceof Identity) {
+    _updateIdentityProps(new IdentityInfo(msg.responseData.info), identity);
+    v8tools.forceSetProperty(identity, 'id', msg.responseData.info.id);
+    g_async_calls[msg.asyncOpId].resolve(identity);
   } else {
     g_async_calls[msg.asyncOpId].reject(Error('Identity object not found for getidentity'));
   }
   delete g_async_calls[msg.asyncOpId];
 }
 
-function handleStartSession(msg) {
-  var identobj = g_auth_service.getIdentityByJSId(msg.objectJSId);
-  if (identobj) {
-    var session = new AuthSession(msg.responseData, msg.objectJSId);
-    identobj.sessions.push(session);
+function handleGetSession(msg) {
+  var session = null;
+  var identities = _sso.authService.identities;
+  var identity = _getIdentityObj(identities, 'jsid', msg.objectJSId);
+  if (identity != null)
+    session = _getSessionObj(identity, msg.responseData.sessionJSId);
+  if (session != null) {
+    v8tools.forceSetProperty(session, 'state', msg.responseData.sessionState);
     g_async_calls[msg.asyncOpId].resolve(session);
   } else {
     g_async_calls[msg.asyncOpId].reject(Error('Identity object not found for session'));
@@ -300,12 +390,11 @@ function handleStartSession(msg) {
 }
 
 function handleStore(msg) {
-  var identobj = g_auth_service.getIdentityByJSId(msg.objectJSId);
-  if (identobj != null) {
-    var info = new IdentityInfo(identobj.info, msg.responseData.identityId,
-        identobj.info.type, identobj.info.owner);
-    identobj.info = info;
-    g_async_calls[msg.asyncOpId].resolve(identobj);
+  var identities = _sso.authService.identities;
+  var identity = _getIdentityObj(identities, 'jsid', msg.objectJSId);
+  if (identity != null) {
+    v8tools.forceSetProperty(identity, 'id', msg.responseData.identityId);
+    g_async_calls[msg.asyncOpId].resolve(identity);
   } else {
     g_async_calls[msg.asyncOpId].reject(Error('Identity NOT FOUND'));
   }
@@ -313,10 +402,11 @@ function handleStore(msg) {
 }
 
 function handleRemoveIdentity(msg) {
-  var identobj = g_auth_service.getIdentityByJSId(msg.objectJSId);
-  if (identobj != null) {
-    g_async_calls[msg.asyncOpId].resolve(identobj);
-    g_identities.splice(g_identities.indexOf(identobj), 1);
+  var identities = _sso.authService.identities;
+  var identity = _getIdentityObj(identities, 'jsid', msg.objectJSId);
+  if (identity != null) {
+    g_async_calls[msg.asyncOpId].resolve(identity);
+    identities.splice(identities.indexOf(identity), 1);
   } else {
     g_async_calls[msg.asyncOpId].reject(Error('Identity NOT FOUND'));
   }
@@ -324,13 +414,13 @@ function handleRemoveIdentity(msg) {
 }
 
 function handleSessionStateChanged(msg) {
-  var session = _getSessionObj(msg.objectJSId);
+  var session = _getSessionObjByJSId(msg.objectJSId);
   if (session == null) return;
 
   var event = new CustomEvent('statechanged');
-  session.sessionState = msg.info.object.sessionState;
-  _addConstProperty(event, 'session', session);
-  if (msg.message) _addConstProperty(event, 'message', msg.message);
+  v8tools.forceSetProperty(session, 'state', msg.info.object.sessionState);
+  _addReadOnlyProperty(event, 'session', session);
+  if (msg.message) _addReadOnlyProperty(event, 'message', msg.message);
   session.dispatchEvent(event);
   if (session.onstatechanged)
     session.onstatechanged(event);
@@ -342,7 +432,8 @@ function handleQueryAvailableMechanisms(msg) {
 }
 
 function handleChallenge(msg) {
-  g_async_calls[msg.asyncOpId].resolve(msg.responseData.sessionData);
+  var data = JSON.parse(msg.responseData.sessionData);
+  g_async_calls[msg.asyncOpId].resolve(data);
   delete g_async_calls[msg.asyncOpId];
 }
 
@@ -351,8 +442,44 @@ function handleChallenge(msg) {
 ///////////////////////////////////////////////////////////////////////////////
 
 function AuthService() {
-  this.jsid = ++g_next_obj_id;
+  _addHiddenProperty(this, 'jsid', ++g_next_obj_id);
+  _addHiddenProperty(this, 'identities', []);
 }
+
+AuthService.prototype.createIdentity = function(info) {
+  if (typeof info !== 'object')
+    return null;
+
+  var identity = new Identity(info, this.jsid);
+  if (!(identity instanceof Identity))
+    return null;
+
+  var msg = {
+    'asyncOpCmd': 'createIdentity',
+    'serviceJSId': this.jsid,
+    'identityJSId': identity.jsid
+  };
+  this.identities.push(identity);
+  return _createPromise(msg);
+};
+
+AuthService.prototype.getIdentity = function(id) {
+  if (isNaN(id))
+    return null;
+
+  var identity = _getIdentityObj(this.identities, 'id', id);
+  if (!(identity instanceof Identity)) {
+    identity = new Identity(null, this.jsid);
+    this.identities.push(identity);
+  }
+  var msg = {
+    'asyncOpCmd': 'getIdentity',
+    'serviceJSId': this.jsid,
+    'identityId': id,
+    'identityJSId': identity.jsid
+  };
+  return _createPromise(msg);
+};
 
 AuthService.prototype.queryMethods = function() {
   var msg = {
@@ -395,51 +522,6 @@ AuthService.prototype.queryIdentities = function(filter) {
   return _createPromise(msg);
 };
 
-AuthService.prototype.getIdentity = function(identity_id) {
-  if (isNaN(identity_id))
-    return null;
-
-  var identobj = _getIdentityObj(identity_id);
-  if (identobj == null) {
-    identobj = new Identity(null);
-    g_identities.push(identobj);
-  }
-  var msg = {
-    'asyncOpCmd': 'getIdentity',
-    'serviceJSId': this.jsid,
-    'identityId': identity_id,
-    'identityJSId': identobj.jsid
-  };
-  return _createPromise(msg);
-};
-
-AuthService.prototype.getIdentityByJSId = function(jsid) {
-  if (isNaN(jsid))
-    return null;
-
-  return _getIdentityObjByJSId(jsid);
-};
-
-AuthService.prototype.createIdentity = function(info) {
-  if (typeof info !== 'object')
-    return null;
-
-  var identobj = new Identity(new IdentityInfo(info, info.id,
-      _convertToIdentType(info.type), info.owner));
-  var msg = {
-    'syncOpCmd': 'createIdentity',
-    'serviceJSId': this.jsid,
-    'identityJSId': identobj.jsid
-  };
-  var res = _sendSyncMessage(msg);
-  if (res.syncOpErrorMsg != null) {
-    return res;
-  }
-  g_identities.push(identobj);
-  res.identity = identobj;
-  return res;
-};
-
 AuthService.prototype.clear = function() {
   var msg = {
     'asyncOpCmd': 'clear',
@@ -451,40 +533,48 @@ AuthService.prototype.clear = function() {
 ///////////////////////////////////////////////////////////////////////////////
 // Identity
 ///////////////////////////////////////////////////////////////////////////////
-function Identity(info) {
-  this.onsignedout = null;
-  this.onremoved = null;
-  this.info = info;
-  this.sessions = [];
-  this.jsid = ++g_next_obj_id;
-}
+function Identity(info, service_jsid) {
 
-Identity.prototype.startSession = function(method) {
+  IdentityInfo.call(this, info);
+
+  _addHiddenProperty(this, 'jsid', ++g_next_obj_id);
+  _addHiddenProperty(this, 'sessions', []);
+  _addReadOnlyProperty(this, 'id', 0);
+  _addReadWriteProperty(this, 'onsignedout', null);
+  _addReadWriteProperty(this, 'onremoved', null);
+
+  _addHiddenProperty(this, 'tracker', v8tools.lifecycleTracker());
+  var jsid = this.jsid;
+  this.tracker.destructor = function() {
+    var msg = {
+      'syncOpCmd': 'destroyIdentity',
+      'serviceJSId': service_jsid,
+      'identityJSId': jsid
+    };
+    _sendSyncMessage(msg);
+  };
+}
+derive(Identity, IdentityInfo);
+
+Identity.prototype.getSession = function(method) {
   if (typeof method !== 'string' || method.length == 0)
     return null;
 
+  var session = _getSessionObjByMethod(this, method);
+  if (session == null) {
+    session = new AuthSession(method, SessionState.NOT_STARTED, this.jsid);
+    this.sessions.push(session);
+  }
+
+  if (!(session instanceof AuthSession))
+    return null;
   var msg = {
-    'asyncOpCmd': 'startSession',
+    'asyncOpCmd': 'getSession',
     'identityJSId': this.jsid,
-    'sessionJSId': ++g_next_obj_id,
+    'sessionJSId': session.jsid,
     'method': method
   };
   return _createPromise(msg);
-};
-
-Identity.prototype.getSessionByJSId = function(jsid) {
-  if (isNaN(jsid) || jsid == -1)
-    return null;
-
-  var sessobj = null;
-  for (var i = 0; i < this.sessions.length; i++) {
-    var sess = this.sessions[i];
-    if (sess.jsid == jsid) {
-      sessobj = sess;
-      break;
-    }
-  }
-  return sessobj;
 };
 
 Identity.prototype.requestCredentialsUpdate = function(message) {
@@ -503,7 +593,20 @@ Identity.prototype.store = function() {
   var msg = {
     'asyncOpCmd': 'store',
     'identityJSId': this.jsid,
-    'info': this.info
+    'info': new IdentityInfoSerialized(this)
+  };
+  return _createPromise(msg);
+};
+
+Identity.prototype.storeWithInfo = function(info) {
+  if (typeof info !== 'object')
+    return null;
+
+  _updateIdentityProps(new IdentityInfo(info), this);
+  var msg = {
+    'asyncOpCmd': 'store',
+    'identityJSId': this.jsid,
+    'info': new IdentityInfoSerialized(this)
   };
   return _createPromise(msg);
 };
@@ -556,7 +659,7 @@ Identity.prototype.verifyUserPrompt = function(params) {
   return _createPromise(msg);
 };
 
-Identity.prototype.remove = function() {
+Identity.prototype.removeIdentity = function() {
   var msg = {
     'asyncOpCmd': 'remove',
     'identityJSId': this.jsid
@@ -572,60 +675,32 @@ Identity.prototype.signout = function() {
   return _createPromise(msg);
 };
 
-Identity.prototype.updateInfo = function(info) {
-  if (typeof info !== 'object')
-    return;
-
-  var obj = null;
-  if (this.info)
-    obj = new IdentityInfo(info, this.info.id, this.info.type, this.info.owner);
-  else
-    obj = new IdentityInfo(info, info.id, _convertToIdentType(info.type),
-                           info.owner);
-  this.info = obj;
-};
-
 ///////////////////////////////////////////////////////////////////////////////
 // AuthSession
 ///////////////////////////////////////////////////////////////////////////////
-function AuthSession(obj, identity_jsid) {
-  _addConstProperty(this, 'jsid', obj.sessionJSId);
-  _addConstProperty(this, 'identityJSId', identity_jsid);
-  _addConstPropertyFromObject(this, 'method', obj);
-  _addPropertyFromObject(this, 'sessionState', obj);
-  this.onstatechanged = null;
+function AuthSession(method, state, identity_jsid) {
+  var listeners = {};
+  listeners['statechanged'] = [];
+  EventTargetInterface.call(this, listeners, 'statechanged');
+
+  _addHiddenProperty(this, 'jsid', ++g_next_obj_id);
+  _addHiddenProperty(this, 'identityJSId', identity_jsid);
+  _addReadOnlyProperty(this, 'method', method);
+  _addReadOnlyProperty(this, 'state', state);
+  _addReadWriteProperty(this, 'onstatechanged', null);
+
+  _addHiddenProperty(this, 'tracker', v8tools.lifecycleTracker());
+  var jsid = this.jsid;
+  this.tracker.destructor = function() {
+    var msg = {
+      'syncOpCmd': 'destroySession',
+      'sessionJSId': jsid,
+      'identityJSId': identity_jsid
+    };
+    _sendSyncMessage(msg);
+  };
 }
-
-function isValidType(type) {
-  return (type === 'statechanged');
-}
-
-AuthSession.prototype.addEventListener = function(type, callback) {
-  if (callback != null && isValidType(type)) {
-    if (g_auth_session_listeners[type].indexOf(callback) != -1)
-      g_auth_session_listeners[type].push(callback);
-  }
-};
-
-AuthSession.prototype.removeEventListener = function(type, callback) {
-  if (callback != null && isValidType(type)) {
-    var index = g_auth_session_listeners[type].indexOf(callback);
-    if (index >= 0)
-      g_auth_session_listeners[type].splice(index, 1);
-  }
-};
-
-AuthSession.prototype.dispatchEvent = function(event) {
-  var handled = true;
-  if (typeof event !== 'object' || !isValidType(event.type))
-    return false;
-
-  g_auth_session_listeners[event.type].forEach(function(callback) {
-    var res = callback(event);
-    if (!res && handled) handled = false;
-  });
-  return handled;
-};
+derive(AuthSession, EventTargetInterface);
 
 AuthSession.prototype.queryAvailableMechanisms = function(wantedMechanisms) {
   if (typeof wantedMechanisms !== 'object')
@@ -659,3 +734,12 @@ AuthSession.prototype.cancel = function() {
   };
   return _createPromise(msg);
 };
+
+///////////////////////////////////////////////////////////////////////////////
+// Exports
+///////////////////////////////////////////////////////////////////////////////
+function SSO() {
+  this.authService = new AuthService();
+}
+var _sso = new SSO();
+exports = _sso;

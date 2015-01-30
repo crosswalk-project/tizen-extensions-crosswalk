@@ -58,6 +58,7 @@ BuildRequires: pkgconfig(dbus-glib-1)
 BuildRequires: pkgconfig(evas)
 BuildRequires: pkgconfig(gio-2.0)
 BuildRequires: pkgconfig(glib-2.0)
+BuildRequires: pkgconfig(json-glib-1.0)
 BuildRequires: pkgconfig(libgsignon-glib)
 BuildRequires: pkgconfig(libpulse) >= 5.0
 BuildRequires: pkgconfig(libudev)

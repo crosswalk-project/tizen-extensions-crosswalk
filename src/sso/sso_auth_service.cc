@@ -200,12 +200,18 @@ void SSOAuthService::HandleGetIdentity(const picojson::value& value) {
 void SSOAuthService::HandleCreateIdentity(const picojson::value& value) {
   SignonIdentity* identity = signon_identity_new_with_context(
       reinterpret_cast<const gchar*>(appcontext_.c_str()));
-  AddIdentity(identity,
-      static_cast<int>(value.get("identityJSId").get<double>()), 0);
+  int identity_jsid = static_cast<int>(value.get("identityJSId").get<double>());
+  SSOIdentityPtr id_ptr = AddIdentity(identity, identity_jsid, 0);
+  picojson::value::object resp;
+  resp["success"] = picojson::value(id_ptr ? true : false);
+  resp["identityJSId"] = picojson::value(static_cast<double>(identity_jsid));
+  SSOAsyncOp async_op(instance_, new picojson::value(value), this);
+  async_op.PostResult(picojson::value(resp), jsid());
 }
 
 void SSOAuthService::HandleDestroyIdentity(const picojson::value& value) {
-  identities_.erase(static_cast<int>(value.get("identityJSId").get<double>()));
+  int identity_jsid = static_cast<int>(value.get("identityJSId").get<double>());
+  identities_.erase(identity_jsid);
 }
 
 void SSOAuthService::HandleClear(const picojson::value& value) {
