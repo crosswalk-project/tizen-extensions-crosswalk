@@ -6,7 +6,7 @@
 #define SYSTEM_INFO_SYSTEM_INFO_DEVICE_ORIENTATION_H_
 
 #if defined(TIZEN)
-#include <sensor.h>
+#include <sensor_internal.h>
 #include <vconf.h>
 #endif
 
