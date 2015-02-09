@@ -26,7 +26,12 @@
         },
       }],
       ['tizen == 1', {
-        'defines': ['TIZEN']
+        'defines': ['TIZEN'],
+        'variables': {
+          'packages': [
+            'dlog',
+          ],
+        },
       }, {
         'sources/': [['exclude', '_tizen\\.cc$|tizen/']],
         'includes/': [['exclude', '_tizen\\.gypi$|tizen/']],
@@ -35,7 +40,7 @@
       ['extension_host_os == "ivi"', { 'defines': ['TIZEN_IVI'] } ],
       ['extension_host_os == "desktop"', { 'defines': ['GENERIC_DESKTOP'] } ],
       ['extension_build_type== "Debug"', {
-        'defines': ['_DEBUG', ],
+        'defines': ['_DEBUG', 'TIZEN_DEBUG_ENABLE'],
         'cflags': [ '-O0', '-g', ],
       }],
       ['extension_build_type == "Release"', {
@@ -60,6 +65,7 @@
     ],
     'includes': [
       'xwalk_js2c.gypi',
+      'pkg-config.gypi',
     ],
     'include_dirs': [
       '../',
@@ -68,6 +74,8 @@
     'sources': [
       'extension.cc',
       'extension.h',
+      'logger.cc',
+      'logger.h',
       'picojson.h',
       'scope_exit.h',
       'utils.h',
