@@ -37,6 +37,7 @@ BuildRequires: pkgconfig(capi-system-power)
 BuildRequires: pkgconfig(capi-system-runtime-info)
 BuildRequires: pkgconfig(capi-system-sensor)
 BuildRequires: pkgconfig(capi-system-system-settings)
+BuildRequires: pkgconfig(dlog)
 BuildRequires: pkgconfig(libtzplatform-config)
 %if "%{profile}" == "ivi"
 BuildRequires: pkgconfig(automotive-message-broker)
@@ -106,7 +107,7 @@ Requires:      %{name}
 Tizen Web APIs system info demo implementation using Crosswalk.
 
 %package -n %{_audiosystem_demo_package}
-Summary: Sample volume control applicaiton
+Summary: Sample volume control application
 Group: Development/Libraries
 Requires: %{name}
 
@@ -177,7 +178,7 @@ install -p -m 644 demos/system_info/css/*.css %{buildroot}%{_datarootdir}/%{name
 install -p -m 644 demos/system_info/js/*.js %{buildroot}%{_datarootdir}/%{name}/demos/system_info/js
 install -p -m 644 demos/system_info/images/*.png %{buildroot}%{_datarootdir}/%{name}/demos/system_info/images
 
-# Demos - audiosystem api 
+# Demos - audiosystem api
 mkdir -p %{buildroot}%{_datarootdir}/%{name}/demos/audiosystem
 mkdir -p %{buildroot}%{_datarootdir}/%{name}/demos/audiosystem/css
 mkdir -p %{buildroot}%{_datarootdir}/%{name}/demos/audiosystem/css/ui-lightness
