@@ -22,6 +22,7 @@ const std::string STR_ID("id");
 const std::string STR_NAME("name");
 const std::string STR_DESCRIPTION("description");
 const std::string STR_RATING("rating");
+const std::string STR_ORIENTATION("orientation");
 const std::string STR_FILTER("filter");
 const std::string STR_CONTENT_URI("contentURI");
 const std::string STR_EVENT_TYPE("eventType");
@@ -213,6 +214,42 @@ bool ContentInstance::HandleUpdateRequest(const picojson::value& msg) {
         std::cerr << "media_info_set_rating: error" << std::endl;
         no_error = false;
       }
+    }
+  }
+
+  if (msg.contains(STR_ORIENTATION)) {
+    image_meta_h image;
+    if (media_info_get_image(handle, &image) == MEDIA_CONTENT_ERROR_NONE) {
+      std::string msg_orientation = msg.get(STR_ORIENTATION).to_str();
+      media_content_orientation_e orientation;
+      if (msg_orientation == "NORMAL")
+        orientation = MEDIA_CONTENT_ORIENTATION_NORMAL;
+      else if (msg_orientation == "FLIP_HORIZONTAL")
+        orientation = MEDIA_CONTENT_ORIENTATION_HFLIP;
+      else if (msg_orientation == "ROTATE_180")
+        orientation = MEDIA_CONTENT_ORIENTATION_ROT_180;
+      else if (msg_orientation == "FLIP_VERTICAL")
+        orientation = MEDIA_CONTENT_ORIENTATION_VFLIP;
+      else if (msg_orientation == "TRANSPOSE")
+        orientation = MEDIA_CONTENT_ORIENTATION_TRANSPOSE;
+      else if (msg_orientation == "ROTATE_90")
+        orientation = MEDIA_CONTENT_ORIENTATION_ROT_90;
+      else if (msg_orientation == "TRANSVERSE")
+        orientation = MEDIA_CONTENT_ORIENTATION_TRANSVERSE;
+      else if (msg_orientation == "ROTATE_270")
+        orientation = MEDIA_CONTENT_ORIENTATION_ROT_270;
+      else
+        orientation = MEDIA_CONTENT_ORIENTATION_NOT_AVAILABLE;
+      if (image_meta_set_orientation(image, orientation)
+          != MEDIA_CONTENT_ERROR_NONE) {
+        std::cerr << "image_meta_set_orientation: error" << std::endl;
+        no_error = false;
+      }
+      image_meta_destroy(image);
+    } else {
+      std::cerr << "image_meta_set_orientation: failed to get image"
+                << std::endl;
+      no_error = false;
     }
   }
 
