@@ -84,7 +84,7 @@ function defineReadOnlyProperty(object, key, value) {
 function PackageInformation(json) {
   for (var field in json) {
     var val = json[field];
-    if (field === 'installDate')
+    if (field === 'lastModified')
       val = new Date(val * 1000);
     defineReadOnlyProperty(this, field, val);
   }
