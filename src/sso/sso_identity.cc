@@ -140,20 +140,33 @@ SSOIdentity::~SSOIdentity() {
   }
 }
 
-void SSOIdentity::HandleStartSession(const picojson::value& value) {
-  GError* error = NULL;
+void SSOIdentity::HandleGetSession(const picojson::value& value) {
+  SignonAuthSession* session = NULL;
   std::string method = value.get("method").to_str();
-  SignonAuthSession* session = signon_identity_create_session(identity_,
-      method.c_str(), &error);
-  SSOAsyncOp op(instance_, new picojson::value(value), this);
-  if (error) {
-    op.PostError(error->message, jsid());
-    g_clear_error(&error);
-    return;
+  SSOAuthSessionPtr session_ptr;
+
+  std::map<int, SSOAuthSessionPtr>::const_iterator it;
+  for (it = sessions_.begin(); it != sessions_.end(); it++) {
+    session_ptr = it->second;
+    if (session_ptr->method() == method) {
+      session = session_ptr->session();
+      break;
+    }
+    session_ptr = NULL;
   }
-  SSOAuthSessionPtr sess_ptr = AddAuthSession(session, method,
-      static_cast<int>(value.get("sessionJSId").get<double>()));
-  op.PostResult(sess_ptr->ToJSON(), jsid());
+  SSOAsyncOp op(instance_, new picojson::value(value), this);
+  if (!session) {
+    GError* error = NULL;
+    session = signon_identity_create_session(identity_, method.c_str(), &error);
+    if (error) {
+      op.PostError(error->message, jsid());
+      g_clear_error(&error);
+      return;
+    }
+    session_ptr = AddAuthSession(session, method,
+        static_cast<int>(value.get("sessionJSId").get<double>()));
+  }
+  op.PostResult(session_ptr->ToJSON(), jsid());
 }
 
 void SSOIdentity::HandleDestroySession(const picojson::value& value) {

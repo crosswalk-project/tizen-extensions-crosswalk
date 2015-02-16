@@ -37,28 +37,6 @@ typedef enum {
   SESSION_STATE_CUSTOM
 } SessionState;
 
-class SessionData {
- public:
-  SessionData();
-  virtual ~SessionData();
-
-  void FromJSON(const picojson::value& value);
-  picojson::value ToJSON() const;
-
-  GVariant* ToVariant() const;
-  void FromVariant(GVariant* vdata);
-
- private:
-  GHashTable* data_;
-
-  bool IsSupportedType(GType type) const;
-  void ToJSONType(picojson::object& object, const gchar* key,
-      GValue* value) const;
-  void InsertStringData(const std::string& key, const picojson::value& obj);
-  void InsertData(const std::string& key, const picojson::value& obj);
-  bool InsertKnownData(const std::string& key, const picojson::value& obj);
-};
-
 class SSOAuthSession {
  public:
   SSOAuthSession(common::Instance* instance, SignonAuthSession* session,
@@ -66,6 +44,8 @@ class SSOAuthSession {
   virtual ~SSOAuthSession();
 
   int jsid() const { return jsid_; }
+  SignonAuthSession* session() const { return session_; }
+  const std::string& method() const { return method_; }
   picojson::value ToJSON() const;
 
   void HandleQueryAvailableMechanisms(const picojson::value& value);

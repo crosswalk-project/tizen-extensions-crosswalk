@@ -8,6 +8,7 @@
       'type': 'loadable_module',
       'variables': {
         'packages': [
+          'json-glib-1.0',
           'libgsignon-glib',
         ],
       },
