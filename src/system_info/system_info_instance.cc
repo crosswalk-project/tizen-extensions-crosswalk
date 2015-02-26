@@ -23,7 +23,6 @@
 #include <stdlib.h>
 #if defined(TIZEN)
 #include <pkgmgr-info.h>
-#include <sensors.h>
 #include <system_info.h>
 #endif
 
