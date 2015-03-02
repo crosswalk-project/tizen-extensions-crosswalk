@@ -5,7 +5,7 @@
 #ifndef ALARM_ALARM_MANAGER_H_
 #define ALARM_ALARM_MANAGER_H_
 
-#include <app_service.h>
+#include <app_control.h>
 #include <memory>
 #include <string>
 #include <vector>
@@ -27,12 +27,14 @@ class AlarmManager {
   int GetAllAlarms(std::vector<std::shared_ptr<AlarmInfo> >& output) const;
 
  private:
-  service_h CreateAppLaunchService(const std::string& app_id) const;
-  void DestroyService(service_h service) const;
-  int StoreAlarmInService(service_h service, AlarmInfo* alarm) const;
-  int RestoreAlarmFromService(service_h service, AlarmInfo* alarm) const;
+  app_control_h CreateAppLaunchAppControl(const std::string& app_id) const;
+  void DestroyAppControl(app_control_h app_control) const;
+  int StoreAlarmInAppControl(app_control_h app_control,
+                             AlarmInfo* alarm) const;
+  int RestoreAlarmFromAppControl(app_control_h app_control,
+                                 AlarmInfo* alarm) const;
   bool CheckOwnership(int alarm_id) const;
-  bool CheckOwnership(service_h service) const;
+  bool CheckOwnership(app_control_h app_control) const;
 
   std::string host_app_id_;
 };

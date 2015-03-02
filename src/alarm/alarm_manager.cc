@@ -11,8 +11,8 @@
 
 namespace {
 
-const char kAlarmInfoKey[] = "service.extra.alarm";
-const char kHostAppIdKey[] = "service.extra.hostappid";
+const char kAlarmInfoKey[] = "app_control.extra.alarm";
+const char kHostAppIdKey[] = "app_control.extra.hostappid";
 
 bool AlarmIterateCallback(int id, void* userdata) {
   std::vector<int>* ids = reinterpret_cast<std::vector<int>*>(userdata);
@@ -35,20 +35,21 @@ int AlarmManager::ScheduleAlarm(const std::string& app_id,
   if (!alarm)
     return -1;
 
-  service_h service = CreateAppLaunchService(app_id);
-  if (!service)
-    return SERVICE_RESULT_FAILED;
+  app_control_h app_control = CreateAppLaunchAppControl(app_id);
+  if (!app_control)
+    return APP_CONTROL_RESULT_FAILED;
 
-  int ret = StoreAlarmInService(service, alarm);
+  int ret = StoreAlarmInAppControl(app_control, alarm);
   if (ret) {
-    DestroyService(service);
+    DestroyAppControl(app_control);
     std::cerr << "Failed to store the alarm information." << std::endl;
     return ret;
   }
 
-  ret = service_add_extra_data(service, kHostAppIdKey, host_app_id_.c_str());
+  ret = app_control_add_extra_data(app_control, kHostAppIdKey,
+      host_app_id_.c_str());
   if (ret) {
-    DestroyService(service);
+    DestroyAppControl(app_control);
     std::cerr << "Failed to store host application ID." << std::endl;
     return ret;
   }
@@ -60,16 +61,16 @@ int AlarmManager::ScheduleAlarm(const std::string& app_id,
       struct tm date_tm = {0};
       localtime_r(&tval, &date_tm);
       if (alarm->weekflag()) {
-        ret = alarm_schedule_with_recurrence_week_flag(service, &date_tm,
+        ret = alarm_schedule_with_recurrence_week_flag(app_control, &date_tm,
             alarm->weekflag(), &alarm_id);
       } else {
-        ret = alarm_schedule_at_date(service, &date_tm, alarm->period(),
+        ret = alarm_schedule_at_date(app_control, &date_tm, alarm->period(),
             &alarm_id);
       }
       break;
     }
     case AlarmInfo::AlarmType::RELATIVE:
-      ret = alarm_schedule_after_delay(service, alarm->delay(),
+      ret = alarm_schedule_after_delay(app_control, alarm->delay(),
           alarm->period(), &alarm_id);
       break;
     default:
@@ -79,7 +80,7 @@ int AlarmManager::ScheduleAlarm(const std::string& app_id,
   }
 
   alarm->SetId(alarm_id);
-  DestroyService(service);
+  DestroyAppControl(app_control);
 
   if (ret) {
     std::cerr << "Failed to schedule an alarm." << std::endl;
@@ -135,18 +136,18 @@ int AlarmManager::GetRemainingSeconds(int alarm_id, int& output) const {
 }
 
 int AlarmManager::RemoveAlarm(int alarm_id) const {
-  service_h service = 0;
-  int ret = alarm_get_service(alarm_id, &service);
+  app_control_h app_control = 0;
+  int ret = alarm_get_app_control(alarm_id, &app_control);
   if (ret)
     return ret;
 
-  if (!CheckOwnership(service)) {
-    DestroyService(service);
+  if (!CheckOwnership(app_control)) {
+    DestroyAppControl(app_control);
     return -1;
   }
 
   ret = alarm_cancel(alarm_id);
-  DestroyService(service);
+  DestroyAppControl(app_control);
   return ret;
 }
 
@@ -166,20 +167,20 @@ int AlarmManager::GetAlarm(int alarm_id, AlarmInfo* alarm) const {
   if (!alarm)
     return -1;
 
-  service_h service = NULL;
-  int ret = alarm_get_service(alarm_id, &service);
+  app_control_h app_control = NULL;
+  int ret = alarm_get_app_control(alarm_id, &app_control);
   if (ret)
     return ret;
 
-  if (!CheckOwnership(service)) {
-    DestroyService(service);
+  if (!CheckOwnership(app_control)) {
+    DestroyAppControl(app_control);
     return -1;
   }
 
-  ret = RestoreAlarmFromService(service, alarm);
+  ret = RestoreAlarmFromAppControl(app_control, alarm);
   alarm->SetId(alarm_id);
 
-  DestroyService(service);
+  DestroyAppControl(app_control);
   return ret;
 }
 
@@ -199,40 +200,40 @@ int AlarmManager::GetAllAlarms(
   return 0;
 }
 
-service_h
-AlarmManager::CreateAppLaunchService(const std::string& app_id) const {
-  service_h service = 0;
-  if (service_create(&service)) {
-    std::cerr << "Failed to call service_create()" << std::endl;
+app_control_h
+AlarmManager::CreateAppLaunchAppControl(const std::string& app_id) const {
+  app_control_h app_control = 0;
+  if (app_control_create(&app_control)) {
+    std::cerr << "Failed to call app_control_create()" << std::endl;
     return 0;
   }
 
-  service_set_app_id(service, app_id.c_str());
-  service_set_operation(service, SERVICE_OPERATION_DEFAULT);
-  return service;
+  app_control_set_app_id(app_control, app_id.c_str());
+  app_control_set_operation(app_control, APP_CONTROL_OPERATION_DEFAULT);
+  return app_control;
 }
 
-void AlarmManager::DestroyService(service_h service) const {
-  if (service_destroy(service))
-    std::cerr << "Failed to call service_destroy()" << std::endl;
+void AlarmManager::DestroyAppControl(app_control_h app_control) const {
+  if (app_control_destroy(app_control))
+    std::cerr << "Failed to call app_control_destroy()" << std::endl;
 }
 
-int AlarmManager::StoreAlarmInService(service_h service,
-                                      AlarmInfo* alarm) const {
-  if (!service || !alarm)
+int AlarmManager::StoreAlarmInAppControl(app_control_h app_control,
+                                         AlarmInfo* alarm) const {
+  if (!app_control || !alarm)
     return -1;
 
-  return service_add_extra_data(service, kAlarmInfoKey,
+  return app_control_add_extra_data(app_control, kAlarmInfoKey,
       alarm->Serialize().c_str());
 }
 
-int AlarmManager::RestoreAlarmFromService(service_h service,
-                                          AlarmInfo* alarm) const {
-  if (!service || !alarm)
+int AlarmManager::RestoreAlarmFromAppControl(app_control_h app_control,
+                                             AlarmInfo* alarm) const {
+  if (!app_control || !alarm)
     return -1;
 
   char* buffer = NULL;
-  int ret = service_get_extra_data(service, kAlarmInfoKey, &buffer);
+  int ret = app_control_get_extra_data(app_control, kAlarmInfoKey, &buffer);
   if (ret)
     return ret;
 
@@ -247,20 +248,21 @@ int AlarmManager::RestoreAlarmFromService(service_h service,
 // Return true if the alarm is created by this application.
 // Otherwise return false.
 bool AlarmManager::CheckOwnership(int alarm_id) const {
-  service_h service = NULL;
-  int ret = alarm_get_service(alarm_id, &service);
+  app_control_h app_control = NULL;
+  int ret = alarm_get_app_control(alarm_id, &app_control);
   if (ret)
     return false;
 
-  bool passed = CheckOwnership(service);
-  DestroyService(service);
+  bool passed = CheckOwnership(app_control);
+  DestroyAppControl(app_control);
 
   return passed;
 }
 
-bool AlarmManager::CheckOwnership(service_h service) const {
+bool AlarmManager::CheckOwnership(app_control_h app_control) const {
   char* buffer = NULL;
-  if (!service || service_get_extra_data(service, kHostAppIdKey, &buffer))
+  if (!app_control ||
+      app_control_get_extra_data(app_control, kHostAppIdKey, &buffer))
     return false;
 
   bool passed = (host_app_id_ == std::string(buffer));
