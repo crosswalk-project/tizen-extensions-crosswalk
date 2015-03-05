@@ -47,6 +47,30 @@ Input launch app ID: <input type="text" id="launch_app_id" value=""></input>
 
 <br>
 <br>
+Input launch app ID: <input type="text" id="app_launch_app_control_id" value=""></input>
+<br>
+Input operation: <input type="text" id="app_launch_app_control_operation" value=""></input>
+Input uri: <input type="text" id="app_launch_app_control_uri" value=""></input>
+Input mime: <input type="text" id="app_launch_app_control_mime" value=""></input>
+Input category: <input type="text" id="app_launch_app_control_category" value=""></input>
+<input type="button" value="LaunchAppControl" onclick="handleLaunchAppControl()"></input>
+<br>
+<br>Result:</br>
+<textarea id="app_launch_app_control" rows="10" cols="64"></textarea>
+
+<br>
+<br>
+Input operation: <input type="text" id="app_find_app_control_operation" value=""></input>
+Input uri: <input type="text" id="app_find_app_control_uri" value=""></input>
+Input mime: <input type="text" id="app_find_app_control_mime" value=""></input>
+Input category: <input type="text" id="app_find_app_control_category" value=""></input>
+<input type="button" value="FindAppControl" onclick="handleFindAppControl()"></input>
+<br>
+<br>Result:</br>
+<textarea id="app_find_app_control" rows="10" cols="64"></textarea>
+
+<br>
+<br>
 Input kill app context: <input type="text" id="kill_context_id" value=""></input>
 <input type="button" value="Kill" onclick="handleKill()"></input>
 <br>
@@ -182,6 +206,91 @@ function handleLaunch() {
     };
 
     tizen.application.launch(appId.value, onsuccess, onerror);
+  } catch (err) {
+    debug(err.name);
+  }
+}
+
+function handleLaunchAppControl() {
+  try {
+    var appId = document.getElementById("app_launch_app_control_id");
+    var operation = document.getElementById("app_launch_app_control_operation");
+    var uri = document.getElementById("app_launch_app_control_uri");
+    var mime = document.getElementById("app_launch_app_control_mime");
+    var category = document.getElementById("app_launch_app_control_category");
+    var output = document.getElementById("app_launch_app_control");
+
+    var data = [
+      new tizen.ApplicationControlData("one", ["first", "second"]),
+      new tizen.ApplicationControlData("zwei", ["erster", "zweiter"]),
+    ];
+    var appControl =
+        new tizen.ApplicationControl(
+            operation.value ? operation.value : null,
+            uri.value ? uri.value : null,
+            mime.value ? mime.value : null,
+            category.value ? category.value : null,
+            data);
+
+    var onsuccess = function() {
+      output.value += "Application launched successfully!\n";
+    };
+    var onerror = function(error) {
+      output.value += "Fail to launch app: " + error.name + "\n";
+    };
+    var replyCallback = {
+      onsuccess: function(data) {
+        output.value += "Launched application replied: SUCCESS\n";
+        for (var i = 0; i < data.length; i++) {
+          output.value += "Data element received: " + data[i] + "\n";
+        }
+      },
+      onfailure: function() {
+        output.value += "Launched application replied: FAILURE\n";
+      }
+    }
+    tizen.application.launchAppControl(appControl, appId.value ? appId.value : null, onsuccess, onerror,
+                                       replyCallback);
+  } catch (err) {
+    debug(err.name);
+  }
+}
+
+function handleFindAppControl() {
+  try {
+    var operation = document.getElementById("app_find_app_control_operation");
+    var uri = document.getElementById("app_find_app_control_uri");
+    var mime = document.getElementById("app_find_app_control_mime");
+    var category = document.getElementById("app_find_app_control_category");
+    var output = document.getElementById("app_find_app_control");
+
+    var appControl =
+        new tizen.ApplicationControl(
+            operation.value ? operation.value : null,
+            uri.value ? uri.value : null,
+            mime.value ? mime.value : null,
+            category.value ? category.value : null);
+
+    var onsuccess = function(appInfos, appControl) {
+      output.value += "Successfully found " + appInfos.length + " apps\n";
+      for (var i = 0; i < appInfos.length; ++i) {
+        var info = appInfos[i];
+        output.value += "=== Application [" + i + "] ===\n";
+        output.value += "id: " + info.id + "\n";
+        output.value += "name: " + info.name + "\n";
+        output.value += "iconPath: " + info.iconPath + "\n";
+        output.value += "version: " + info.version + "\n";
+        output.value += "show: " + info.show + "\n";
+        output.value += "categories: " + info.categories + "\n";
+        output.value += "installDate: " + info.installDate+ "\n";
+        output.value += "size: " + info.size + "\n";
+        output.value += "packageId: " + info.packageId + "\n";
+      }
+    };
+    var onerror = function(error) {
+      output.value += "Fail to query apps: " + error.name + "\n";
+    };
+    tizen.application.findAppControl(appControl, onsuccess, onerror);
   } catch (err) {
     debug(err.name);
   }
