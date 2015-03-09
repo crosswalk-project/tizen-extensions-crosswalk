@@ -86,9 +86,11 @@
       'XW_Extension_SyncMessage.h',
     ],
     'cflags': [
-      '-std=c++0x',
       '-fPIC',
       '-fvisibility=hidden',
+    ],
+    'cflags_cc': [
+      '-std=c++0x',
     ],
   },
 }
