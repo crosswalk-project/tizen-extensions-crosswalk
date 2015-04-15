@@ -5,9 +5,9 @@
 #include "alarm/alarm_manager.h"
 
 #include <app.h>
-#include <iostream>
 
 #include "alarm/alarm_info.h"
+#include "common/logger.h"
 
 namespace {
 
@@ -42,14 +42,14 @@ int AlarmManager::ScheduleAlarm(const std::string& app_id,
   int ret = StoreAlarmInService(service, alarm);
   if (ret) {
     DestroyService(service);
-    std::cerr << "Failed to store the alarm information." << std::endl;
+    LOGGER(ERROR) << "Failed to store the alarm information.";
     return ret;
   }
 
   ret = service_add_extra_data(service, kHostAppIdKey, host_app_id_.c_str());
   if (ret) {
     DestroyService(service);
-    std::cerr << "Failed to store host application ID." << std::endl;
+    LOGGER(ERROR) << "Failed to store host application ID.";
     return ret;
   }
 
@@ -73,7 +73,7 @@ int AlarmManager::ScheduleAlarm(const std::string& app_id,
           alarm->period(), &alarm_id);
       break;
     default:
-      std::cerr << "Wrong alarm type." << std::endl;
+      LOGGER(ERROR) << "Wrong alarm type.";
       ret = -1;
       break;
   }
@@ -82,7 +82,7 @@ int AlarmManager::ScheduleAlarm(const std::string& app_id,
   DestroyService(service);
 
   if (ret) {
-    std::cerr << "Failed to schedule an alarm." << std::endl;
+    LOGGER(ERROR) << "Failed to schedule an alarm.";
     return ret;
   }
 
@@ -203,7 +203,7 @@ service_h
 AlarmManager::CreateAppLaunchService(const std::string& app_id) const {
   service_h service = 0;
   if (service_create(&service)) {
-    std::cerr << "Failed to call service_create()" << std::endl;
+    LOGGER(ERROR) << "Failed to call service_create()";
     return 0;
   }
 
@@ -214,7 +214,7 @@ AlarmManager::CreateAppLaunchService(const std::string& app_id) const {
 
 void AlarmManager::DestroyService(service_h service) const {
   if (service_destroy(service))
-    std::cerr << "Failed to call service_destroy()" << std::endl;
+    LOGGER(ERROR) << "Failed to call service_destroy()";
 }
 
 int AlarmManager::StoreAlarmInService(service_h service,

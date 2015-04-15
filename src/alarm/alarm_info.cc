@@ -4,8 +4,7 @@
 
 #include "alarm/alarm_info.h"
 
-#include <iostream>
-
+#include "common/logger.h"
 #include "common/picojson.h"
 
 std::string AlarmInfo::Serialize() {
@@ -23,7 +22,7 @@ std::string AlarmInfo::Serialize() {
     obj["period"] = picojson::value(static_cast<double>(period_));
   } else {
     // Should never come here.
-    std::cerr << "Unknown alarm type " << type_ << std::endl;
+    LOGGER(ERROR) << "Unknown alarm type " << type_;
   }
 
   picojson::value val(obj);
@@ -36,7 +35,7 @@ bool AlarmInfo::Deserialize(const char* stream) {
   std::string err;
   picojson::parse(obj, stream, stream + strlen(stream), &err);
   if (!err.empty()) {
-    std::cerr << "Failed to deserialize alarm object: " << stream << std::endl;
+    LOGGER(ERROR) << "Failed to deserialize alarm object: " << stream;
     return false;
   }
 
@@ -53,7 +52,7 @@ bool AlarmInfo::Deserialize(const char* stream) {
     delay_ = static_cast<int>(obj.get("delay").get<double>());
     period_ = static_cast<int>(obj.get("period").get<double>());
   } else {
-    std::cerr << "Unknown alarm type " << type << std::endl;
+    LOGGER(ERROR) << "Unknown alarm type " << type;
     return false;
   }
 
