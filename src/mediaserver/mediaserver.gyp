@@ -147,8 +147,6 @@
           ],
         },
       ],
-      # Compile generated dbus proxies without C++11 flag
-      'cflags!': [ '-std=c++0x' ],
       'sources': [
         '<(gen_dbus_proxy_path)/dleyna_manager_gen.c',
         '<(gen_dbus_proxy_path)/dleyna_manager_gen.h',

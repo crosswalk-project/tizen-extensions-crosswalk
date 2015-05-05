@@ -69,7 +69,6 @@
           ],
         },
       ],
-      'cflags!': [ '-std=c++0x' ],
       'sources': [
         '<(gdbus_codegen_path)/tizen_srs_gen.c',
         '<(gdbus_codegen_path)/tizne_srs_gen.h',
