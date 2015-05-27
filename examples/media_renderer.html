@@ -115,7 +115,8 @@ function onRendererFound(event) {
 
 function onRendererLost(event) {
   var button = document.getElementById(event.id);
-  document.removeChild(button);
+  var container = document.getElementById('rendererContainer');
+  container.removeChild(button);
 }
 
 </script>
