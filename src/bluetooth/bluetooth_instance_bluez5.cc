@@ -179,9 +179,9 @@ void BluetoothInstance::PlatformInitialize() {
       "org.bluez",
       "/org/bluez/hci0",
       "org.bluez.Adapter1",
-      NULL, /* GCancellable */
+      all_pending_, /* GCancellable */
       OnAdapterProxyCreatedThunk,
-      this);
+      CancellableWrap(all_pending_, this));
 
   g_dbus_object_manager_client_new_for_bus(G_BUS_TYPE_SYSTEM,
       G_DBUS_OBJECT_MANAGER_CLIENT_FLAGS_NONE,
@@ -190,9 +190,9 @@ void BluetoothInstance::PlatformInitialize() {
       NULL,
       NULL,
       NULL,
-      NULL,
+      all_pending_, /* GCancellable */
       OnManagerCreatedThunk,
-      this);
+      CancellableWrap(all_pending_, this));
 }
 
 void BluetoothInstance::HandleGetDefaultAdapter(
