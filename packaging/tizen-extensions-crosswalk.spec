@@ -3,6 +3,7 @@
 %define _manifestdir %{TZ_SYS_RW_PACKAGES}
 %define _desktop_icondir %{TZ_SYS_SHARE}/icons/default/small
 %define _bluetooth_demo_package tizen-extensions-crosswalk-bluetooth-demo
+%define _iotivity_demo_package tizen-extensions-crosswalk-iotivity-demo
 %define _examples_package tizen-extensions-crosswalk-examples
 %define _system_info_demo_package tizen-extensions-crosswalk-system-info-demo
 %define _audiosystem_demo_package tizen-extensions-crosswalk-audiosystem-demo
@@ -20,11 +21,13 @@ Source3:    %{_bluetooth_demo_package}
 Source4:    %{_examples_package}
 Source5:    %{_system_info_demo_package}
 Source6:    %{_audiosystem_demo_package}
+Source7:    %{_iotivity_demo_package}
 Source1001: %{name}.manifest
 
 BuildRequires: ninja
 BuildRequires: pkgconfig(appcore-common)
 BuildRequires: pkgconfig(bluez)
+#BuildRequires: pkgconfig(iotivity)
 BuildRequires: pkgconfig(capi-appfw-application)
 BuildRequires: pkgconfig(capi-appfw-app-manager)
 BuildRequires: pkgconfig(capi-appfw-package-manager)
@@ -113,6 +116,14 @@ Requires: %{name}
 %description  -n %{_audiosystem_demo_package}
 Sample Tizen volume control application that demonstrates the Tizen AudioSystem API usage.
 
+%package -n %{_iotivity_demo_package}
+Summary: Tizen Web APIs using Crosswalk iotivity demo
+Group: Development/Libraries
+Requires:      %{name}
+
+%description  -n %{_iotivity_demo_package}
+Tizen Web APIs iotivity demo implementation using Crosswalk.
+
 %prep
 %setup -q
 
@@ -121,6 +132,7 @@ cp %{SOURCE2} .
 cp %{SOURCE3} .
 cp %{SOURCE4} .
 cp %{SOURCE5} .
+cp %{SOURCE7} .
 
 %build
 
@@ -144,6 +156,7 @@ install -m 755 -D %{SOURCE3} %{buildroot}%{_bindir}/%{_bluetooth_demo_package}
 install -m 755 -D %{SOURCE4} %{buildroot}%{_bindir}/%{_examples_package}
 install -m 755 -D %{SOURCE5} %{buildroot}%{_bindir}/%{_system_info_demo_package}
 install -m 755 -D %{SOURCE6} %{buildroot}%{_bindir}/%{_audiosystem_demo_package}
+install -m 755 -D %{SOURCE7} %{buildroot}%{_bindir}/%{_iotivity_demo_package}
 
 # Extensions.
 mkdir -p %{buildroot}%{_libdir}/%{name}
@@ -192,15 +205,28 @@ install -p -m 644 demos/audiosystem/css/ui-lightness/images/* %{buildroot}%{_dat
 install -p -m 644 demos/audiosystem/js/*.js %{buildroot}%{_datarootdir}/%{name}/demos/audiosystem/js
 install -p -m 644 demos/audiosystem/images/*.png %{buildroot}%{_datarootdir}/%{name}/demos/audiosystem/images
 
+# Demos - iotivity api 
+mkdir -p %{buildroot}%{_datarootdir}/%{name}/demos/iotivity
+mkdir -p %{buildroot}%{_datarootdir}/%{name}/demos/iotivity/css
+mkdir -p %{buildroot}%{_datarootdir}/%{name}/demos/iotivity/js
+mkdir -p %{buildroot}%{_datarootdir}/%{name}/demos/iotivity/images
+
+install -p -m 644 demos/iotivity/*.html %{buildroot}%{_datarootdir}/%{name}/demos/iotivity
+install -p -m 644 demos/iotivity/css/*.css %{buildroot}%{_datarootdir}/%{name}/demos/iotivity/css
+install -p -m 644 demos/iotivity/js/*.js %{buildroot}%{_datarootdir}/%{name}/demos/iotivity/js
+install -p -m 644 demos/iotivity/images/*.png %{buildroot}%{_datarootdir}/%{name}/demos/iotivity/images
+
 # register to the package manager
 install -m 644 -D %{_examples_package}.xml %{buildroot}%{_manifestdir}/%{_examples_package}.xml
 install -m 644 -D %{_bluetooth_demo_package}.xml %{buildroot}%{_manifestdir}/%{_bluetooth_demo_package}.xml
 install -m 644 -D %{_system_info_demo_package}.xml %{buildroot}%{_manifestdir}/%{_system_info_demo_package}.xml
 install -m 644 -D %{_audiosystem_demo_package}.xml %{buildroot}%{_manifestdir}/%{_audiosystem_demo_package}.xml
+install -m 644 -D %{_iotivity_demo_package}.xml %{buildroot}%{_manifestdir}/%{_iotivity_demo_package}.xml
 install -p -D %{name}.png %{buildroot}%{_desktop_icondir}/%{_examples_package}.png
 install -p -D %{name}.png %{buildroot}%{_desktop_icondir}/%{_bluetooth_demo_package}.png
 install -p -D %{name}.png %{buildroot}%{_desktop_icondir}/%{_system_info_demo_package}.png
 install -p -D %{name}.png %{buildroot}%{_desktop_icondir}/%{_audiosystem_demo_package}.png
+install -p -D %{name}.png %{buildroot}%{_desktop_icondir}/%{_iotivity_demo_package}.png
 
 %files
 %license LICENSE LICENSE.AL2
@@ -241,3 +267,13 @@ install -p -D %{name}.png %{buildroot}%{_desktop_icondir}/%{_audiosystem_demo_pa
 %{_datarootdir}/%{name}/demos/audiosystem/css/ui-lightness/images/*
 %{_datarootdir}/%{name}/demos/audiosystem/js/*.js
 %{_datarootdir}/%{name}/demos/audiosystem/images/*
+
+%files -n %{_iotivity_demo_package}
+%{_bindir}/%{_iotivity_demo_package}
+%{_manifestdir}/%{_iotivity_demo_package}.xml
+%{_desktop_icondir}/%{_iotivity_demo_package}.png
+%{_datarootdir}/%{name}/demos/iotivity/index.html
+%{_datarootdir}/%{name}/demos/iotivity/css/*.css
+%{_datarootdir}/%{name}/demos/iotivity/js/*.js
+%{_datarootdir}/%{name}/demos/iotivity/images/*.png
+
