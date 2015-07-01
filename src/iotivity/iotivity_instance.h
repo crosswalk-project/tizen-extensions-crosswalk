@@ -26,17 +26,61 @@
 #include "common/extension.h"
 #include "common/picojson.h"
 
+#include "OCPlatform.h"
+#include "OCApi.h"
+
+using namespace OC;
+using namespace std;
+
+
 class IotivityInstance : public common::Instance {
  public:
   IotivityInstance();
   ~IotivityInstance();
 
   // common::Instance implementation
-  void HandleMessage(const char* message);
-  void HandleSyncMessage(const char* message);
+  void HandleMessage(const char* message); // js::extension.postMessage(msg)
+  void HandleSyncMessage(const char* message); // js::extension.internal.sendSyncMessage(msg);
+
+
+  void handleFactoryReset(const picojson::value& value);
+  void handleReboot(const picojson::value& value);
+
+
+  void foundResourceCallback(std::shared_ptr<OCResource> resource);
+  void handleFindResources(const picojson::value& value);
+
+  void foundDeviceCallback(const OCRepresentation& rep);
+  void handleFindDevices(const picojson::value& value);
+
+  void handleCreateResource(const picojson::value& value);
+  void handleRetrieveResource(const picojson::value& value);
+  void handleUpdateResource(const picojson::value& value);
+  void handleDeleteResource(const picojson::value& value);
+  void handleStartObserving(const picojson::value& value);
+  void handleCancelObserving(const picojson::value& value);
+
+  void postEntityHandler(std::shared_ptr<OCResourceRequest> request);
+  void handleRegisterResource(const picojson::value& value);
+  void handleUnregisterResource(const picojson::value& value);
+  void handleEnablePresence(const picojson::value& value);
+  void handleDisablePresence(const picojson::value& value);
+  void handleNotify(const picojson::value& value);
+
+
+  void handleSendResponse(const picojson::value& value);
+  void handleSendError(const picojson::value& value);
+
+
+  void postResult(const char* completed_operation, double async_operation_id);
+  void postError(double async_operation_id);
+
+
+  void postRegisterResource(double async_operation_id, OCResourceHandle resHandle);
+  OCEntityHandlerResult entityHandlerCallback(std::shared_ptr<OCResourceRequest> request);
 
   private:
-    std::string PrepareMessage(const std::string & message) const;
+    std::string PrepareMessage(const std::string & message);
 };
 
 #endif  // IOTIVITY_INSTANCE_H_

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>COAP extension app (JS to native-Arduino Mega2560 Kit)</title>
+<link rel="stylesheet" type="text/css" href="style.css"/>
+<meta name="viewport" content="width=device-width">
+<style>
+body {
+  font-size: 2em;
+}
+</style>
+</head>
+<body>
+<script>
+
+
+
+var lightResource = null;
+
+function startServer() {
+  var deviceId = device.settings.info.uuid;
+  var connMode = device.settings.connectionMode;
+  // register all resources handled by this device
+  device.registerResource({
+    url: "/light/ambience/blue",
+    deviceId: deviceId,
+    connectionMode: connMode,
+    resourceTypes: [ "Light" ],
+    interfaces: [ "/oic/if/rw" ],
+    discoverable: true,
+    observable: true,
+    properties: { color: "light-blue", dimmer: 0.2 }
+  }).then((res) => {
+    console.log("Resource " + res.id + " has been created.");
+    lightResource = res;
+    device.onrequest = requestHandler;
+    device.enablePresence();
+  }).catch((error) => {
+    console.log("Error creating resource " + res.url + " : " + error.message);
+  });
+};
+
+function requestHandler(request) {
+  if (request.type == "update" && lightResource && request.target == lightResource.id) {
+    var updates = [];
+    foreach (name in request.updatedPropertyNames) { // e.g. "color"
+      if (request.properties[name] != lightResource.properties[name]) {
+        lightResource.properties[name] = request.properties[name]; // save the change
+        request.sendResponse(); // sends back OK
+        updates.push(name); // collect all the updates
+      }
+    }
+    if (updates.length) {
+      device.notify(lightResource.id, "update", updates); // tell observers
+    }
+    request.sendError(new Error(“Failed to handle update request”));
+  }
+  // handle the other types of requests as well...
+};
+
+// e.g. to handle the case when remote resources can influence the states of local resources
+// for instance look for the state changes on dimming of the remote red light,
+// update dimming the local blue light, then request dimming the remote light
+function startClient() {
+  // discover resources
+  device.client.findResources({ resourceType: “Light” })
+    .then((list) => {
+      foreach(res in list) {
+        if(res.url == "/light/ambience/red") {
+        device.client.startObserving(res.id)
+          .then((red) => {
+            console.log("Observing " + res.url);
+            red.properties.dimmer = 0.5;
+            device.updateResource(red)
+            .then(() => { console.log("Changed red light dimmer"); })
+            .catch(() => { console.log("Error changing red light"); });
+          }).catch((error) => { console.log("Cannot observe " + res.url); };
+        } // if
+      } // foreach
+    }).catch((e) => {
+    console.log("Error finding resources: " + e.message);
+  });
+}
+
+function testOicServerClient(){
+ 
+  var device = new OicDevice();
+  // implementation will try to get default configuration from the HW/platform
+  // but if we cannot get it, could do a hard-coded configuration (not recommended)
+  if (device.settings.uuid) { // configuration is valid
+    startServer();
+    startClient();
+  }
+}
+
+
+
+testOicServerClient();
+
+
+
+</script>
+</body>
+</html>
+
