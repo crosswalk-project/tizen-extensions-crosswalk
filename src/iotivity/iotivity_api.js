@@ -186,16 +186,44 @@ var OicMethod = {
 ///////////////////////////////////////////////////////////////////////////////
 // OicDevice
 ///////////////////////////////////////////////////////////////////////////////
-function OicDevice(settings, events) {
-  events.push('OicDevice');
-  EventTarget.call(this, events);
+function OicDevice(settings) {
 
-  _addConstProperty(this, 'settings', settings);
-  _addConstProperty(this, 'OicClient', OicClient);
-  _addConstProperty(this, 'OicServer', OicServer);
+  if (settings)
+    _addConstProperty(this, 'settings', new OicDeviceSettings(settings));
+  else {
+    // default settings
+    _addConstProperty(this, 'settings', new OicDeviceSettings(null));
+  }
+  _addConstProperty(this, 'client', new OicClient());
+  _addConstProperty(this, 'server', new OicServer());
 }
 
+// partial dictionary is ok
+// equivalent to ‘onboard+configure’ in Core spec
+// maps to IoTivity Configure (C++ API), configure (Java API), OCInit (C API)
 OicDevice.prototype.configure = function(settings) {
+
+  if (settings)
+    _addConstProperty(this, 'settings', new OicDeviceSettings(settings));
+
+  var msg = {
+    'cmd': 'configure',
+    'settings': settings
+  };
+
+  return createPromise(msg);
+};
+
+// return to factory configuration and reboot
+OicDevice.prototype.factoryReset = function() {
+  var msg = {
+    'cmd': 'factoryReset',
+  };
+  return createPromise(msg);
+};
+
+// keep configuration and reboot
+OicDevice.prototype.reboot = function() {
   var msg = {
     'cmd': 'configure',
     'settings': settings
@@ -209,10 +237,18 @@ OicDevice.prototype.configure = function(settings) {
 
 function OicDeviceSettings(obj) {
 
-  _addConstProperty(this, 'url', obj.url);
-  _addConstProperty(this, 'OicDeviceInfo', obj.info);
-  _addConstProperty(this, 'OicDeviceRole', obj.role);
-  _addConstProperty(this, 'OicConnectionMode', obj.connectionMode);
+  if (obj) {
+    _addConstProperty(this, 'url', obj.url);
+    _addConstProperty(this, 'info', new OicDeviceInfo(obj.info));
+    _addConstProperty(this, 'role', obj.role);
+    _addConstProperty(this, 'connectionMode', obj.connectionMode);
+  }
+  else {
+    _addConstProperty(this, 'url', 'default');
+    _addConstProperty(this, 'info', new OicDeviceInfo(null));
+    _addConstProperty(this, 'role', 'client');
+    _addConstProperty(this, 'connectionMode', obj.'default');
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -221,17 +257,32 @@ function OicDeviceSettings(obj) {
 
 function OicDeviceInfo(obj) {
 
-  _addConstProperty(this, 'uuid', obj.uuid);
-  _addConstProperty(this, 'name', obj.name);
-  _addConstProperty(this, 'dataModels', obj.dataModels);
-  _addConstProperty(this, 'coreSpecVersion', obj.coreSpecVersion);
-  _addConstProperty(this, 'model', obj.model);
-  _addConstProperty(this, 'manufacturerName', obj.manufacturerName);
-  _addConstProperty(this, 'manufacturerUrl', obj.manufacturerUrl);
-  _addConstProperty(this, 'manufacturerDate', obj.manufacturerDate);
-  _addConstProperty(this, 'platformVersion', obj.platformVersion);
-  _addConstProperty(this, 'firmwareVersion', obj.firmwareVersion);
-  _addConstProperty(this, 'supportUrl', obj.supportUrl);
+  if (obj) {
+    _addConstProperty(this, 'uuid', obj.uuid);
+    _addConstProperty(this, 'name', obj.name);
+    _addConstProperty(this, 'dataModels', obj.dataModels);
+    _addConstProperty(this, 'coreSpecVersion', obj.coreSpecVersion);
+    _addConstProperty(this, 'model', obj.model);
+    _addConstProperty(this, 'manufacturerName', obj.manufacturerName);
+    _addConstProperty(this, 'manufacturerUrl', obj.manufacturerUrl);
+    _addConstProperty(this, 'manufacturerDate', obj.manufacturerDate);
+    _addConstProperty(this, 'platformVersion', obj.platformVersion);
+    _addConstProperty(this, 'firmwareVersion', obj.firmwareVersion);
+    _addConstProperty(this, 'supportUrl', obj.supportUrl);
+  }
+  else {
+    _addConstProperty(this, 'uuid', 'default');
+    _addConstProperty(this, 'name', 'default');
+    _addConstProperty(this, 'dataModels', 'default');
+    _addConstProperty(this, 'coreSpecVersion', 'default');
+    _addConstProperty(this, 'model', 'default');
+    _addConstProperty(this, 'manufacturerName', 'default');
+    _addConstProperty(this, 'manufacturerUrl', 'default');
+    _addConstProperty(this, 'manufacturerDate', 'default');
+    _addConstProperty(this, 'platformVersion', 'default');
+    _addConstProperty(this, 'firmwareVersion', 'default');
+    _addConstProperty(this, 'supportUrl', 'default');
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -254,7 +305,6 @@ OicClient.prototype.findResources = function(options) {
   return createPromise(msg);
 };
 
-// client API: CRUDN
 OicClient.prototype.findDevices = function(options) {
   var msg = {
     'cmd': 'findDevices',
@@ -263,54 +313,82 @@ OicClient.prototype.findDevices = function(options) {
   return createPromise(msg);
 };
 
-OicClient.prototype.createResource = function(resource) {
+// client API: CRUDN
+OicClient.prototype.createResource = function(resourceinit) {
+
+  var oicRequestEvent = new OicRequestEvent();
+  _addConstProperty(oicRequestEvent, 'type', 'create');
+
   var msg = {
     'cmd': 'createResource',
-    'param': resource
+    'request': oicRequestEvent
   };
   return createPromise(msg);
 };
 
 OicClient.prototype.retrieveResource = function(resourceId) {
+
+  var oicRequestEvent = new OicRequestEvent();
+  _addConstProperty(oicRequestEvent, 'type', 'retrieve');
+  _addConstProperty(oicRequestEvent, 'target', resourceId);
+
   var msg = {
     'cmd': 'retrieveResource',
-    'param': resourceId
+    'request': oicRequestEvent
   };
   return createPromise(msg);
 };
 
 OicClient.prototype.updateResource = function(resource) {
+
+  var oicRequestEvent = new OicRequestEvent();
+  _addConstProperty(oicRequestEvent, 'type', 'update');
+
   var msg = {
     'cmd': 'updateResource',
-    'param': resource
+    'request': oicRequestEvent
   };
   return createPromise(msg);
 };
 
 OicClient.prototype.deleteResource = function(resourceId) {
+
+  var oicRequestEvent = new OicRequestEvent();
+  _addConstProperty(oicRequestEvent, 'type', 'delete');
+  _addConstProperty(oicRequestEvent, 'target', resourceId);
+
   var msg = {
     'cmd': 'deleteResource',
-    'param': resourceId
+    'request': oicRequestEvent
   };
   return createPromise(msg);
 };
 
 OicClient.prototype.startObserving = function(resourceId) {
+
+  var oicRequestEvent = new OicRequestEvent();
+  _addConstProperty(oicRequestEvent, 'type', 'observe');
+  _addConstProperty(oicRequestEvent, 'target', resourceId);
+
   var msg = {
     'cmd': 'startObserving',
-    'param': resourceId
+    'request': oicRequestEvent
   };
   return createPromise(msg);
 };
 
 OicClient.prototype.cancelObserving = function(resourceId) {
+
+  var oicRequestEvent = new OicRequestEvent();
+  _addConstProperty(oicRequestEvent, 'type', 'observe');
+  _addConstProperty(oicRequestEvent, 'target', resourceId);
+
   var msg = {
     'cmd': 'cancelObserving',
-    'param': resourceId
+    'request': oicRequestEvent
   };
   return createPromise(msg);
 };
-
 
 ///////////////////////////////////////////////////////////////////////////////
 // OicServer
@@ -325,7 +403,7 @@ function OicServer(obj) {
 
 // register/unregister locally constructed resource objects with OIC
 // gets an id
-OicClient.prototype.registerResource = function(init) {
+OicServer.prototype.registerResource = function(init) {
   var msg = {
     'cmd': 'registerResource',
     'OicResourceInit': init
@@ -334,7 +412,7 @@ OicClient.prototype.registerResource = function(init) {
 };
 
 // purge resource, then notify all
-OicClient.prototype.unregisterResource = function(resourceId) {
+OicServer.prototype.unregisterResource = function(resourceId) {
   var msg = {
     'cmd': 'unregisterResource',
     'resourceId': resourceId
@@ -343,14 +421,14 @@ OicClient.prototype.unregisterResource = function(resourceId) {
 };
 
 // enable/disable presence (discovery, state changes) for this device and its resources
-OicClient.prototype.enablePresence = function() {
+OicServer.prototype.enablePresence = function() {
   var msg = {
     'cmd': 'enablePresence'
   };
   return createPromise(msg);
 };
 
-OicClient.prototype.disablePresence = function() {
+OicServer.prototype.disablePresence = function() {
   var msg = {
     'cmd': 'registerResource'
   };
@@ -370,10 +448,14 @@ OicClient.prototype.notify = function(resourceId, method, updatedPropertyNames) 
 ///////////////////////////////////////////////////////////////////////////////
 // OicRequestEvent
 ///////////////////////////////////////////////////////////////////////////////
+var g_next_request_id = 0;
 
 function OicRequestEvent() {
 
-  Event.call(this);
+  _addConstProperty(this, 'requestId', g_next_request_id);
+  _addConstProperty(oicRequestEvent, 'source', g_iotivity_device.uuid);
+  ++g_next_request_id;
+
 /*
   _addConstProperty(this, 'type', obj.type);
   _addConstProperty(this, 'requestId', obj.requestId);
@@ -392,7 +474,7 @@ function OicRequestEvent() {
 OicRequestEvent.prototype.sendResponse = function(resource) {
   var msg = {
     'cmd': 'sendResponse',
-    'param': resource
+    'param': resource || null
   };
   return createPromise(msg);
 };
@@ -506,11 +588,9 @@ function QueryOption(obj) {
 // Exports and main entry point for the Iotivity API
 ///////////////////////////////////////////////////////////////////////////////
 
-var g_iotivity_server = new OicServer();
-exports = g_iotivity_server;
+var g_iotivity_device = new OicDevice();
+exports = g_iotivity_device;
 
-var g_iotivity_server = new OicClient();
-exports = g_iotivity_client;
 
 ///////////////////////////////////////////////////////////////////////////////
 // 
@@ -526,6 +606,7 @@ extension.setMessageListener(function(json) {
       handleEntityHandler(msg);
       break;
 
+    case 'configureCompleted':
     case 'unregisterResourceCompleted':
     case 'enablePresenceCompleted':
     case 'disablePresenceCompleted':
@@ -534,7 +615,6 @@ extension.setMessageListener(function(json) {
     case 'asyncCallError':
       handleAsyncCallError(msg);
       break;
-
   }
 });
 
@@ -547,8 +627,8 @@ function handleRegisterResourceCompleted(msg) {
 
 function handleEntityHandler(msg) {
   
-  if (g_iotivity_server.onrequest)
-    g_iotivity_server(msg.OicRequestEvent);
+  if (g_iotivity_device && g_iotivity_device.server && g_iotivity_device.server.onrequest)
+    g_iotivity_device.server(msg.OicRequestEvent);
 }
 
 function handleAsyncCallSuccess(msg) {

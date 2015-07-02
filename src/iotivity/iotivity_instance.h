@@ -53,6 +53,14 @@ class IotivityInstance : public common::Instance {
   void foundDeviceCallback(const OCRepresentation& rep);
   void handleFindDevices(const picojson::value& value);
 
+  void handleConfigure(const picojson::value& value);
+
+
+  void onPut(const HeaderOptions& headerOptions, const OCRepresentation& rep, const int eCode);
+  void onGet(const HeaderOptions& headerOptions, const OCRepresentation& rep, const int eCode);
+  void onPost(const HeaderOptions& headerOptions, const OCRepresentation& rep, const int eCode);
+
+  void handleCRUDNRRequest(const picojson::value& value);
   void handleCreateResource(const picojson::value& value);
   void handleRetrieveResource(const picojson::value& value);
   void handleUpdateResource(const picojson::value& value);

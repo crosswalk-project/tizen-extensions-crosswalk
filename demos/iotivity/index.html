@@ -71,7 +71,7 @@ function startClient() {
           .then((red) => {
             console.log("Observing " + res.url);
             red.properties.dimmer = 0.5;
-            device.updateResource(red)
+            device.client.updateResource(red)
             .then(() => { console.log("Changed red light dimmer"); })
             .catch(() => { console.log("Error changing red light"); });
           }).catch((error) => { console.log("Cannot observe " + res.url); };
@@ -85,6 +85,7 @@ function startClient() {
 function testOicServerClient(){
  
   var device = new OicDevice();
+
   // implementation will try to get default configuration from the HW/platform
   // but if we cannot get it, could do a hard-coded configuration (not recommended)
   if (device.settings.uuid) { // configuration is valid
