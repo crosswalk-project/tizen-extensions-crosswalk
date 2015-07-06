@@ -69,6 +69,7 @@ class IotivityInstance : public common::Instance {
   void handleCancelObserving(const picojson::value& value);
 
   void postEntityHandler(std::shared_ptr<OCResourceRequest> request);
+  OCEntityHandlerResult entityHandlerCallback(std::shared_ptr<OCResourceRequest> request);
   void handleRegisterResource(const picojson::value& value);
   void handleUnregisterResource(const picojson::value& value);
   void handleEnablePresence(const picojson::value& value);
@@ -84,8 +85,7 @@ class IotivityInstance : public common::Instance {
   void postError(double async_operation_id);
 
 
-  void postRegisterResource(double async_operation_id, OCResourceHandle resHandle);
-  OCEntityHandlerResult entityHandlerCallback(std::shared_ptr<OCResourceRequest> request);
+  void postRegisterResource(double async_operation_id, OCResourceHandle resHandle, const picojson::value& param);
 
   private:
     std::string PrepareMessage(const std::string & message);

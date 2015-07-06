@@ -30,6 +30,10 @@ char *pDebugEnv = NULL;
 const int SUCCESS_RESPONSE = 0;
 
 
+#define INFO_MSG(msg, ...) { printf(msg, ##__VA_ARGS__);}
+#define DEBUG_MSG(msg, ...) { if (pDebugEnv) printf(msg, ##__VA_ARGS__);}
+
+
 IotivityInstance::IotivityInstance() {
     pDebugEnv = getenv("IOTIVITY_DEBUG");
 }
@@ -114,7 +118,7 @@ static void DuplicateString(char ** targetString, std::string sourceString) {
     strncpy(*targetString, sourceString.c_str(), (sourceString.length() + 1));
 }
 
-static void DeletePlatformInfo(OCPlatformInfo &platformInfo) {
+ void DeletePlatformInfo(OCPlatformInfo &platformInfo) {
     delete[] platformInfo.platformID;
     delete[] platformInfo.manufacturerName;
     delete[] platformInfo.manufacturerUrl;
@@ -511,7 +515,7 @@ void IotivityInstance::postEntityHandler(std::shared_ptr<OCResourceRequest> requ
 
 OCEntityHandlerResult IotivityInstance::entityHandlerCallback(std::shared_ptr<OCResourceRequest> request) {
 
-    cout << "\tIn entityHandlerCallback:\n";
+    DEBUG_MSG("In entityHandlerCallback:\n");
     OCEntityHandlerResult ehResult = OC_EH_ERROR;
     if(request)
     {
@@ -545,13 +549,12 @@ void IotivityInstance::postError(double async_operation_id) {
   PostMessage(value.serialize().c_str());
 }
 
-void IotivityInstance::postRegisterResource(double async_operation_id, OCResourceHandle resHandle) {
+void IotivityInstance::postRegisterResource(double async_operation_id, OCResourceHandle resHandle, const picojson::value& param) {
 
   picojson::value::object object;
   object["cmd"] = picojson::value("registerResourceCompleted");
   object["asyncCallId"] = picojson::value(async_operation_id);
-
-  //object["OicResourceInit"] =  TODO
+  object["OicResourceInit"] = param;
   object["resourceId"] = picojson::value((double)((int)resHandle));
 
   picojson::value value(object);
@@ -577,19 +580,23 @@ void IotivityInstance::handleRegisterResource(const picojson::value& value) {
     std::string resourceInterface = DEFAULT_INTERFACE;
     uint8_t resourceProperty = 0;
 
+    DEBUG_MSG("handleRegisterResource\n");
+
     for (picojson::array::iterator iter = resourceTypes.begin(); iter != resourceTypes.end(); ++iter) {
-        printf("array resourceTypes value =%s\n", (*iter).get<string>().c_str());
+        DEBUG_MSG("array resourceTypes value=%s\n", (*iter).get<string>().c_str());
         if (resourceTypeName == "")
         {
             resourceTypeName = (*iter).get<string>();
+            break;
         }
     }
 
     for (picojson::array::iterator iter = interfaces.begin(); iter != interfaces.end(); ++iter) {
-        printf("array interfaces value =%s\n", (*iter).get<string>().c_str());
+        DEBUG_MSG("array interfaces value=%s\n", (*iter).get<string>().c_str());
         if (resourceInterface == "")
         {
             resourceInterface = (*iter).get<string>();
+            break;
         }
     }
 
@@ -602,6 +609,7 @@ void IotivityInstance::handleRegisterResource(const picojson::value& value) {
     if (isSecure)
         resourceProperty |= OC_SECURE;
 
+    DEBUG_MSG("discoverable=%d, observable=%d, isSecure=%d\n", discoverable, observable, isSecure);
 
     EntityHandler resourceCallback = std::bind(&IotivityInstance::entityHandlerCallback, 
                                                this, 
@@ -614,6 +622,9 @@ void IotivityInstance::handleRegisterResource(const picojson::value& value) {
                                        resourceInterface, 
                                        resourceCallback, 
                                        resourceProperty);
+
+    DEBUG_MSG("OCPlatform::registerResource: result=%d\n",result);
+
     if (OC_STACK_OK != result)
     {
         std::cerr << "OCPlatform::registerResource was unsuccessful\n";
@@ -621,7 +632,7 @@ void IotivityInstance::handleRegisterResource(const picojson::value& value) {
         return;
     }
 
-    postRegisterResource(async_call_id, resHandle);
+    postRegisterResource(async_call_id, resHandle, param);
 }
 
 void IotivityInstance::handleUnregisterResource(const picojson::value& value) {

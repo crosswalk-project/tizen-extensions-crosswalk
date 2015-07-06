@@ -161,6 +161,8 @@ function derive(child, parent) {
 ///////////////////////////////////////////////////////////////////////////////
 // Enum
 ///////////////////////////////////////////////////////////////////////////////
+
+/*
 var OicDeviceRole = {
    "client":1, 
    "server":2,
@@ -181,7 +183,7 @@ var OicMethod = {
     "update”:5, 
     "delete”:6
 };
-
+*/
 
 ///////////////////////////////////////////////////////////////////////////////
 // OicDevice
@@ -196,6 +198,9 @@ function OicDevice(settings) {
   }
   _addConstProperty(this, 'client', new OicClient());
   _addConstProperty(this, 'server', new OicServer());
+
+  //if (g_iotivity_device)
+  //  g_iotivity_device.configure(this.settings);
 }
 
 // partial dictionary is ok
@@ -208,7 +213,7 @@ OicDevice.prototype.configure = function(settings) {
 
   var msg = {
     'cmd': 'configure',
-    'settings': settings
+    'settings': this.settings
   };
 
   return createPromise(msg);
@@ -231,6 +236,8 @@ OicDevice.prototype.reboot = function() {
   return createPromise(msg);
 };
 
+iotivity.OicDevice = OicDevice;
+
 ///////////////////////////////////////////////////////////////////////////////
 // OicDeviceSettings
 ///////////////////////////////////////////////////////////////////////////////
@@ -247,9 +254,11 @@ function OicDeviceSettings(obj) {
     _addConstProperty(this, 'url', 'default');
     _addConstProperty(this, 'info', new OicDeviceInfo(null));
     _addConstProperty(this, 'role', 'client');
-    _addConstProperty(this, 'connectionMode', obj.'default');
+    _addConstProperty(this, 'connectionMode', 'default');
   }
 }
+
+iotivity.OicDeviceSettings = OicDeviceSettings;
 
 ///////////////////////////////////////////////////////////////////////////////
 // OicDeviceInfo
@@ -285,13 +294,15 @@ function OicDeviceInfo(obj) {
   }
 }
 
+iotivity.OicDeviceInfo = OicDeviceInfo;
+
 ///////////////////////////////////////////////////////////////////////////////
 // OicClient
 ///////////////////////////////////////////////////////////////////////////////
 
 function OicClient(obj) {
-  events.push('OicClient');
-  EventTarget.call(this, events);
+  //events.push('OicClient');
+  //EventTarget.call(this, events);
 
   this.onresourcechange = null;
 }
@@ -390,13 +401,15 @@ OicClient.prototype.cancelObserving = function(resourceId) {
   return createPromise(msg);
 };
 
+iotivity.OicClient = OicClient;
+
 ///////////////////////////////////////////////////////////////////////////////
 // OicServer
 ///////////////////////////////////////////////////////////////////////////////
 
 function OicServer(obj) {
-  events.push('OicServer');
-  EventTarget.call(this, events);
+  //events.push('OicServer');
+  //EventTarget.call(this, events);
 
   this.onrequest = null;
 }
@@ -435,7 +448,7 @@ OicServer.prototype.disablePresence = function() {
   return createPromise(msg);
 };
 
-OicClient.prototype.notify = function(resourceId, method, updatedPropertyNames) {
+OicServer.prototype.notify = function(resourceId, method, updatedPropertyNames) {
   var msg = {
     'cmd': 'notify',
     'resourceId': resourceId,
@@ -444,6 +457,8 @@ OicClient.prototype.notify = function(resourceId, method, updatedPropertyNames) 
   };
   return createPromise(msg);
 };
+
+iotivity.OicServer = OicServer;
 
 ///////////////////////////////////////////////////////////////////////////////
 // OicRequestEvent
@@ -489,6 +504,8 @@ OicRequestEvent.prototype.sendError = function(error) {
   return createPromise(msg);
 };
 
+iotivity.OicRequestEvent = OicRequestEvent;
+
 ///////////////////////////////////////////////////////////////////////////////
 // OicResourceChangedEvent
 ///////////////////////////////////////////////////////////////////////////////
@@ -501,6 +518,8 @@ function OicResourceChangedEvent(obj) {
   _addConstProperty(this, 'resource', obj.resource);
   _addConstProperty(this, 'updatedPropertyNames', obj.updatedPropertyNames);resource
 }
+
+iotivity.OicResourceChangedEvent = OicResourceChangedEvent;
 
 ///////////////////////////////////////////////////////////////////////////////
 // OicDiscoveryOptions, OicResourceRepresentation, OicResourceInit
@@ -517,10 +536,15 @@ function OicDiscoveryOptions(obj) {
   _addConstProperty(this, 'resourceType', obj.resourceType);
 }
 
+iotivity.OicDiscoveryOptions = OicDiscoveryOptions;
+
 function OicResourceRepresentation(obj) {
 
 // any non-function properties that are JSON-serializable, e.g. string, number, boolean, URI
 }
+
+iotivity.OicResourceRepresentation = OicResourceRepresentation;
+
 
 function OicResourceInit(obj) {
 
@@ -539,6 +563,8 @@ function OicResourceInit(obj) {
   // additional, resource type specific properties are allowed as “mixin”
   _addConstProperty(this, 'properties', obj.properties);
 }
+
+iotivity.OicResourceInit = OicResourceInit;
 
 ///////////////////////////////////////////////////////////////////////////////
 // OicResource
@@ -564,6 +590,8 @@ function OicResource(obj) {
   _addConstProperty(this, 'properties', obj.properties);
 }
 
+iotivity.OicResource = OicResource;
+
 ///////////////////////////////////////////////////////////////////////////////
 // HeaderOption 
 ///////////////////////////////////////////////////////////////////////////////
@@ -574,6 +602,8 @@ function HeaderOption(obj) {
   _addConstProperty(this, 'value', obj.value);
 }
 
+iotivity.HeaderOption = HeaderOption;
+
 ///////////////////////////////////////////////////////////////////////////////
 // QueryOption 
 ///////////////////////////////////////////////////////////////////////////////
@@ -583,6 +613,7 @@ function QueryOption(obj) {
   _addConstProperty(this, 'value', obj.value);
 }
 
+iotivity.QueryOption = QueryOption;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Exports and main entry point for the Iotivity API
@@ -598,6 +629,9 @@ exports = g_iotivity_device;
 
 extension.setMessageListener(function(json) {
   var msg = JSON.parse(json);
+
+  DBG('msg.cmd='+msg.cmd);
+
   switch (msg.cmd) {
     case 'registerResourceCompleted':
       handleRegisterResourceCompleted(msg);

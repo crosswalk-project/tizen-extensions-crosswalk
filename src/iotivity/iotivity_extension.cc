@@ -28,8 +28,23 @@ common::Extension* CreateExtension() {
 extern const char kSource_iotivity_api[];
 
 IotivityExtension::IotivityExtension() {
-  SetExtensionName("iotivity");
+  SetExtensionName("OIC");
   SetJavaScriptAPI(kSource_iotivity_api);
+  const char* entry_points[] = {
+    "iotivity.OicDevice",
+    "iotivity.OicDeviceSettings",
+    "iotivity.OicDeviceInfo",
+    "iotivity.OicClient",
+    "iotivity.OicServer",
+    "iotivity.OicRequestEvent",
+    "iotivity.OicDiscoveryOptions",
+    "iotivity.OicResourceRepresentation",
+    "iiotivity.OicResource",
+    "iotivity.HeaderOption",
+    "iotivity.QueryOption",
+    NULL
+  };
+  SetExtraJSEntryPoints(entry_points);
 }
 
 IotivityExtension::~IotivityExtension() {}

@@ -10,16 +10,15 @@
         'packages': [
         ],
       },
-      'includes': [
-        '../common/pkg-config.gypi',
-      ],
       'sources': [
         'iotivity_api.js',
         'iotivity_extension.cc',
         'iotivity_extension.h',
         'iotivity_instance.cc',
         'iotivity_instance.h',
-        'audiosystem_logs.h',
+      ],
+      'includes': [
+        '../common/pkg-config.gypi',
       ],
     },
   ],
