@@ -96,12 +96,16 @@ function createIdentity() {
     'accessControlList': [{"method": "oauth", "mechanisms": ["*"]}]
   };
   var res = tizen.sso.authService.createIdentity(info);
-  if (res.syncOpErrorMsg != null) {
-    _logData('Identity creation FAILED with error: ' + res.asyncOpErrorMsg);
-    return;
+  if (res != null) {
+    res.then(onCreateIdentityForStore, function(err) {
+      _logData('GetIdentity failed: ' + err);});
+  } else {
+    _logData('Identity not found with the specified id');
   }
+}
   
-  res.identity.store().then(function(msg) {
+function onCreateIdentityForStore(identobj) {
+  identobj.store().then(function(msg) {
     _logData('Identity store succeeded with resp: ' + JSON.stringify(msg));},
     function(err) {_logData('Identity store failed: ' + err);});
 }
@@ -122,7 +126,7 @@ function removeIdentity() {
 }
 
 function onGetIdentityForRemovalComplete(identobj) {
-  identobj.remove().then(onIdentityRemoved,
+  identobj.removeIdentity().then(onIdentityRemoved,
     function(err) {_logData('remove failed: ' + err);});
 }
 
@@ -146,11 +150,11 @@ function getAccessToken() {
 }
 
 function onGetIdentityForAccessTokenComplete(identobj) {
-  identobj.startSession('oauth').then(onSessionStarted,
+  identobj.getSession('oauth').then(onGetSessionComplete,
     function(err) {_logData('starting session failed: ' + err);});
 }
 
-function onSessionStarted(session) {
+function onGetSessionComplete(session) {
     // the client id and secret are specific to this example app
     // if you develop something based on this example, get your own
     // client id and secret at https://console.developers.google.com/project

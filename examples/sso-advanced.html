@@ -56,9 +56,9 @@
     </th>
   </tr>
   <tr><td><form>Select Type: <select name="cident_type" id="cident_type">
-    <option value = "APP" >Application</option>
+    <option value = "APPLICATION" >Application</option>
     <option value = "WEB" selected >Web</option>
-    <option value = "NET" >Network</option>
+    <option value = "NETWORK" >Network</option>
     </select></form></td></tr>
   <tr><td><form>Username: 
     <input type="text" name="cident_username" id="cident_username"><br></form></td></tr>
@@ -89,14 +89,14 @@
   <tr>
     <th colspan="2">
       <H3><BR>Identity</H3>
-      <form>Selected Identity JSId: 
+      <form>Selected Identity GuiId:
         <select name="ident_options" id="ident_options" onchange="onIdentityChanged(this)">
         </select></form>
     </th>
   </tr>
     <th>API</th>
     <th>Arg1</th>
-  <tr><td><button onclick='startSession()'>Start Session</button></td>
+  <tr><td><button onclick='getSession()'>Get Session</button></td>
     <td><form>Method: <input type="text" name="ident_method" id="ident_method"><br></form></td>
   </tr>
   <tr><td><button onclick='requestCredentialsUpdate()'>Update Credentials</button></td>
@@ -120,7 +120,7 @@
   <tr>
     <th colspan="3">
       <H3><BR>Session</H3>
-      <form>Selected Session JSId: <select name="sess_options" id="sess_options"></select></form>
+      <form>Selected Session GuiId: <select name="sess_options" id="sess_options"></select></form>
     </th>
   </tr>
     <th>API</th>
@@ -141,6 +141,69 @@
 </div>
 
 <script>
+var g_app_identities = [];
+var g_next_obj_id = 0;
+
+function AppSession(session) {
+  this.sessionObject = session;
+  this.guiId = ++g_next_obj_id;
+}
+
+function AppIdentity(identity) {
+  this.identityObject = identity;
+  this.guiId = ++g_next_obj_id;
+  this.sessions = [];
+}
+
+function _getAppIdentity(identity) {
+  if (identity == null) return null;
+  for (var i = 0; i < g_app_identities.length; i++) {
+    var appIdent = g_app_identities[i];
+    if (Object.is(appIdent.identityObject, identity)) {
+      return appIdent;
+    }
+  }
+  return null;
+}
+
+function _getAppIdentityByGuiId(guiId) {
+  if (guiId < 0) return null;
+  for (var i = 0; i < g_app_identities.length; i++) {
+    var appIdent = g_app_identities[i];
+    if (appIdent.guiId == guiId) {
+      return appIdent;
+    }
+  }
+  return null;
+}
+
+function _getAppSession(sessionObj) {
+  if (guiId < 0) return null;
+  for (var i = 0; i < g_app_identities.length; i++) {
+    var appIdent = g_app_identities[i];
+    if (appIdent != null) {
+      for (var j = 0; j < appIdent.sessions.length; j++) {
+        if (Object.is(appIdent.sessions[j].sessionObject, sessionObj))
+          return appIdent.sessions[j];
+      }
+    }
+  }
+  return null;
+}
+
+function _getAppSessionByGuiId(guiId) {
+  if (guiId < 0) return null;
+  for (var i = 0; i < g_app_identities.length; i++) {
+    var appIdent = g_app_identities[i];
+    if (appIdent != null) {
+      for (var j = 0; j < appIdent.sessions.length; j++) {
+        if (appIdent.sessions[j].guiId == guiId)
+          return appIdent.sessions[j];
+      }
+    }
+  }
+  return null;
+}
 
 function _logData(data) {
   var old = document.form_out.form_text.value
@@ -199,8 +262,15 @@ function getIdentity() {
   }
 }
 
-function onGetIdentityComplete(result) {
-  _logData('GetIdentity successful: ' + JSON.stringify(result));
+function onGetIdentityComplete(ident) {
+  _logData('GetIdentity successful: ' + JSON.stringify(ident));
+  var appIdent = _getAppIdentity(ident);
+  if (appIdent == null) {
+    _logData('identity NOT selected/found. Adding one');
+    identityAdded(ident);
+    return;
+  }
+  document.getElementById('ident_options').value = appIdent.guiId;
 }
 
 function clearDB() {
@@ -209,6 +279,7 @@ function clearDB() {
     clearSelect(document.getElementById("ident_options"));
     clearSelect(document.getElementById("sess_options"));},
     function(err) {_logData('Clear failed: ' + err);});
+  g_app_identities = [];
 }
 
 function getInfo() {
@@ -248,13 +319,17 @@ function getInfo() {
 function onCreateIdentity() {
   var info = getInfo();
   var res = tizen.sso.authService.createIdentity(info);
-  if (res.syncOpErrorMsg != null) {
-    _logData('Identity creation FAILED with error: ' + res.asyncOpErrorMsg);
-    return;
+  if (res != null) {
+    res.then(onCreateIdentityComplete, function(err) {
+        _logData('CreateIdentity failed: ' + err);});
+  } else {
+    _logData('Create Identity failed');
   }
-  
-  identityAdded(res.identity);
-  _logData('Identity is added with jsid: ' + res.identity.jsid);
+}
+
+function onCreateIdentityComplete(result) {
+  _logData('CreateIdentityComplete successful: ' + JSON.stringify(result));
+  identityAdded(result);
 }
 
 function onUpdateIdentity() {
@@ -265,26 +340,34 @@ function onUpdateIdentity() {
 function identityAdded(ident) {
   var select = document.getElementById("ident_options");
   var option = document.createElement('option');
-  option.text = option.value = ident.jsid;
+  var appIdent = new AppIdentity(ident);
+  option.text = option.value = appIdent.guiId;
   select.add(option, 0);
+  document.getElementById('ident_options').value = appIdent.guiId;
+  g_app_identities.push(appIdent);
+  _logData('Identity with id ' + appIdent.guiId + ' is added');
 
   ident.onsignedout = function (ident) {
-    _logData('Identity with id ' + ident.info.id + ' is signedout and jsid is '
-      + ident.jsid);};
+    _logData('Identity with id ' + appIdent.guiId + ' is signedout');};
   ident.onremoved = onIdentityRemoved;
 }
 
 function onIdentityRemoved(ident) {
-  _logData('Identity with id ' + ident.info.id + ' is removed and its jsid is '
-    + ident.jsid);
-  if (document.getElementById('ident_options').value == ident.jsid) {
-    for (var i = 0; i < ident.sessions.length; i++) {
-      var sessionobj = ident.sessions[i];
-      sessionobj.removeEventListener('statechanged', onSessionStateChanged);
+  var appIdent = _getAppIdentity(ident);
+  if (appIdent == null) {
+    _logData('identity NOT selected/found. Please select/create an identity first');
+    return;
+  }
+  _logData('Identity with id ' + appIdent.guiId + ' is to be removed');
+  if (document.getElementById('ident_options').value == appIdent.guiId) {
+    for (var i = 0; i < appIdent.sessions.length; i++) {
+      var appSession = appIdent.sessions[i];
+      appSession.sessionObject.removeEventListener('statechanged', onSessionStateChanged);
       document.getElementById('sess_options').remove(i);
     }
-    clearSelectOption(document.getElementById("ident_options"), ident.jsid);
+    clearSelectOption(document.getElementById("ident_options"), appIdent.guiId);
   }
+  g_app_identities.splice(g_app_identities.indexOf(appIdent), 1);
 }
 
 function clearSelectOption(element, value) {
@@ -301,73 +384,76 @@ function clearSelect(element) {
 }
 
 function onIdentityChanged(select) {
-  var jsid = document.getElementById("ident_options").value;
-  _logData('Identity selected with jsid: ' + jsid);
-  var identobj = tizen.sso.authService.getIdentityByJSId(jsid);
-  if (identobj == null) {
+  var guiId = document.getElementById("ident_options").value;
+  _logData('Identity selected with guiId: ' + guiId);
+  var appIdent = _getAppIdentityByGuiId(guiId);
+  if (appIdent == null) {
     _logData('identity NOT found');
     return;
   }
   clearSelect(document.getElementById("sess_options"));
-  for (var i = 0; i < identobj.sessions.length; i++) {
+  for (var i = 0; i < appIdent.sessions.length; i++) {
     var option = document.createElement('option');
-    option.text = option.value = identobj.sessions[i].jsid;
+    option.text = option.value = appIdent.sessions[i].guiId;
     document.getElementById('sess_options').add(option, 0);
   }
 }
 
 //identity interface
-function startSession() {
-  var identobj = tizen.sso.authService.getIdentityByJSId(
-    document.getElementById('ident_options').value);
-  if (identobj == null) {
+function getSession() {
+  var appIdent = _getAppIdentityByGuiId(document.getElementById('ident_options').value);
+  if (appIdent == null) {
     _logData('identity NOT selected/found. Please select/create an identity first');
     return;
   }
-  _logData('identity found with JSId: ' + identobj.jsid);
+  _logData('identity for getSession: ' + appIdent.guiId);
   var method = document.getElementById('ident_method').value;
   
-  var res = identobj.startSession(method);
+  var res = appIdent.identityObject.getSession(method);
   if (res != null) {
-    res.then(onStartSessionComplete,
-      function(err) {_logData('startSession failed: ' + err);});
+    res.then(onGetSessionComplete, function(err) {_logData('getSession failed: ' + err);});
   } else {
-    _logData('Session cannot be started');
+    _logData('Session cannot be retrieved');
   }
 }
 
-function onStartSessionComplete(sessionobj) {
-  _logData('startSession successful: ' + JSON.stringify(sessionobj));
-  sessionobj.addEventListener('statechanged', onSessionStateChanged);
-
-  _logData('Session with jsid as ' + sessionobj.jsid + ' is added for identity with jsid '
-     + sessionobj.identityJSId);
+function onGetSessionComplete(sessionObj) {
+  _logData('getSession successful: ' + JSON.stringify(sessionObj));
+  sessionObj.addEventListener('statechanged', onSessionStateChanged);
   var select = document.getElementById("ident_options");
-  if (select.value == sessionobj.identityJSId) {
+  var appIdentity = _getAppIdentityByGuiId(select.value);
+  if (appIdentity != null) {
+    var appSession = new AppSession(sessionObj);
+    appIdentity.sessions.push(appSession);
     var sess_select = document.getElementById("sess_options");
     var option = document.createElement('option');
-    option.text = option.value = sessionobj.jsid;
+    option.text = option.value = appSession.guiId;
     sess_select.add(option, 0);
+    document.getElementById('sess_options').value = appSession.guiId; 
   }
 }
 
 function onSessionStateChanged(event) {
-  var sessionobj = event.session;
-  _logData('Session with jsid ' + sessionobj.jsid + ' state has changed to '
-    + sessionobj.sessionState);
+  var sessionObj = event.session;
+  var appSession = _getAppSession(sessionObj);
+  if (appSession != null) {
+    _logData('Session state has changed to ' + sessionObj.sessionState +
+             ' for session with guiId ' + appSession.guiId);
+  } else {
+    _logData('App session NOT found');
+  }
 }
 
 function requestCredentialsUpdate() {
-  var identobj = tizen.sso.authService.getIdentityByJSId(
-    document.getElementById('ident_options').value);
-  if (identobj == null) {
+  var appIdent = _getAppIdentityByGuiId(document.getElementById('ident_options').value);
+  if (appIdent == null) {
     _logData('identity NOT selected/found. Please select/create an identity first');
     return;
   }
-  _logData('identity found with JSId: ' + identobj.jsid);
+  _logData('identity to request credentials update: ' + appIdent.guiId);
   var message = document.getElementById('ident_message').value;
 
-  var res = identobj.requestCredentialsUpdate(message);
+  var res = appIdent.identityObject.requestCredentialsUpdate(message);
   if (res != null) {
     res.then(function(msg) {document.form_out.form_text.value += "\n" +
       "requestCredentialsUpdate succeeded";},
@@ -378,31 +464,33 @@ function requestCredentialsUpdate() {
 }
 
 function store(info) {
-  var identobj = tizen.sso.authService.getIdentityByJSId(
-    document.getElementById('ident_options').value);
-  if (identobj == null) {
+  var appIdent = _getAppIdentityByGuiId(document.getElementById('ident_options').value);
+  if (appIdent == null) {
     _logData('identity NOT selected/found. Please select/create an identity first');
     return;
   }
-  _logData('identity found with JSId: ' + identobj.jsid);
-  if (info != null) identobj.updateInfo(info);
-
-  identobj.store().then(function(msg) {
-    _logData('store succeeded with resp: ' + JSON.stringify(msg));},
-    function(err) {_logData('store failed: ' + err);});
+  _logData('identity to store info: ' + appIdent.guiId);
+  if (info != null) {
+    appIdent.identityObject.storeWithInfo(info).then(function(msg) {
+        _logData('storeWithInfo succeeded with resp: ' + JSON.stringify(msg));},
+            function(err) {_logData('storeWithInfo failed: ' + err);});
+  } else {
+    appIdent.identityObject.store().then(function(msg) {
+        _logData('store succeeded with resp: ' + JSON.stringify(msg));},
+            function(err) {_logData('store failed: ' + err);});
+  }
 }
 
 function addReference() {
-  var identobj = tizen.sso.authService.getIdentityByJSId(
-    document.getElementById('ident_options').value);
-  if (identobj == null) {
+  var appIdent = _getAppIdentityByGuiId(document.getElementById('ident_options').value);
+  if (appIdent == null) {
     _logData('identity NOT selected/found. Please select/create an identity first');
     return;
   }
-  _logData('identity found with JSId: ' + identobj.jsid);
+  _logData('identity to add reference: ' + appIdent.guiId);
   var reference = document.getElementById('ident_addref').value;
   
-  var res = identobj.addReference(reference);
+  var res = appIdent.identityObject.addReference(reference);
   if (res != null) {
     res.then(function(msg) {_logData('addReference succeeded');},
       function(err) {_logData('addReference failed: ' + err);});
@@ -412,16 +500,15 @@ function addReference() {
 }
 
 function removeReference() {
-  var identobj = tizen.sso.authService.getIdentityByJSId(
-    document.getElementById('ident_options').value);
-  if (identobj == null) {
+  var appIdent = _getAppIdentityByGuiId(document.getElementById('ident_options').value);
+  if (appIdent == null) {
     _logData('identity NOT selected/found. Please select/create an identity first');
     return;
   }
-  _logData('identity found with JSId: ' + identobj.jsid);
+  _logData('identity to remove reference: ' + appIdent.guiId);
   var reference = document.getElementById('ident_remref').value;
   
-  var res = identobj.removeReference(reference);
+  var res = appIdent.identityObject.removeReference(reference);
   if (res != null) {
     res.then(function(msg) {_logData('removeReference succeeded');},
       function(err) {_logData('removeReference failed: ' + err);});
@@ -431,45 +518,42 @@ function removeReference() {
 }
 
 function removeIdentity() {
-  var identobj = tizen.sso.authService.getIdentityByJSId(
-    document.getElementById('ident_options').value);
-  if (identobj == null) {
+  var appIdent = _getAppIdentityByGuiId(document.getElementById('ident_options').value);
+  if (appIdent == null) {
     _logData('identity NOT selected/found. Please select/create an identity first');
     return;
   }
-  _logData('identity found with JSId: ' + identobj.jsid);
-  identobj.remove().then(onIdentityRemoved,
+  _logData('identity to be removed: ' + appIdent.guiId);
+  appIdent.identityObject.removeIdentity().then(onIdentityRemoved,
     function(err) {_logData('remove failed: ' + err);});
 }
 
 function signout() {
-  var identobj = tizen.sso.authService.getIdentityByJSId(
-    document.getElementById('ident_options').value);
-  if (identobj == null) {
+  var appIdent = _getAppIdentityByGuiId(document.getElementById('ident_options').value);
+  if (appIdent == null) {
     _logData('identity NOT selected/found. Please select/create an identity first');
     return;
   }
-  _logData('identity found with JSId: ' + identobj.jsid);
-  identobj.signout().then(function(msg) {
+  _logData('identity to be signeout: ' + appIdent.guiId);
+  appIdent.identityObject.signout().then(function(msg) {
     _logData('signout succeeded');},
     function(err) {_logData('signout failed: ' + err);});
 }
 
 //authsession interface
 function queryAvailableMechanisms() {
-  var identobj = tizen.sso.authService.getIdentityByJSId(
-    document.getElementById('ident_options').value);
-  if (identobj == null) {
+  var appIdent = _getAppIdentityByGuiId(document.getElementById('ident_options').value);
+  if (appIdent == null) {
     _logData('identity NOT selected/found. Please select/create an identity first');
     return;
   }
-  _logData('identity found with JSId: ' + identobj.jsid);
-  var sessionobj = identobj.getSessionByJSId(document.getElementById('sess_options').value);
-  if (sessionobj == null) {
+  _logData('identity found with GuiId: ' + appIdent.guiId);
+  var appSession = _getAppSessionByGuiId(document.getElementById('sess_options').value);
+  if (appSession == null) {
     _logData('session NOT selected/found. Please select/create session first');
     return;
   }
-  _logData('session found with JSId: ' + sessionobj.jsid);
+  _logData('session found with GuiId: ' + appSession.guiId);
 
   var str = document.getElementById('sess_mechs').value;
   var wantedMechs = [];
@@ -477,54 +561,50 @@ function queryAvailableMechanisms() {
       arr = str.split(",");
       if (arr.length > 0) wantedMechs  = arr;
   }
-  sessionobj.queryAvailableMechanisms(wantedMechs).then(function(msg) {
+  appSession.sessionObject.queryAvailableMechanisms(wantedMechs).then(function(msg) {
     _logData('queryAvailableMechanisms succeeded with mechanisms:' + JSON.stringify(msg));},
     function(err) {_logData('queryAvailableMechanisms failed: ' + err);});
 }
 
 function challenge() {
-  var identobj = tizen.sso.authService.getIdentityByJSId(
-    document.getElementById('ident_options').value);
-  if (identobj == null) {
+  var appIdent = _getAppIdentityByGuiId(document.getElementById('ident_options').value);
+  if (appIdent == null) {
     _logData('identity NOT selected/found. Please select/create an identity first');
     return;
   }
-  _logData('identity found with JSId: ' + identobj.jsid);
-  var sessionobj = identobj.getSessionByJSId(document.getElementById('sess_options').value);
-  if (sessionobj == null) {
+  _logData('identity found with GuiId: ' + appIdent.guiId);
+  var appSession = _getAppSessionByGuiId(document.getElementById('sess_options').value);
+  if (appSession == null) {
     _logData('session NOT selected/found. Please select/create session first');
     return;
   }
-  _logData('session found with JSId: ' + sessionobj.jsid);
+  _logData('session found with GuiId: ' + appSession.guiId);
 
   var mech = document.getElementById('sess_mech').value;
   var sessionData = document.getElementById('sess_data').value;
   
-  sessionobj.challenge(mech, sessionData).then(function(msg) {
+  appSession.sessionObject.challenge(mech, sessionData).then(function(msg) {
     _logData('challenge succeeded with sessionData: ' + JSON.stringify(msg));},
     function(err) {_logData('challenge failed: ' + err);});
 }
 
 function cancel() {
-  var identobj = tizen.sso.authService.getIdentityByJSId(
-    document.getElementById('ident_options').value);
-  if (identobj == null) {
+  var appIdent = _getAppIdentityByGuiId(document.getElementById('ident_options').value);
+  if (appIdent == null) {
     _logData('identity NOT selected/found. Please select/create an identity first');
     return;
   }
-  _logData('identity found with JSId: ' + identobj.jsid);
-  var sessionobj = identobj.getSessionByJSId(document.getElementById('sess_options').value);
-  if (sessionobj == null) {
+  _logData('identity found with GuiId: ' + appIdent.guiId);
+  var appSession = _getAppSessionByGuiId(document.getElementById('sess_options').value);
+  if (appSession == null) {
     _logData('session NOT selected/found. Please select/create session first');
     return;
   }
-  _logData('session found with JSId: ' + sessionobj.jsid);
+  _logData('session cancel with GuiId: ' + appSession.guiId);
 
-  sessionobj.removeEventListener('statechanged', onSessionStateChanged);
-  sessionobj.cancel().then(function(msg) {
+  appSession.sessionObject.cancel().then(function(msg) {
     _logData('cancel succeeded');},
     function(err) {_logData('cancel failed: ' + err);});
-  clearSelectOption(document.getElementById('sess_options'), sessionobj.jsid);
 }
 
 window.onload = function() {
@@ -533,7 +613,7 @@ window.onload = function() {
     "method":"password","mechanisms":["password"]}]);
   document.getElementById('cident_owner').value = "*,*";
   document.getElementById('serv_filter').value =
-      JSON.stringify({Type:"WEB",Owner:{"sysContext":"*","appContext":"*"},Caption:"cap"});
+      JSON.stringify({Type:"WEB",Owner:{"sysContext":"*","appContext":"*"}});
 };
 
 </script>

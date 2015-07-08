@@ -42,6 +42,8 @@ std::string getLocale() {
                                               NULL,
                                               &error);
 
+  g_object_unref(proxy);
+
   if (error)  {
     LOGGER_E("Error getting locale: " << error->message);
     g_error_free(error);
@@ -60,6 +62,9 @@ std::string getLocale() {
 
   LOGGER_D("system locale is: " << locale);
 
+  std::string sublocale = std::string(locale).substr(5);
+  g_free(locale);
+
   if (local_var)
     g_variant_unref(local_var);
 
@@ -69,7 +74,7 @@ std::string getLocale() {
   if (iter)
     g_variant_iter_free(iter);
 
-  return std::string(locale).substr(5);
+  return sublocale;
 }
 
 void setLocale(const std::string& locale_str) {

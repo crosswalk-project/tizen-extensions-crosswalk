@@ -90,6 +90,7 @@ picojson::value* Application::Exit() {
     g_error_free(error);
     return CreateResultMessage(WebApiAPIErrors::UNKNOWN_ERR);
   }
+  g_variant_unref(result);
   return CreateResultMessage();
 }
 
@@ -108,6 +109,7 @@ picojson::value* Application::Hide() {
     g_error_free(error);
     return CreateResultMessage(WebApiAPIErrors::UNKNOWN_ERR);
   }
+  g_variant_unref(result);
   return CreateResultMessage();
 }
 

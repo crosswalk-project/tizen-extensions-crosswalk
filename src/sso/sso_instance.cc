@@ -66,8 +66,8 @@ void SSOInstance::HandleAuthServiceMessage(const std::string& cmd,
     service->HandleQueryIdentities(v);
   } else if (cmd == "getIdentity") {
     service->HandleGetIdentity(v);
-  } else if (cmd == "destroyIdentity") {
-    service->HandleDestroyIdentity(v);
+  } else if (cmd == "createIdentity") {
+    service->HandleCreateIdentity(v);
   } else if (cmd == "clear") {
     service->HandleClear(v);
   } else {
@@ -83,10 +83,8 @@ void SSOInstance::HandleIdentityMessage(const std::string& cmd,
     return;
   }
 
-  if (cmd == "startSession") {
-    identity->HandleStartSession(v);
-  } else if (cmd == "destroySession") {
-    identity->HandleDestroySession(v);
+  if (cmd == "getSession") {
+    identity->HandleGetSession(v);
   } else if (cmd == "requestCredentialsUpdate") {
     identity->HandleRequestCredentialsUpdate(v);
   } else if (cmd == "store") {
@@ -140,10 +138,10 @@ void SSOInstance::HandleMessage(const char* message) {
       cmd == "queryMechanisms" ||
       cmd == "queryIdentities" ||
       cmd == "getIdentity" ||
-      cmd == "destroyIdentity" ||
+      cmd == "createIdentity" ||
       cmd == "clear") {
     HandleAuthServiceMessage(cmd, v);
-  } else if (cmd == "startSession" ||
+  } else if (cmd == "getSession" ||
       cmd == "requestCredentialsUpdate" ||
       cmd == "store" ||
       cmd == "addReference" ||
@@ -172,15 +170,22 @@ void SSOInstance::HandleSyncMessage(const char* message) {
     SendSyncReply(picojson::value(obj).serialize().c_str());
     return;
   }
+  SSOAuthService* service = GetService(v);
+  if (!service) {
+    obj["synOpErrorMsg"] = picojson::value("Invalid service object");
+    SendSyncReply(picojson::value(obj).serialize().c_str());
+    return;
+  }
 
   std::string cmd = v.get("syncOpCmd").to_str();
-  SSOAuthService* service = 0;
-  if (cmd == "createIdentity") {
-    service = GetService(v);
-    if (service)
-      service->HandleCreateIdentity(v);
+  if (cmd == "destroyIdentity") {
+    service->HandleDestroyIdentity(v);
+  } else if (cmd == "destroySession") {
+    SSOIdentityPtr identity = GetIdentity(v);
+    if (identity)
+      identity->HandleDestroySession(v);
     else
-      obj["synOpErrorMsg"] = picojson::value("Invalid Service Object");
+      obj["synOpErrorMsg"] = picojson::value("Invalid identity object");
   } else {
     obj["synOpErrorMsg"] = picojson::value("Unknown sync command");
   }

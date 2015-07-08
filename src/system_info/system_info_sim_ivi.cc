@@ -4,15 +4,6 @@
 
 #include "system_info/system_info_sim.h"
 
-namespace {
-
-const char kModemPath[] = "/he910_0";
-const char kOfonoService[] = "org.ofono";
-const char kOfonoSimManagerIface[] = "org.ofono.SimManager";
-const char kOfonoNetworkRegistrationIface[] = "org.ofono.NetworkRegistration";
-
-}  // namespace
-
 SysInfoSim::SysInfoSim()
     : state_(SYSTEM_INFO_SIM_UNKNOWN),
       operator_name_(""),
@@ -23,11 +14,18 @@ SysInfoSim::SysInfoSim()
       msin_(""),
       spn_(""),
       conn_(NULL) {
-  InitDbusConnection();
+  conn_ = system_info::GetDbusConnection();
+  if (!conn_)
+    return;
+  modem_path_ = system_info::OfonoGetModemPath(conn_);
 }
 
 SysInfoSim::~SysInfoSim() {
-  DeInitDbusConnection();
+  if (!conn_)
+    return;
+  g_dbus_connection_signal_unsubscribe(conn_, prop_changed_watch_);
+  g_dbus_connection_close_sync(conn_, NULL, NULL);
+  conn_ = NULL;
 }
 
 void SysInfoSim::Get(picojson::value& error,
@@ -36,35 +34,6 @@ void SysInfoSim::Get(picojson::value& error,
   GetOperatorNameAndSpn();
   SetJsonValues(data);
   system_info::SetPicoJsonObjectValue(error, "message", picojson::value(""));
-}
-
-void SysInfoSim::InitDbusConnection() {
-  GError* error = NULL;
-  gchar* addr = g_dbus_address_get_for_bus_sync(G_BUS_TYPE_SYSTEM,
-                                                NULL, &error);
-  if (!addr) {
-    std::cout << "fail to get dbus addr: " << error->message << std::endl;
-    g_free(error);
-    return;
-  }
-
-  conn_ = g_dbus_connection_new_for_address_sync(addr,
-      (GDBusConnectionFlags)(G_DBUS_CONNECTION_FLAGS_AUTHENTICATION_CLIENT |
-      G_DBUS_CONNECTION_FLAGS_MESSAGE_BUS_CONNECTION), NULL, NULL, &error);
-  if (!conn_) {
-    std::cout << "fail to create dbus connection: "
-              << error->message << std::endl;
-    g_free(error);
-    return;
-  }
-}
-
-void SysInfoSim::DeInitDbusConnection() {
-  if (!conn_)
-    return;
-  g_dbus_connection_signal_unsubscribe(conn_, prop_changed_watch_);
-  g_dbus_connection_close_sync(conn_, NULL, NULL);
-  conn_ = NULL;
 }
 
 void SysInfoSim::UpdateSimProperty(const gchar* key, GVariant* var_val) {
@@ -96,35 +65,24 @@ void SysInfoSim::UpdateSimProperty(const gchar* key, GVariant* var_val) {
       state_ = SYSTEM_INFO_SIM_UNKNOWN;
     else if (g_strcmp0(lock, "none") == 0)
       state_ = SYSTEM_INFO_SIM_READY;
-    else if (g_strcmp0(lock, "pin") == 0)
+    else if (g_strcmp0(lock, "pin") == 0 ||
+             g_strcmp0(lock, "pin2") == 0)
       state_ = SYSTEM_INFO_SIM_PIN_REQUIRED;
-    else if (g_strcmp0(lock, "puk") == 0)
-      state_ = SYSTEM_INFO_SIM_PUB_REQUIRED;
-    else if (g_strcmp0(lock, "phone") == 0)
-      state_ = SYSTEM_INFO_SIM_UNKNOWN;
-    else if (g_strcmp0(lock, "firstphone") == 0)
-      state_ = SYSTEM_INFO_SIM_UNKNOWN;
-    else if (g_strcmp0(lock, "firstphonepuk") == 0)
-      state_ = SYSTEM_INFO_SIM_UNKNOWN;
-    else if (g_strcmp0(lock, "pin2") == 0)
-      state_ = SYSTEM_INFO_SIM_PIN_REQUIRED;
-    else if (g_strcmp0(lock, "puk2") == 0)
+    else if (g_strcmp0(lock, "puk") == 0 ||
+             g_strcmp0(lock, "puk2") == 0)
       state_ = SYSTEM_INFO_SIM_PUB_REQUIRED;
     else if (g_strcmp0(lock, "network") == 0)
       state_ = SYSTEM_INFO_SIM_NETWORK_LOCKED;
-    else if (g_strcmp0(lock, "networkpuk") == 0)
-      state_ = SYSTEM_INFO_SIM_UNKNOWN;
-    else if (g_strcmp0(lock, "netsub") == 0)
-      state_ = SYSTEM_INFO_SIM_UNKNOWN;
-    else if (g_strcmp0(lock, "netsubpuk") == 0)
-      state_ = SYSTEM_INFO_SIM_UNKNOWN;
-    else if (g_strcmp0(lock, "service") == 0)
-      state_ = SYSTEM_INFO_SIM_UNKNOWN;
-    else if (g_strcmp0(lock, "servicepuk") == 0)
-      state_ = SYSTEM_INFO_SIM_UNKNOWN;
-    else if (g_strcmp0(lock, "corp") == 0)
-      state_ = SYSTEM_INFO_SIM_UNKNOWN;
-    else if (g_strcmp0(lock, "corppuk") == 0)
+    else if (g_strcmp0(lock, "networkpuk") == 0 ||
+             g_strcmp0(lock, "phone") == 0 ||
+             g_strcmp0(lock, "firstphone") == 0 ||
+             g_strcmp0(lock, "firstphonepuk") == 0 ||
+             g_strcmp0(lock, "netsub") == 0 ||
+             g_strcmp0(lock, "netsubpuk") == 0 ||
+             g_strcmp0(lock, "service") == 0 ||
+             g_strcmp0(lock, "servicepuk") == 0 ||
+             g_strcmp0(lock, "corp") == 0 ||
+             g_strcmp0(lock, "corppuk") == 0)
       state_ = SYSTEM_INFO_SIM_UNKNOWN;
     else
       state_ = SYSTEM_INFO_SIM_INITIALIZING;
@@ -149,12 +107,12 @@ void SysInfoSim::OnSimPropertyChanged(GDBusConnection* conn,
 }
 
 void SysInfoSim::GetSimProperties() {
-  if (!conn_)
+  if (!conn_ || modem_path_.empty())
     return;
   GError* error = NULL;
   GVariant* var_properties = g_dbus_connection_call_sync(
-      conn_, kOfonoService, kModemPath,
-      kOfonoSimManagerIface, "GetProperties", NULL, NULL,
+      conn_, system_info::kOfonoService, modem_path_.c_str(),
+      system_info::kOfonoSimManagerIface, "GetProperties", NULL, NULL,
       G_DBUS_CALL_FLAGS_NONE, -1, NULL, &error);
 
   if (!var_properties) {
@@ -167,6 +125,7 @@ void SysInfoSim::GetSimProperties() {
   gchar* key;
   GVariant* var_val;
   g_variant_get(var_properties, "(a{sv})", &iter);
+  g_variant_unref(var_properties);
   while (g_variant_iter_next(iter, "{sv}", &key, &var_val)) {
     UpdateSimProperty(key, var_val);
     g_free(key);
@@ -174,16 +133,15 @@ void SysInfoSim::GetSimProperties() {
   }
 
   g_variant_iter_free(iter);
-  g_variant_unref(var_properties);
 }
 
 void SysInfoSim::GetOperatorNameAndSpn() {
-  if (!conn_)
+  if (!conn_ || modem_path_.empty())
     return;
   GError* error = NULL;
   GVariant* var_properties = g_dbus_connection_call_sync(
-      conn_, kOfonoService, kModemPath,
-      kOfonoNetworkRegistrationIface, "GetProperties", NULL, NULL,
+      conn_, system_info::kOfonoService, modem_path_.c_str(),
+      system_info::kOfonoNetworkRegistrationIface, "GetProperties", NULL, NULL,
       G_DBUS_CALL_FLAGS_NONE, -1, NULL, &error);
 
   if (!var_properties) {
@@ -198,6 +156,7 @@ void SysInfoSim::GetOperatorNameAndSpn() {
   int net_mcc = 0;
   int net_mnc = 0;
   g_variant_get(var_properties, "(a{sv})", &iter);
+  g_variant_unref(var_properties);
   while (g_variant_iter_next(iter, "{sv}", &key, &var_val)) {
     if (g_strcmp0(key, "Name") == 0) {
       char* name = NULL;
@@ -215,17 +174,16 @@ void SysInfoSim::GetOperatorNameAndSpn() {
     g_variant_unref(var_val);
   }
   g_variant_iter_free(iter);
-  g_variant_unref(var_properties);
   spn_ = net_mcc + net_mnc ? std::to_string(net_mcc + net_mnc) : "";
 }
 
 void SysInfoSim::StartListening() {
-  if (!conn_)
+  if (!conn_ || modem_path_.empty())
     return;
   prop_changed_watch_ = g_dbus_connection_signal_subscribe(
-      conn_, kOfonoService, kOfonoSimManagerIface, "PropertyChanged",
-      kModemPath, NULL, G_DBUS_SIGNAL_FLAGS_NONE, OnSimPropertyChanged,
-      this, NULL);
+      conn_, system_info::kOfonoService, system_info::kOfonoSimManagerIface,
+      "PropertyChanged", modem_path_.c_str(), NULL, G_DBUS_SIGNAL_FLAGS_NONE,
+      OnSimPropertyChanged, this, NULL);
 }
 
 void SysInfoSim::StopListening() {

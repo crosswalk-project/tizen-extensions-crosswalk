@@ -39,8 +39,12 @@ ApplicationExtension::ApplicationExtension(const std::string& app_id) {
   current_app_.reset(new Application(app_id));
   app_manager_.reset(new ApplicationManager());
 
+  const char* entry_points[] = {
+      "tizen.ApplicationControl", "tizen.ApplicationControlData", nullptr};
+
   SetExtensionName("tizen.application");
   SetJavaScriptAPI(kSource_application_api);
+  SetExtraJSEntryPoints(entry_points);
 }
 
 ApplicationExtension::~ApplicationExtension() {}

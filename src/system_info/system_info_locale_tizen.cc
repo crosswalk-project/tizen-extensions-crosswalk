@@ -100,7 +100,7 @@ bool SysInfoLocale::GetLanguage() {
   if (!language_info)
     return false;
 
-  language_ = std::string(language_info);
+  language_ = GetFirstSubstringByDot(std::string(language_info));
   free(language_info);
 
   return true;
@@ -112,7 +112,7 @@ bool SysInfoLocale::GetCountry() {
   if (!country_info)
     return false;
 
-  country_ = std::string(country_info);
+  country_ = GetFirstSubstringByDot(std::string(country_info));
   free(country_info);
 
   return true;

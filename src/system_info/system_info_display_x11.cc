@@ -73,16 +73,16 @@ bool SysInfoDisplay::UpdateBrightness() {
     brightness_ = 1.0;
     return true;
   }
-  int max_val = atoi(str_val);
+  double max_val = strtod(str_val, NULL);
   free(str_val);
 
-  str_val = system_info::ReadOneLine(ACPI_BACKLIGHT_DIR"/max_brightness");
+  str_val = system_info::ReadOneLine(ACPI_BACKLIGHT_DIR"/brightness");
   if (!str_val) {
     // FIXME(halton): ACPI is not enabled, fallback to maximum.
     brightness_ = 1.0;
     return true;
   }
-  int val = atoi(str_val);
+  double val = strtod(str_val, NULL);
   free(str_val);
 
   brightness_ = val / max_val;

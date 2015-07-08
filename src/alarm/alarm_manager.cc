@@ -5,9 +5,9 @@
 #include "alarm/alarm_manager.h"
 
 #include <app.h>
-#include <iostream>
 
 #include "alarm/alarm_info.h"
+#include "common/logger.h"
 
 namespace {
 
@@ -41,39 +41,48 @@ int AlarmManager::ScheduleAlarm(const std::string& app_id,
 
   int ret = StoreAlarmInService(service, alarm);
   if (ret) {
-    DestoryService(service);
-    std::cerr << "Failed to store the alarm information." << std::endl;
+    DestroyService(service);
+    LOGGER(ERROR) << "Failed to store the alarm information.";
     return ret;
   }
 
   ret = service_add_extra_data(service, kHostAppIdKey, host_app_id_.c_str());
   if (ret) {
-    DestoryService(service);
-    std::cerr << "Failed to store host application ID." << std::endl;
+    DestroyService(service);
+    LOGGER(ERROR) << "Failed to store host application ID.";
     return ret;
   }
 
   int alarm_id = 0;
-  if (alarm->type() == AlarmInfo::ABSOLUTE) {
-    time_t tval = static_cast<time_t>(alarm->date());
-    struct tm date_tm = {0};
-    localtime_r(&tval, &date_tm);
-    if (alarm->weekflag()) {
-      ret = alarm_schedule_with_recurrence_week_flag(service, &date_tm,
-          alarm->weekflag(), &alarm_id);
-    } else {
-      ret = alarm_schedule_at_date(service, &date_tm, alarm->period(),
-          &alarm_id);
+  switch (alarm->type()) {
+    case AlarmInfo::AlarmType::ABSOLUTE: {
+      time_t tval = static_cast<time_t>(alarm->date());
+      struct tm date_tm = {0};
+      localtime_r(&tval, &date_tm);
+      if (alarm->weekflag()) {
+        ret = alarm_schedule_with_recurrence_week_flag(service, &date_tm,
+            alarm->weekflag(), &alarm_id);
+      } else {
+        ret = alarm_schedule_at_date(service, &date_tm, alarm->period(),
+            &alarm_id);
+      }
+      break;
     }
-  } else if (alarm->type() == AlarmInfo::RELATIVE) {
-    ret = alarm_schedule_after_delay(service, alarm->delay(),
-        alarm->period(), &alarm_id);
+    case AlarmInfo::AlarmType::RELATIVE:
+      ret = alarm_schedule_after_delay(service, alarm->delay(),
+          alarm->period(), &alarm_id);
+      break;
+    default:
+      LOGGER(ERROR) << "Wrong alarm type.";
+      ret = -1;
+      break;
   }
+
   alarm->SetId(alarm_id);
-  DestoryService(service);
+  DestroyService(service);
 
   if (ret) {
-    std::cerr << "Failed to schedule an alarm." << std::endl;
+    LOGGER(ERROR) << "Failed to schedule an alarm.";
     return ret;
   }
 
@@ -132,12 +141,12 @@ int AlarmManager::RemoveAlarm(int alarm_id) const {
     return ret;
 
   if (!CheckOwnership(service)) {
-    DestoryService(service);
+    DestroyService(service);
     return -1;
   }
 
   ret = alarm_cancel(alarm_id);
-  DestoryService(service);
+  DestroyService(service);
   return ret;
 }
 
@@ -163,14 +172,14 @@ int AlarmManager::GetAlarm(int alarm_id, AlarmInfo* alarm) const {
     return ret;
 
   if (!CheckOwnership(service)) {
-    DestoryService(service);
+    DestroyService(service);
     return -1;
   }
 
   ret = RestoreAlarmFromService(service, alarm);
   alarm->SetId(alarm_id);
 
-  DestoryService(service);
+  DestroyService(service);
   return ret;
 }
 
@@ -194,7 +203,7 @@ service_h
 AlarmManager::CreateAppLaunchService(const std::string& app_id) const {
   service_h service = 0;
   if (service_create(&service)) {
-    std::cerr << "Failed to call service_create()" << std::endl;
+    LOGGER(ERROR) << "Failed to call service_create()";
     return 0;
   }
 
@@ -203,9 +212,9 @@ AlarmManager::CreateAppLaunchService(const std::string& app_id) const {
   return service;
 }
 
-void AlarmManager::DestoryService(service_h service) const {
+void AlarmManager::DestroyService(service_h service) const {
   if (service_destroy(service))
-    std::cerr << "Failed to call service_destroy()" << std::endl;
+    LOGGER(ERROR) << "Failed to call service_destroy()";
 }
 
 int AlarmManager::StoreAlarmInService(service_h service,
@@ -244,7 +253,7 @@ bool AlarmManager::CheckOwnership(int alarm_id) const {
     return false;
 
   bool passed = CheckOwnership(service);
-  DestoryService(service);
+  DestroyService(service);
 
   return passed;
 }

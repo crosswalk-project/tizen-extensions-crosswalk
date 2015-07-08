@@ -8,7 +8,7 @@
 %define _audiosystem_demo_package tizen-extensions-crosswalk-audiosystem-demo
 
 Name:       tizen-extensions-crosswalk
-Version:    0.132
+Version:    0.153
 Release:    0
 License:    BSD-3-Clause and Apache-2.0
 Group:      Development/Libraries
@@ -37,6 +37,7 @@ BuildRequires: pkgconfig(capi-system-power)
 BuildRequires: pkgconfig(capi-system-runtime-info)
 BuildRequires: pkgconfig(capi-system-sensor)
 BuildRequires: pkgconfig(capi-system-system-settings)
+BuildRequires: pkgconfig(dlog)
 BuildRequires: pkgconfig(libtzplatform-config)
 %if "%{profile}" == "ivi"
 BuildRequires: pkgconfig(automotive-message-broker)
@@ -57,6 +58,7 @@ BuildRequires: pkgconfig(dbus-glib-1)
 BuildRequires: pkgconfig(evas)
 BuildRequires: pkgconfig(gio-2.0)
 BuildRequires: pkgconfig(glib-2.0)
+BuildRequires: pkgconfig(json-glib-1.0)
 BuildRequires: pkgconfig(libgsignon-glib)
 BuildRequires: pkgconfig(libpulse) >= 5.0
 BuildRequires: pkgconfig(libudev)
@@ -106,7 +108,7 @@ Requires:      %{name}
 Tizen Web APIs system info demo implementation using Crosswalk.
 
 %package -n %{_audiosystem_demo_package}
-Summary: Sample volume control applicaiton
+Summary: Sample volume control application
 Group: Development/Libraries
 Requires: %{name}
 
@@ -177,7 +179,7 @@ install -p -m 644 demos/system_info/css/*.css %{buildroot}%{_datarootdir}/%{name
 install -p -m 644 demos/system_info/js/*.js %{buildroot}%{_datarootdir}/%{name}/demos/system_info/js
 install -p -m 644 demos/system_info/images/*.png %{buildroot}%{_datarootdir}/%{name}/demos/system_info/images
 
-# Demos - audiosystem api 
+# Demos - audiosystem api
 mkdir -p %{buildroot}%{_datarootdir}/%{name}/demos/audiosystem
 mkdir -p %{buildroot}%{_datarootdir}/%{name}/demos/audiosystem/css
 mkdir -p %{buildroot}%{_datarootdir}/%{name}/demos/audiosystem/css/ui-lightness

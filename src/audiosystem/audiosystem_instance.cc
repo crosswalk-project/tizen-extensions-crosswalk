@@ -94,7 +94,7 @@ void AudioSystemInstance::HandleMessage(const char* message) {
     js_reply["error"] = picojson::value(true);
     js_reply["errorMsg"] = picojson::value(err);
 
-    PostMessage(js_message);
+    PostMessage(js_reply);
     return;
   }
 
@@ -105,7 +105,6 @@ void AudioSystemInstance::HandleMessage(const char* message) {
 
 void AudioSystemInstance::HandleSyncMessage(const char* message) {
   picojson::value js_message;
-  picojson::value::object js_reply;
   std::string err;
 
   picojson::parse(js_message, message, message + strlen(message), &err);
@@ -116,17 +115,16 @@ void AudioSystemInstance::HandleSyncMessage(const char* message) {
     ERR("%s", err.c_str());
   }
 
+  picojson::value::object js_reply;
   if (!err.empty()) {
     js_reply["error"] = picojson::value(true);
     js_reply["errorMsg"] = picojson::value(err);
-
-    SendSyncReply(js_reply);
-    return;
+  } else {
+    AudioSystemInstance::mtx_.lock();
+    js_reply = context_->HandleSyncMessage(js_message);
+    AudioSystemInstance::mtx_.unlock();
   }
 
-  AudioSystemInstance::mtx_.lock();
-  js_reply = context_->HandleSyncMessage(js_message);
-  AudioSystemInstance::mtx_.unlock();
   SendSyncReply(js_reply);
 }
 

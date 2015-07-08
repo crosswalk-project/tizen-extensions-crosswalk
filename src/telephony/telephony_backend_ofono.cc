@@ -270,12 +270,13 @@ bool TelephonyBackend::InitService(TelephonyService* service,
   service->id = sid;
   service->protocol = "gsm";
 
-  char* key = nullptr;
+  gchar* key = nullptr;
   GVariant* value = nullptr;
   while (g_variant_iter_next(props, "{sv}", &key, &value)) {
     UpdateServiceProperty(service, key, value);
+    g_free(key);
+    g_variant_unref(value);
   }
-  g_variant_unref(value);
 
   return true;
 }
@@ -444,19 +445,20 @@ bool TelephonyBackend::InitCall(TelephonyCall* call, const std::string& cid,
   call->protocol = "gsm";
   call->duration = 0;
   call->state = kCallStateInit;
-  char* key = nullptr;
+  gchar* key = nullptr;
   GVariant* value = nullptr;
   while (g_variant_iter_next(props, "{sv}", &key, &value)) {
     UpdateCallProperty(call, key, value);
+    g_free(key);
+    g_variant_unref(value);
   }
-  g_variant_unref(value);
 
   if (!call->service) {
     // extract service id from call id
     // format is <service_id>/voicecall<xx>
     size_t i = cid.find("voicecall");
     if (i <= 0)
-      return 0;
+      return false;
 
     std::string sid = cid.substr(0, i - 1);
     call->service = FindService(sid);
@@ -632,6 +634,7 @@ void TelephonyBackend::OnCallManagerChanged(const gchar* obj,
   while (g_variant_iter_next(prop_iter, "s", &value)) {
     const gchar* num = g_variant_get_string(value, nullptr);
     results.push_back(picojson::value(num));
+    g_variant_unref(value);
   }
   g_variant_iter_free(prop_iter);
 
@@ -893,7 +896,7 @@ bool TelephonyBackend::QueryServices() {
 
   GVariantIter* modems;
   g_variant_get(res, "(a(oa{sv}))", &modems);
-  char* path;
+  gchar* path;
   GVariantIter* props;
   while (g_variant_iter_next(modems, "(oa{sv})", &path, &props)) {
     std::string sid = IdFromDbus(path);
@@ -904,8 +907,9 @@ bool TelephonyBackend::QueryServices() {
     InitService(service, sid, props);
     if (!found)
       services_.push_back(service);
+    g_free(path);
+    g_variant_iter_free(props);
   }
-  g_variant_iter_free(props);
   g_variant_iter_free(modems);
   g_variant_unref(res);
 
@@ -1005,7 +1009,7 @@ void TelephonyBackend::GetCalls(const picojson::value& msg) {
     GVariantIter* calls;
     g_variant_get(res, "(a(oa{sv}))", &calls);
 
-    char* obj;
+    gchar* obj;
     GVariantIter* props;
     picojson::value::array results;
     while (g_variant_iter_next(calls, "(oa{sv})", &obj, &props)) {
@@ -1016,6 +1020,8 @@ void TelephonyBackend::GetCalls(const picojson::value& msg) {
         InitCall(call, cid, props);
         calls_.push_back(call);
       }
+      g_free(obj);
+      g_variant_iter_free(props);
     }
 
     for (auto c : calls_) {
@@ -1379,7 +1385,7 @@ void TelephonyBackend::CreateConference(const picojson::value& msg) {
   GVariantIter* calls;
   g_variant_get(res, "(ao)", &calls);
 
-  char* obj = nullptr;
+  gchar* obj = nullptr;
   while (g_variant_iter_next(calls, "o", &obj)) {
     std::string call_id = IdFromDbus(obj);
     TelephonyCall* call = FindCall(call_id);
@@ -1396,6 +1402,7 @@ void TelephonyBackend::CreateConference(const picojson::value& msg) {
     call->saved_state = call->state;
     call->state = kCallStateConference;  // hangup/hold/split can change state
     conf->participants.push_back(call);
+    g_free(obj);
   }
   g_variant_iter_free(calls);
 
@@ -1586,8 +1593,9 @@ void TelephonyBackend::GetEmergencyNumbers(const picojson::value& msg) {
         results.push_back(picojson::value(number));
       }
       g_variant_iter_free(num_iter);
-      g_variant_unref(value);
     }
+    g_free(key);
+    g_variant_unref(value);
   }
 
   instance_->SendSuccessReply(msg, picojson::value(results));

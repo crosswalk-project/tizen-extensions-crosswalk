@@ -2,120 +2,62 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "system_info/system_info_network.h"
+#include <string>
 
-#include <vconf.h>
+#include "system_info/system_info_network_tizen.h"
 
-SysInfoNetwork::SysInfoNetwork()
-    : type_(SYSTEM_INFO_NETWORK_UNKNOWN),
-      connection_handle_(NULL) {
-  PlatformInitialize();
-}
-
-void SysInfoNetwork::PlatformInitialize() {
-  if (connection_create(&connection_handle_) != CONNECTION_ERROR_NONE)
-    connection_handle_ = NULL;
-}
-
-SysInfoNetwork::~SysInfoNetwork() {
-  if (connection_handle_)
-    free(connection_handle_);
-}
-
-void SysInfoNetwork::StartListening() {
-  if (connection_handle_) {
-    connection_set_type_changed_cb(connection_handle_,
-                                   OnTypeChanged, this);
-  }
-}
-
-void SysInfoNetwork::StopListening() {
-  if (connection_handle_) {
-    connection_unset_type_changed_cb(connection_handle_);
-  }
-}
-
-bool SysInfoNetwork::Update(picojson::value& error) {
-  if (!connection_handle_) {
-    if (error.get("message").to_str().empty())
-      system_info::SetPicoJsonObjectValue(error, "message",
-          picojson::value("Get connection faild."));
-    return false;
-  }
-
-  connection_type_e connection_type;
-  if (connection_get_type(connection_handle_, &connection_type) !=
-      CONNECTION_ERROR_NONE) {
-    if (error.get("message").to_str().empty())
-      system_info::SetPicoJsonObjectValue(error, "message",
-          picojson::value("Get net state faild."));
-    return false;
-  }
-
-  if (connection_type == CONNECTION_TYPE_WIFI) {
-    type_ = SYSTEM_INFO_NETWORK_WIFI;
-    return true;
-  }
-
+void SysInfoNetworkTizen::Get(picojson::value& error,
+                              picojson::value& data) {
   if (!GetNetworkType()) {
-    if (error.get("message").to_str().empty())
-      system_info::SetPicoJsonObjectValue(error, "message",
-          picojson::value("Get network type at vconf faild."));
-    return false;
+    system_info::SetPicoJsonObjectValue(error, "message",
+        picojson::value("Get network type faild."));
+    return;
   }
-
-  return true;
+  SetData(data);
+  system_info::SetPicoJsonObjectValue(error, "message", picojson::value(""));
 }
 
-bool SysInfoNetwork::GetNetworkType() {
-  int service_type = 0;
-  if (vconf_get_int(VCONFKEY_TELEPHONY_SVCTYPE, &service_type))
+bool SysInfoNetworkTizen::GetNetworkType() {
+  int status = 0;
+  if (vconf_get_int(VCONFKEY_NETWORK_STATUS, &status))
     return false;
 
-  switch (service_type) {
-    case VCONFKEY_TELEPHONY_SVCTYPE_NONE:
-    case VCONFKEY_TELEPHONY_SVCTYPE_NOSVC:
-    case VCONFKEY_TELEPHONY_SVCTYPE_EMERGENCY:
-      type_ = SYSTEM_INFO_NETWORK_NONE;
+  switch (status) {
+    case VCONFKEY_NETWORK_WIFI:
+      type_ = SYSTEM_INFO_NETWORK_WIFI;
       break;
-    case VCONFKEY_TELEPHONY_SVCTYPE_2G:
-      type_ = SYSTEM_INFO_NETWORK_2G;
+    case VCONFKEY_NETWORK_ETHERNET:
+      type_ = SYSTEM_INFO_NETWORK_ETHERNET;
       break;
-    case VCONFKEY_TELEPHONY_SVCTYPE_2_5G:
-    case VCONFKEY_TELEPHONY_SVCTYPE_2_5G_EDGE:
-      type_ = SYSTEM_INFO_NETWORK_2_5G;
+    case VCONFKEY_NETWORK_BLUETOOTH:
+      type_ = SYSTEM_INFO_NETWORK_UNKNOWN;
       break;
-    case VCONFKEY_TELEPHONY_SVCTYPE_3G:
-      type_ = SYSTEM_INFO_NETWORK_3G;
-      break;
-    case VCONFKEY_TELEPHONY_SVCTYPE_HSDPA:
-      type_ = SYSTEM_INFO_NETWORK_4G;
+    case VCONFKEY_NETWORK_CELLULAR:
+      GetCellularNetworkType();
       break;
     default:
-      type_ = SYSTEM_INFO_NETWORK_UNKNOWN;
+      type_ = SYSTEM_INFO_NETWORK_NONE;
   }
-
   return true;
 }
 
-void SysInfoNetwork::OnTypeChanged(connection_type_e type, void* user_data) {
-  SysInfoNetwork* network = static_cast<SysInfoNetwork*>(user_data);
+void SysInfoNetworkTizen::OnNetworkTypeChanged(keynode_t* node,
+                                               void* user_data) {
+  SysInfoNetworkTizen* network = static_cast<SysInfoNetworkTizen*>(user_data);
+  network->GetNetworkType();
+  network->SendUpdate();
+}
 
-  if (type == CONNECTION_TYPE_WIFI &&
-      network->type_ != SYSTEM_INFO_NETWORK_WIFI)
-    network->type_ = SYSTEM_INFO_NETWORK_WIFI;
-  else if (!network->GetNetworkType())
-    network->type_ = SYSTEM_INFO_NETWORK_NONE;
-
+void SysInfoNetworkTizen::SendUpdate() {
   picojson::value output = picojson::value(picojson::object());
   picojson::value data = picojson::value(picojson::object());
 
-  network->SetData(data);
+  SetData(data);
   system_info::SetPicoJsonObjectValue(output, "cmd",
       picojson::value("SystemInfoPropertyValueChanged"));
   system_info::SetPicoJsonObjectValue(output, "prop",
       picojson::value("NETWORK"));
   system_info::SetPicoJsonObjectValue(output, "data", data);
 
-  network->PostMessageToListeners(output);
+  PostMessageToListeners(output);
 }

@@ -47,6 +47,10 @@ class SysInfoLocale : public SysInfoObject {
   static void OnCountryChanged(keynode_t* node, void* user_data);
   static void OnLanguageChanged(keynode_t* node, void* user_data);
   void Update();
+
+  std::string GetFirstSubstringByDot(const std::string& str) {
+    return str.substr(0, str.find_first_of("."));
+  }
 #endif
 
   DISALLOW_COPY_AND_ASSIGN(SysInfoLocale);

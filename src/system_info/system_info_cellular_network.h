@@ -5,9 +5,13 @@
 #ifndef SYSTEM_INFO_SYSTEM_INFO_CELLULAR_NETWORK_H_
 #define SYSTEM_INFO_SYSTEM_INFO_CELLULAR_NETWORK_H_
 
-#if defined(TIZEN)
+#if defined(TIZEN_MOBILE)
 #include <vconf-keys.h>
 #include <vconf.h>
+#else
+#include <gio/gio.h>
+#include <glib.h>
+#include <glib-object.h>
 #endif
 
 #include <string>
@@ -23,7 +27,7 @@ class SysInfoCellularNetwork : public SysInfoObject {
     static SysInfoCellularNetwork instance;
     return instance;
   }
-  ~SysInfoCellularNetwork() {}
+  ~SysInfoCellularNetwork();
   void Get(picojson::value& error, picojson::value& data);
   void StartListening();
   void StopListening();
@@ -31,12 +35,11 @@ class SysInfoCellularNetwork : public SysInfoObject {
   static const std::string name_;
 
  private:
-  SysInfoCellularNetwork() {}
-
-#if defined(TIZEN)
+  SysInfoCellularNetwork();
   void SendUpdate();
   void SetData(picojson::value& data);
 
+#if defined(TIZEN_MOBILE)
   void SetCellStatus();
   void SetAPN();
   void SetIpAddress();
@@ -61,7 +64,25 @@ class SysInfoCellularNetwork : public SysInfoObject {
   static void OnLocationAreaCodeChanged(keynode_t* node, void* user_data);
   static void OnRoamingStateChanged(keynode_t* node, void* user_data);
   static void OnFlightModeChanged(keynode_t* node, void* user_data);
-#endif
+#else
+  GDBusConnection* conn_;
+  std::string modem_path_;
+  guint connection_manager_watch_;
+  guint connection_context_watch_;
+  guint network_registration_watch_;
+
+  bool roaming_;
+  bool roaming_allowed_;
+
+  void GetCellularNetworkProperties();
+  bool GetPropertySuccess(const gchar* object_path,
+                          const gchar* interface_name);
+  void UpdateCellularNetworkProperty(const gchar* key, GVariant* var_val);
+  static void OnCellularNetworkPropertyChanged(
+      GDBusConnection* conn, const gchar* sender_name,
+      const gchar* object_path, const gchar* iface,
+      const gchar* signal_name, GVariant* parameters, gpointer data);
+#endif  // TIZEN_MOBILE
 
   std::string status_;
   std::string apn_;
@@ -77,5 +98,4 @@ class SysInfoCellularNetwork : public SysInfoObject {
 
   DISALLOW_COPY_AND_ASSIGN(SysInfoCellularNetwork);
 };
-
 #endif  // SYSTEM_INFO_SYSTEM_INFO_CELLULAR_NETWORK_H_

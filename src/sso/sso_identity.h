@@ -56,7 +56,7 @@ class SSOIdentity {
 
   SSOAuthSessionPtr GetAuthSessionPtr(int jsid) const;
 
-  void HandleStartSession(const picojson::value& value);
+  void HandleGetSession(const picojson::value& value);
   void HandleDestroySession(const picojson::value& value);
   void HandleRequestCredentialsUpdate(const picojson::value& value);
   void HandleStore(const picojson::value& value, const std::string& appcontext);

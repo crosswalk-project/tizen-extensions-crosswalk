@@ -1,4 +1,5 @@
 // Copyright (c) 2014 Intel Corporation. All rights reserved.
+// Copyright (c) 2015 Samsung Electronics Co., Ltd All Rights Reserved
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 var PackageEventState = {
@@ -83,7 +84,7 @@ function defineReadOnlyProperty(object, key, value) {
 function PackageInformation(json) {
   for (var field in json) {
     var val = json[field];
-    if (field === 'installDate')
+    if (field === 'lastModified')
       val = new Date(val * 1000);
     defineReadOnlyProperty(this, field, val);
   }
@@ -91,8 +92,9 @@ function PackageInformation(json) {
 
 PackageManager.prototype.install = function(path, onsuccess, onerror) {
   if (typeof path !== 'string' ||
-      onsuccess === undefined ||
-      onerror && typeof onerror !== 'function')
+      onsuccess == null ||
+      onsuccess.onprogress == null || onsuccess.oncomplete == null ||
+      onerror !== undefined && typeof onerror !== 'function')
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
 
   var callbackId = asyncCallbacks.setup(function(result) {
@@ -112,8 +114,9 @@ PackageManager.prototype.install = function(path, onsuccess, onerror) {
 
 PackageManager.prototype.uninstall = function(id, onsuccess, onerror) {
   if (typeof id !== 'string' ||
-      onsuccess === undefined ||
-      onerror && typeof onerror !== 'function')
+      onsuccess == null ||
+      onsuccess.onprogress == null || onsuccess.oncomplete == null ||
+      onerror !== undefined && typeof onerror !== 'function')
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
 
   var callbackId = asyncCallbacks.setup(function(result) {
@@ -144,7 +147,7 @@ PackageManager.prototype.getPackageInfo = function(pkgId) {
 
 PackageManager.prototype.getPackagesInfo = function(onsuccess, onerror) {
   if (typeof onsuccess !== 'function' ||
-      onerror && typeof onerror !== 'function')
+      onerror !== undefined && typeof onerror !== 'function')
     throw new tizen.WebAPIException(tizen.WebAPIException.TYPE_MISMATCH_ERR);
 
   var callbackId = asyncCallbacks.setup(function(result) {

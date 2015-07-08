@@ -179,8 +179,8 @@ bool AudioSystemContext::Disconnect() {
   audio_streams_.clear();
 
   is_ready_ = false;
-  main_output_mute_control_ = main_input_mute_control_ = PA_INVALID_INDEX;
-  main_output_mute_control_ = main_input_mute_control_ = PA_INVALID_INDEX;
+  main_input_mute_control_ = PA_INVALID_INDEX;
+  main_output_mute_control_ = PA_INVALID_INDEX;
   return true;
 }
 

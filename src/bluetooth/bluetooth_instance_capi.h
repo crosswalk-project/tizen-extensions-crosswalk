@@ -35,7 +35,6 @@ class BluetoothInstance : public common::Instance {
   virtual void HandleSyncMessage(const char* msg);
 
   void HandleGetDefaultAdapter(const picojson::value& msg);
-  static gboolean GetDefaultAdapter(gpointer user_data);
   void HandleSetAdapterProperty(const picojson::value& msg);
   void HandleDiscoverDevices(const picojson::value& msg);
   void HandleStopDiscovery(const picojson::value& msg);
@@ -99,7 +98,7 @@ class BluetoothInstance : public common::Instance {
 
   std::map<int, bool> socket_connected_map_;
 
-  bool get_default_adapter_;
+  bool are_bond_devices_known_;
 };
 
 #endif  // BLUETOOTH_BLUETOOTH_INSTANCE_CAPI_H_

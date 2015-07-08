@@ -4,13 +4,13 @@
 
 #include "alarm/alarm_instance.h"
 
-#include <iostream>
 #include <sstream>
 #include <string>
 #include <vector>
 
 #include "alarm/alarm_info.h"
 #include "alarm/alarm_manager.h"
+#include "common/logger.h"
 
 namespace {
 
@@ -43,7 +43,7 @@ void AlarmInstance::HandleMessage(const char* msg) {
   std::string err;
   picojson::parse(msg_obj, msg, msg + strlen(msg), &err);
   if (!err.empty()) {
-    std::cerr << "Failed to parse the message." << std::endl;
+    LOGGER(ERROR) << "Failed to parse the message.";
     return;
   }
 }
@@ -53,7 +53,7 @@ void AlarmInstance::HandleSyncMessage(const char* msg) {
   std::string err;
   picojson::parse(msg_obj, msg, msg + strlen(msg), &err);
   if (!err.empty()) {
-    std::cerr << "Failed to parse the sync message: " << msg << std::endl;
+    LOGGER(ERROR) << "Failed to parse the sync message: " << msg;
     return;
   }
 
@@ -165,14 +165,15 @@ void AlarmInstance::HandleGetAlarm(const picojson::value& msg) {
 
 void AlarmInstance::HandleGetAllAlarms() {
   std::vector<std::shared_ptr<AlarmInfo> > alarms;
-
   int ret = alarm_manager_->GetAllAlarms(alarms);
   picojson::array alarm_infos;
-  for (int i = 0; i < alarms.size(); i++) {
-    alarm_infos.push_back(picojson::value(alarms[i]->Serialize()));
+  if (!ret) {
+    for (int i = 0; i < alarms.size(); i++) {
+      alarm_infos.push_back(picojson::value(alarms[i]->Serialize()));
+    }
   }
 
-  SendSyncMessage(0, picojson::value(alarm_infos));
+  SendSyncMessage(ret, picojson::value(alarm_infos));
 }
 
 void AlarmInstance::HandleRemoveAlarm(const picojson::value& msg) {
