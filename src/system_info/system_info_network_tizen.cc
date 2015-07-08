@@ -6,6 +6,13 @@
 
 #include "system_info/system_info_network_tizen.h"
 
+SysInfoNetworkTizen::SysInfoNetworkTizen() {}
+
+SysInfoNetworkTizen::~SysInfoNetworkTizen() {}
+
+void SysInfoNetworkTizen::StartListening() {}
+void SysInfoNetworkTizen::StopListening() {}
+
 void SysInfoNetworkTizen::Get(picojson::value& error,
                               picojson::value& data) {
   if (!GetNetworkType()) {

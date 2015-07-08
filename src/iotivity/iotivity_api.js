@@ -22,6 +22,9 @@
 
 var _debug_enabled = 1;  // toggle this to show/hide debug logs
 
+var g_iotivity_device = null;
+
+
 ///////////////////////////////////////////////////////////////////////////////
 // Logging helpers
 ///////////////////////////////////////////////////////////////////////////////
@@ -190,6 +193,8 @@ var OicMethod = {
 ///////////////////////////////////////////////////////////////////////////////
 function OicDevice(settings) {
 
+  DBG('OicDevice: settings=' + settings);
+
   if (settings)
     _addConstProperty(this, 'settings', new OicDeviceSettings(settings));
   else {
@@ -198,6 +203,8 @@ function OicDevice(settings) {
   }
   _addConstProperty(this, 'client', new OicClient());
   _addConstProperty(this, 'server', new OicServer());
+
+  g_iotivity_device = this;
 
   //if (g_iotivity_device)
   //  g_iotivity_device.configure(this.settings);
@@ -467,8 +474,8 @@ var g_next_request_id = 0;
 
 function OicRequestEvent() {
 
-  _addConstProperty(this, 'requestId', g_next_request_id);
-  _addConstProperty(oicRequestEvent, 'source', g_iotivity_device.uuid);
+  //_addConstProperty(this, 'requestId', g_next_request_id);
+  _addConstProperty(this, 'source', g_iotivity_device.uuid);
   ++g_next_request_id;
 
 /*
@@ -487,9 +494,14 @@ function OicRequestEvent() {
 // reuses request info (type, requestId, source, target) to construct response,
 // sends back “ok”, plus the resource object if applicable
 OicRequestEvent.prototype.sendResponse = function(resource) {
+
   var msg = {
     'cmd': 'sendResponse',
-    'param': resource || null
+    'param': resource || null,
+    'type': this.type,
+    'requestId': this.requestId,
+    'source': this.source,
+    'target': this.target,
   };
   return createPromise(msg);
 };
@@ -572,7 +584,7 @@ iotivity.OicResourceInit = OicResourceInit;
 function OicResource(obj) {
 
   // id: obtained when registered, empty at construction
-
+  DBG('OicResource: obj=' + obj);
   // properties of OicResourceInit are exposed as readonly attributes
   _addConstProperty(this, 'url', obj.url);
   _addConstProperty(this, 'deviceId', obj.deviceId);
@@ -619,16 +631,16 @@ iotivity.QueryOption = QueryOption;
 // Exports and main entry point for the Iotivity API
 ///////////////////////////////////////////////////////////////////////////////
 
-var g_iotivity_device = new OicDevice();
-exports = g_iotivity_device;
+
 
 
 ///////////////////////////////////////////////////////////////////////////////
 // 
 ///////////////////////////////////////////////////////////////////////////////
-
 extension.setMessageListener(function(json) {
   var msg = JSON.parse(json);
+
+  DBG('setMessageListener msg=' + JSON.stringify(msg));
 
   DBG('msg.cmd='+msg.cmd);
 
@@ -644,6 +656,7 @@ extension.setMessageListener(function(json) {
     case 'unregisterResourceCompleted':
     case 'enablePresenceCompleted':
     case 'disablePresenceCompleted':
+    case 'sendResponseCompleted':
       handleAsyncCallSuccess(msg);
       break;
     case 'asyncCallError':
@@ -653,16 +666,43 @@ extension.setMessageListener(function(json) {
 });
 
 function handleRegisterResourceCompleted(msg) {
-  var oicResource = new OicResource(msg.OicResourceInit);
-  _addConstProperty(oicResource, 'id', msg.resourceId);
 
+  DBG("handleRegisterResourceCompleted");
+  DBG("msg.OicResourceInit=" + JSON.stringify(msg.OicResourceInit));
+  var oicResource = new OicResource(JSON.stringify(msg.OicResourceInit));
+  _addConstProperty(oicResource, 'id', msg.resourceId);
+  _addConstProperty(oicResource, 'properties', JSON.stringify(msg.OicResourceInit.properties));
   g_async_calls[msg.asyncCallId].resolve(oicResource);
 }
 
 function handleEntityHandler(msg) {
   
-  if (g_iotivity_device && g_iotivity_device.server && g_iotivity_device.server.onrequest)
-    g_iotivity_device.server(msg.OicRequestEvent);
+  DBG("handleEntityHandler msg=" + JSON.stringify(msg));
+  DBG("g_iotivity_device=" + g_iotivity_device);
+  DBG("g_iotivity_device.server=" + g_iotivity_device.server);
+  //DBG("g_iotivity_device.server.onrequest=" + g_iotivity_device.server.onrequest);
+
+  if (g_iotivity_device 
+   && g_iotivity_device.server 
+   && g_iotivity_device.server.onrequest) {
+
+    var oicRequestEvent = new OicRequestEvent();
+    _addConstProperty(oicRequestEvent, 'type', msg.type);
+    _addConstProperty(oicRequestEvent, 'requestId', msg.requestId);
+    _addConstProperty(oicRequestEvent, 'source', msg.source);
+    _addConstProperty(oicRequestEvent, 'target', msg.target);
+
+    if ((msg.type == 'create') || (msg.type == 'update')) {
+      _addConstProperty(oicRequestEvent, 'properties', JSON.stringify(msg.res));
+    }
+
+    if (msg.type == 'update') {
+      //_addConstProperty(oicRequestEvent, 'updatedPropertyNames', msg.updatedPropertyNames);
+      _addConstProperty(oicRequestEvent, 'updatedPropertyNames', JSON.stringify(msg.res));
+    }
+
+    g_iotivity_device.server.onrequest(oicRequestEvent);
+  }
 }
 
 function handleAsyncCallSuccess(msg) {
@@ -673,7 +713,6 @@ function handleAsyncCallError(msg) {
   g_async_calls[msg.asyncCallId].reject(Error('Async operation failed'));
 }
 
-
 exports.handleMessageAsync = function(msg, callback) {
   iotivityListener = callback;
   extension.postMessage(msg);
@@ -682,5 +721,8 @@ exports.handleMessageAsync = function(msg, callback) {
 exports.handleMessageSync = function(msg) {
   return extension.internal.sendSyncMessage(msg);
 };
+
+
+
 
 

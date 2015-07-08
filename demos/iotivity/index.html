@@ -20,32 +20,30 @@ var device = new iotivity.OicDevice();
 
 debugger;
 function startServer() {
- 
-  debugger;
-
   var deviceId = device.settings.info.uuid;
   var connMode = device.settings.connectionMode;
   // register all resources handled by this device
   device.server.registerResource({
-    url: "/light/ambience/blue",
+    url: "/a/light",
     deviceId: deviceId,
     connectionMode: connMode,
-    resourceTypes: [ "Light" ],
-    interfaces: [ "/oic/if/rw" ],
+    resourceTypes: [ "core.light", "core.brightlight" ],
+    interfaces: [ "oic.if.baseline", "oic.if.ll"],
     discoverable: true,
     observable: true,
-    properties: { color: "light-blue", dimmer: 0.2 }
+    properties: { power: "5", state: "true" }
   }).then(function(res) {
     console.log("Resource " + res.id + " has been created.");
     lightResource = res;
-    device.onrequest = requestHandler;
-    device.enablePresence();
-  }).catch(function(error) {
+    device.server.onrequest = requestHandler;
+    device.server.enablePresence();
+  }, function(error) {
     console.log("Error creating resource " + res.url + " : " + error.message);
   });
 };
 
 function requestHandler(request) {
+  console.log("requestHandler: type=" + request.type + " id=" + request.requestId);
   if (request.type == "update" && lightResource && request.target == lightResource.id) {
     var updates = [];
      request.updatedPropertyNames.foreach(function(name) { // e.g. "color"
@@ -56,13 +54,17 @@ function requestHandler(request) {
       }
     });
     if (updates.length) {
-      device.notify(lightResource.id, "update", updates); // tell observers
+      device.server.notify(lightResource.id, "update", updates); // tell observers
     }
 
     var error = 'Failed to handle update request'; // new Error("")
     request.sendError(error);
-
   }
+
+  if (request.type == "retrieve" && lightResource && request.target == lightResource.id) {
+     request.sendResponse(); // sends back OK
+  }
+
   // handle the other types of requests as well...
 };
 
@@ -73,23 +75,28 @@ function startClient() {
 
   // discover resources
   device.client.findResources({ 
-     resourceType: "Light"
+     resourceType: "core.light"
    }).then(function(list) {      
-      list.foreach(function(res) {
-        if(res.url == "/light/ambience/red") {
-          device.client.startObserving(res.id)
-            .then(function(red) {
-              console.log("Observing " + res.url);
-              red.properties.dimmer = 0.5;
-              device.client.updateResource(red)
-                .then(function() { console.log("Changed red light dimmer"); })
-                .catch(function() { console.log("Error changing red light"); });
-            }).catch(function(error) { console.log("Cannot observe " + res.url); });
-        } // if
-      }); // foreach
-    }).catch(function(e) {
+        list.foreach(function(res) {
+          if(res.url == "/a/light") {
+            device.client.startObserving(res.id)
+              .then(function(red) {
+                console.log("Observing " + res.url);
+                red.properties.dimmer = 0.5;
+                device.client.updateResource(red)
+                  .then(function() { 
+                     console.log("Changed red light dimmer");
+                  },function() { 
+                     console.log("Error changing red light"); 
+                  });        
+                }, function(error) { 
+                  console.log("Cannot observe " + res.url); 
+            });
+          } // if
+        }); // foreach
+      }, function(e) {
        console.log("Error finding resources: " + e.message);
-  });
+    });
 };
 
 function testOicServerClient(){
@@ -98,7 +105,7 @@ function testOicServerClient(){
   // but if we cannot get it, could do a hard-coded configuration (not recommended)
   if (device.settings.info.uuid) { // configuration is valid
     startServer();
-    startClient();
+    //startClient();
   }
 }
 

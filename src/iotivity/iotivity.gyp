@@ -20,6 +20,11 @@
       'includes': [
         '../common/pkg-config.gypi',
       ],
+      'link_settings': {
+        'libraries': [
+          '-loc','-loc_logger', '-loctbstack',
+        ],
+      },
     },
   ],
 }
