@@ -27,13 +27,13 @@ const std::string STR_FILTER("filter");
 const std::string STR_CONTENT_URI("contentURI");
 const std::string STR_EVENT_TYPE("eventType");
 
-std::string createUriFromLocalPath(const std::string path) {
+std::string createUriFromLocalPath(const std::string& path) {
   static std::string fileScheme("file://");
 
   return fileScheme + path;
 }
 
-std::string getUriPath(const std::string uri) {
+std::string getUriPath(const std::string& uri) {
   static std::string fileScheme("file://");
   std::string _fileScheme = uri.substr(0, fileScheme.size());
 
