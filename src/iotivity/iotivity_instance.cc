@@ -42,7 +42,26 @@ std::map<int, OCRepresentation> ResourcesMap;
 #define DEBUG_MSG(msg, ...) { if (pDebugEnv) printf(msg, ##__VA_ARGS__);}
 
 
-void PrintfOcRepresentation(const OCRepresentation & oCRepresentation) {
+static void PrintfOcResource(const OCResource & oCResource) {
+
+    DEBUG_MSG("Res[sId] = %s\n", oCResource.sid().c_str());
+    DEBUG_MSG("Res[Uri] = %s\n", oCResource.uri().c_str());
+    DEBUG_MSG("Res[Host] = %s\n", oCResource.host().c_str());
+
+    DEBUG_MSG("Res[Resource types] \n");
+    for(auto &resourceTypes : oCResource.getResourceTypes())
+    {
+        DEBUG_MSG("\t\t%s\n", resourceTypes.c_str());
+    }
+
+    DEBUG_MSG("Res[Resource interfaces] \n");
+    for(auto &resourceInterfaces : oCResource.getResourceInterfaces())
+    {
+        DEBUG_MSG("\t\t%s\n", resourceInterfaces.c_str());
+    }
+}
+
+static void PrintfOcRepresentation(const OCRepresentation & oCRepresentation) {
 
     for (auto& cur: oCRepresentation)
     {
@@ -68,7 +87,7 @@ void PrintfOcRepresentation(const OCRepresentation & oCRepresentation) {
 }
 
 // Translate OCRepresentation to picojson
-void TranslateOCRepresentationToPicojson(const OCRepresentation & oCRepresentation, picojson::object & objectRes) {
+static void TranslateOCRepresentationToPicojson(const OCRepresentation & oCRepresentation, picojson::object & objectRes) {
 
     for (auto& cur: oCRepresentation)
     {
@@ -323,6 +342,24 @@ void IotivityInstance::foundResourceCallback(std::shared_ptr<OCResource> resourc
 
     DEBUG_MSG("foundResourceCallback:\n");
 
+    picojson::value::object object;
+    object["cmd"] = picojson::value("foundResourceCallback");
+
+    //object["OicResourceInit"] = param;
+
+    DEBUG_MSG("DISCOVERED Resource:\n");
+    PrintfOcResource((const OCResource &)*resource);
+
+    object["resourceId"] = picojson::value((double)((int)resource.get()));
+    object["url"] = picojson::value(resource->uri());
+
+    //resource->connectivityType()
+    object["connectionMode"] = picojson::value("default");
+    object["discoverable"] = picojson::value(resource->isObservable()); // TODO
+    object["observable"] = picojson::value(resource->isObservable());
+
+    picojson::value value(object);
+    PostMessage(value.serialize().c_str());
 }
 
 
@@ -333,11 +370,15 @@ void IotivityInstance::handleFindResources(const picojson::value& value) {
     double async_call_id = value.get("asyncCallId").get<double>();
     picojson::value param = value.get("OicDiscoveryOptions");
 
-    //std::string deviceId = param.get("deviceId").to_str();
-    //std::string resourceId = param.get("resourceId").to_str();
+    // all properties are null by default, meaning “find all”
+    // if resourceId is specified in full form, a direct retrieve is made
+    // if resourceType is specified, a retrieve on /oic/res is made
+    // if resourceId is null, and deviceId not, then only resources from that device are returned
+    std::string deviceId = param.get("deviceId").to_str();
+    std::string resourceId = param.get("resourceId").to_str();
     std::string resourceType = param.get("resourceType").to_str();
  
-
+/*
     PlatformConfig cfg
     {
         ServiceType::InProc,
@@ -348,12 +389,15 @@ void IotivityInstance::handleFindResources(const picojson::value& value) {
     };
 
     OCPlatform::Configure(cfg);
+*/
+    std:string hostUri = OC_MULTICAST_DISCOVERY_URI;
+    string requestUri = hostUri + "?rt=" + resourceType;
 
     FindCallback resourceHandler = std::bind(&IotivityInstance::foundResourceCallback, 
                                              this, 
                                              std::placeholders::_1);
     OCStackResult result = OCPlatform::findResource("", 
-                                                    "?rt=" + resourceType,
+                                                    requestUri,
                                                     OC_ALL, 
                                                     resourceHandler);
     if (OC_STACK_OK != result)
@@ -397,8 +441,9 @@ void IotivityInstance::handleFindDevices(const picojson::value& value) {
     }
 }
 
-
 void IotivityInstance::onPut(const HeaderOptions& headerOptions, const OCRepresentation& rep, const int eCode) {
+
+    DEBUG_MSG("onPost: onPut=%d\n", eCode);
 
     if (eCode == SUCCESS_RESPONSE)
     {
@@ -412,9 +457,11 @@ void IotivityInstance::onPut(const HeaderOptions& headerOptions, const OCReprese
 
 void IotivityInstance::onGet(const HeaderOptions& headerOptions, const OCRepresentation& rep, const int eCode) {
 
+    DEBUG_MSG("onPost: onGet=%d\n", eCode);
+
     if (eCode == SUCCESS_RESPONSE)
     {
-
+        //postResult("retrieveResourceCompleted", async_call_id);
     }
     else
     {
@@ -424,9 +471,10 @@ void IotivityInstance::onGet(const HeaderOptions& headerOptions, const OCReprese
 
 void IotivityInstance::onPost(const HeaderOptions& headerOptions, const OCRepresentation& rep, const int eCode) {
 
+    DEBUG_MSG("onPost: eCode=%d\n", eCode);
+
     if (eCode == SUCCESS_RESPONSE)
     {
-
     }
     else
     {
@@ -434,78 +482,214 @@ void IotivityInstance::onPost(const HeaderOptions& headerOptions, const OCRepres
     }
 }
 
-void IotivityInstance::handleCRUDNRRequest(const picojson::value& value) {
-    double async_call_id = value.get("asyncCallId").get<double>();
-    picojson::value param = value.get("request");
+void IotivityInstance::onObserve(const HeaderOptions headerOptions, const OCRepresentation& rep,
+               const int& eCode, const int& sequenceNumber) {
+ 
+    DEBUG_MSG("onObserve: sequenceNumber=%d, eCode=%d\n", sequenceNumber, eCode);
 
-    int resHandleInt = (int)value.get("request").get("target").get<double>();
-    //OCResourceHandle resHandle = (OCResourceHandle)(resHandleInt);
-    OCResource *resource = (OCResource *)(resHandleInt);
+    picojson::value::object object;
+    object["cmd"] = picojson::value("onObserve");
+    object["requestId"] = picojson::value((double)0);
+    object["source"] = picojson::value((double)0);
+    object["target"] = picojson::value((double)0);
+    //object["requestId"] = picojson::value((double)((int)request->getRequestHandle()));
+    //object["source"] = picojson::value((double)((int)request->getRequestHandle())); // Client UUID
+    //object["target"] = picojson::value((double)((int)request->getResourceHandle()));
+    object["type"] = picojson::value("observe");
 
-
-    OCResourceHandle resHandle;
-
-    OCResourceRequest *request;
-    
-    OCRepresentation oCRepresentation = request->getResourceRepresentation();
-    std::string requestType = request->getRequestType();
-
-    if (requestType == "get")
+    if (eCode == OC_STACK_OK)
     {
-        //oCRepresentation.getValue("state", mylight.m_state);
-        //oCRepresentation.getValue("power", mylight.m_power);
-        //QueryParamsMap test;
-        //resource->get(test, &onGet,OC::QualityOfService::HighQos);
 
     }
-    else if (requestType == "put")
-    {
-        //oCRepresentation.setValue("state", mylight.m_state);
-        //oCRepresentation.setValue("power", mylight.m_power);
-        //resource->put(oCRepresentation, QueryParamsMap(), &onPut, OC::QualityOfService::HighQos);
-    }
-    else if (requestType == "post")
-    {
-       //resource->post(oCRepresentation, QueryParamsMap(), &onPost2, OC::QualityOfService::HighQos);
-    }
-    else if (requestType == "delete")
+    else
     {
 
     }
 
-    
+    picojson::value value(object);
+    PostMessage(value.serialize().c_str());
+}   
+
+void IotivityInstance::onDelete(const HeaderOptions& headerOptions, const int eCode) {
+
+    DEBUG_MSG("onDelete: eCode=%d\n", eCode);
+
+    if (eCode == SUCCESS_RESPONSE)
+    {
+    }
+    else
+    {
+
+    }
 }
 
 void IotivityInstance::handleCreateResource(const picojson::value& value) {
-    handleCRUDNRRequest(value);
+
+    // Post + particular data
+    DEBUG_MSG("handleCreateResource: v=%s\n",value.serialize().c_str());
+
+    double async_call_id = value.get("asyncCallId").get<double>();
+    picojson::value param = value.get("OicResourceInit");
+    int resHandleInt = (int)param.get("deviceId").get<double>();
+    OCResource *resource = (OCResource *)(resHandleInt);
+    if (resource)
+    {
+        OCRepresentation representation;
+
+        PostCallback attributeHandler = std::bind(&IotivityInstance::onPost, 
+                                                  this, 
+                                                  std::placeholders::_1,
+                                                  std::placeholders::_2,
+                                                  std::placeholders::_3);
+        OCStackResult result = resource->post(representation,
+                                              QueryParamsMap(), 
+                                              attributeHandler);
+        if (OC_STACK_OK != result)
+        {
+            std::cerr << "post/create was unsuccessful\n";
+            postError(async_call_id);
+            return;
+        }
+    }
 }
 
 void IotivityInstance::handleRetrieveResource(const picojson::value& value) {
-    handleCRUDNRRequest(value);
+    DEBUG_MSG("handleRetrieveResource: v=%s\n",value.serialize().c_str());
+
+    double async_call_id = value.get("asyncCallId").get<double>();
+    int resHandleInt = (int)value.get("resourceId").get<double>();
+    OCResource *resource = (OCResource *)(resHandleInt);
+    if (resource)
+    {
+        GetCallback attributeHandler = std::bind(&IotivityInstance::onGet, 
+                                                 this, 
+                                                 std::placeholders::_1,
+                                                 std::placeholders::_2,
+                                                 std::placeholders::_3);
+        OCStackResult result = resource->get(QueryParamsMap(), 
+                                             attributeHandler);
+        if (OC_STACK_OK != result)
+        {
+            std::cerr << "get was unsuccessful\n";
+            postError(async_call_id);
+            return;
+        }
+    }
 }
 
 void IotivityInstance::handleUpdateResource(const picojson::value& value) {
-    handleCRUDNRRequest(value);
+
+    DEBUG_MSG("handleUpdateResource: v=%s\n",value.serialize().c_str());
+
+    double async_call_id = value.get("asyncCallId").get<double>();
+    picojson::value param = value.get("OicResource");
+    int resHandleInt = (int)param.get("id").get<double>();
+    OCResource *resource = (OCResource *)(resHandleInt);
+    if (resource)
+    {
+        OCRepresentation representation;
+        //PostCallback ?? TODO
+        PutCallback attributeHandler = std::bind(&IotivityInstance::onPut, 
+                                                 this, 
+                                                 std::placeholders::_1,
+                                                 std::placeholders::_2,
+                                                 std::placeholders::_3);
+        OCStackResult result = resource->put(representation,
+                                             QueryParamsMap(), 
+                                             attributeHandler);
+        if (OC_STACK_OK != result)
+        {
+            std::cerr << "put was unsuccessful\n";
+            postError(async_call_id);
+            return;
+        }
+    }
+
 }
 
 void IotivityInstance::handleDeleteResource(const picojson::value& value) {
-    handleCRUDNRRequest(value);
+    DEBUG_MSG("handleDeleteResource: v=%s\n",value.serialize().c_str());
+
+    double async_call_id = value.get("asyncCallId").get<double>();
+    int resHandleInt = (int)value.get("resourceId").get<double>();
+    OCResource *resource = (OCResource *)(resHandleInt);
+    if (resource)
+    {
+        DeleteCallback deleteHandler = std::bind(&IotivityInstance::onDelete, 
+                                                 this, 
+                                                 std::placeholders::_1,
+                                                 std::placeholders::_2);
+        OCStackResult result = resource->deleteResource(deleteHandler);
+        if (OC_STACK_OK != result)
+        {
+            std::cerr << "delete was unsuccessful\n";
+            postError(async_call_id);
+            return;
+        }
+    }
 }
 
 void IotivityInstance::handleStartObserving(const picojson::value& value) {
-    handleCRUDNRRequest(value);
+
+    DEBUG_MSG("handleStartObserving: v=%s\n",value.serialize().c_str());
+
+    double async_call_id = value.get("asyncCallId").get<double>();
+    int resHandleInt = (int)value.get("resourceId").get<double>();
+    OCResource *resource = (OCResource *)(resHandleInt);
+
+    DEBUG_MSG("handleStartObserving:resource=%d\n", resource);
+    //DEBUG_MSG("handleStartObserving:*resource=%d\n", *resource);
+    if (resource)
+    {
+        ObserveCallback observeHandler = std::bind(&IotivityInstance::onObserve, 
+                                                   this, 
+                                                   std::placeholders::_1,
+                                                   std::placeholders::_2,
+                                                   std::placeholders::_3,
+                                                   std::placeholders::_4);
+DEBUG_MSG("handleStartObserving:3\n");
+
+        std::shared_ptr<OCResource> curResource(resource);
+        OCStackResult result = curResource->observe(ObserveType::ObserveAll, 
+                                                    QueryParamsMap(), 
+                                                    observeHandler);
+        if (OC_STACK_OK != result)
+        {
+            std::cerr << "observe was unsuccessful\n";
+            postError(async_call_id);
+            return;
+        }
+    }
+
+DEBUG_MSG("handleStartObserving:4\n");
+    // TODO: retrieve + observe flag// retrieve + observe flag
+    postResult("startObservingCompleted", async_call_id);
 }
 
 void IotivityInstance::handleCancelObserving(const picojson::value& value) {
-    handleCRUDNRRequest(value);
+    DEBUG_MSG("handleCancelObserving: v=%s\n",value.serialize().c_str());
+
+    double async_call_id = value.get("asyncCallId").get<double>();
+    int resHandleInt = (int)value.get("resourceId").get<double>();
+    OCResource *resource = (OCResource *)(resHandleInt);
+    if (resource)
+    {
+        OCStackResult result = resource->cancelObserve();
+        if (OC_STACK_OK != result)
+        {
+            std::cerr << "cancelObserve was unsuccessful\n";
+            postError(async_call_id);
+            return;
+        }
+    }
+
+    postResult("cancelObservingCompleted", async_call_id);
 }
 
 void IotivityInstance::postEntityHandler(std::shared_ptr<OCResourceRequest> request) {
 
     picojson::value::object object;
     object["cmd"] = picojson::value("entityHandler");
-
-    //picojson::value::object requestObject;
 
     std::string requestType = request->getRequestType();
     int requestFlag = request->getRequestHandlerFlag();
@@ -521,65 +705,73 @@ void IotivityInstance::postEntityHandler(std::shared_ptr<OCResourceRequest> requ
         }
     }
 
-
     DEBUG_MSG("postEntityHandler: requestType=%s\n",requestType.c_str());
-    //DEBUG_MSG("postEntityHandler: request=0x%x\n", (void *)request);
     DEBUG_MSG("postEntityHandler: requestHandle=0x%x\n", (int)request->getRequestHandle());
 
     object["requestId"] = picojson::value((double)((int)request->getRequestHandle()));
     object["source"] = picojson::value((double)((int)request->getRequestHandle())); // Client UUID
     object["target"] = picojson::value((double)((int)request->getResourceHandle()));
 
-
-    if (requestType == "GET")
+    if(requestFlag & RequestHandlerFlag::RequestFlag)
     {
-        object["type"] = picojson::value("retrieve");
+        DEBUG_MSG("postEntityHandler:RequestFlag\n");
+
+        if (requestType == "GET")
+        {
+            object["type"] = picojson::value("retrieve");
+        }
+        else if (requestType == "PUT")
+        {
+            object["type"] = picojson::value("update");
+
+            OCRepresentation oCRepresentation = request->getResourceRepresentation();
+            PrintfOcRepresentation(oCRepresentation);
+
+            // Translate OCRepresentation to picojson
+            picojson::object objectRes;
+            TranslateOCRepresentationToPicojson(oCRepresentation, objectRes);
+            object["res"] = picojson::value(objectRes);
+
+            // Check for matched properties
+            //updatedPropertyNames;
+
+        }
+        else if (requestType == "POST")
+        {
+            object["type"] = picojson::value("observe");
+
+        }
+        else if (requestType == "DELETE")
+        {
+            object["type"] = picojson::value("delete");
+        }
+        else if (requestType == "CREATE")
+        {
+            object["type"] = picojson::value("create");
+
+            OCRepresentation oCRepresentation = request->getResourceRepresentation();
+            // Translate OCRepresentation to picojson
+            picojson::object objectRes;
+            TranslateOCRepresentationToPicojson(oCRepresentation, objectRes);
+            object["res"] = picojson::value(objectRes);
+        }
     }
-    else if (requestType == "PUT")
-    {
-        object["type"] = picojson::value("update");
-
-        OCRepresentation oCRepresentation = request->getResourceRepresentation();
-        PrintfOcRepresentation(oCRepresentation);
-
-        // Translate OCRepresentation to picojson
-        picojson::object objectRes;
-        TranslateOCRepresentationToPicojson(oCRepresentation, objectRes);
-        object["res"] = picojson::value(objectRes);
-
-        // Check for matched properties
-        //updatedPropertyNames;
-
-    }
-    else if (requestType == "POST")
-    {
-        object["type"] = picojson::value("observe");
-
-    }
-    else if (requestType == "DELETE")
-    {
-        object["type"] = picojson::value("delete");
-    }
-    else if (requestType == "CREATE")
-    {
-        object["type"] = picojson::value("create");
-
-        OCRepresentation oCRepresentation = request->getResourceRepresentation();
-        //object["res"] = picojson::value(oCRepresentation);
-    }
-
 
     if (requestFlag & RequestHandlerFlag::ObserverFlag)
     {
+        DEBUG_MSG("postEntityHandler:ObserverFlag\n");
+
         object["type"] = picojson::value("observe");
 
         ObservationInfo observationInfo = request->getObservationInfo();
         if(ObserveAction::ObserveRegister == observationInfo.action)
         {
+            DEBUG_MSG("postEntityHandler:ObserveRegister\n");
             //m_interestedObservers.push_back(observationInfo.obsId);
         }
         else if(ObserveAction::ObserveUnregister == observationInfo.action)
         {
+            DEBUG_MSG("postEntityHandler:ObserveUnregister\n");
 /*
             m_interestedObservers.erase(std::remove(
                                                         m_interestedObservers.begin(),
@@ -863,17 +1055,20 @@ void IotivityInstance::handleNotify(const picojson::value& value) {
     DEBUG_MSG("handleNotify: v=%s\n",value.serialize().c_str());
 
     double async_call_id = value.get("asyncCallId").get<double>();
+    int resourceId = (int)value.get("resourceId").get<double>();
+    std::string method = value.get("method").to_str();
+    picojson::value updatedPropertyNames = value.get("updatedPropertyNames");
+   
 
-    std::shared_ptr<OCResourceResponse> resourceResponse =
-                   {std::make_shared<OCResourceResponse>()};
+    OCStackResult result = OCPlatform::notifyAllObservers((OCResourceHandle)resourceId);
+    if (OC_STACK_OK != result)
+    {
+        std::cerr << "OCPlatform::notifyAllObservers was unsuccessful\n";
+        postError(async_call_id);
+        return;
+    }
 
-    resourceResponse->setErrorCode(200);
-    //TODO resourceResponse->setResourceRepresentation(lightPtr->get(), DEFAULT_INTERFACE);
-/*
-    result = OCPlatform::notifyListOfObservers(lightPtr->getHandle(),
-                                               lightPtr->m_interestedObservers,
-                                               resourceResponse);
-*/
+    postResult("notifyCompleted", async_call_id);
 }
 
 void IotivityInstance::handleSendResponse(const picojson::value& value) {
@@ -928,7 +1123,6 @@ void IotivityInstance::handleSendResponse(const picojson::value& value) {
         DEBUG_MSG("handleSendResponse: ObserverFlag\n");
     }
 
-DEBUG_MSG("handleSendResponse:7\n");
     OCStackResult result = OCPlatform::sendResponse(pResponse);
     if (OC_STACK_OK != result)
     {
@@ -945,16 +1139,18 @@ void IotivityInstance::handleSendError(const picojson::value& value) {
     DEBUG_MSG("handleSendError: v=%s\n",value.serialize().c_str());
 
     double async_call_id = value.get("asyncCallId").get<double>();
-    std::string requestType = value.get("type").to_str();
+    std::string errorMsg = value.get("error").to_str();
     int requestId = (int)value.get("requestId").get<double>();
     int source = (int)value.get("source").get<double>();
     int target = (int)value.get("target").get<double>();
+
+    DEBUG_MSG("handleSendError: requestHandle=0x%x\n", requestId);
 
     auto pResponse = std::make_shared<OC::OCResourceResponse>();
     pResponse->setRequestHandle((void *)requestId);
     pResponse->setResourceHandle((void *)target);
 
-    pResponse->setErrorCode(value.get("error").get<double>());
+    pResponse->setErrorCode(200 /* TODOvalue.get("error").to_str()*/);
     pResponse->setResponseResult(OC_EH_OK);
 
     OCStackResult result = OCPlatform::sendResponse(pResponse);
@@ -965,6 +1161,7 @@ void IotivityInstance::handleSendError(const picojson::value& value) {
         return;
     }
 
+    DEBUG_MSG("handleSendError:4\n");
     postResult("sendResponseCompleted", async_call_id);
 }
 

@@ -59,8 +59,11 @@ class IotivityInstance : public common::Instance {
   void onPut(const HeaderOptions& headerOptions, const OCRepresentation& rep, const int eCode);
   void onGet(const HeaderOptions& headerOptions, const OCRepresentation& rep, const int eCode);
   void onPost(const HeaderOptions& headerOptions, const OCRepresentation& rep, const int eCode);
+  void onObserve(const HeaderOptions headerOptions, const OCRepresentation& rep,
+                 const int& eCode, const int& sequenceNumber);
 
-  void handleCRUDNRRequest(const picojson::value& value);
+  void onDelete(const HeaderOptions& headerOptions, const int eCode);
+
   void handleCreateResource(const picojson::value& value);
   void handleRetrieveResource(const picojson::value& value);
   void handleUpdateResource(const picojson::value& value);
