@@ -11,12 +11,40 @@ body {
 </style>
 </head>
 <body>
+
+    <div class="buttons-group" id="buttons-group">
+    <button class="SimpleServer" onclick="onclickbutton(id)" id="SimpleServer">SimpleServer</button>
+    <button class="SimpleClient" onclick="onclickbutton(id)" id="SimpleClient">SimpleClient</button>
+    </div>
+    <textarea cols=80 rows=25 id="output">i</textarea>
+
+</body>
+</html>
+
+
 <script>
+
+
+var outputtext = document.getElementById("output");
+outputtext.value = "";
+
+
+var log_outputtext = 1;
+
+
+function LogOutput(msg) {
+
+  if (log_outputtext)
+      outputtext.value += msg;
+  else
+    console.log(msg);
+}
 
 
 
 var lightResource = null;
 var device = new iotivity.OicDevice();
+
 
 function startServer() {
   var deviceId = device.settings.info.uuid;
@@ -32,17 +60,17 @@ function startServer() {
     observable: true,
     properties: { power: "5", state: "true" }
   }).then(function(res) {
-    console.log("Resource " + res.id + " has been created.");
+    LogOutput("Resource " + res.id + " has been created.");
     lightResource = res;
     device.server.onrequest = requestHandler;
     device.server.enablePresence();
   }, function(error) {
-    console.log("Error creating resource " + res.url + " : " + error.message);
+    LogOutput("Error creating resource " + res.url + " : " + error.message);
   });
 };
 
 function requestHandler(request) {
-  console.log("requestHandler: type=" + request.type + " id=" + request.requestId);
+  LogOutput("requestHandler: type=" + request.type + " id=" + request.requestId);
   if (request.type == "update" && lightResource && request.target == lightResource.id) {
     var updates = [];
     for(var name in request.updatedPropertyNames) { // e.g. "color"
@@ -90,19 +118,29 @@ function startClient() {
         for(var i = 0; i < list.length; i++) {
           res = list[i];
           if(res.url == "/a/light") {
-            device.client.startObserving(res.id)
-              .then(function(red) {
-                console.log("Observing " + res.url);
-                red.properties.dimmer = 0.5;
-                device.client.updateResource(red)
-                  .then(function() { 
-                     console.log("Changed red light dimmer");
-                  },function() { 
-                     console.log("Error changing red light"); 
-                  });        
+/*
+            device.client.retrieveResource(res.id)
+             .then(function(red) {
+                LogOutput("Retrieve " + res.url);
+*/
+                 device.client.startObserving(res.id)
+                   .then(function(obsres) {
+                     LogOutput("Observing " + res.url);
+                     //TODO res.properties.power = 10;
+                     device.client.updateResource(res)
+                       .then(function() { 
+                          LogOutput("Changed red light dimmer");
+                       },function() { 
+                          LogOutput("Error changing red light"); 
+                       });        
+                     }, function(error) { 
+                       LogOutput("Cannot observe " + res.url); 
+                  });
+/*
                 }, function(error) { 
-                  console.log("Cannot observe " + res.url); 
-            });
+                  LogOutput("Cannot retrieve " + res.url); 
+              });
+*/
           } // if
         }
       }, function(e) {
@@ -110,23 +148,29 @@ function startClient() {
     });
 };
 
+
 function testOicServerClient(){
  
   // implementation will try to get default configuration from the HW/platform
   // but if we cannot get it, could do a hard-coded configuration (not recommended)
   if (device.settings.info.uuid) { // configuration is valid
-    //startServer();
+    startServer();
     startClient();
   }
 }
 
 
+function onclickbutton(id) {
 
-testOicServerClient();
-
+    if (id == "SimpleServer") {
+      startServer();
+    }
+    else if (id == "SimpleClient") {
+      startClient();
+    }
+}
 
 
 </script>
-</body>
-</html>
+
 

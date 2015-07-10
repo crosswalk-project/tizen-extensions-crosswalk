@@ -26,6 +26,8 @@ var g_iotivity_device = null;
 
 var asyncCallId_onresourcesfound = null;
 var asyncCallId_onretrieveresource = null;
+var asyncCallId_onupdateresource = null;
+var asyncCallId_ondeleteresource = null;
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -352,13 +354,9 @@ OicClient.prototype.createResource = function(resourceinit) {
 
 OicClient.prototype.retrieveResource = function(resourceId) {
 
-  var oicRequestEvent = new OicRequestEvent();
-  _addConstProperty(oicRequestEvent, 'type', 'retrieve');
-  _addConstProperty(oicRequestEvent, 'target', resourceId);
-
   var msg = {
     'cmd': 'retrieveResource',
-    'request': oicRequestEvent
+    'resourceId': resourceId
   };
 
   var promise = createPromise(msg);
@@ -368,30 +366,26 @@ OicClient.prototype.retrieveResource = function(resourceId) {
 
 OicClient.prototype.updateResource = function(resource) {
 
-  var oicRequestEvent = new OicRequestEvent();
-  _addConstProperty(oicRequestEvent, 'type', 'update');
-
-
-
   var msg = {
     'cmd': 'updateResource',
-    'OicResource': null,
-    'request': oicRequestEvent
+    'OicResource': resource,
   };
-  return createPromise(msg);
+
+  var promise = createPromise(msg);
+  asyncCallId_onupdateresource = msg.asyncCallId;
+  return promise;
 };
 
 OicClient.prototype.deleteResource = function(resourceId) {
 
-  var oicRequestEvent = new OicRequestEvent();
-  _addConstProperty(oicRequestEvent, 'type', 'delete');
-  _addConstProperty(oicRequestEvent, 'target', resourceId);
-
   var msg = {
     'cmd': 'deleteResource',
-    'request': oicRequestEvent
+    'resourceId': resourceId
   };
-  return createPromise(msg);
+
+  var promise = createPromise(msg);
+  asyncCallId_ondeleteresource = msg.asyncCallId;
+  return promise;
 };
 
 OicClient.prototype.startObserving = function(resourceId) {
@@ -671,19 +665,30 @@ extension.setMessageListener(function(json) {
       handleOnObserve(msg);
       break;
 
+    case 'startObservingCompleted':
+      handleStartObserving(msg);
+      break;
+
+    case 'retrieveResourceCompleted':
+      handleRetrieveResource(msg);
+      break;
+
+    case 'updateResourceCompleted':
+      handleUpdateResource(msg);
+      break;
+
+    case 'deleteResourceCompleted':
+      handleDeleteResource(msg);
+      break;
+
     case 'configureCompleted':
     case 'unregisterResourceCompleted':
     case 'enablePresenceCompleted':
     case 'disablePresenceCompleted':
     case 'sendResponseCompleted':
     case 'notifyCompleted':
-    case 'startObservingCompleted':
     case 'cancelObservingCompleted':
-
     case 'createResourceCompleted':
-    case 'retrieveResourceCompleted':
-    case 'updateResourceCompleted':
-    case 'deleteResourceCompleted':
       handleAsyncCallSuccess(msg);
       break;
     case 'asyncCallError':
@@ -788,6 +793,109 @@ function handleOnObserve(msg) {
 
     DBG("client.onresourcechange: msg.type=" + msg.type);
     g_iotivity_device.client.onresourcechange(oicRequestEvent);
+  }
+}
+
+
+function handleStartObserving(msg) {
+  
+  DBG("handleStartObserving msg=" + JSON.stringify(msg));
+
+  if (msg.asyncCallId in g_async_calls) {
+    var oicResourceInit = new OicResourceInit({
+      'url': msg.url,
+      'deviceId': msg.resourceId,
+      'connectionMode': msg.connectionMode,
+      'resourceTypes': null,
+      'interfaces': null,
+      'discoverable': msg.discoverable,
+      'observable': msg.observable,
+      'parent': null,
+      'children': null,
+      'properties': null,
+    });
+
+    var oicResource = new OicResource(oicResourceInit);
+    _addConstProperty(oicResource, 'id', msg.resourceId);
+
+    g_async_calls[msg.asyncCallId].resolve(oicResource);
+    delete g_async_calls[msg.asyncCallId];
+  }
+}
+
+
+
+function handleRetrieveResource(msg) {
+  
+  DBG("handleRetrieveResource msg=" + JSON.stringify(msg));
+
+  if (asyncCallId_onretrieveresource in g_async_calls) {
+
+    if (msg.eCode == 0) {
+      DBG("g_async_calls[asyncCallId_onresourcesfound].resolve");
+
+
+  // TODO: missing field from native FoundResourcesCallback!!!
+  var oicResourceInit = new OicResourceInit({
+    'url': msg.url,
+    'deviceId': msg.resourceId,
+    'connectionMode': msg.connectionMode,
+    'resourceTypes': null,
+    'interfaces': null,
+    'discoverable': msg.discoverable,
+    'observable': msg.observable,
+    'parent': null,
+    'children': null,
+    'properties': null,
+  });
+
+      var oicResource = new OicResource(oicResourceInit);
+      _addConstProperty(oicResource, 'id', msg.resourceId);
+
+      g_async_calls[asyncCallId_onretrieveresource].resolve(oicResource);
+    }
+    else {
+      g_async_calls[asyncCallId_onretrieveresource].reject(Error('Command error'));
+    }
+
+    delete g_async_calls[asyncCallId_onretrieveresource];
+    asyncCallId_onretrieveresource = 0;
+  }
+}
+
+function handleUpdateResource(msg) {
+  
+  DBG("handleUpdateResource msg=" + JSON.stringify(msg));
+
+  if (asyncCallId_onupdateresource in g_async_calls) {
+    if (msg.eCode == 0) {
+      DBG("g_async_calls[].resolve");
+      g_async_calls[asyncCallId_onupdateresource].resolve();
+    }
+    else {
+      g_async_calls[asyncCallId_onupdateresource].reject(Error('Command error'));
+    }
+
+    delete g_async_calls[asyncCallId_onupdateresource];
+    asyncCallId_onupdateresource = 0;
+  }
+}
+
+function handleDeleteResource(msg) {
+  
+  DBG("handleDeleteResource msg=" + JSON.stringify(msg));
+
+  if (asyncCallId_onretrieveresource in g_async_calls) {
+    if (msg.eCode == 0) {
+      DBG("g_async_calls[].resolve");
+      g_async_calls[asyncCallId_ondeleteresource].resolve();
+    }
+    else {
+      g_async_calls[asyncCallId_ondeleteresource].reject(Error('Command error'));
+    }
+
+    delete g_async_calls[asyncCallId_ondeleteresource];
+    asyncCallId_ondeleteresource = 0;
   }
 }
 
