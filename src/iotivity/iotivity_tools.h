@@ -18,39 +18,54 @@
 ** $CISCO_END_LICENSE$
 **
 ****************************************************************************/
-#ifndef IOTIVITY_INSTANCE_H_
-#define IOTIVITY_INSTANCE_H_
+#ifndef IOTIVITY_TOOLS_H_
+#define IOTIVITY_TOOLS_H_
 
-#include "common/extension.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string>
+#include <map>
+#include <vector>
+
+#include <functional>
+#include <pthread.h>
+#include <mutex>
+#include <condition_variable>
 #include "common/picojson.h"
 
-#include "iotivity/iotivity_tools.h"
-#include "iotivity/iotivity_device.h"
+
+#include "OCPlatform.h"
+#include "OCApi.h"
+
+using namespace OC;
+using namespace std;
 
 
-class IotivityInstance : public common::Instance {
- public:
-  IotivityInstance();
-  ~IotivityInstance();
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-  // common::Instance implementation
-  void HandleMessage(const char* message); // js::extension.postMessage(msg)
-  void HandleSyncMessage(const char* message); // js::extension.internal.sendSyncMessage(msg);
+#define INFO_MSG(msg, ...) { printf(msg, ##__VA_ARGS__);}
+#define DEBUG_MSG(msg, ...) { if (pDebugEnv) printf(msg, ##__VA_ARGS__);}
 
 
-
-  void handleSendResponse(const picojson::value& value);
-  void handleSendError(const picojson::value& value);
+#define SUCCESS_RESPONSE 0
 
 
+extern char *pDebugEnv;
 
-  private:
-    IotivityDevice *m_device;
-    std::string PrepareMessage(const std::string & message);
-};
+void PrintfOcResource(const OCResource & oCResource);
+void PrintfOcRepresentation(const OCRepresentation & oCRepresentation);
+void TranslateOCRepresentationToPicojson(const OCRepresentation & oCRepresentation, picojson::object & objectRes);
+
+#ifdef __cplusplus
+}  // extern "C"
+#endif
 
 
-#endif  // IOTIVITY_INSTANCE_H_
+
+#endif  // IOTIVITY_TOOLS_H_
 
 
 

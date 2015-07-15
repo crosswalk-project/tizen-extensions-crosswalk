@@ -665,10 +665,6 @@ extension.setMessageListener(function(json) {
       handleOnObserve(msg);
       break;
 
-    case 'startObservingCompleted':
-      handleStartObserving(msg);
-      break;
-
     case 'retrieveResourceCompleted':
       handleRetrieveResource(msg);
       break;
@@ -795,35 +791,6 @@ function handleOnObserve(msg) {
     g_iotivity_device.client.onresourcechange(oicRequestEvent);
   }
 }
-
-
-function handleStartObserving(msg) {
-  
-  DBG("handleStartObserving msg=" + JSON.stringify(msg));
-
-  if (msg.asyncCallId in g_async_calls) {
-    var oicResourceInit = new OicResourceInit({
-      'url': msg.url,
-      'deviceId': msg.resourceId,
-      'connectionMode': msg.connectionMode,
-      'resourceTypes': null,
-      'interfaces': null,
-      'discoverable': msg.discoverable,
-      'observable': msg.observable,
-      'parent': null,
-      'children': null,
-      'properties': null,
-    });
-
-    var oicResource = new OicResource(oicResourceInit);
-    _addConstProperty(oicResource, 'id', msg.resourceId);
-
-    g_async_calls[msg.asyncCallId].resolve(oicResource);
-    delete g_async_calls[msg.asyncCallId];
-  }
-}
-
-
 
 function handleRetrieveResource(msg) {
   

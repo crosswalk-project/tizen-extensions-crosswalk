@@ -18,39 +18,33 @@
 ** $CISCO_END_LICENSE$
 **
 ****************************************************************************/
-#ifndef IOTIVITY_INSTANCE_H_
-#define IOTIVITY_INSTANCE_H_
+#ifndef IOTIVITY_SERVER_H_
+#define IOTIVITY_SERVER_H_
 
-#include "common/extension.h"
-#include "common/picojson.h"
 
 #include "iotivity/iotivity_tools.h"
-#include "iotivity/iotivity_device.h"
 
+class IotivityDevice;
 
-class IotivityInstance : public common::Instance {
+class IotivityServer {
+
+ private:
+  IotivityDevice* m_device;
+  std::map<int, void *> m_resourcemap;
+
  public:
-  IotivityInstance();
-  ~IotivityInstance();
-
-  // common::Instance implementation
-  void HandleMessage(const char* message); // js::extension.postMessage(msg)
-  void HandleSyncMessage(const char* message); // js::extension.internal.sendSyncMessage(msg);
+  IotivityServer(IotivityDevice* device);
+  ~IotivityServer();
 
 
+  void *getResourceById(int id);
+  void handleRegisterResource(const picojson::value& value);
+  void handleUnregisterResource(const picojson::value& value);
+  void handleEnablePresence(const picojson::value& value);
+  void handleDisablePresence(const picojson::value& value);
+  void handleNotify(const picojson::value& value);
 
-  void handleSendResponse(const picojson::value& value);
-  void handleSendError(const picojson::value& value);
-
-
-
-  private:
-    IotivityDevice *m_device;
-    std::string PrepareMessage(const std::string & message);
 };
 
-
-#endif  // IOTIVITY_INSTANCE_H_
-
-
+#endif  // IOTIVITY_SERVER_H_
 

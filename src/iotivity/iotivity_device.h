@@ -18,39 +18,45 @@
 ** $CISCO_END_LICENSE$
 **
 ****************************************************************************/
-#ifndef IOTIVITY_INSTANCE_H_
-#define IOTIVITY_INSTANCE_H_
+#ifndef IOTIVITY_DEVICE_H_
+#define IOTIVITY_DEVICE_H_
 
-#include "common/extension.h"
-#include "common/picojson.h"
 
 #include "iotivity/iotivity_tools.h"
-#include "iotivity/iotivity_device.h"
+#include "common/extension.h"
 
 
-class IotivityInstance : public common::Instance {
- public:
-  IotivityInstance();
-  ~IotivityInstance();
+namespace common {
+class Instance;
+}
 
-  // common::Instance implementation
-  void HandleMessage(const char* message); // js::extension.postMessage(msg)
-  void HandleSyncMessage(const char* message); // js::extension.internal.sendSyncMessage(msg);
+class IotivityServer;
+class IotivityClient;
 
 
-
-  void handleSendResponse(const picojson::value& value);
-  void handleSendError(const picojson::value& value);
-
-
+class IotivityDevice {
 
   private:
-    IotivityDevice *m_device;
-    std::string PrepareMessage(const std::string & message);
+    common::Instance* m_instance;
+    IotivityServer* m_server;
+    IotivityClient* m_client;
+
+ public:
+  IotivityDevice(common::Instance* instance);
+  ~IotivityDevice();
+
+  common::Instance* getInstance();
+  IotivityServer* getServer();
+  IotivityClient* getClient();
+ 
+  void handleConfigure(const picojson::value& value);
+  void handleFactoryReset(const picojson::value& value);
+  void handleReboot(const picojson::value& value);
+
+
+  void postResult(const char* completed_operation, double async_operation_id);
+  void postError(double async_operation_id);
+
 };
 
-
-#endif  // IOTIVITY_INSTANCE_H_
-
-
-
+#endif  // IOTIVITY_DEVICE_H_

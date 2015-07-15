@@ -18,39 +18,42 @@
 ** $CISCO_END_LICENSE$
 **
 ****************************************************************************/
-#ifndef IOTIVITY_INSTANCE_H_
-#define IOTIVITY_INSTANCE_H_
-
-#include "common/extension.h"
-#include "common/picojson.h"
+#ifndef IOTIVITY_CLIENT_H_
+#define IOTIVITY_CLIENT_H_
 
 #include "iotivity/iotivity_tools.h"
-#include "iotivity/iotivity_device.h"
 
+class IotivityDevice;
 
-class IotivityInstance : public common::Instance {
+class IotivityClient {
+
+ private:
+  IotivityDevice* m_device;
+  std::map<int, void *> m_resourcemap;
+
  public:
-  IotivityInstance();
-  ~IotivityInstance();
-
-  // common::Instance implementation
-  void HandleMessage(const char* message); // js::extension.postMessage(msg)
-  void HandleSyncMessage(const char* message); // js::extension.internal.sendSyncMessage(msg);
+  IotivityClient(IotivityDevice* device);
+  ~IotivityClient();
 
 
+  void *getResourceById(int id);
+  void foundResourceCallback(std::shared_ptr<OCResource> resource);
+  void handleFindResources(const picojson::value& value);
 
-  void handleSendResponse(const picojson::value& value);
-  void handleSendError(const picojson::value& value);
+  void foundDeviceCallback(const OCRepresentation& rep);
+  void handleFindDevices(const picojson::value& value);
+
+  
+  void handleCreateResource(const picojson::value& value);
+  void handleRetrieveResource(const picojson::value& value);
+  void handleUpdateResource(const picojson::value& value);
+  void handleDeleteResource(const picojson::value& value);
+  void handleStartObserving(const picojson::value& value);
+  void handleCancelObserving(const picojson::value& value);
 
 
 
-  private:
-    IotivityDevice *m_device;
-    std::string PrepareMessage(const std::string & message);
 };
 
-
-#endif  // IOTIVITY_INSTANCE_H_
-
-
+#endif  // IOTIVITY_CLIENT_H_
 
