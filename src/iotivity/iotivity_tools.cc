@@ -45,6 +45,7 @@ void PrintfOcResource(const OCResource & oCResource) {
 
 void PrintfOcRepresentation(const OCRepresentation & oCRepresentation) {
 
+    DEBUG_MSG("PrintfOcRepresentation\n");
     for (auto& cur: oCRepresentation)
     {
         std::string attrname = cur.attrname();
@@ -86,7 +87,7 @@ void TranslateOCRepresentationToPicojson(const OCRepresentation & oCRepresentati
         }
         else if (AttributeType::Double == cur.type())
         {
-            int doubleValue = cur.getValue<double>();
+            double doubleValue = cur.getValue<double>();
             objectRes[attrname] = picojson::value((double)doubleValue);
         }
         else if (AttributeType::Boolean == cur.type())

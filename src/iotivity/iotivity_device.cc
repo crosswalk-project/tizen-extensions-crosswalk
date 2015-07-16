@@ -206,6 +206,12 @@ void IotivityDevice::handleReboot(const picojson::value& value) {
 }
 
 
+void IotivityDevice::PostMessage(const char *msg) {
+
+    DEBUG_MSG("[Native==>JS] PostMessage: v=%s\n",msg);
+    m_instance->PostMessage(msg);
+}
+
 void IotivityDevice::postResult(const char* completed_operation,
                                   double async_operation_id) {
 
@@ -216,7 +222,7 @@ void IotivityDevice::postResult(const char* completed_operation,
   object["asyncCallId"] = picojson::value(async_operation_id);
 
   picojson::value value(object);
-  m_instance->PostMessage(value.serialize().c_str());
+  PostMessage(value.serialize().c_str());
 }
 
 void IotivityDevice::postError(double async_operation_id) {
@@ -228,7 +234,7 @@ void IotivityDevice::postError(double async_operation_id) {
   object["asyncCallId"] = picojson::value(async_operation_id);
 
   picojson::value value(object);
-  m_instance->PostMessage(value.serialize().c_str());
+  PostMessage(value.serialize().c_str());
 }
 
 

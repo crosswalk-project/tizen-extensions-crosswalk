@@ -23,6 +23,8 @@
 #include "iotivity/iotivity_server.h"
 #include "iotivity/iotivity_client.h"
 
+#include "iotivity/iotivity_resource.h"
+
 
 std::map<int, OCRepresentation> ResourcesMap;
 
@@ -54,7 +56,7 @@ std::string IotivityInstance::PrepareMessage(const std::string & message) {
   std::string resp = "";
 
   if (pDebugEnv != NULL)
-    printf("IotivityInstance::PrepareMessage: %s\n", msg);
+    printf("\n\n[JS==>Native] IotivityInstance::PrepareMessage: %s\n", msg);
 
   picojson::value v;
   std::string error;
@@ -119,57 +121,16 @@ void IotivityInstance::handleSendResponse(const picojson::value& value) {
     DEBUG_MSG("handleSendResponse: v=%s\n",value.serialize().c_str());
 
     double async_call_id = value.get("asyncCallId").get<double>();  
-    std::string requestType = value.get("type").to_str();
-    int requestId = (int)value.get("requestId").get<double>();
-    int source = (int)value.get("source").get<double>();
-    int target = (int)value.get("target").get<double>();
 
     picojson::value resource = value.get("resource");
 
-    DEBUG_MSG("handleSendResponse: requestHandle=0x%x\n", requestId);
+    picojson::value OicRequestEvent = value.get("OicRequestEvent");
+    IotivityRequestEvent iotivityRequestEvent;
+    iotivityRequestEvent.deserialize(OicRequestEvent);
 
-    auto pResponse = std::make_shared<OC::OCResourceResponse>();
-    pResponse->setRequestHandle((void *)requestId);
-    pResponse->setResourceHandle((void *)target);
-
-
-    OCRepresentation oCRepresentation; // = request->getResourceRepresentation();
-    oCRepresentation.setUri("/a/light");
-    oCRepresentation.setValue("state", "true");
-    oCRepresentation.setValue("power", 10);
-
-    //pResponse->setHeaderOptions(serverHeaderOptions);
-
-    DEBUG_MSG("handleSendResponse: type=%s\n", requestType.c_str());
-    if (requestType == "retrieve")
-    {
-        pResponse->setResourceRepresentation(oCRepresentation);
-        pResponse->setErrorCode(200);
-        pResponse->setResponseResult(OC_EH_OK);
-    }
-    else if (requestType == "update")
-    {
-        pResponse->setResourceRepresentation(oCRepresentation);
-        pResponse->setErrorCode(200);
-        pResponse->setResponseResult(OC_EH_OK);
-    }
-    else if (requestType == "create") // POST (first time)
-    {
-        //OCRepresentation rep = pRequest->getResourceRepresentation();
-        //OCRepresentation rep_post = post(rep);
-        pResponse->setResourceRepresentation(oCRepresentation);
-        pResponse->setErrorCode(200);
-        pResponse->setResponseResult(OC_EH_OK);
-    }
-    else if (requestType == "observe")
-    {
-        DEBUG_MSG("handleSendResponse: ObserverFlag\n");
-    }
-
-    OCStackResult result = OCPlatform::sendResponse(pResponse);
+    OCStackResult result = iotivityRequestEvent.sendResponse();
     if (OC_STACK_OK != result)
     {
-        std::cerr << "OCPlatform::sendResponse was unsuccessful\n";
         m_device->postError(async_call_id);
         return;
     }
@@ -183,28 +144,18 @@ void IotivityInstance::handleSendError(const picojson::value& value) {
 
     double async_call_id = value.get("asyncCallId").get<double>();
     std::string errorMsg = value.get("error").to_str();
-    int requestId = (int)value.get("requestId").get<double>();
-    int source = (int)value.get("source").get<double>();
-    int target = (int)value.get("target").get<double>();
 
-    DEBUG_MSG("handleSendError: requestHandle=0x%x\n", requestId);
+    picojson::value OicRequestEvent = value.get("OicRequestEvent");
+    IotivityRequestEvent iotivityRequestEvent;
+    iotivityRequestEvent.deserialize(OicRequestEvent);
 
-    auto pResponse = std::make_shared<OC::OCResourceResponse>();
-    pResponse->setRequestHandle((void *)requestId);
-    pResponse->setResourceHandle((void *)target);
-
-    pResponse->setErrorCode(200 /* TODOvalue.get("error").to_str()*/);
-    pResponse->setResponseResult(OC_EH_OK);
-
-    OCStackResult result = OCPlatform::sendResponse(pResponse);
+    OCStackResult result = iotivityRequestEvent.sendError();
     if (OC_STACK_OK != result)
     {
-        std::cerr << "OCPlatform::sendResponse (Error) was unsuccessful\n";
         m_device->postError(async_call_id);
         return;
     }
 
-    DEBUG_MSG("handleSendError:4\n");
     m_device->postResult("sendResponseCompleted", async_call_id);
 }
 

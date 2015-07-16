@@ -54,8 +54,8 @@ class IotivityResourceInit {
   IotivityResourceInit();
   ~IotivityResourceInit();
 
-  void Deserialize(const picojson::value& value);
-  void Serialize(picojson::object& object);
+  void deserialize(const picojson::value& value);
+  void serialize(picojson::object& object);
 };
 
 
@@ -79,7 +79,7 @@ class IotivityResourceServer {
   OCStackResult registerResource();
 
   int getResourceHandleToInt();
-  void Serialize(picojson::object& object);
+  void serialize(picojson::object& object);
 
 };
 
@@ -102,7 +102,7 @@ class IotivityResourceClient {
 
   void setSharedPtr(std::shared_ptr<OCResource> sharePtr);
   int getResourceHandleToInt();
-  void Serialize(picojson::object& object);
+  void serialize(picojson::object& object);
 
 
   void onPut(const HeaderOptions& headerOptions, const OCRepresentation& rep, const int eCode);
@@ -118,6 +118,40 @@ class IotivityResourceClient {
   OCStackResult deleteResource();
   OCStackResult startObserving();
   OCStackResult cancelObserving();
+};
+
+
+// Map on JS OicRequestEvent
+class IotivityRequestEvent {
+
+ public:
+  IotivityDevice *m_device;
+
+  std::string m_type;
+  int m_requestId;
+  std::string m_source;
+  std::string m_target;
+
+  OCRepresentation m_resourceRep;
+  std::vector<std::string> m_updatedPropertyNames;
+
+  QueryParamsMap m_queries;
+  HeaderOptions m_headerOptions;
+
+
+  OCRepresentation m_resourceRepTarget;
+
+ public:
+  IotivityRequestEvent();
+  ~IotivityRequestEvent();
+
+  void deserialize(std::shared_ptr<OCResourceRequest> request);
+  void deserialize(const picojson::value& value);
+  void serialize(picojson::object& object);
+
+  OCStackResult sendResponse();
+  OCStackResult sendError();
+
 };
 
 

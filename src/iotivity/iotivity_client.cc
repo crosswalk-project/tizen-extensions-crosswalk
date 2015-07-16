@@ -54,17 +54,15 @@ void IotivityClient::foundResourceCallback(std::shared_ptr<OCResource> resource)
 
     m_resourcemap[oicResourceClient->getResourceHandleToInt()] = (void *)oicResourceClient;
 
-    DEBUG_MSG("foundResourceCallback3:\n");
-
     picojson::value::object object;
     object["cmd"] = picojson::value("foundResourceCallback");
 
     PrintfOcResource((const OCResource &)*resource);
 
-    oicResourceClient->Serialize(object);
+    oicResourceClient->serialize(object);
  
     picojson::value value(object);
-    m_device->getInstance()->PostMessage(value.serialize().c_str());
+    m_device->PostMessage(value.serialize().c_str());
 }
 
 

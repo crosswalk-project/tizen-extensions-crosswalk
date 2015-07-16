@@ -35,9 +35,9 @@ var log_outputtext = 1;
 function LogOutput(msg) {
 
   if (log_outputtext)
-      outputtext.value += msg;
+      outputtext.value += msg + "\n";
   else
-    console.log(msg);
+    console.log(msg + "\n");
 }
 
 
@@ -58,7 +58,7 @@ function startServer() {
     interfaces: [ "oic.if.baseline", "oic.if.ll"],
     discoverable: true,
     observable: true,
-    properties: { power: "5", state: "true" }
+    properties: { name:"OIC Xwalk", power: 5, state: true }
   }).then(function(res) {
     LogOutput("Resource " + res.id + " has been created.");
     lightResource = res;
@@ -73,7 +73,8 @@ function requestHandler(request) {
   LogOutput("requestHandler: type=" + request.type + " id=" + request.requestId);
   if (request.type == "update" && lightResource && request.target == lightResource.id) {
     var updates = [];
-    for(var name in request.updatedPropertyNames) { // e.g. "color"
+    for(var i = 0; i < request.updatedPropertyNames.length; i++) {
+      name = request.updatedPropertyNames[i];
       if (request.properties[name] != lightResource.properties[name]) {
         lightResource.properties[name] = request.properties[name]; // save the change
         updates.push(name); // collect all the updates
@@ -82,9 +83,7 @@ function requestHandler(request) {
     
     if (updates.length) {
       var error = 'Failed to handle update request'; // new Error("")
-      request.sendError(error);
-      //request.sendResponse(); // sends back OK
-      
+      request.sendResponse(); // sends back OK
     }
     else {
       var error = 'Failed to handle update request'; // new Error("")
@@ -100,6 +99,11 @@ function requestHandler(request) {
      request.sendResponse(); // sends back OK
 
      device.server.notify(lightResource.id, "update", updates); // tell observers
+  }
+
+  if (request.type == "delete") {
+     var error = 'Failed to handle delete request';
+     request.sendError();
   }
 
 
@@ -118,15 +122,14 @@ function startClient() {
         for(var i = 0; i < list.length; i++) {
           res = list[i];
           if(res.url == "/a/light") {
-/*
+
             device.client.retrieveResource(res.id)
              .then(function(red) {
                 LogOutput("Retrieve " + res.url);
-*/
                  device.client.startObserving(res.id)
                    .then(function(obsres) {
                      LogOutput("Observing " + res.url);
-                     //TODO res.properties.power = 10;
+                     res.properties.power = 10;
                      device.client.updateResource(res)
                        .then(function() { 
                           LogOutput("Changed red light dimmer");
@@ -136,11 +139,9 @@ function startClient() {
                      }, function(error) { 
                        LogOutput("Cannot observe " + res.url); 
                   });
-/*
                 }, function(error) { 
                   LogOutput("Cannot retrieve " + res.url); 
               });
-*/
           } // if
         }
       }, function(e) {

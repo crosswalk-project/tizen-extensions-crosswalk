@@ -83,10 +83,10 @@ void IotivityServer::handleRegisterResource(const picojson::value& value) {
     object["cmd"] = picojson::value("registerResourceCompleted");
     object["asyncCallId"] = picojson::value(async_call_id);
 
-    oicResourceServer->Serialize(object);
+    oicResourceServer->serialize(object);
 
     picojson::value postvalue(object);
-    m_device->getInstance()->PostMessage(postvalue.serialize().c_str());
+    m_device->PostMessage(postvalue.serialize().c_str());
 }
 
 void IotivityServer::handleUnregisterResource(const picojson::value& value) {

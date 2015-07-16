@@ -342,12 +342,9 @@ OicClient.prototype.findDevices = function(options) {
 // client API: CRUDN
 OicClient.prototype.createResource = function(resourceinit) {
 
-  var oicRequestEvent = new OicRequestEvent();
-  _addConstProperty(oicRequestEvent, 'type', 'create');
-
   var msg = {
     'cmd': 'createResource',
-    'request': oicRequestEvent
+    'OicResourceInit': resource
   };
   return createPromise(msg);
 };
@@ -400,13 +397,9 @@ OicClient.prototype.startObserving = function(resourceId) {
 
 OicClient.prototype.cancelObserving = function(resourceId) {
 
-  var oicRequestEvent = new OicRequestEvent();
-  _addConstProperty(oicRequestEvent, 'type', 'observe');
-  _addConstProperty(oicRequestEvent, 'target', resourceId);
-
   var msg = {
     'cmd': 'cancelObserving',
-    'request': oicRequestEvent
+    'resourceId': resourceId
   };
   return createPromise(msg);
 };
@@ -473,40 +466,41 @@ iotivity.OicServer = OicServer;
 ///////////////////////////////////////////////////////////////////////////////
 // OicRequestEvent
 ///////////////////////////////////////////////////////////////////////////////
-var g_next_request_id = 0;
+function OicRequestEvent(obj) {
 
-function OicRequestEvent() {
+  DBG('new OicRequestEvent: obj=' + JSON.stringify(obj));
 
-  DBG('new OicRequestEvent');
-  //_addConstProperty(this, 'requestId', g_next_request_id);
-  _addConstProperty(this, 'source', g_iotivity_device.uuid);
-  ++g_next_request_id;
-
-/*
   _addConstProperty(this, 'type', obj.type);
   _addConstProperty(this, 'requestId', obj.requestId);
   _addConstProperty(this, 'source', obj.source);
   _addConstProperty(this, 'target', obj.target);
-  _addConstProperty(this, 'res', obj.res);
+  _addConstProperty(this, 'properties', obj.properties);
   _addConstProperty(this, 'updatedPropertyNames', obj.updatedPropertyNames);
   _addConstProperty(this, 'headerOptions', obj.headerOptions);
   _addConstProperty(this, 'queryOptions', obj.queryOptions);
-*/
 }
 
 // for create, observe, retrieve
 // reuses request info (type, requestId, source, target) to construct response,
 // sends back “ok”, plus the resource object if applicable
 OicRequestEvent.prototype.sendResponse = function(resource) {
-
   var msg = {
     'cmd': 'sendResponse',
-    'resource': resource || null,
-    'type': this.type,
-    'requestId': this.requestId,
-    'source': this.source,
-    'target': this.target,
+    'resource': resource,
+    'OicRequestEvent': {
+        'requestId': this.requestId,
+        'type': this.type,
+        'target': this.target,
+        'source': this.source,
+        'properties': this.properties,
+        'updatedPropertyNames': this.updatedPropertyNames,
+        'headerOptions': this.headerOptions,
+        'queryOptions': this.queryOptions,
+    },
   };
+
+  DBG('sendResponse: msg=' + JSON.stringify(msg));
+
   return createPromise(msg);
 };
 
@@ -516,10 +510,20 @@ OicRequestEvent.prototype.sendError = function(error) {
   var msg = {
     'cmd': 'sendError',
     'error': error,
-    'requestId': this.requestId,
-    'source': this.source,
-    'target': this.target,
+    'OicRequestEvent': {
+        'requestId': this.requestId,
+        'type': this.type,
+        'target': this.target,
+        'source': this.source,
+        'properties': this.properties,
+        'updatedPropertyNames': this.updatedPropertyNames,
+        'headerOptions': this.headerOptions,
+        'queryOptions': this.queryOptions,
+    },
   };
+
+  DBG('sendResponse: msg=' + JSON.stringify(msg));
+
   return createPromise(msg);
 };
 
@@ -700,9 +704,8 @@ function handleRegisterResourceCompleted(msg) {
 
   DBG("handleRegisterResourceCompleted");
   DBG("msg.OicResourceInit=" + JSON.stringify(msg.OicResourceInit));
-  var oicResource = new OicResource(JSON.stringify(msg.OicResourceInit));
-  _addConstProperty(oicResource, 'id', msg.resourceId);
-  _addConstProperty(oicResource, 'properties', JSON.stringify(msg.OicResourceInit.properties));
+  var oicResource = new OicResource(msg.OicResourceInit);
+  _addConstProperty(oicResource, 'id', msg.id);
   g_async_calls[msg.asyncCallId].resolve(oicResource);
 }
 
@@ -713,24 +716,9 @@ function handleEntityHandler(msg) {
   if (g_iotivity_device 
    && g_iotivity_device.server 
    && g_iotivity_device.server.onrequest) {
-
-    var oicRequestEvent = new OicRequestEvent();
-    _addConstProperty(oicRequestEvent, 'type', msg.type);
-    _addConstProperty(oicRequestEvent, 'requestId', msg.requestId);
-    _addConstProperty(oicRequestEvent, 'source', msg.source);
-    _addConstProperty(oicRequestEvent, 'target', msg.target);
-
-    if ((msg.type == 'create') || (msg.type == 'update')) {
-      _addConstProperty(oicRequestEvent, 'properties', msg.res);
-    }
-
-    if (msg.type == 'update') {
-      //TODO _addConstProperty(oicRequestEvent, 'updatedPropertyNames', msg.updatedPropertyNames);
-      _addConstProperty(oicRequestEvent, 'updatedPropertyNames', msg.res);
-    }
-
-    DBG("server.onrequest: msg.type=" + msg.type);
-    g_iotivity_device.server.onrequest(oicRequestEvent);
+     var oicRequestEvent = new OicRequestEvent(msg.OicRequestEvent);
+     DBG("handleEntityHandler oicRequestEvent=" + JSON.stringify(oicRequestEvent));
+     g_iotivity_device.server.onrequest(oicRequestEvent);
   }
 }
 
@@ -738,23 +726,9 @@ function handleFoundResources(msg) {
 
   DBG("handleFoundResources msg=" + JSON.stringify(msg));
 
-  // TODO: missing field from native FoundResourcesCallback!!!
-  var oicResourceInit = new OicResourceInit({
-    'url': msg.url,
-    'deviceId': msg.resourceId,
-    'connectionMode': msg.connectionMode,
-    'resourceTypes': null,
-    'interfaces': null,
-    'discoverable': msg.discoverable,
-    'observable': msg.observable,
-    'parent': null,
-    'children': null,
-    'properties': null,
-  });
+  var oicResource = new OicResource(msg.OicResourceInit);
+  _addConstProperty(oicResource, 'id', msg.id);
 
-  var oicResource = new OicResource(oicResourceInit);
-  _addConstProperty(oicResource, 'id', msg.resourceId);
-  //_addConstProperty(oicResource, 'properties', JSON.stringify(msg.OicResourceInit.properties));
   var oicResourceList = [];
 
   oicResourceList.push(oicResource);
@@ -777,18 +751,7 @@ function handleOnObserve(msg) {
    && g_iotivity_device.client.onresourcechange) {
 
     // msg.type observe only
-    var oicRequestEvent = new OicRequestEvent();
-    _addConstProperty(oicRequestEvent, 'type', msg.type);
-    _addConstProperty(oicRequestEvent, 'requestId', msg.requestId);
-    _addConstProperty(oicRequestEvent, 'source', msg.source);
-    _addConstProperty(oicRequestEvent, 'target', msg.target);
-
-    _addConstProperty(oicRequestEvent, 'properties', msg.res);
-    //TODO _addConstProperty(oicRequestEvent, 'updatedPropertyNames', msg.updatedPropertyNames);
-    _addConstProperty(oicRequestEvent, 'updatedPropertyNames', msg.res);
-
-    DBG("client.onresourcechange: msg.type=" + msg.type);
-    g_iotivity_device.client.onresourcechange(oicRequestEvent);
+    g_iotivity_device.client.onresourcechange(msg.OicRequestEvent);
   }
 }
 
