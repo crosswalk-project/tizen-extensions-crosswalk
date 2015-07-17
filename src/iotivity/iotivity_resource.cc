@@ -988,7 +988,9 @@ OCStackResult IotivityRequestEvent::sendError() {
     int targetId = atoi(m_target.c_str());
     pResponse->setResourceHandle((void *)targetId);
 
-    pResponse->setErrorCode(200 /* TODOvalue.get("error").to_str()*/);
+    // value.get("error").to_str()
+    pResponse->setErrorCode(200);
+    pResponse->setResponseResult(OC_EH_ERROR);
 
     result = OCPlatform::sendResponse(pResponse);
     if (OC_STACK_OK != result)

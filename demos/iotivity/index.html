@@ -126,7 +126,9 @@ function requestHandler(request) {
 function startClient() {
   // discover resources
   device.client.findResources({ 
-     resourceType: "core.light"
+     resourceType: "core.light",
+     //resourceType: "", // all
+     waitsec: 3, 
    }).then(function(list) {      
         device.client.onresourcechange = eventHandler;
 
