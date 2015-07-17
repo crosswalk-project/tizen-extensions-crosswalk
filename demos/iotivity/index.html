@@ -49,8 +49,8 @@ var device = new iotivity.OicDevice();
 function startServer() {
   var deviceId = device.settings.info.uuid;
   var connMode = device.settings.connectionMode;
-  // register all resources handled by this device
-  device.server.registerResource({
+
+  var oicResourceInit = new iotivity.OicResourceInit({
     url: "/a/light",
     deviceId: deviceId,
     connectionMode: connMode,
@@ -59,8 +59,19 @@ function startServer() {
     discoverable: true,
     observable: true,
     properties: { name:"OIC Xwalk", power: 5, state: true }
-  }).then(function(res) {
-    LogOutput("Resource " + res.id + " has been created.");
+  });
+  // register all resources handled by this device
+  device.server.registerResource({
+      url: oicResourceInit.url,
+      deviceId: oicResourceInit.deviceId,
+      connectionMode: oicResourceInit.connectionMode,
+      resourceTypes: oicResourceInit.resourceTypes,
+      interfaces: oicResourceInit.interfaces,
+      discoverable: oicResourceInit.discoverable,
+      observable: oicResourceInit.observable,
+      properties: oicResourceInit.properties
+    }).then(function(res) {
+    LogOutput("Resource " + res.id + " " + res.url + " has been created.");
     lightResource = res;
     device.server.onrequest = requestHandler;
     device.server.enablePresence();
@@ -70,7 +81,7 @@ function startServer() {
 };
 
 function requestHandler(request) {
-  LogOutput("requestHandler: type=" + request.type + " id=" + request.requestId);
+  LogOutput("[Remote Client==>] requestHandler: type=" + request.type + " id=" + request.requestId);
   if (request.type == "update" && lightResource && request.target == lightResource.id) {
     var updates = [];
     for(var i = 0; i < request.updatedPropertyNames.length; i++) {
@@ -98,6 +109,7 @@ function requestHandler(request) {
   if (request.type == "observe" && lightResource && request.target == lightResource.id) {
      request.sendResponse(); // sends back OK
 
+     LogOutput("Notify client");
      device.server.notify(lightResource.id, "update", updates); // tell observers
   }
 
@@ -111,33 +123,31 @@ function requestHandler(request) {
 };
 
 // e.g. to handle the case when remote resources can influence the states of local resources
-// for instance look for the state changes on dimming of the remote red light,
-// update dimming the local blue light, then request dimming the remote light
 function startClient() {
-
   // discover resources
   device.client.findResources({ 
      resourceType: "core.light"
    }).then(function(list) {      
+        device.client.onresourcechange = eventHandler;
+
         for(var i = 0; i < list.length; i++) {
           res = list[i];
           if(res.url == "/a/light") {
-
             device.client.retrieveResource(res.id)
-             .then(function(red) {
-                LogOutput("Retrieve " + res.url);
-                 device.client.startObserving(res.id)
-                   .then(function(obsres) {
-                     LogOutput("Observing " + res.url);
-                     res.properties.power = 10;
-                     device.client.updateResource(res)
+             .then(function(retrievedres) {
+                LogOutput("Retrieve " + retrievedres.url);
+                 device.client.startObserving(retrievedres.id)
+                   .then(function(observedres) {
+                     LogOutput("Observing " + observedres.url);
+                     observedres.properties.power = 10;
+                     device.client.updateResource(observedres)
                        .then(function() { 
-                          LogOutput("Changed red light dimmer");
+                          LogOutput("Changed resource power to 10");
                        },function() { 
-                          LogOutput("Error changing red light"); 
+                          LogOutput("Error resource power"); 
                        });        
                      }, function(error) { 
-                       LogOutput("Cannot observe " + res.url); 
+                       LogOutput("Cannot observe " + retrievedres.url); 
                   });
                 }, function(error) { 
                   LogOutput("Cannot retrieve " + res.url); 
@@ -149,6 +159,30 @@ function startClient() {
     });
 };
 
+function eventHandler(event) {
+  LogOutput("Client eventHandler: type=" + event.type + " id=" + event.resource.id  + " url=" + event.resource.url);
+  if (event.type == "update") {
+    if (event.updatedPropertyNames.length) {
+      device.client.retrieveResource(event.resource.id)
+        .then(function(retrievedres) {
+          for(var i = 0; i < event.updatedPropertyNames.length; i++) {
+            name = event.updatedPropertyNames[i];
+            LogOutput("retrieved " + name + "=" + retrievedres.properties[name]);
+          }
+        }, function(error) { 
+          LogOutput("Cannot retrieve " + res.url); 
+      });
+    }
+  }
+
+  if (request.type == "add") {
+    LogOutput("Added " + request.res.url);
+  }
+
+  if (request.type == "remove") {
+    LogOutput("Deleted resource");
+  }
+}
 
 function testOicServerClient(){
  

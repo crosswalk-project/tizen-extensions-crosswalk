@@ -35,6 +35,8 @@ class IotivityClient {
   IotivityClient(IotivityDevice* device);
   ~IotivityClient();
 
+  double m_asyncCallId_findresources;
+  double m_asyncCallId_finddevice;
 
   void *getResourceById(int id);
   void foundResourceCallback(std::shared_ptr<OCResource> resource);

@@ -100,6 +100,13 @@ class IotivityResourceClient {
   IotivityResourceClient(IotivityDevice *device);
   ~IotivityResourceClient();
 
+  double m_asyncCallId_create;
+  double m_asyncCallId_retrieve;
+  double m_asyncCallId_update;
+  double m_asyncCallId_delete;
+  double m_asyncCallId_observe;
+
+
   void setSharedPtr(std::shared_ptr<OCResource> sharePtr);
   int getResourceHandleToInt();
   void serialize(picojson::object& object);
@@ -112,9 +119,9 @@ class IotivityResourceClient {
                  const int& eCode, const int& sequenceNumber);
   void onDelete(const HeaderOptions& headerOptions, const int eCode);
 
-  OCStackResult createResource(IotivityResourceInit *oicResourceInit);
+  OCStackResult createResource(IotivityResourceInit & oicResourceInit);
   OCStackResult retrieveResource();
-  OCStackResult updateResource();
+  OCStackResult updateResource(OCRepresentation & representation);
   OCStackResult deleteResource();
   OCStackResult startObserving();
   OCStackResult cancelObserving();

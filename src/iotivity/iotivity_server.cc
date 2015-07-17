@@ -56,19 +56,6 @@ void IotivityServer::handleRegisterResource(const picojson::value& value) {
 
     IotivityResourceServer *oicResourceServer = new IotivityResourceServer(m_device, oicResourceInit);
 
-
-/*
-    PlatformConfig cfg
-    {
-        ServiceType::InProc,
-        ModeType::Server,
-        "0.0.0.0", // By setting to "0.0.0.0", it binds to all available interfaces
-        0,         // Uses randomly available port
-        QualityOfService::LowQos
-    };
-
-    OCPlatform::Configure(cfg);
-*/
     OCStackResult result = oicResourceServer->registerResource();
     if (OC_STACK_OK != result)
     {

@@ -26,6 +26,8 @@
 
 IotivityClient::IotivityClient(IotivityDevice* device) : m_device(device) {
 
+  m_asyncCallId_findresources = 0;
+  m_asyncCallId_finddevice = 0;
 }
 
 IotivityClient::~IotivityClient() {
@@ -44,7 +46,6 @@ void *IotivityClient::getResourceById(int id) {
   return NULL;
 }
 
-
 void IotivityClient::foundResourceCallback(std::shared_ptr<OCResource> resource) {
 
     DEBUG_MSG("foundResourceCallback:\n");
@@ -56,6 +57,8 @@ void IotivityClient::foundResourceCallback(std::shared_ptr<OCResource> resource)
 
     picojson::value::object object;
     object["cmd"] = picojson::value("foundResourceCallback");
+    object["asyncCallId"] = picojson::value(m_asyncCallId_findresources);
+    m_asyncCallId_findresources = 0;
 
     PrintfOcResource((const OCResource &)*resource);
 
@@ -65,13 +68,14 @@ void IotivityClient::foundResourceCallback(std::shared_ptr<OCResource> resource)
     m_device->PostMessage(value.serialize().c_str());
 }
 
-
 void IotivityClient::handleFindResources(const picojson::value& value) {
 
     DEBUG_MSG("handleFindResources: v=%s\n",value.serialize().c_str());
 
     double async_call_id = value.get("asyncCallId").get<double>();
     picojson::value param = value.get("OicDiscoveryOptions");
+
+    m_asyncCallId_findresources = async_call_id;
 
     // all properties are null by default, meaning “find all”
     // if resourceId is specified in full form, a direct retrieve is made
@@ -81,22 +85,8 @@ void IotivityClient::handleFindResources(const picojson::value& value) {
     std::string resourceId = param.get("resourceId").to_str();
     std::string resourceType = param.get("resourceType").to_str();
  
-/*
-    PlatformConfig cfg
-    {
-        ServiceType::InProc,
-        ModeType::Client,
-        "0.0.0.0", // By setting to "0.0.0.0", it binds to all available interfaces
-        0,         // Uses randomly available port
-        QualityOfService::LowQos
-    };
-
-    OCPlatform::Configure(cfg);
-*/
-
-
     // TODO: Enhanced to global super timer multi server search !!!
-
+    // TODO: find resources according to DiscoveryOptions {deviceId, resourceId, resourceType}
 
     std:string hostUri = OC_MULTICAST_DISCOVERY_URI;
     string requestUri = hostUri + "?rt=" + resourceType;
@@ -120,6 +110,15 @@ void IotivityClient::foundDeviceCallback(const OCRepresentation& rep) {
 
     DEBUG_MSG("foundDeviceCallback:\n");
 
+    // TODO debug
+    picojson::value::object object;
+    object["cmd"] = picojson::value("foundDeviceCallback");
+    object["asyncCallId"] = picojson::value(m_asyncCallId_finddevice);
+    m_asyncCallId_finddevice = 0;
+
+  
+    picojson::value value(object);
+    m_device->PostMessage(value.serialize().c_str());
 }
 
 void IotivityClient::handleFindDevices(const picojson::value& value) {
@@ -129,10 +128,12 @@ void IotivityClient::handleFindDevices(const picojson::value& value) {
     double async_call_id = value.get("asyncCallId").get<double>();
     picojson::value param = value.get("OicDiscoveryOptions");
 
+    m_asyncCallId_finddevice = async_call_id;
+
     std::string deviceId = param.get("deviceId").to_str();
     std::string resourceId = param.get("resourceId").to_str();
-    //std::string resourceType = param.get("resourceType").to_str();
- 
+    std::string resourceType = param.get("resourceType").to_str();
+
     OCConnectivityType connectivityType = OC_IPV4;
     FindDeviceCallback deviceInfoHandler = std::bind(&IotivityClient::foundDeviceCallback, 
                                                     this, 
@@ -156,13 +157,14 @@ void IotivityClient::handleCreateResource(const picojson::value& value) {
 
     double async_call_id = value.get("asyncCallId").get<double>();
 
-    IotivityResourceInit *oicResourceInit = new IotivityResourceInit(value.get("OicResourceInit"));
+    IotivityResourceInit oicResourceInit(value.get("OicResourceInit"));
 
-    int resHandleInt = (int)atoi(oicResourceInit->m_deviceId.c_str());
+    int resHandleInt = (int)atoi(oicResourceInit.m_deviceId.c_str());
 
     IotivityResourceClient *oicResourceClient = (IotivityResourceClient *)getResourceById(resHandleInt);
     if (oicResourceClient != NULL)
     {
+        oicResourceClient->m_asyncCallId_create = async_call_id;
         OCStackResult result = oicResourceClient->createResource(oicResourceInit);
         if (OC_STACK_OK != result)
         {
@@ -185,6 +187,7 @@ void IotivityClient::handleRetrieveResource(const picojson::value& value) {
     IotivityResourceClient *oicResourceClient = (IotivityResourceClient *)getResourceById(resHandleInt);
     if (oicResourceClient != NULL)
     {
+        oicResourceClient->m_asyncCallId_retrieve = async_call_id;
         OCStackResult result = oicResourceClient->retrieveResource();
         if (OC_STACK_OK != result)
         {
@@ -204,12 +207,16 @@ void IotivityClient::handleUpdateResource(const picojson::value& value) {
 
     double async_call_id = value.get("asyncCallId").get<double>();
     picojson::value param = value.get("OicResource");
-    int resHandleInt = (int)param.get("id").get<double>();
+    std::string deviceId = param.get("deviceId").to_str();
+    int resHandleInt = (int)atoi(deviceId.c_str());
 
     IotivityResourceClient *oicResourceClient = (IotivityResourceClient *)getResourceById(resHandleInt);
     if (oicResourceClient != NULL)
     {
-        OCStackResult result = oicResourceClient->updateResource();
+        oicResourceClient->m_asyncCallId_update = async_call_id;
+        IotivityResourceInit oicResourceInit(param);
+
+        OCStackResult result = oicResourceClient->updateResource(oicResourceInit.m_resourceRep);
         if (OC_STACK_OK != result)
         {
             m_device->postError(async_call_id);
@@ -230,6 +237,7 @@ void IotivityClient::handleDeleteResource(const picojson::value& value) {
     IotivityResourceClient *oicResourceClient = (IotivityResourceClient *)getResourceById(resHandleInt);
     if (oicResourceClient != NULL)
     {
+        oicResourceClient->m_asyncCallId_delete = async_call_id;
         OCStackResult result = oicResourceClient->deleteResource();
         if (OC_STACK_OK != result)
         {
@@ -254,6 +262,7 @@ void IotivityClient::handleStartObserving(const picojson::value& value) {
     IotivityResourceClient *oicResourceClient = (IotivityResourceClient *)getResourceById(resHandleInt);
     if (oicResourceClient != NULL)
     {
+        oicResourceClient->m_asyncCallId_observe = async_call_id;
         result = oicResourceClient->startObserving();
         if (OC_STACK_OK != result)
         {
@@ -269,8 +278,6 @@ void IotivityClient::handleStartObserving(const picojson::value& value) {
 
     // retrieve + observe flag
     result = oicResourceClient->retrieveResource();
-
-
 }
 
 void IotivityClient::handleCancelObserving(const picojson::value& value) {
@@ -296,7 +303,6 @@ void IotivityClient::handleCancelObserving(const picojson::value& value) {
         return;
     }
  
-
     m_device->postResult("cancelObservingCompleted", async_call_id);
 }
 
