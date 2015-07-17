@@ -723,19 +723,21 @@ function handleFoundResources(msg) {
 
   DBG("handleFoundResources msg=" + JSON.stringify(msg));
 
-  var oicResource = new OicResource(msg.OicResourceInit);
-  _addConstProperty(oicResource, 'id', msg.id);
-
   var oicResourceList = [];
+  for(var i = 0; i < msg.resourcesArray.length; i++) {
+    var oicResourceObject = msg.resourcesArray[i];
+    var oicResource = new OicResource(oicResourceObject.OicResourceInit);
+    _addConstProperty(oicResource, 'id', oicResourceObject.id);
+    oicResourceList.push(oicResource);
+  }
 
-  oicResourceList.push(oicResource);
-
-  // TODO resource array from super timer callback from Native
-  // + reject call when empty list
   if (msg.asyncCallId in g_async_calls) {
-    DBG("g_async_calls[].resolve");
-    g_async_calls[msg.asyncCallId].resolve(oicResourceList);
-    delete g_async_calls[msg.asyncCallId];
+    if (oicResourceList.length) {
+      DBG("g_async_calls[].resolve");
+      g_async_calls[msg.asyncCallId].resolve(oicResourceList);
+    } else {
+      g_async_calls[msg.asyncCallId].reject(Error('Find resources error'));
+    }
   }
 }
 
