@@ -121,6 +121,7 @@ Sample Tizen volume control application that demonstrates the Tizen AudioSystem 
 Summary: Tizen Web APIs using Crosswalk iotivity demo
 Group: Development/Libraries
 Requires:      %{name}
+Requires:      iotivity-test
 
 %description  -n %{_iotivity_demo_package}
 Tizen Web APIs iotivity demo implementation using Crosswalk.
