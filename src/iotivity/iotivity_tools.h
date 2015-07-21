@@ -18,29 +18,27 @@
 ** $CISCO_END_LICENSE$
 **
 ****************************************************************************/
-#ifndef IOTIVITY_TOOLS_H_
-#define IOTIVITY_TOOLS_H_
+#ifndef IOTIVITY_IOTIVITY_TOOLS_H_
+#define IOTIVITY_IOTIVITY_TOOLS_H_
 
+#include <pthread.h>
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
 #include <map>
 #include <vector>
-
 #include <functional>
-#include <pthread.h>
-#include <mutex>
-#include <condition_variable>
-#include "common/picojson.h"
+#include <mutex> // NOLINT
+#include <condition_variable> //NOLINT
 
+#include "common/picojson.h"
 
 #include "OCPlatform.h"
 #include "OCApi.h"
 
-using namespace OC;
-using namespace std;
-
+using namespace OC; // NOLINT
+using namespace std; // NOLINT
 
 #ifdef __cplusplus
 extern "C" {
@@ -48,24 +46,17 @@ extern "C" {
 
 #define INFO_MSG(msg, ...) { printf(msg, ##__VA_ARGS__);}
 #define DEBUG_MSG(msg, ...) { if (pDebugEnv) printf(msg, ##__VA_ARGS__);}
-
-
 #define SUCCESS_RESPONSE 0
-
 
 extern char *pDebugEnv;
 
 void PrintfOcResource(const OCResource & oCResource);
 void PrintfOcRepresentation(const OCRepresentation & oCRepresentation);
-void TranslateOCRepresentationToPicojson(const OCRepresentation & oCRepresentation, picojson::object & objectRes);
+void TranslateOCRepresentationToPicojson(
+    const OCRepresentation & oCRepresentation,
+    picojson::object & objectRes);
 
 #ifdef __cplusplus
 }  // extern "C"
 #endif
-
-
-
-#endif  // IOTIVITY_TOOLS_H_
-
-
-
+#endif  // IOTIVITY_IOTIVITY_TOOLS_H_

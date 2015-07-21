@@ -18,39 +18,36 @@
 ** $CISCO_END_LICENSE$
 **
 ****************************************************************************/
-#ifndef IOTIVITY_INSTANCE_H_
-#define IOTIVITY_INSTANCE_H_
+#ifndef IOTIVITY_IOTIVITY_INSTANCE_H_
+#define IOTIVITY_IOTIVITY_INSTANCE_H_
+
+#include <string>
 
 #include "common/extension.h"
 #include "common/picojson.h"
-
 #include "iotivity/iotivity_tools.h"
 #include "iotivity/iotivity_device.h"
-
 
 class IotivityInstance : public common::Instance {
  public:
   IotivityInstance();
   ~IotivityInstance();
 
-  // common::Instance implementation
-  void HandleMessage(const char* message); // js::extension.postMessage(msg)
-  void HandleSyncMessage(const char* message); // js::extension.internal.sendSyncMessage(msg);
-
-
-
+  /* common::Instance implementation */
+  void HandleMessage(const char* message);
+  /* js::extension.postMessage(msg) */
+  void HandleSyncMessage(const char* message);
+  /* js::extension.internal.sendSyncMessage(msg); */
   void handleSendResponse(const picojson::value& value);
   void handleSendError(const picojson::value& value);
 
-
-
-  private:
-    IotivityDevice *m_device;
-    std::string PrepareMessage(const std::string & message);
+ private:
+  IotivityDevice *m_device;
+  std::string PrepareMessage(const std::string & message);
 };
 
 
-#endif  // IOTIVITY_INSTANCE_H_
+#endif  // IOTIVITY_IOTIVITY_INSTANCE_H_
 
 
 

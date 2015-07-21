@@ -18,10 +18,11 @@
 ** $CISCO_END_LICENSE$
 **
 ****************************************************************************/
-#ifndef IOTIVITY_RESOURCE_H_
-#define IOTIVITY_RESOURCE_H_
+#ifndef IOTIVITY_IOTIVITY_RESOURCE_H_
+#define IOTIVITY_IOTIVITY_RESOURCE_H_
 
-
+#include <string>
+#include <vector>
 #include "iotivity/iotivity_tools.h"
 #include "iotivity/iotivity_device.h"
 
@@ -31,26 +32,26 @@ class Instance;
 
 // Map on JS OicResourceInit
 class IotivityResourceInit {
-
  public:
   std::string m_url;
   std::string m_deviceId;
   std::string m_connectionMode;
-    
+
   bool m_discoverable;
   bool m_observable;
   bool m_isSecure;
-    
+
   std::vector<std::string> m_resourceTypeNameArray;
   std::string m_resourceTypeName;
   std::vector<std::string> m_resourceInterfaceArray;
   std::string m_resourceInterface;
+
   uint8_t m_resourceProperty;
 
   OCRepresentation m_resourceRep;
 
  public:
-  IotivityResourceInit(const picojson::value& value);
+  explicit IotivityResourceInit(const picojson::value& value);
   IotivityResourceInit();
   ~IotivityResourceInit();
 
@@ -61,31 +62,28 @@ class IotivityResourceInit {
 
 // Map on JS OicResource
 class IotivityResourceServer {
-
  private:
-  //shared_ptr<OCResource> m_ocResourcePtr;
+  // shared_ptr<OCResource> m_ocResourcePtr;
   IotivityDevice *m_device;
   IotivityResourceInit *m_oicResourceInit;
-
   OCResourceHandle m_resourceHandle;
   ObservationIds m_interestedObservers;
 
-
  public:
-  IotivityResourceServer(IotivityDevice *device, IotivityResourceInit *oicResource);
+  IotivityResourceServer(IotivityDevice *device,
+                         IotivityResourceInit *oicResource);
   ~IotivityResourceServer();
 
-  OCEntityHandlerResult entityHandlerCallback(std::shared_ptr<OCResourceRequest> request);
+  OCEntityHandlerResult entityHandlerCallback(
+    std::shared_ptr<OCResourceRequest> request);
   OCStackResult registerResource();
 
   int getResourceHandleToInt();
   void serialize(picojson::object& object);
-
 };
 
 // Map on JS OicResource
 class IotivityResourceClient {
-
  private:
   IotivityDevice *m_device;
 
@@ -97,7 +95,7 @@ class IotivityResourceClient {
   std::string m_host;
 
  public:
-  IotivityResourceClient(IotivityDevice *device);
+  explicit IotivityResourceClient(IotivityDevice *device);
   ~IotivityResourceClient();
 
   double m_asyncCallId_create;
@@ -112,9 +110,12 @@ class IotivityResourceClient {
   void serialize(picojson::object& object);
 
 
-  void onPut(const HeaderOptions& headerOptions, const OCRepresentation& rep, const int eCode);
-  void onGet(const HeaderOptions& headerOptions, const OCRepresentation& rep, const int eCode);
-  void onPost(const HeaderOptions& headerOptions, const OCRepresentation& rep, const int eCode);
+  void onPut(const HeaderOptions& headerOptions,
+             const OCRepresentation& rep, const int eCode);
+  void onGet(const HeaderOptions& headerOptions,
+             const OCRepresentation& rep, const int eCode);
+  void onPost(const HeaderOptions& headerOptions,
+              const OCRepresentation& rep, const int eCode);
   void onObserve(const HeaderOptions headerOptions, const OCRepresentation& rep,
                  const int& eCode, const int& sequenceNumber);
   void onDelete(const HeaderOptions& headerOptions, const int eCode);
@@ -130,7 +131,6 @@ class IotivityResourceClient {
 
 // Map on JS OicRequestEvent
 class IotivityRequestEvent {
-
  public:
   IotivityDevice *m_device;
 
@@ -158,9 +158,7 @@ class IotivityRequestEvent {
 
   OCStackResult sendResponse();
   OCStackResult sendError();
-
 };
 
 
-#endif  // IOTIVITY_RESOURCE_H_
-
+#endif  // IOTIVITY_IOTIVITY_RESOURCE_H_

@@ -18,10 +18,10 @@
 ** $CISCO_END_LICENSE$
 **
 ****************************************************************************/
-#ifndef IOTIVITY_DEVICE_H_
-#define IOTIVITY_DEVICE_H_
+#ifndef IOTIVITY_IOTIVITY_DEVICE_H_
+#define IOTIVITY_IOTIVITY_DEVICE_H_
 
-
+#include <string>
 #include "iotivity/iotivity_tools.h"
 #include "common/extension.h"
 
@@ -35,29 +35,25 @@ class IotivityClient;
 
 
 class IotivityDevice {
-
-  private:
-    common::Instance* m_instance;
-    IotivityServer* m_server;
-    IotivityClient* m_client;
+ private:
+  common::Instance* m_instance;
+  IotivityServer* m_server;
+  IotivityClient* m_client;
 
  public:
-  IotivityDevice(common::Instance* instance);
+  explicit IotivityDevice(common::Instance* instance);
   ~IotivityDevice();
 
   common::Instance* getInstance();
   IotivityServer* getServer();
   IotivityClient* getClient();
- 
+
   void handleConfigure(const picojson::value& value);
   void handleFactoryReset(const picojson::value& value);
   void handleReboot(const picojson::value& value);
-
-
   void PostMessage(const char *msg);
   void postResult(const char* completed_operation, double async_operation_id);
   void postError(double async_operation_id);
-
 };
 
-#endif  // IOTIVITY_DEVICE_H_
+#endif  // IOTIVITY_IOTIVITY_DEVICE_H_

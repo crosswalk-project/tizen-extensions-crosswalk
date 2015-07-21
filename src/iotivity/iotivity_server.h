@@ -18,24 +18,22 @@
 ** $CISCO_END_LICENSE$
 **
 ****************************************************************************/
-#ifndef IOTIVITY_SERVER_H_
-#define IOTIVITY_SERVER_H_
+#ifndef IOTIVITY_IOTIVITY_SERVER_H_
+#define IOTIVITY_IOTIVITY_SERVER_H_
 
-
+#include <map>
 #include "iotivity/iotivity_tools.h"
 
 class IotivityDevice;
 
 class IotivityServer {
-
  private:
   IotivityDevice* m_device;
   std::map<int, void *> m_resourcemap;
 
  public:
-  IotivityServer(IotivityDevice* device);
+  explicit IotivityServer(IotivityDevice* device);
   ~IotivityServer();
-
 
   void *getResourceById(int id);
   void handleRegisterResource(const picojson::value& value);
@@ -43,8 +41,6 @@ class IotivityServer {
   void handleEnablePresence(const picojson::value& value);
   void handleDisablePresence(const picojson::value& value);
   void handleNotify(const picojson::value& value);
-
 };
 
-#endif  // IOTIVITY_SERVER_H_
-
+#endif  // IOTIVITY_IOTIVITY_SERVER_H_

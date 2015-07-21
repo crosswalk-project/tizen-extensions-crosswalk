@@ -55,6 +55,7 @@ function createPromise(msg) {
   msg.asyncCallId = g_next_async_call_id;
   extension.postMessage(JSON.stringify(msg));
   ++g_next_async_call_id;
+
   return promise;
 }
 
@@ -102,63 +103,60 @@ function derive(child, parent) {
 ///////////////////////////////////////////////////////////////////////////////
 // EventTarget
 ///////////////////////////////////////////////////////////////////////////////
+function EventTarget(event_types) {
+  var _event_listeners = {};
+  var _event_handlers = {};
+  var self = this;
 
-  function EventTarget(event_types) {
-    var _event_listeners = { };
-    var _event_handlers = { };
-    var self = this;
-
-    if (event_types != null) {
-      // initialize event listeners
-      event_types.forEach(function(type) {
-        _event_listeners[type] = [];
-        // Setup a Event Handler
-        _addProperty(self, 'on' + type, null);
-      });
-    }
-
-    this._event_listeners = _event_listeners;
+  if (event_types != null) {
+    // initialize event listeners
+    event_types.forEach(function(type) {
+      _event_listeners[type] = [];
+      // Setup a Event Handler
+      _addProperty(self, 'on' + type, null);
+    });
   }
 
-  EventTarget.prototype.isValidEventType = function(type) {
-    return type in this._event_listeners;
-  };
+  this._event_listeners = _event_listeners;
+}
 
-  EventTarget.prototype.addEventListener = function(type, listener) {
-    if (this.isValidEventType(type) &&
-        listener != null && typeof listener === 'function' &&
-        this._event_listeners[type].indexOf(listener) == -1) {
-      this._event_listeners[type].push(listener);
-      return;
-    }
-    ERR('Invalid event type \'' + type + '\', ignoring.' +
-        'avaliable event types : ' + this._event_listeners);
-  };
+EventTarget.prototype.isValidEventType = function(type) {
+  return type in this._event_listeners;
+};
 
-  EventTarget.prototype.removeEventListener = function(type, listener) {
-    if (!type || !listener)
-      return;
+EventTarget.prototype.addEventListener = function(type, listener) {
+  if (this.isValidEventType(type) && listener != null && typeof listener === 'function' &&
+      this._event_listeners[type].indexOf(listener) == -1) {
+    this._event_listeners[type].push(listener);
+    return;
+  }
+  ERR('Invalid event type \'' + type + '\', ignoring. Avaliable event types : ' +
+      this._event_listeners);
+};
 
-    var index = this._event_listeners[type].indexOf(listener);
-    if (index == -1)
-      return;
+EventTarget.prototype.removeEventListener = function(type, listener) {
+  if (!type || !listener)
+    return;
 
-    this._event_listeners[type].splice(index, 1);
-  };
+  var index = this._event_listeners[type].indexOf(listener);
+  if (index == -1)
+    return;
 
-  EventTarget.prototype.dispatchEvent = function(ev) {
-    var handled = true;
-    var listeners = null;
-    if (typeof ev === 'object' &&
-        this.isValidEventType(ev.type) &&
-        (listeners = this._event_listeners[ev.type]) != null) {
-      listeners.forEach(function(listener) {
-        if (!listener(ev) && handled)
-          handled = false;
-      });
-    }
-    return handled;
-  };
+  this._event_listeners[type].splice(index, 1);
+};
+
+EventTarget.prototype.dispatchEvent = function(ev) {
+  var handled = true;
+  var listeners = null;
+  if (typeof ev === 'object' && this.isValidEventType(ev.type) &&
+      (listeners = this._event_listeners[ev.type]) != null) {
+    listeners.forEach(function(listener) {
+      if (!listener(ev) && handled)
+        handled = false;
+    });
+  }
+  return handled;
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 // Enum
@@ -166,24 +164,24 @@ function derive(child, parent) {
 
 /*
 var OicDeviceRole = {
-   "client":1, 
-   "server":2,
-   "intermediary":3
+  "client":1,
+  "server":2,
+  "intermediary":3
 };
 
-var OicConnectionMode { 
-    "acked":1, 
-    "non-acked":2, 
-    “default”:3
+var OicConnectionMode {
+  "acked":1,
+  "non-acked":2,
+  “default”:3
 }; // default is either of the former
 
 var OicMethod = {
-    "init":1, 
-    "observe”:2, 
-    "create”:3, 
-    "retrieve”:4, 
-    "update”:5, 
-    "delete”:6
+  "init":1,
+  "observe”:2,
+  "create”:3,
+  "retrieve”:4,
+  "update”:5,
+  "delete”:6
 };
 */
 
@@ -191,7 +189,6 @@ var OicMethod = {
 // OicDevice
 ///////////////////////////////////////////////////////////////////////////////
 function OicDevice(settings) {
-
   DBG('new OicDevice: settings=' + JSON.stringify(settings));
 
   if (settings)
@@ -213,7 +210,6 @@ function OicDevice(settings) {
 // equivalent to ‘onboard+configure’ in Core spec
 // maps to IoTivity Configure (C++ API), configure (Java API), OCInit (C API)
 OicDevice.prototype.configure = function(settings) {
-
   if (settings)
     _addConstProperty(this, 'settings', new OicDeviceSettings(settings));
 
@@ -228,7 +224,7 @@ OicDevice.prototype.configure = function(settings) {
 // return to factory configuration and reboot
 OicDevice.prototype.factoryReset = function() {
   var msg = {
-    'cmd': 'factoryReset',
+    'cmd': 'factoryReset'
   };
   return createPromise(msg);
 };
@@ -249,7 +245,6 @@ iotivity.OicDevice = OicDevice;
 ///////////////////////////////////////////////////////////////////////////////
 
 function OicDeviceSettings(obj) {
-
   if (obj) {
     _addConstProperty(this, 'url', obj.url);
     _addConstProperty(this, 'info', new OicDeviceInfo(obj.info));
@@ -271,7 +266,6 @@ iotivity.OicDeviceSettings = OicDeviceSettings;
 ///////////////////////////////////////////////////////////////////////////////
 
 function OicDeviceInfo(obj) {
-
   if (obj) {
     _addConstProperty(this, 'uuid', obj.uuid);
     _addConstProperty(this, 'name', obj.name);
@@ -332,7 +326,6 @@ OicClient.prototype.findDevices = function(options) {
 
 // client API: CRUDN
 OicClient.prototype.createResource = function(resourceinit) {
-
   var msg = {
     'cmd': 'createResource',
     'OicResourceInit': resource
@@ -341,7 +334,6 @@ OicClient.prototype.createResource = function(resourceinit) {
 };
 
 OicClient.prototype.retrieveResource = function(resourceId) {
-
   var msg = {
     'cmd': 'retrieveResource',
     'resourceId': resourceId
@@ -350,7 +342,6 @@ OicClient.prototype.retrieveResource = function(resourceId) {
 };
 
 OicClient.prototype.updateResource = function(resource) {
-
   var msg = {
     'cmd': 'updateResource',
     'OicResource': {
@@ -363,14 +354,13 @@ OicClient.prototype.updateResource = function(resource) {
       'observable': resource.observable,
       'parent': resource.parent || null,
       'children': resource.children || null,
-      'properties': resource.properties,
-    },
+      'properties': resource.properties
+    }
   };
   return createPromise(msg);
 };
 
 OicClient.prototype.deleteResource = function(resourceId) {
-
   var msg = {
     'cmd': 'deleteResource',
     'resourceId': resourceId
@@ -379,17 +369,15 @@ OicClient.prototype.deleteResource = function(resourceId) {
 };
 
 OicClient.prototype.startObserving = function(resourceId) {
-
   var msg = {
     'cmd': 'startObserving',
-    'resourceId': resourceId,
+    'resourceId': resourceId
   };
 
   return createPromise(msg);
 };
 
 OicClient.prototype.cancelObserving = function(resourceId) {
-
   var msg = {
     'cmd': 'cancelObserving',
     'resourceId': resourceId
@@ -460,7 +448,6 @@ iotivity.OicServer = OicServer;
 // OicRequestEvent
 ///////////////////////////////////////////////////////////////////////////////
 function OicRequestEvent(obj) {
-
   DBG('new OicRequestEvent: obj=' + JSON.stringify(obj));
 
   _addConstProperty(this, 'type', obj.type);
@@ -481,15 +468,15 @@ OicRequestEvent.prototype.sendResponse = function(resource) {
     'cmd': 'sendResponse',
     'resource': resource,
     'OicRequestEvent': {
-        'requestId': this.requestId,
-        'type': this.type,
-        'target': this.target,
-        'source': this.source,
-        'properties': this.properties,
-        'updatedPropertyNames': this.updatedPropertyNames,
-        'headerOptions': this.headerOptions,
-        'queryOptions': this.queryOptions,
-    },
+      'requestId': this.requestId,
+      'type': this.type,
+      'target': this.target,
+      'source': this.source,
+      'properties': this.properties,
+      'updatedPropertyNames': this.updatedPropertyNames,
+      'headerOptions': this.headerOptions,
+      'queryOptions': this.queryOptions
+    }
   };
 
   DBG('sendResponse: msg=' + JSON.stringify(msg));
@@ -504,15 +491,15 @@ OicRequestEvent.prototype.sendError = function(error) {
     'cmd': 'sendError',
     'error': error,
     'OicRequestEvent': {
-        'requestId': this.requestId,
-        'type': this.type,
-        'target': this.target,
-        'source': this.source,
-        'properties': this.properties,
-        'updatedPropertyNames': this.updatedPropertyNames,
-        'headerOptions': this.headerOptions,
-        'queryOptions': this.queryOptions,
-    },
+      'requestId': this.requestId,
+      'type': this.type,
+      'target': this.target,
+      'source': this.source,
+      'properties': this.properties,
+      'updatedPropertyNames': this.updatedPropertyNames,
+      'headerOptions': this.headerOptions,
+      'queryOptions': this.queryOptions
+    }
   };
 
   DBG('sendResponse: msg=' + JSON.stringify(msg));
@@ -527,7 +514,6 @@ iotivity.OicRequestEvent = OicRequestEvent;
 ///////////////////////////////////////////////////////////////////////////////
 
 function OicResourceChangedEvent(obj) {
-
   DBG('new OicResourceChangedEvent: obj=' + JSON.stringify(obj));
 
   _addConstProperty(this, 'type', obj.type);
@@ -546,7 +532,6 @@ iotivity.OicResourceChangedEvent = OicResourceChangedEvent;
 // if resourceType is specified, a retrieve on /oic/res is made
 // if resourceId is null, and deviceId not, then only resources from that device are returned
 function OicDiscoveryOptions(obj) {
-
   _addConstProperty(this, 'deviceId', obj.deviceId);
   _addConstProperty(this, 'resourceId', obj.resourceId);
   _addConstProperty(this, 'resourceType', obj.resourceType);
@@ -555,15 +540,13 @@ function OicDiscoveryOptions(obj) {
 iotivity.OicDiscoveryOptions = OicDiscoveryOptions;
 
 function OicResourceRepresentation(obj) {
-
-// any non-function properties that are JSON-serializable, e.g. string, number, boolean, URI
+  // any non-function properties that are JSON-serializable, e.g. string, number, boolean, URI
 }
 
 iotivity.OicResourceRepresentation = OicResourceRepresentation;
 
 
 function OicResourceInit(obj) {
-
   DBG('new OicResourceInit: obj=' + JSON.stringify(obj));
 
   _addConstProperty(this, 'url', obj.url);
@@ -609,11 +592,10 @@ function OicResource(obj) {
 iotivity.OicResource = OicResource;
 
 ///////////////////////////////////////////////////////////////////////////////
-// HeaderOption 
+// HeaderOption
 ///////////////////////////////////////////////////////////////////////////////
 // see also https://fetch.spec.whatwg.org/#headers
 function HeaderOption(obj) {
-
   _addConstProperty(this, 'name', obj.name);
   _addConstProperty(this, 'value', obj.value);
 }
@@ -621,10 +603,9 @@ function HeaderOption(obj) {
 iotivity.HeaderOption = HeaderOption;
 
 ///////////////////////////////////////////////////////////////////////////////
-// QueryOption 
+// QueryOption
 ///////////////////////////////////////////////////////////////////////////////
 function QueryOption(obj) {
-
   _addConstProperty(this, 'key', obj.key);
   _addConstProperty(this, 'value', obj.value);
 }
@@ -639,14 +620,12 @@ iotivity.QueryOption = QueryOption;
 
 
 ///////////////////////////////////////////////////////////////////////////////
-// 
+//
 ///////////////////////////////////////////////////////////////////////////////
 extension.setMessageListener(function(json) {
   var msg = JSON.parse(json);
-
   DBG('setMessageListener msg=' + JSON.stringify(msg));
-
-  DBG('msg.cmd='+msg.cmd);
+  DBG('msg.cmd=' + msg.cmd);
 
   switch (msg.cmd) {
     case 'registerResourceCompleted':
@@ -698,33 +677,28 @@ extension.setMessageListener(function(json) {
 });
 
 function handleRegisterResourceCompleted(msg) {
-
-  DBG("handleRegisterResourceCompleted");
-  DBG("msg.OicResourceInit=" + JSON.stringify(msg.OicResourceInit));
+  DBG('handleRegisterResourceCompleted');
+  DBG('msg.OicResourceInit=' + JSON.stringify(msg.OicResourceInit));
   var oicResource = new OicResource(msg.OicResourceInit);
   _addConstProperty(oicResource, 'id', msg.id);
   g_async_calls[msg.asyncCallId].resolve(oicResource);
 }
 
 function handleEntityHandler(msg) {
-  
-  DBG("handleEntityHandler msg=" + JSON.stringify(msg));
- 
-  if (g_iotivity_device 
-   && g_iotivity_device.server 
-   && g_iotivity_device.server.onrequest) {
-     var oicRequestEvent = new OicRequestEvent(msg.OicRequestEvent);
-     DBG("handleEntityHandler oicRequestEvent=" + JSON.stringify(oicRequestEvent));
-     g_iotivity_device.server.onrequest(oicRequestEvent);
+  DBG('handleEntityHandler msg=' + JSON.stringify(msg));
+
+  if (g_iotivity_device && g_iotivity_device.server && g_iotivity_device.server.onrequest) {
+    var oicRequestEvent = new OicRequestEvent(msg.OicRequestEvent);
+    DBG('handleEntityHandler oicRequestEvent=' + JSON.stringify(oicRequestEvent));
+    g_iotivity_device.server.onrequest(oicRequestEvent);
   }
 }
 
 function handleFoundResources(msg) {
-
-  DBG("handleFoundResources msg=" + JSON.stringify(msg));
+  DBG('handleFoundResources msg=' + JSON.stringify(msg));
 
   var oicResourceList = [];
-  for(var i = 0; i < msg.resourcesArray.length; i++) {
+  for (var i = 0; i < msg.resourcesArray.length; i++) {
     var oicResourceObject = msg.resourcesArray[i];
     var oicResource = new OicResource(oicResourceObject.OicResourceInit);
     _addConstProperty(oicResource, 'id', oicResourceObject.id);
@@ -733,7 +707,7 @@ function handleFoundResources(msg) {
 
   if (msg.asyncCallId in g_async_calls) {
     if (oicResourceList.length) {
-      DBG("g_async_calls[].resolve");
+      DBG('g_async_calls[].resolve');
       g_async_calls[msg.asyncCallId].resolve(oicResourceList);
     } else {
       g_async_calls[msg.asyncCallId].reject(Error('Find resources error'));
@@ -742,20 +716,16 @@ function handleFoundResources(msg) {
 }
 
 function handleOnObserve(msg) {
-  
-  DBG("handleOnObserve msg=" + JSON.stringify(msg));
+  DBG('handleOnObserve msg=' + JSON.stringify(msg));
 
-  if (g_iotivity_device 
-   && g_iotivity_device.client 
-   && g_iotivity_device.client.onresourcechange) {
-
+  if (g_iotivity_device && g_iotivity_device.client && g_iotivity_device.client.onresourcechange) {
     var oicResource = new OicResource(msg.OicResourceInit);
     _addConstProperty(oicResource, 'id', msg.id);
 
     var oicResourceChangedEvent = new OicResourceChangedEvent({
-        'type': msg.type,
-        'resource': oicResource,
-        'updatedPropertyNames': msg.updatedPropertyNames,
+      'type': msg.type,
+      'resource': oicResource,
+      'updatedPropertyNames': msg.updatedPropertyNames
     });
 
     g_iotivity_device.client.onresourcechange(oicResourceChangedEvent);
@@ -763,13 +733,12 @@ function handleOnObserve(msg) {
 }
 
 function handleCreateResourceCompleted(msg) {
-  
-  DBG("handleCreateResourceCompleted msg=" + JSON.stringify(msg));
+  DBG('handleCreateResourceCompleted msg=' + JSON.stringify(msg));
 
   if (msg.asyncCallId in g_async_calls) {
 
     if (msg.eCode == 0) {
-      DBG("g_async_calls[].resolve");
+      DBG('g_async_calls[].resolve');
 
       var oicResource = new OicResource(msg.OicResourceInit);
       _addConstProperty(oicResource, 'id', msg.id);
@@ -785,13 +754,11 @@ function handleCreateResourceCompleted(msg) {
 }
 
 function handleRetrieveResourceCompleted(msg) {
-  
-  DBG("handleRetrieveResourceCompleted msg=" + JSON.stringify(msg));
+  DBG('handleRetrieveResourceCompleted msg=' + JSON.stringify(msg));
 
   if (msg.asyncCallId in g_async_calls) {
-
     if (msg.eCode == 0) {
-      DBG("g_async_calls[].resolve");
+      DBG('g_async_calls[].resolve');
       var oicResource = new OicResource(msg.OicResourceInit);
       _addConstProperty(oicResource, 'id', msg.id);
       g_async_calls[msg.asyncCallId].resolve(oicResource);
@@ -805,12 +772,11 @@ function handleRetrieveResourceCompleted(msg) {
 }
 
 function handleUpdateResourceCompleted(msg) {
-  
-  DBG("handleUpdateResourceCompleted msg=" + JSON.stringify(msg));
+  DBG('handleUpdateResourceCompleted msg=' + JSON.stringify(msg));
 
   if (msg.asyncCallId in g_async_calls) {
     if (msg.eCode == 0) {
-      DBG("g_async_calls[].resolve");
+      DBG('g_async_calls[].resolve');
       g_async_calls[msg.asyncCallId].resolve();
     }
     else {
@@ -822,12 +788,11 @@ function handleUpdateResourceCompleted(msg) {
 }
 
 function handleDeleteResourceCompleted(msg) {
-  
-  DBG("handleDeleteResourceCompleted msg=" + JSON.stringify(msg));
+  DBG('handleDeleteResourceCompleted msg=' + JSON.stringify(msg));
 
   if (msg.asyncCallId in g_async_calls) {
     if (msg.eCode == 0) {
-      DBG("g_async_calls[].resolve");
+      DBG('g_async_calls[].resolve');
       g_async_calls[msg.asyncCallIde].resolve();
     }
     else {

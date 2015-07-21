@@ -20,47 +20,36 @@
 ****************************************************************************/
 #include "iotivity/iotivity_device.h"
 #include "common/extension.h"
-
 #include "iotivity/iotivity_server.h"
 #include "iotivity/iotivity_client.h"
 
-
-IotivityDevice::IotivityDevice(common::Instance* instance) : m_instance(instance) {
-
+IotivityDevice::IotivityDevice(common::Instance* instance) :
+  m_instance(instance) {
     m_server = new IotivityServer(this);
     m_client = new IotivityClient(this);
 }
 
 IotivityDevice::~IotivityDevice() {
-
     delete m_server;
     delete m_client;
 }
 
-common::Instance* IotivityDevice::getInstance() {
-
-    return m_instance;
-}
+common::Instance* IotivityDevice::getInstance() {     return m_instance; }
 
 IotivityServer* IotivityDevice::getServer() {
-
     return m_server;
 }
 
 IotivityClient* IotivityDevice::getClient() {
-
     return m_client;
 }
-
-
-
 
 static void DuplicateString(char ** targetString, std::string sourceString) {
     *targetString = new char[sourceString.length() + 1];
     strncpy(*targetString, sourceString.c_str(), (sourceString.length() + 1));
 }
 
- void DeletePlatformInfo(OCPlatformInfo &platformInfo) {
+void DeletePlatformInfo(OCPlatformInfo &platformInfo) {
     delete[] platformInfo.platformID;
     delete[] platformInfo.manufacturerName;
     delete[] platformInfo.manufacturerUrl;
@@ -74,17 +63,24 @@ static void DuplicateString(char ** targetString, std::string sourceString) {
     delete[] platformInfo.systemTime;
 }
 
-static OCStackResult SetPlatformInfo(OCPlatformInfo &platformInfo, std::string platformID, std::string manufacturerName,
-    std::string manufacturerUrl, std::string modelNumber, std::string dateOfManufacture,
-    std::string platformVersion, std::string operatingSystemVersion, std::string hardwareVersion,
-    std::string firmwareVersion, std::string supportUrl, std::string systemTime) {
+static OCStackResult SetPlatformInfo(OCPlatformInfo &platformInfo,
+    std::string platformID, std::string manufacturerName,
+    std::string manufacturerUrl, std::string modelNumber,
+    std::string dateOfManufacture,
+    std::string platformVersion,
+    std::string operatingSystemVersion,
+    std::string hardwareVersion,
+    std::string firmwareVersion,
+    std::string supportUrl,
+    std::string systemTime) {
     DuplicateString(&platformInfo.platformID, platformID);
     DuplicateString(&platformInfo.manufacturerName, manufacturerName);
     DuplicateString(&platformInfo.manufacturerUrl, manufacturerUrl);
     DuplicateString(&platformInfo.modelNumber, modelNumber);
     DuplicateString(&platformInfo.dateOfManufacture, dateOfManufacture);
     DuplicateString(&platformInfo.platformVersion, platformVersion);
-    DuplicateString(&platformInfo.operatingSystemVersion, operatingSystemVersion);
+    DuplicateString(&platformInfo.operatingSystemVersion,
+        operatingSystemVersion);
     DuplicateString(&platformInfo.hardwareVersion, hardwareVersion);
     DuplicateString(&platformInfo.firmwareVersion, firmwareVersion);
     DuplicateString(&platformInfo.supportUrl, supportUrl);
@@ -93,11 +89,11 @@ static OCStackResult SetPlatformInfo(OCPlatformInfo &platformInfo, std::string p
 }
 
 void IotivityDevice::handleConfigure(const picojson::value& value) {
-
-    DEBUG_MSG("handleConfigure: v=%s\n",value.serialize().c_str());
+    DEBUG_MSG("handleConfigure: v=%s\n", value.serialize().c_str());
 
     double async_call_id = value.get("asyncCallId").get<double>();
     std::string deviceRole = value.get("settings").get("role").to_str();
+    // TOD(aphao) check for invalid values
     picojson::value param = value.get("settings").get("info");
 
     std::string platformID = param.get("uuid").to_str();
@@ -113,21 +109,19 @@ void IotivityDevice::handleConfigure(const picojson::value& value) {
     std::string systemTime = param.get("uuid").to_str();
 
     OCPlatformInfo platformInfo = {0};
-
-    OCStackResult result = SetPlatformInfo(platformInfo,                                          
-                                           platformID, 
-                                           manufacturerName, 
+    OCStackResult result = SetPlatformInfo(platformInfo,
+                                           platformID,
+                                           manufacturerName,
                                            manufacturerUrl,
-                                           modelNumber, 
-                                           manufactureDate, 
-                                           platformVersion, 
+                                           modelNumber,
+                                           manufactureDate,
+                                           platformVersion,
                                            operatingSystemVersion,
-                                           hardwareVersion, 
-                                           firmwareVersion, 
-                                           supportUrl, 
+                                           hardwareVersion,
+                                           firmwareVersion,
+                                           supportUrl,
                                            systemTime);
-    if (OC_STACK_OK != result)
-    {
+    if (OC_STACK_OK != result) {
         std::cerr << "Platform Registration was unsuccessful\n";
         postError(async_call_id);
         return;
@@ -135,20 +129,18 @@ void IotivityDevice::handleConfigure(const picojson::value& value) {
 
     result = OCPlatform::registerPlatformInfo(platformInfo);
 
-    if (OC_STACK_OK != result)
-    {
+    if (OC_STACK_OK != result) {
         std::cerr << "OCPlatform::registerPlatformInfo was unsuccessful\n";
         postError(async_call_id);
         return;
     }
 
-    DeletePlatformInfo(platformInfo
-);
+    DeletePlatformInfo(platformInfo);
 
-    if (deviceRole == "client")
-    {
-        PlatformConfig cfg
-        {
+    // By setting to "0.0.0.0", it binds to all available interfaces
+    // Uses randomly available port
+    if (deviceRole == "client") {
+        PlatformConfig cfg {
             ServiceType::InProc,
             ModeType::Client,
             "0.0.0.0",
@@ -157,84 +149,72 @@ void IotivityDevice::handleConfigure(const picojson::value& value) {
         };
 
         OCPlatform::Configure(cfg);
-    }
-    else if (deviceRole == "server")
-    {
-        PlatformConfig cfg
-        {
+    } else if (deviceRole == "server") {
+        PlatformConfig cfg {
             ServiceType::InProc,
             ModeType::Server,
-            "0.0.0.0", // By setting to "0.0.0.0", it binds to all available interfaces
-            0,         // Uses randomly available port
+            "0.0.0.0",
+            0,
             QualityOfService::LowQos
         };
 
         OCPlatform::Configure(cfg);
-    }
-    else if (deviceRole == "intermediate")
-    {
-        PlatformConfig cfg
-        {
+    } else if (deviceRole == "intermediate") {
+        PlatformConfig cfg {
             ServiceType::InProc,
             ModeType::Both,
-            "0.0.0.0", // By setting to "0.0.0.0", it binds to all available interfaces
-            0,         // Uses randomly available port
+            "0.0.0.0",
+            0,
             QualityOfService::LowQos
         };
 
         OCPlatform::Configure(cfg);
     }
+    // TODO(aphao)
 
     postResult("configureCompleted", async_call_id);
 }
 
 void IotivityDevice::handleFactoryReset(const picojson::value& value) {
-
     double async_call_id = value.get("asyncCallId").get<double>();
-
+    // TODO(aphao)
     // Return to factory configuration + reboot
-
-
 }
 
 void IotivityDevice::handleReboot(const picojson::value& value) {
-
     double async_call_id = value.get("asyncCallId").get<double>();
-
+    // TODO(aphao)
     // Keep current configuration + reboot
-
 }
 
 
 void IotivityDevice::PostMessage(const char *msg) {
-
-    DEBUG_MSG("[Native==>JS] PostMessage: v=%s\n",msg);
+    DEBUG_MSG("[Native==>JS] PostMessage: v=%s\n", msg);
     m_instance->PostMessage(msg);
 }
 
 void IotivityDevice::postResult(const char* completed_operation,
-                                  double async_operation_id) {
+                                double async_operation_id) {
+    DEBUG_MSG("postResult: c=%s, id=%f\n",
+              completed_operation, async_operation_id);
 
-  DEBUG_MSG("postResult: c=%s, id=%f\n", completed_operation, async_operation_id);
+    picojson::value::object object;
+    object["cmd"] = picojson::value(completed_operation);
+    object["asyncCallId"] = picojson::value(async_operation_id);
 
-  picojson::value::object object;
-  object["cmd"] = picojson::value(completed_operation);
-  object["asyncCallId"] = picojson::value(async_operation_id);
-
-  picojson::value value(object);
-  PostMessage(value.serialize().c_str());
+    picojson::value value(object);
+    PostMessage(value.serialize().c_str());
 }
 
 void IotivityDevice::postError(double async_operation_id) {
+    DEBUG_MSG("postError: id=%d\n", async_operation_id);
 
-  DEBUG_MSG("postError: id=%d\n",async_operation_id);
+    picojson::value::object object;
+    object["cmd"] = picojson::value("asyncCallError");
+    object["asyncCallId"] = picojson::value(async_operation_id);
 
-  picojson::value::object object;
-  object["cmd"] = picojson::value("asyncCallError");
-  object["asyncCallId"] = picojson::value(async_operation_id);
-
-  picojson::value value(object);
-  PostMessage(value.serialize().c_str());
+    picojson::value value(object);
+    PostMessage(value.serialize().c_str());
 }
 
 

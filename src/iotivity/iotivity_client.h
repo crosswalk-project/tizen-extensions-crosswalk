@@ -18,15 +18,15 @@
 ** $CISCO_END_LICENSE$
 **
 ****************************************************************************/
-#ifndef IOTIVITY_CLIENT_H_
-#define IOTIVITY_CLIENT_H_
+#ifndef IOTIVITY_IOTIVITY_CLIENT_H_
+#define IOTIVITY_IOTIVITY_CLIENT_H_
 
+#include <map>
 #include "iotivity/iotivity_tools.h"
 
 class IotivityDevice;
 
 class IotivityClient {
-
  private:
   IotivityDevice* m_device;
   std::map<int, void *> m_resourcemap;
@@ -34,7 +34,7 @@ class IotivityClient {
   std::mutex m_callbackLock;
 
  public:
-  IotivityClient(IotivityDevice* device);
+  explicit IotivityClient(IotivityDevice* device);
   ~IotivityClient();
 
   double m_asyncCallId_findresources;
@@ -43,24 +43,17 @@ class IotivityClient {
   void *getResourceById(int id);
   void foundResourceCallback(std::shared_ptr<OCResource> resource, int waitsec);
   void handleFindResources(const picojson::value& value);
-
   void findResourceTimerCallback(int waitsec);
   void findPreparedRequest(void);
-
   void foundDeviceCallback(const OCRepresentation& rep);
   void handleFindDevices(const picojson::value& value);
-
-  
   void handleCreateResource(const picojson::value& value);
   void handleRetrieveResource(const picojson::value& value);
   void handleUpdateResource(const picojson::value& value);
   void handleDeleteResource(const picojson::value& value);
   void handleStartObserving(const picojson::value& value);
   void handleCancelObserving(const picojson::value& value);
-
-
-
 };
 
-#endif  // IOTIVITY_CLIENT_H_
+#endif  // IOTIVITY_IOTIVITY_CLIENT_H_
 

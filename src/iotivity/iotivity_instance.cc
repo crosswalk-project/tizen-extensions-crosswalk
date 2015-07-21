@@ -18,40 +18,38 @@
 ** $CISCO_END_LICENSE$
 **
 ****************************************************************************/
+#include <string>
+#include <map>
+
 #include "iotivity/iotivity_instance.h"
 #include "iotivity/iotivity_device.h"
 #include "iotivity/iotivity_server.h"
 #include "iotivity/iotivity_client.h"
-
 #include "iotivity/iotivity_resource.h"
-
 
 std::map<int, OCRepresentation> ResourcesMap;
 
-
-
 IotivityInstance::IotivityInstance() {
-    pDebugEnv = getenv("IOTIVITY_DEBUG");
-    m_device = new IotivityDevice(this);
+  pDebugEnv = getenv("IOTIVITY_DEBUG");
+  m_device = new IotivityDevice(this);
 }
 
 IotivityInstance::~IotivityInstance() {
-
-    delete m_device;
+  delete m_device;
 }
 
 void IotivityInstance::HandleMessage(const char* message) {
   std::string resp = PrepareMessage(message);
-  //PostMessage(resp.c_str());  // to javascript extension.setMessageListener()
+  // PostMessage(resp.c_str());
+  // to javascript extension.setMessageListener()
 }
 
 void IotivityInstance::HandleSyncMessage(const char* message) {
-  //std::string resp = PrepareMessage(message);
-  //SendSyncReply(resp.c_str());
+  // std::string resp = PrepareMessage(message);
+  // SendSyncReply(resp.c_str());
 }
 
 std::string IotivityInstance::PrepareMessage(const std::string & message) {
-
   const char *msg = message.c_str();
   std::string resp = "";
 
@@ -108,7 +106,6 @@ std::string IotivityInstance::PrepareMessage(const std::string & message) {
     handleSendResponse(v);
   else if (cmd == "sendError")
     handleSendError(v);
-
   else
     std::cerr << "Received unknown message: " << cmd << "\n";
 
@@ -117,48 +114,38 @@ std::string IotivityInstance::PrepareMessage(const std::string & message) {
 
 
 void IotivityInstance::handleSendResponse(const picojson::value& value) {
+  DEBUG_MSG("handleSendResponse: v=%s\n", value.serialize().c_str());
 
-    DEBUG_MSG("handleSendResponse: v=%s\n",value.serialize().c_str());
+  double async_call_id = value.get("asyncCallId").get<double>();
 
-    double async_call_id = value.get("asyncCallId").get<double>();  
+  picojson::value resource = value.get("resource");
+  picojson::value OicRequestEvent = value.get("OicRequestEvent");
+  IotivityRequestEvent iotivityRequestEvent;
+  iotivityRequestEvent.deserialize(OicRequestEvent);
+  OCStackResult result = iotivityRequestEvent.sendResponse();
 
-    picojson::value resource = value.get("resource");
+  if (OC_STACK_OK != result) {
+    m_device->postError(async_call_id);
+    return;
+  }
 
-    picojson::value OicRequestEvent = value.get("OicRequestEvent");
-    IotivityRequestEvent iotivityRequestEvent;
-    iotivityRequestEvent.deserialize(OicRequestEvent);
-
-    OCStackResult result = iotivityRequestEvent.sendResponse();
-    if (OC_STACK_OK != result)
-    {
-        m_device->postError(async_call_id);
-        return;
-    }
-
-    m_device->postResult("sendResponseCompleted", async_call_id);
+  m_device->postResult("sendResponseCompleted", async_call_id);
 }
 
 void IotivityInstance::handleSendError(const picojson::value& value) {
+  DEBUG_MSG("handleSendError: v=%s\n", value.serialize().c_str());
 
-    DEBUG_MSG("handleSendError: v=%s\n",value.serialize().c_str());
+  double async_call_id = value.get("asyncCallId").get<double>();
+  std::string errorMsg = value.get("error").to_str();
+  picojson::value OicRequestEvent = value.get("OicRequestEvent");
+  IotivityRequestEvent iotivityRequestEvent;
+  iotivityRequestEvent.deserialize(OicRequestEvent);
+  OCStackResult result = iotivityRequestEvent.sendError();
 
-    double async_call_id = value.get("asyncCallId").get<double>();
-    std::string errorMsg = value.get("error").to_str();
+  if (OC_STACK_OK != result) {
+    m_device->postError(async_call_id);
+    return;
+  }
 
-    picojson::value OicRequestEvent = value.get("OicRequestEvent");
-    IotivityRequestEvent iotivityRequestEvent;
-    iotivityRequestEvent.deserialize(OicRequestEvent);
-
-    OCStackResult result = iotivityRequestEvent.sendError();
-    if (OC_STACK_OK != result)
-    {
-        m_device->postError(async_call_id);
-        return;
-    }
-
-    m_device->postResult("sendResponseCompleted", async_call_id);
+  m_device->postResult("sendResponseCompleted", async_call_id);
 }
-
-
-
-
