@@ -360,7 +360,8 @@ OCStackResult IotivityResourceServer::registerResource() {
 }
 
 int IotivityResourceServer::getResourceHandleToInt() {
-    return ((int)m_resourceHandle); // NOLINT
+    int *p = reinterpret_cast<int *>(m_resourceHandle);
+    return *(p);
 }
 
 IotivityResourceClient::IotivityResourceClient(IotivityDevice *device) :
@@ -384,7 +385,8 @@ IotivityResourceClient::~IotivityResourceClient() {
 void IotivityResourceClient::setSharedPtr(
   std::shared_ptr<OCResource> sharePtr) {
     m_ocResourcePtr = sharePtr;
-    m_id = (int)(sharePtr.get()); // NOLINT
+    int *p = reinterpret_cast<int *>(sharePtr.get());
+    m_id = *(p);
     m_oicResourceInit->m_url = sharePtr->uri();
     m_oicResourceInit->m_deviceId = std::to_string(m_id);
     m_oicResourceInit->m_connectionMode = "default";

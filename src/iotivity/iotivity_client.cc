@@ -100,14 +100,10 @@ void IotivityClient::handleFindResources(const picojson::value& value) {
     }
 
     // TODO(apho) centralize all debug msg
-    char * msg = "handleFindResources: "
-                  "devId = %s, resId = %s,"
-                  " resType = %s, timeout = %ds\n";
-    DEBUG_MSG(msg,
-              deviceId.c_str(),
-              resourceId.c_str(),
-              resourceType.c_str(),
-              waitsec);
+    DEBUG_MSG("handleFindResources: device = %s\n", deviceId.c_str());
+    DEBUG_MSG("\tresource = %s\n", resourceId.c_str());
+    DEBUG_MSG("\tresourceType = %s\n", resourceType.c_str());
+    DEBUG_MSG("\ttimeout = %d\n", waitsec);
 
     m_foundresourcemap.clear();
 
