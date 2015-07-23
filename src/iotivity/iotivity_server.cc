@@ -54,7 +54,7 @@ void IotivityServer::handleRegisterResource(const picojson::value& value) {
         return;
     }
 
-    int index = static_cast<int>(resServer->getResourceHandleToInt());
+    int index = resServer->getResourceHandleToInt();
     m_resourcemap[index] = reinterpret_cast<void *>(resServer);
     picojson::value::object object;
     object["cmd"] = picojson::value("registerResourceCompleted");

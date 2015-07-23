@@ -409,7 +409,7 @@ void IotivityResourceClient::setSharedPtr(
 }
 
 int IotivityResourceClient::getResourceHandleToInt() {
-    return static_cast<int>(m_id);
+    return m_id;
 }
 
 
