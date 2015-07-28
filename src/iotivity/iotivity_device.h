@@ -21,6 +21,7 @@
 #ifndef IOTIVITY_IOTIVITY_DEVICE_H_
 #define IOTIVITY_IOTIVITY_DEVICE_H_
 
+#include <map>
 #include <string>
 #include "iotivity/iotivity_tools.h"
 #include "common/extension.h"
@@ -33,6 +34,33 @@ class Instance;
 class IotivityServer;
 class IotivityClient;
 
+class IotivityDeviceInfo {
+ public:
+    std::map<std::string, std::string> m_deviceinfomap;
+
+ public:
+    IotivityDeviceInfo();
+    ~IotivityDeviceInfo();
+
+    int mapSize();
+    std::string hasMap(std::string key);
+    void deserialize(const picojson::value& value);
+    void serialize(picojson::object& object);
+};
+
+class IotivityDeviceSettings {
+ public:
+    std::string m_url;
+    IotivityDeviceInfo m_deviceInfo;
+    std::string m_role;
+    std::string m_connectionMode;
+
+ public:
+    IotivityDeviceSettings();
+    ~IotivityDeviceSettings();
+
+    void deserialize(const picojson::value& value);
+};
 
 class IotivityDevice {
  private:
@@ -42,11 +70,17 @@ class IotivityDevice {
 
  public:
   explicit IotivityDevice(common::Instance* instance);
+  explicit IotivityDevice(common::Instance* instance,
+                          IotivityDeviceSettings * settings);
   ~IotivityDevice();
 
   common::Instance* getInstance();
   IotivityServer* getServer();
   IotivityClient* getClient();
+
+  void foundPlatformInfoCallback(const OCRepresentation& rep);
+  void configure(IotivityDeviceSettings * settings);
+  OCStackResult configurePlatformInfo(IotivityDeviceInfo & deviceInfo);
 
   void handleConfigure(const picojson::value& value);
   void handleFactoryReset(const picojson::value& value);

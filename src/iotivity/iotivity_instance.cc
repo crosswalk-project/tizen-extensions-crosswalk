@@ -31,7 +31,7 @@ std::map<int, OCRepresentation> ResourcesMap;
 
 IotivityInstance::IotivityInstance() {
   pDebugEnv = getenv("IOTIVITY_DEBUG");
-  m_device = new IotivityDevice(this);
+  m_device = new IotivityDevice(this, NULL);
 }
 
 IotivityInstance::~IotivityInstance() {
@@ -40,6 +40,7 @@ IotivityInstance::~IotivityInstance() {
 
 void IotivityInstance::HandleMessage(const char* message) {
   std::string resp = PrepareMessage(message);
+  (void)resp;  // Warning fix
   // PostMessage(resp.c_str());
   // to javascript extension.setMessageListener()
 }
@@ -107,7 +108,7 @@ std::string IotivityInstance::PrepareMessage(const std::string & message) {
   else if (cmd == "sendError")
     handleSendError(v);
   else
-    std::cerr << "Received unknown message: " << cmd << "\n";
+    ERROR_MSG(std::string("Received unknown message: " + cmd + "\n").c_str());
 
   return resp;
 }

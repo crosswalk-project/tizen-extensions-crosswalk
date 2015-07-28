@@ -210,12 +210,18 @@ function OicDevice(settings) {
 // equivalent to ‘onboard+configure’ in Core spec
 // maps to IoTivity Configure (C++ API), configure (Java API), OCInit (C API)
 OicDevice.prototype.configure = function(settings) {
+  DBG('OicDevice.configure=' + JSON.stringify(settings));
   if (settings)
     _addConstProperty(this, 'settings', new OicDeviceSettings(settings));
 
   var msg = {
     'cmd': 'configure',
-    'settings': this.settings
+    'settings': {
+      'url': this.settings.url,
+      'role': this.settings.role,
+      'connectionMode': this.settings.connectionMode,
+      'info': this.settings.info
+    }
   };
 
   return createPromise(msg);
@@ -245,6 +251,7 @@ iotivity.OicDevice = OicDevice;
 ///////////////////////////////////////////////////////////////////////////////
 
 function OicDeviceSettings(obj) {
+  DBG('new OicDeviceSettings: obj=' + JSON.stringify(obj));
   if (obj) {
     _addConstProperty(this, 'url', obj.url);
     _addConstProperty(this, 'info', new OicDeviceInfo(obj.info));
@@ -252,10 +259,10 @@ function OicDeviceSettings(obj) {
     _addConstProperty(this, 'connectionMode', obj.connectionMode);
   }
   else {
-    _addConstProperty(this, 'url', 'default');
+    _addConstProperty(this, 'url', '0.0.0.0:0');
     _addConstProperty(this, 'info', new OicDeviceInfo(null));
-    _addConstProperty(this, 'role', 'client');
-    _addConstProperty(this, 'connectionMode', 'default');
+    _addConstProperty(this, 'role', 'intermediate');
+    _addConstProperty(this, 'connectionMode', 'acked');
   }
 }
 
@@ -266,6 +273,7 @@ iotivity.OicDeviceSettings = OicDeviceSettings;
 ///////////////////////////////////////////////////////////////////////////////
 
 function OicDeviceInfo(obj) {
+  DBG('new OicDeviceInfo: obj=' + JSON.stringify(obj));
   if (obj) {
     _addConstProperty(this, 'uuid', obj.uuid);
     _addConstProperty(this, 'name', obj.name);
@@ -345,6 +353,7 @@ OicClient.prototype.updateResource = function(resource) {
   var msg = {
     'cmd': 'updateResource',
     'OicResource': {
+      'id': resource.id,
       'url': resource.url,
       'deviceId': resource.deviceId,
       'connectionMode': resource.connectionMode,
@@ -392,9 +401,6 @@ iotivity.OicClient = OicClient;
 ///////////////////////////////////////////////////////////////////////////////
 
 function OicServer(obj) {
-  //events.push('OicServer');
-  //EventTarget.call(this, events);
-
   this.onrequest = null;
 }
 

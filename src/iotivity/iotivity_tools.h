@@ -46,12 +46,16 @@ extern "C" {
 
 #define INFO_MSG(msg, ...) { printf(msg, ##__VA_ARGS__);}
 #define DEBUG_MSG(msg, ...) { if (pDebugEnv) printf(msg, ##__VA_ARGS__);}
+#define ERROR_MSG(msg) { std::cerr << msg << std::endl; }  // TODO(aphao) dlog
 #define SUCCESS_RESPONSE 0
 
 extern char *pDebugEnv;
 
 void PrintfOcResource(const OCResource & oCResource);
 void PrintfOcRepresentation(const OCRepresentation & oCRepresentation);
+void UpdateOcRepresentation(const OCRepresentation & oCReprSource,
+                            OCRepresentation & oCReprDest,
+                            std::vector<std::string> & updatedPropertyNames);
 void TranslateOCRepresentationToPicojson(
     const OCRepresentation & oCRepresentation,
     picojson::object & objectRes);

@@ -22,6 +22,7 @@
 #define IOTIVITY_IOTIVITY_CLIENT_H_
 
 #include <map>
+#include <string>
 #include "iotivity/iotivity_tools.h"
 
 class IotivityDevice;
@@ -33,20 +34,32 @@ class IotivityClient {
   std::map<int, void *> m_foundresourcemap;
   std::mutex m_callbackLock;
 
+  std::map<int, void *> m_devicemap;
+  std::map<int, void *> m_founddevicemap;
+  std::mutex m_callbackLockDevices;
+
+  std::string m_discoveryOptionDeviceId;
+
+
  public:
   explicit IotivityClient(IotivityDevice* device);
   ~IotivityClient();
 
   double m_asyncCallId_findresources;
-  double m_asyncCallId_finddevice;
+  double m_asyncCallId_finddevices;
 
   void *getResourceById(int id);
+
   void foundResourceCallback(std::shared_ptr<OCResource> resource, int waitsec);
   void handleFindResources(const picojson::value& value);
   void findResourceTimerCallback(int waitsec);
   void findPreparedRequest(void);
-  void foundDeviceCallback(const OCRepresentation& rep);
+
+  void foundDeviceCallback(const OCRepresentation& rep, int waitsec);
   void handleFindDevices(const picojson::value& value);
+  void findDeviceTimerCallback(int waitsec);
+  void findDevicePreparedRequest(void);
+
   void handleCreateResource(const picojson::value& value);
   void handleRetrieveResource(const picojson::value& value);
   void handleUpdateResource(const picojson::value& value);

@@ -54,7 +54,7 @@ void IotivityServer::handleRegisterResource(const picojson::value& value) {
         return;
     }
 
-    int index = resServer->getResourceHandleToInt();
+    int index = static_cast<int>(resServer->getResourceHandleToInt());
     m_resourcemap[index] = reinterpret_cast<void *>(resServer);
     picojson::value::object object;
     object["cmd"] = picojson::value("registerResourceCompleted");
@@ -73,7 +73,7 @@ void IotivityServer::handleUnregisterResource(const picojson::value& value) {
     OCStackResult result = OCPlatform::unregisterResource(resHandle);
 
     if (OC_STACK_OK != result) {
-        std::cerr << "OCPlatform::unregisterResource was unsuccessful\n";
+        ERROR_MSG("OCPlatform::unregisterResource was unsuccessful\n");
         m_device->postError(async_call_id);
         return;
     }
@@ -98,7 +98,7 @@ void IotivityServer::handleEnablePresence(const picojson::value& value) {
     OCStackResult result = OCPlatform::startPresence(ttl);
 
     if (OC_STACK_OK != result) {
-        std::cerr << "OCPlatform::startPresence was unsuccessful\n";
+        ERROR_MSG("OCPlatform::startPresence was unsuccessful\n");
         m_device->postError(async_call_id);
         return;
     }
@@ -113,7 +113,7 @@ void IotivityServer::handleDisablePresence(const picojson::value& value) {
     OCStackResult result = OCPlatform::stopPresence();
 
     if (OC_STACK_OK != result) {
-        std::cerr << "OCPlatform::stopPresence was unsuccessful\n";
+        ERROR_MSG("OCPlatform::stopPresence was unsuccessful\n");
         m_device->postError(async_call_id);
         return;
     }
@@ -128,13 +128,34 @@ void IotivityServer::handleNotify(const picojson::value& value) {
     int resourceId = static_cast<int>(value.get("resourceId").get<double>());
     std::string method = value.get("method").to_str();
     picojson::value updatedPropertyNames = value.get("updatedPropertyNames");
-    OCStackResult result = OCPlatform::notifyAllObservers(
-                               (OCResourceHandle)resourceId);
 
-    if (OC_STACK_OK != result) {
-        std::cerr << "OCPlatform::notifyAllObservers was unsuccessful\n";
+
+    IotivityResourceServer *resServer =
+    reinterpret_cast<IotivityResourceServer *>(getResourceById(resourceId));
+
+    if (resServer == NULL) {
+        ERROR_MSG("handleNotify, resource not found was unsuccessful\n");
         m_device->postError(async_call_id);
         return;
+    }
+
+    if (method == "update") {
+        auto pResponse = std::make_shared<OC::OCResourceResponse>();
+        pResponse->setErrorCode(200);
+        pResponse->setResourceRepresentation(
+                      resServer->getRepresentation(),
+                      DEFAULT_INTERFACE);
+
+        ObservationIds& observationIds = resServer->getObserversList();
+        OCStackResult result = OCPlatform::notifyListOfObservers(
+                               (OCResourceHandle)resourceId,
+                               observationIds,
+                               pResponse);
+        if (OC_STACK_OK != result) {
+            ERROR_MSG("OCPlatform::notifyAllObservers was unsuccessful\n");
+            m_device->postError(async_call_id);
+            return;
+        }
     }
 
     m_device->postResult("notifyCompleted", async_call_id);

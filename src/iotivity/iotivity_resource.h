@@ -79,6 +79,8 @@ class IotivityResourceServer {
   OCStackResult registerResource();
 
   int getResourceHandleToInt();
+  OCRepresentation getRepresentation();
+  ObservationIds & getObserversList();
   void serialize(picojson::object& object);
 };
 

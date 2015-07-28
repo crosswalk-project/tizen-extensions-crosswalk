@@ -119,6 +119,10 @@ void IotivityResourceInit::deserialize(const picojson::value& value) {
             DEBUG_MSG("[double] key=%s, value=%f\n", objectKey.c_str(),
               objectValue.get<double>());
             m_resourceRep[objectKey] = objectValue.get<double>();
+        } else if (objectValue.is<int>()) {
+            DEBUG_MSG("[string] key=%s, value=%d\n", objectKey.c_str(),
+              objectValue.get<int>());
+            m_resourceRep[objectKey] = objectValue.get<int>();
         } else if (objectValue.is<string>()) {
             DEBUG_MSG("[string] key=%s, value=%s\n", objectKey.c_str(),
               objectValue.get<string>().c_str());
@@ -164,13 +168,22 @@ IotivityResourceServer::~IotivityResourceServer() {
     delete m_oicResourceInit;
 
     if (m_resourceHandle != 0) {
-    // TODO(aphao) : is it possible?
+        OCPlatform::unregisterResource(m_resourceHandle);
+        m_resourceHandle = 0;
     }
 
     if (m_oicResourceInit) {
         delete m_oicResourceInit;
         m_oicResourceInit = NULL;
     }
+}
+
+OCRepresentation IotivityResourceServer::getRepresentation() {
+    return m_oicResourceInit->m_resourceRep;
+}
+
+ObservationIds & IotivityResourceServer::getObserversList() {
+    return m_interestedObservers;
 }
 
 OCEntityHandlerResult IotivityResourceServer::entityHandlerCallback(
@@ -208,70 +221,12 @@ OCEntityHandlerResult IotivityResourceServer::entityHandlerCallback(
             }
         }
 
+        if (iotivityRequestEvent.m_type == "update") {
+            UpdateOcRepresentation(iotivityRequestEvent.m_resourceRep,
+                    m_oicResourceInit->m_resourceRep,
+                    iotivityRequestEvent.m_updatedPropertyNames);
+        }
 
-        /*TODO for update representation
-               if (iotivityRequestEvent.m_type == "update")
-               {
-                   std::vector<std::string> foundPropertyNames;
-                   for (auto& cur: m_oicResourceInit->m_resourceRep)
-                   {
-                       std::string attrname = cur.attrname();
-
-                       if (std::find(iotivityRequestEvent.m_updatedPropertyNames.begin(), iotivityRequestEvent.m_updatedPropertyNames.end(), attrname) != iotivityRequestEvent.m_updatedPropertyNames.end())
-                       {
-                          foundPropertyNames.push_back(attrname);
-
-
-                          if (AttributeType::String == cur.type())
-                          {
-                              std::string curStr = cur.getValue<string>();
-                              std::string newValue;
-                              iotivityRequestEvent.m_resourceRep.getValue(attrname, newValue);
-                              if (curStr != newValue)
-                              {
-                                  m_oicResourceInit->m_resourceRep.setValue(attrname, newValue);
-                                  DEBUG_MSG("Updated[%s] old=%s, new=%s\n", attrname.c_str(), curStr.c_str(), newValue.c_str());
-                              }
-                          }
-                          else if (AttributeType::Integer == cur.type())
-                          {
-                              int intValue = cur.getValue<int>();
-                              int newValue;
-                              iotivityRequestEvent.m_resourceRep.getValue(attrname, newValue);
-                              if (intValue != newValue)
-                              {
-                                  m_oicResourceInit->m_resourceRep.setValue(attrname, newValue);
-                                  DEBUG_MSG("Updated[%s] old=%d, new=%d\n", attrname.c_str(), intValue, newValue);
-                              }
-                          }
-                          else if (AttributeType::Double == cur.type())
-                          {
-                              double doubleValue = cur.getValue<double>();
-                              double newValue;
-                              iotivityRequestEvent.m_resourceRep.getValue(attrname, newValue);
-                              if (doubleValue != newValue)
-                              {
-                                  m_oicResourceInit->m_resourceRep.setValue(attrname, newValue);
-                                  DEBUG_MSG("Updated[%s] old=%f, new=%f\n", attrname.c_str(), doubleValue, newValue);
-                              }
-                          }
-                          else if (AttributeType::Boolean == cur.type())
-                          {
-                              bool boolValue = cur.getValue<bool>();
-                              bool newValue;
-                              iotivityRequestEvent.m_resourceRep.getValue(attrname, newValue);
-                              if (boolValue != newValue)
-                              {
-                                  m_oicResourceInit->m_resourceRep.setValue(attrname, newValue);
-                                  DEBUG_MSG("Updated[%s] old=%d, new=%d\n", attrname.c_str(), boolValue, newValue);
-                              }
-                          }
-                       }
-                   }
-
-                   iotivityRequestEvent.m_updatedPropertyNames = foundPropertyNames;
-               }
-        */
         object["cmd"] = picojson::value("entityHandler");
         picojson::object OicRequestEvent;
         iotivityRequestEvent.serialize(OicRequestEvent);
@@ -279,8 +234,7 @@ OCEntityHandlerResult IotivityResourceServer::entityHandlerCallback(
         picojson::value value(object);
         m_device->PostMessage(value.serialize().c_str());
     } else {
-        // TODO(aphao) dlog
-        std::cerr << "entityHandlerCallback: Request invalid" << std::endl;
+        ERROR_MSG("entityHandlerCallback: Request invalid");
     }
 
     return ehResult;
@@ -312,7 +266,7 @@ OCStackResult IotivityResourceServer::registerResource() {
         m_oicResourceInit->m_resourceProperty);
 
     if (OC_STACK_OK != result) {
-        std::cerr << "registerResource was unsuccessful\n";
+        ERROR_MSG("registerResource was unsuccessful\n");
         return result;
     }
 
@@ -330,8 +284,8 @@ OCStackResult IotivityResourceServer::registerResource() {
                                                     resourceTypeName);
 
             if (OC_STACK_OK != result) {
-                std::cerr << "bindTypeToResource TypeName " <<
-                  "to Resource unsuccessful\n";
+                ERROR_MSG("bindTypeToResource TypeName "
+                          "to Resource unsuccessful\n");
                 return result;
             }
         }
@@ -350,7 +304,7 @@ OCStackResult IotivityResourceServer::registerResource() {
                                                          resourceInterface);
 
             if (OC_STACK_OK != result) {
-                std::cerr << "Binding InterfaceName to Resource unsuccessful\n";
+                ERROR_MSG("Binding InterfaceName to Resource unsuccessful\n");
                 return result;
             }
         }
@@ -361,7 +315,8 @@ OCStackResult IotivityResourceServer::registerResource() {
 
 int IotivityResourceServer::getResourceHandleToInt() {
     int *p = reinterpret_cast<int *>(m_resourceHandle);
-    return *(p);
+    int pint = reinterpret_cast<int>(p);
+    return pint;
 }
 
 IotivityResourceClient::IotivityResourceClient(IotivityDevice *device) :
@@ -386,9 +341,10 @@ void IotivityResourceClient::setSharedPtr(
   std::shared_ptr<OCResource> sharePtr) {
     m_ocResourcePtr = sharePtr;
     int *p = reinterpret_cast<int *>(sharePtr.get());
-    m_id = *(p);
+    int pint = reinterpret_cast<int>(p);
+    m_id = pint;
     m_oicResourceInit->m_url = sharePtr->uri();
-    m_oicResourceInit->m_deviceId = std::to_string(m_id);
+    m_oicResourceInit->m_deviceId = sharePtr->sid();
     m_oicResourceInit->m_connectionMode = "default";
     // TODO(aphao) : m_discoverable missing info from shared_ptr
     m_oicResourceInit->m_discoverable = sharePtr->isObservable();
@@ -409,7 +365,7 @@ void IotivityResourceClient::setSharedPtr(
 }
 
 int IotivityResourceClient::getResourceHandleToInt() {
-    return m_id;
+    return static_cast<int>(m_id);
 }
 
 
@@ -439,7 +395,7 @@ void IotivityResourceClient::onPut(const HeaderOptions& headerOptions,
         PrintfOcRepresentation(rep);
         serialize(object);
     } else {
-        std::cerr << "onPut was unsuccessful\n";
+        ERROR_MSG("onPut was unsuccessful\n");
     }
 
     picojson::value value(object);
@@ -471,8 +427,7 @@ void IotivityResourceClient::onGet(const HeaderOptions& headerOptions,
         m_oicResourceInit->m_resourceRep = rep;
         serialize(object);
     } else {
-        // TODO(aphao) dlog
-        std::cerr << "onGet was unsuccessful\n";
+        ERROR_MSG("onGet was unsuccessful\n");
     }
 
     picojson::value value(object);
@@ -498,8 +453,7 @@ void IotivityResourceClient::onPost(
         m_oicResourceInit->m_resourceRep = rep;
         serialize(object);
     } else {
-        // TODO(aphao) dlog
-        std::cerr << "onPost was unsuccessful\n";
+        ERROR_MSG("onPost was unsuccessful\n");
     }
 
     picojson::value value(object);
@@ -538,7 +492,7 @@ void IotivityResourceClient::onObserve(
         object["updatedPropertyNames"] =
          picojson::value(updatedPropertyNamesArray);
     } else {
-        // TODO(aphao) log
+        ERROR_MSG("\n\n[Remote Server==>] onObserve: error\n");
     }
 
     picojson::value value(object);
@@ -559,7 +513,7 @@ void IotivityResourceClient::onDelete(
     if (eCode == SUCCESS_RESPONSE) {
       // TODO(aphao) handle success/log etc...
     } else {
-        std::cerr << "onDelete was unsuccessful\n";
+        ERROR_MSG("onDelete was unsuccessful\n");
     }
 
     picojson::value value(object);
@@ -585,7 +539,7 @@ OCStackResult IotivityResourceClient::createResource(
                                    QueryParamsMap(),
                                    attributeHandler);
     if (OC_STACK_OK != result) {
-        std::cerr << "post/create was unsuccessful\n";
+        ERROR_MSG("post/create was unsuccessful\n");
         return result;
     }
 
@@ -608,7 +562,7 @@ OCStackResult IotivityResourceClient::retrieveResource() {
     result = m_ocResourcePtr->get(QueryParamsMap(),
                                   attributeHandler);
     if (OC_STACK_OK != result) {
-        std::cerr << "get was unsuccessful\n";
+        ERROR_MSG("get was unsuccessful\n");
         return result;
     }
 
@@ -635,7 +589,7 @@ OCStackResult IotivityResourceClient::updateResource(
                                   QueryParamsMap(),
                                   attributeHandler);
     if (OC_STACK_OK != result) {
-        std::cerr << "update was unsuccessful\n";
+        ERROR_MSG("update was unsuccessful\n");
         return result;
     }
 
@@ -657,7 +611,7 @@ OCStackResult IotivityResourceClient::deleteResource() {
     result = m_ocResourcePtr->deleteResource(deleteHandler);
 
     if (OC_STACK_OK != result) {
-        std::cerr << "delete was unsuccessful\n";
+        ERROR_MSG("delete was unsuccessful\n");
         return result;
     }
 
@@ -684,7 +638,7 @@ OCStackResult IotivityResourceClient::startObserving() {
                                       QueryParamsMap(),
                                       observeHandler);
     if (OC_STACK_OK != result) {
-        std::cerr << "observe was unsuccessful\n";
+        ERROR_MSG("observe was unsuccessful\n");
         return result;
     }
 
@@ -698,15 +652,9 @@ OCStackResult IotivityResourceClient::cancelObserving() {
     if (m_ocResourcePtr == NULL)
         return result;
 
-    GetCallback attributeHandler = std::bind(&IotivityResourceClient::onGet,
-                                   this,
-                                   std::placeholders::_1,
-                                   std::placeholders::_2,
-                                   std::placeholders::_3);
-    result = m_ocResourcePtr->get(QueryParamsMap(),
-                                  attributeHandler);
+    result = m_ocResourcePtr->cancelObserve();
     if (OC_STACK_OK != result) {
-        std::cerr << "get was unsuccessful\n";
+        ERROR_MSG("cancelObserve was unsuccessful\n");
         return result;
     }
 
@@ -733,9 +681,9 @@ void IotivityRequestEvent::deserialize(
         } else if (requestType == "PUT") {
             m_type = "update";
         } else if (requestType == "POST") {
-            m_type = "create";
+            // m_type = "create";
             // TODO(aphao) : or update
-            // m_type = "update";
+            m_type = "update";
         } else if (requestType == "DELETE") {
             m_type = "delete";
         }
@@ -805,7 +753,12 @@ void IotivityRequestEvent::deserialize(const picojson::value& value) {
               objectKey.c_str(),
               objectValue.get<string>().c_str());
             m_resourceRep[objectKey] = objectValue.get<string>();
-        }
+        } else if (objectValue.is<int>()) {
+            DEBUG_MSG("[string] key=%s, value=%d\n",
+              objectKey.c_str(),
+              objectValue.get<int>());
+            m_resourceRep[objectKey] = objectValue.get<int>();
+       }
     }
 }
 
@@ -908,7 +861,7 @@ OCStackResult IotivityRequestEvent::sendResponse() {
     result = OCPlatform::sendResponse(pResponse);
 
     if (OC_STACK_OK != result) {
-        std::cerr << "OCPlatform::sendResponse was unsuccessful\n";
+        ERROR_MSG("OCPlatform::sendResponse was unsuccessful\n");
     }
 
     return result;
@@ -928,7 +881,7 @@ OCStackResult IotivityRequestEvent::sendError() {
     result = OCPlatform::sendResponse(pResponse);
 
     if (OC_STACK_OK != result) {
-        std::cerr << "OCPlatform::sendError was unsuccessful\n";
+        ERROR_MSG("OCPlatform::sendError was unsuccessful\n");
     }
 
     return result;
