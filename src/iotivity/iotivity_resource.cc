@@ -139,18 +139,12 @@ void IotivityResourceInit::serialize(picojson::object& object) {
     object["observable"] = picojson::value(m_observable);
     picojson::array resourceTypes;
 
-    for (int i = 0; i < m_resourceTypeNameArray.size(); i++) {
-        std::string resourceTypeName = m_resourceTypeNameArray[i];
-        resourceTypes.push_back(picojson::value(resourceTypeName));
-    }
+    CopyInto(m_resourceTypeNameArray, resourceTypes);
 
     object["resourceTypes"] = picojson::value(resourceTypes);
     picojson::array interfaces;
 
-    for (int i = 0; i < m_resourceInterfaceArray.size(); i++) {
-        std::string resourceInterfaceName = m_resourceInterfaceArray[i];
-        interfaces.push_back(picojson::value(resourceInterfaceName));
-    }
+    CopyInto(m_resourceInterfaceArray, interfaces);
 
     object["interfaces"] = picojson::value(interfaces);
     picojson::object properties;
@@ -272,9 +266,9 @@ OCStackResult IotivityResourceServer::registerResource() {
 
     DEBUG_MSG("registerResource handle=%d\n", m_resourceHandle);
 
-    if (m_oicResourceInit->m_resourceTypeNameArray.size() >= 2) {
-        for (int i = 1;
-          i < m_oicResourceInit->m_resourceTypeNameArray.size(); i++) {
+    int tSize = m_oicResourceInit->m_resourceTypeNameArray.size();
+    if (tSize >= 2) {
+        for (int i = 1; i < tSize; i++) {
             std::string resourceTypeName =
               m_oicResourceInit->m_resourceTypeNameArray[i];
 
@@ -291,9 +285,9 @@ OCStackResult IotivityResourceServer::registerResource() {
         }
     }
 
-    if (m_oicResourceInit->m_resourceInterfaceArray.size() >= 2) {
-        for (int i = 1;
-          i < m_oicResourceInit->m_resourceInterfaceArray.size(); i++) {
+    int iSize = m_oicResourceInit->m_resourceInterfaceArray.size();
+    if (iSize >= 2) {
+        for (int i = 1; i < iSize; i++) {
             std::string resourceInterface =
               m_oicResourceInit->m_resourceInterfaceArray[i];
 
@@ -485,10 +479,7 @@ void IotivityResourceClient::onObserve(
         }
 
         picojson::array updatedPropertyNamesArray;
-        for (int i = 0; i < updatedPropertyNames.size(); i++) {
-            std::string propertyName = updatedPropertyNames[i];
-            updatedPropertyNamesArray.push_back(picojson::value(propertyName));
-        }
+        CopyInto(updatedPropertyNames, updatedPropertyNamesArray);
         object["updatedPropertyNames"] =
          picojson::value(updatedPropertyNamesArray);
     } else {
@@ -787,10 +778,7 @@ void IotivityRequestEvent::serialize(picojson::object& object) {
     if (m_type == "update") {
         picojson::array updatedPropertyNamesArray;
 
-        for (int i = 0; i < m_updatedPropertyNames.size(); i++) {
-            std::string propertyName = m_updatedPropertyNames[i];
-            updatedPropertyNamesArray.push_back(picojson::value(propertyName));
-        }
+        CopyInto(m_updatedPropertyNames, updatedPropertyNamesArray);
         object["updatedPropertyNames"] =
           picojson::value(updatedPropertyNamesArray);
     }

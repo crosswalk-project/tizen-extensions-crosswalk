@@ -229,3 +229,11 @@ void TranslateOCRepresentationToPicojson(const OCRepresentation & oCRepr,
         }
     }
 }
+
+void CopyInto(std::vector<std::string> &src, picojson::array &dest) {
+    for (int i = 0; i < src.size(); i++) {
+        std::string str = src[i];
+        dest.push_back(picojson::value(str));
+    }
+}
+
