@@ -28,9 +28,9 @@ IotivityServer::IotivityServer(IotivityDevice* device) : m_device(device) {}
 
 IotivityServer::~IotivityServer() {}
 
-void *IotivityServer::getResourceById(int id) {
+void *IotivityServer::getResourceById(std::string id) {
     if (m_resourcemap.size()) {
-        std::map<int, void *>::const_iterator it;
+        std::map<std::string, void *>::const_iterator it;
         if ((it = m_resourcemap.find(id)) != m_resourcemap.end())
             return reinterpret_cast<void *>((*it).second);
     }
@@ -54,8 +54,8 @@ void IotivityServer::handleRegisterResource(const picojson::value& value) {
         return;
     }
 
-    int index = static_cast<int>(resServer->getResourceHandleToInt());
-    m_resourcemap[index] = reinterpret_cast<void *>(resServer);
+    std::string resourceId = resServer->getResourceId();
+    m_resourcemap[resourceId] = reinterpret_cast<void *>(resServer);
     picojson::value::object object;
     object["cmd"] = picojson::value("registerResourceCompleted");
     object["asyncCallId"] = picojson::value(async_call_id);
@@ -68,8 +68,20 @@ void IotivityServer::handleUnregisterResource(const picojson::value& value) {
     DEBUG_MSG("handleUnregisterResource: v=%s\n", value.serialize().c_str());
 
     double async_call_id = value.get("asyncCallId").get<double>();
-    int resId = static_cast<int>(value.get("resourceId").get<double>());
-    OCResourceHandle resHandle = (OCResourceHandle)(resId);
+    std::string resId = value.get("resourceId").to_str();
+
+    // Find and delete IotivityResourceServer *oicResourceServer
+    IotivityResourceServer *resServer =
+        reinterpret_cast<IotivityResourceServer *>(getResourceById(resId));
+
+    if (resServer == NULL) {
+        ERROR_MSG("handleUnregisterResource, resource not found\n");
+        m_device->postError(async_call_id);
+        return;
+    }
+
+    OCResourceHandle resHandle = reinterpret_cast<OCResourceHandle>
+                                 (resServer->getResourceHandleToInt());
     OCStackResult result = OCPlatform::unregisterResource(resHandle);
 
     if (OC_STACK_OK != result) {
@@ -77,10 +89,6 @@ void IotivityServer::handleUnregisterResource(const picojson::value& value) {
         m_device->postError(async_call_id);
         return;
     }
-
-    // Find and delete IotivityResourceServer *oicResourceServer
-    IotivityResourceServer *resServer =
-        reinterpret_cast<IotivityResourceServer *>(getResourceById(resId));
 
     if (resServer != NULL) {
         m_resourcemap.erase(resId);
@@ -125,13 +133,12 @@ void IotivityServer::handleNotify(const picojson::value& value) {
     DEBUG_MSG("handleNotify: v=%s\n", value.serialize().c_str());
 
     double async_call_id = value.get("asyncCallId").get<double>();
-    int resourceId = static_cast<int>(value.get("resourceId").get<double>());
+    std::string resId = value.get("resourceId").to_str();
     std::string method = value.get("method").to_str();
     picojson::value updatedPropertyNames = value.get("updatedPropertyNames");
 
-
     IotivityResourceServer *resServer =
-    reinterpret_cast<IotivityResourceServer *>(getResourceById(resourceId));
+    reinterpret_cast<IotivityResourceServer *>(getResourceById(resId));
 
     if (resServer == NULL) {
         ERROR_MSG("handleNotify, resource not found was unsuccessful\n");
@@ -146,9 +153,12 @@ void IotivityServer::handleNotify(const picojson::value& value) {
                       resServer->getRepresentation(),
                       DEFAULT_INTERFACE);
 
+        OCResourceHandle resHandle = reinterpret_cast<OCResourceHandle>
+                                     (resServer->getResourceHandleToInt());
+
         ObservationIds& observationIds = resServer->getObserversList();
         OCStackResult result = OCPlatform::notifyListOfObservers(
-                               (OCResourceHandle)resourceId,
+                               resHandle,
                                observationIds,
                                pResponse);
         if (OC_STACK_OK != result) {

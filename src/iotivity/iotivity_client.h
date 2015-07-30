@@ -30,12 +30,14 @@ class IotivityDevice;
 class IotivityClient {
  private:
   IotivityDevice* m_device;
-  std::map<int, void *> m_resourcemap;
-  std::map<int, void *> m_foundresourcemap;
+  // Map resourceId fullpath with pointer
+  std::map<std::string, void *> m_resourcemap;
+  std::map<std::string, void *> m_foundresourcemap;
   std::mutex m_callbackLock;
 
-  std::map<int, void *> m_devicemap;
-  std::map<int, void *> m_founddevicemap;
+  // Map device UUID with pointer
+  std::map<std::string, void *> m_devicemap;
+  std::map<std::string, void *> m_founddevicemap;
   std::mutex m_callbackLockDevices;
 
   std::string m_discoveryOptionDeviceId;
@@ -48,7 +50,7 @@ class IotivityClient {
   double m_asyncCallId_findresources;
   double m_asyncCallId_finddevices;
 
-  void *getResourceById(int id);
+  void *getResourceById(std::string id);
 
   void foundResourceCallback(std::shared_ptr<OCResource> resource, int waitsec);
   void handleFindResources(const picojson::value& value);

@@ -45,6 +45,17 @@ function LogOutput(msg) {
 var lightResource = null;
 var device = new iotivity.OicDevice();
 
+device.configure({
+  url: "0.0.0.0:8453",
+  role: "intermediate",
+  connectionMode: "non-acked"
+  });
+
+var g_intervalId = 0;
+var g_intervalCount = 5;
+var g_observingCount = 5;
+var g_observedResource = null;
+
 
 function startServer() {
   var deviceId = device.settings.info.uuid;
@@ -109,8 +120,9 @@ function requestHandler(request) {
   if (request.type == "observe" && lightResource && request.target == lightResource.id) {
      request.sendResponse(); // sends back OK
 
-     LogOutput("Notify client");
      device.server.notify(lightResource.id, "update", updates); // tell observers
+     // Start timer interval
+     //g_intervalId = setInterval(intervalCallback, 1000);
   }
 
   if (request.type == "delete") {
@@ -122,14 +134,33 @@ function requestHandler(request) {
   // handle the other types of requests as well...
 };
 
+function intervalCallback() {
+    LogOutput("Notify client");
+    lightResource.properties.power = lightResource.properties.power + 10;
+    var updates = [];
+    updates.push("power");
+    // TODO(aphao) propagate changes to natif OCRepresentation
+    device.server.notify(lightResource.id, "update", updates); // tell observers
+}
+
 // e.g. to handle the case when remote resources can influence the states of local resources
 function startClient() {
-  // discover resources
-  device.client.findResources({ 
-     resourceType: "core.light",
-     //resourceType: "", // all
+  // discover devices
+  device.client.findDevices({ 
      waitsec: 3, 
-   }).then(function(list) {      
+   }).then(function(list) {
+
+      }, function(e) {
+       console.log("Error finding devices: " + e.message);
+    });
+
+  // discover resources
+  device.client.findResources({
+     //deviceId: "bfc88c66-2a4d-41e3-83e2-023864c2d9f3",
+     //resourceType: "", // all
+     resourceType: "core.light",
+     waitsec: 3,
+   }).then(function(list) {
         device.client.onresourcechange = eventHandler;
 
         for(var i = 0; i < list.length; i++) {
@@ -141,6 +172,7 @@ function startClient() {
                  device.client.startObserving(retrievedres.id)
                    .then(function(observedres) {
                      LogOutput("Observing " + observedres.url);
+                     g_observedResource = retrievedres;
                      observedres.properties.power = 10;
                      device.client.updateResource(observedres)
                        .then(function() { 
@@ -175,8 +207,12 @@ function eventHandler(event) {
           LogOutput("Cannot retrieve " + res.url); 
       });
     }
+    g_observingCount--;
+    if (g_observingCount == 0) {
+      LogOutput("cancelObserving " + g_observedResource.id); 
+      device.client.cancelObserving(g_observedResource.id);
+    }
   }
-
   if (request.type == "add") {
     LogOutput("Added " + request.res.url);
   }

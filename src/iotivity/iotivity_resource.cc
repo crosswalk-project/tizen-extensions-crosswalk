@@ -235,14 +235,11 @@ OCEntityHandlerResult IotivityResourceServer::entityHandlerCallback(
 }
 
 void IotivityResourceServer::serialize(picojson::object& object) {
-    int resHandle = getResourceHandleToInt();
-    object["id"] = picojson::value(static_cast<double>(resHandle));
+    object["id"] = picojson::value(m_idfull);
     picojson::object properties;
     m_oicResourceInit->serialize(properties);
     object["OicResourceInit"] = picojson::value(properties);
 }
-
-
 
 OCStackResult IotivityResourceServer::registerResource() {
     OCStackResult result = OC_STACK_ERROR;
@@ -266,9 +263,13 @@ OCStackResult IotivityResourceServer::registerResource() {
 
     DEBUG_MSG("registerResource handle=%d\n", m_resourceHandle);
 
-    int tSize = m_oicResourceInit->m_resourceTypeNameArray.size();
-    if (tSize >= 2) {
-        for (int i = 1; i < tSize; i++) {
+    // TODO(aphao) should retrieve host IP + url (cleaner) ??
+    // + m_oicResourceInit->m_url;
+    m_idfull = std::to_string(getResourceHandleToInt());
+
+    if (m_oicResourceInit->m_resourceTypeNameArray.size() >= 2) {
+        for (int i = 1;
+          i < m_oicResourceInit->m_resourceTypeNameArray.size(); i++) {
             std::string resourceTypeName =
               m_oicResourceInit->m_resourceTypeNameArray[i];
 
@@ -313,15 +314,14 @@ int IotivityResourceServer::getResourceHandleToInt() {
     return pint;
 }
 
+std::string IotivityResourceServer::getResourceId() {
+    return m_idfull;
+}
+
 IotivityResourceClient::IotivityResourceClient(IotivityDevice *device) :
   m_device(device) {
     m_ocResourcePtr = NULL;
     m_oicResourceInit = new IotivityResourceInit();
-    m_asyncCallId_create = 0;
-    m_asyncCallId_retrieve = 0;
-    m_asyncCallId_update = 0;
-    m_asyncCallId_delete = 0;
-    m_asyncCallId_observe = 0;
 }
 
 IotivityResourceClient::~IotivityResourceClient() {
@@ -346,6 +346,7 @@ void IotivityResourceClient::setSharedPtr(
     m_oicResourceInit->m_isSecure = false;
     m_sid =  sharePtr->sid();
     m_host =  sharePtr->host();
+    m_idfull = m_host + sharePtr->uri();
 
     for (auto &resourceTypes : sharePtr->getResourceTypes()) {
         m_oicResourceInit->m_resourceTypeNameArray.push_back(
@@ -362,10 +363,13 @@ int IotivityResourceClient::getResourceHandleToInt() {
     return static_cast<int>(m_id);
 }
 
+std::string IotivityResourceClient::getResourceId() {
+    return m_idfull;
+}
+
 
 void IotivityResourceClient::serialize(picojson::object& object) {
-    object["id"] = picojson::value(
-      static_cast<double>(getResourceHandleToInt()));
+    object["id"] = picojson::value(getResourceId());
 
     picojson::object properties;
     m_oicResourceInit->serialize(properties);
@@ -374,19 +378,20 @@ void IotivityResourceClient::serialize(picojson::object& object) {
 
 void IotivityResourceClient::onPut(const HeaderOptions& headerOptions,
   const OCRepresentation& rep,
-  const int eCode) {
-    DEBUG_MSG("onPut: eCode=%d\n", eCode);
+  const int eCode,
+  double asyncCallId) {
+    DEBUG_MSG("onPut: eCode=%d, asyncCallId=%f\n", eCode, asyncCallId);
 
     picojson::value::object object;
     object["cmd"] = picojson::value("updateResourceCompleted");
     object["eCode"] = picojson::value(
       static_cast<double>(eCode));
     object["asyncCallId"] = picojson::value(
-      static_cast<double>(m_asyncCallId_update));
-    m_asyncCallId_update = 0;
+      static_cast<double>(asyncCallId));
 
     if (eCode == SUCCESS_RESPONSE) {
         PrintfOcRepresentation(rep);
+        m_oicResourceInit->m_resourceRep = rep;
         serialize(object);
     } else {
         ERROR_MSG("onPut was unsuccessful\n");
@@ -398,23 +403,16 @@ void IotivityResourceClient::onPut(const HeaderOptions& headerOptions,
 
 void IotivityResourceClient::onGet(const HeaderOptions& headerOptions,
   const OCRepresentation& rep,
-  const int eCode) {
-    DEBUG_MSG("onGet: eCode=%d\n", eCode);
+  const int eCode, double asyncCallId) {
+    DEBUG_MSG("onGet: eCode=%d, %f\n", eCode, asyncCallId);
 
     picojson::value::object object;
     object["cmd"] = picojson::value("retrieveResourceCompleted");
     object["eCode"] = picojson::value(
       static_cast<double>(eCode));
 
-    if (m_asyncCallId_observe) {
-        object["asyncCallId"] = picojson::value(
-          static_cast<double>(m_asyncCallId_observe));
-        m_asyncCallId_observe = 0;
-    } else {
-        object["asyncCallId"] = picojson::value(
-          static_cast<double>(m_asyncCallId_retrieve));
-        m_asyncCallId_retrieve = 0;
-    }
+    object["asyncCallId"] = picojson::value(
+      static_cast<double>(asyncCallId));
 
     if (eCode == SUCCESS_RESPONSE) {
         PrintfOcRepresentation(rep);
@@ -431,16 +429,15 @@ void IotivityResourceClient::onGet(const HeaderOptions& headerOptions,
 void IotivityResourceClient::onPost(
   const HeaderOptions& headerOptions,
   const OCRepresentation& rep,
-  const int eCode) {
-    DEBUG_MSG("onPost: eCode=%d\n", eCode);
+  const int eCode, double asyncCallId) {
+    DEBUG_MSG("onPost: eCode=%d, %f\n", eCode, asyncCallId);
 
     picojson::value::object object;
     object["cmd"] = picojson::value("createResourceCompleted");
     object["eCode"] = picojson::value(
       static_cast<double>(eCode));
     object["asyncCallId"] = picojson::value(
-      static_cast<double>(m_asyncCallId_create));
-    m_asyncCallId_create = 0;
+      static_cast<double>(asyncCallId));
 
     if (eCode == SUCCESS_RESPONSE) {
         PrintfOcRepresentation(rep);
@@ -458,9 +455,11 @@ void IotivityResourceClient::onObserve(
   const HeaderOptions headerOptions,
   const OCRepresentation& rep,
   const int& eCode,
-  const int& sequenceNumber) {
-    DEBUG_MSG("\n\n[Remote Server==>] onObserve: sequenceNumber=%d, eCode=%d\n",
-      sequenceNumber, eCode);
+  const int& sequenceNumber,
+  double asyncCallId) {
+    DEBUG_MSG("\n\n[Remote Server==>] "
+              "onObserve: sequenceNumber=%d, eCode=%d, %f\n",
+      sequenceNumber, eCode, asyncCallId);
     picojson::value::object object;
     object["cmd"] = picojson::value("onObserve");
     object["eCode"] = picojson::value(static_cast<double>(eCode));
@@ -491,15 +490,15 @@ void IotivityResourceClient::onObserve(
 }
 
 void IotivityResourceClient::onDelete(
-  const HeaderOptions& headerOptions, const int eCode) {
-    DEBUG_MSG("onDelete: eCode=%d\n", eCode);
+  const HeaderOptions& headerOptions, const int eCode,
+  double asyncCallId) {
+    DEBUG_MSG("onDelete: eCode=%d, %f\n", eCode, asyncCallId);
 
     picojson::value::object object;
     object["cmd"] = picojson::value("deleteResourceCompleted");
     object["eCode"] = picojson::value(static_cast<double>(eCode));
     object["asyncCallId"] = picojson::value(
-      static_cast<double>(m_asyncCallId_delete));
-    m_asyncCallId_delete = 0;
+      static_cast<double>(asyncCallId));
 
     if (eCode == SUCCESS_RESPONSE) {
       // TODO(aphao) handle success/log etc...
@@ -512,8 +511,8 @@ void IotivityResourceClient::onDelete(
 }
 
 OCStackResult IotivityResourceClient::createResource(
-  IotivityResourceInit & oicResourceInit) {
-    DEBUG_MSG("createResource\n");
+  IotivityResourceInit & oicResourceInit, double asyncCallId) {
+    DEBUG_MSG("createResource %f\n", asyncCallId);
 
     OCStackResult result = OC_STACK_ERROR;
 
@@ -525,7 +524,8 @@ OCStackResult IotivityResourceClient::createResource(
                                     this,
                                     std::placeholders::_1,
                                     std::placeholders::_2,
-                                    std::placeholders::_3);
+                                    std::placeholders::_3,
+                                    asyncCallId);
     result = m_ocResourcePtr->post(oicResourceInit.m_resourceRep,
                                    QueryParamsMap(),
                                    attributeHandler);
@@ -537,8 +537,8 @@ OCStackResult IotivityResourceClient::createResource(
     return result;
 }
 
-OCStackResult IotivityResourceClient::retrieveResource() {
-    DEBUG_MSG("retrieveResource\n");
+OCStackResult IotivityResourceClient::retrieveResource(double asyncCallId) {
+    DEBUG_MSG("retrieveResource %f\n", asyncCallId);
 
     OCStackResult result = OC_STACK_ERROR;
 
@@ -549,7 +549,8 @@ OCStackResult IotivityResourceClient::retrieveResource() {
                                    this,
                                    std::placeholders::_1,
                                    std::placeholders::_2,
-                                   std::placeholders::_3);
+                                   std::placeholders::_3,
+                                   asyncCallId);
     result = m_ocResourcePtr->get(QueryParamsMap(),
                                   attributeHandler);
     if (OC_STACK_OK != result) {
@@ -561,8 +562,8 @@ OCStackResult IotivityResourceClient::retrieveResource() {
 }
 
 OCStackResult IotivityResourceClient::updateResource(
-  OCRepresentation & representation) {
-    DEBUG_MSG("updateResource\n");
+  OCRepresentation & representation, double asyncCallId) {
+    DEBUG_MSG("updateResource %f\n", asyncCallId);
 
     OCStackResult result = OC_STACK_ERROR;
 
@@ -574,8 +575,8 @@ OCStackResult IotivityResourceClient::updateResource(
                                    this,
                                    std::placeholders::_1,
                                    std::placeholders::_2,
-                                   std::placeholders::_3);
-
+                                   std::placeholders::_3,
+                                   asyncCallId);
     result = m_ocResourcePtr->put(representation,
                                   QueryParamsMap(),
                                   attributeHandler);
@@ -587,8 +588,8 @@ OCStackResult IotivityResourceClient::updateResource(
     return result;
 }
 
-OCStackResult IotivityResourceClient::deleteResource() {
-    DEBUG_MSG("deleteResource\n");
+OCStackResult IotivityResourceClient::deleteResource(double asyncCallId) {
+    DEBUG_MSG("deleteResource %f\n", asyncCallId);
 
     OCStackResult result = OC_STACK_ERROR;
 
@@ -598,7 +599,8 @@ OCStackResult IotivityResourceClient::deleteResource() {
     DeleteCallback deleteHandler = std::bind(&IotivityResourceClient::onDelete,
                                    this,
                                    std::placeholders::_1,
-                                   std::placeholders::_2);
+                                   std::placeholders::_2,
+                                   asyncCallId);
     result = m_ocResourcePtr->deleteResource(deleteHandler);
 
     if (OC_STACK_OK != result) {
@@ -609,8 +611,8 @@ OCStackResult IotivityResourceClient::deleteResource() {
     return result;
 }
 
-OCStackResult IotivityResourceClient::startObserving() {
-    DEBUG_MSG("startObserving\n");
+OCStackResult IotivityResourceClient::startObserving(double asyncCallId) {
+    DEBUG_MSG("startObserving %f\n", asyncCallId);
 
     OCStackResult result = OC_STACK_ERROR;
 
@@ -623,7 +625,8 @@ OCStackResult IotivityResourceClient::startObserving() {
                   std::placeholders::_1,
                   std::placeholders::_2,
                   std::placeholders::_3,
-                  std::placeholders::_4);
+                  std::placeholders::_4,
+                  asyncCallId);
 
     result = m_ocResourcePtr->observe(ObserveType::ObserveAll,
                                       QueryParamsMap(),
@@ -636,8 +639,8 @@ OCStackResult IotivityResourceClient::startObserving() {
     return result;
 }
 
-OCStackResult IotivityResourceClient::cancelObserving() {
-    DEBUG_MSG("cancelObserving\n");
+OCStackResult IotivityResourceClient::cancelObserving(double asyncCallId) {
+    DEBUG_MSG("cancelObserving %f\n", asyncCallId);
     OCStackResult result = OC_STACK_ERROR;
 
     if (m_ocResourcePtr == NULL)

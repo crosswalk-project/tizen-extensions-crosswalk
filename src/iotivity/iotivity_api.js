@@ -334,8 +334,10 @@ OicClient.prototype.findDevices = function(options) {
 
 // client API: CRUDN
 OicClient.prototype.createResource = function(resourceinit) {
+  var resourceId = 0; // todo(aphao) Missing id from spec ??
   var msg = {
     'cmd': 'createResource',
+    'id': resourceId,
     'OicResourceInit': resource
   };
   return createPromise(msg);
@@ -344,7 +346,7 @@ OicClient.prototype.createResource = function(resourceinit) {
 OicClient.prototype.retrieveResource = function(resourceId) {
   var msg = {
     'cmd': 'retrieveResource',
-    'resourceId': resourceId
+    'id': resourceId
   };
   return createPromise(msg);
 };
@@ -372,7 +374,7 @@ OicClient.prototype.updateResource = function(resource) {
 OicClient.prototype.deleteResource = function(resourceId) {
   var msg = {
     'cmd': 'deleteResource',
-    'resourceId': resourceId
+    'id': resourceId
   };
   return createPromise(msg);
 };
@@ -380,7 +382,7 @@ OicClient.prototype.deleteResource = function(resourceId) {
 OicClient.prototype.startObserving = function(resourceId) {
   var msg = {
     'cmd': 'startObserving',
-    'resourceId': resourceId
+    'id': resourceId
   };
 
   return createPromise(msg);
@@ -389,7 +391,7 @@ OicClient.prototype.startObserving = function(resourceId) {
 OicClient.prototype.cancelObserving = function(resourceId) {
   var msg = {
     'cmd': 'cancelObserving',
-    'resourceId': resourceId
+    'id': resourceId
   };
   return createPromise(msg);
 };

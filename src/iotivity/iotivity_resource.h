@@ -68,7 +68,7 @@ class IotivityResourceServer {
   IotivityResourceInit *m_oicResourceInit;
   OCResourceHandle m_resourceHandle;
   ObservationIds m_interestedObservers;
-
+  std::string m_idfull;
  public:
   IotivityResourceServer(IotivityDevice *device,
                          IotivityResourceInit *oicResource);
@@ -79,6 +79,7 @@ class IotivityResourceServer {
   OCStackResult registerResource();
 
   int getResourceHandleToInt();
+  std::string getResourceId();
   OCRepresentation getRepresentation();
   ObservationIds & getObserversList();
   void serialize(picojson::object& object);
@@ -93,6 +94,7 @@ class IotivityResourceClient {
   IotivityResourceInit *m_oicResourceInit;
 
   int m_id;
+  std::string m_idfull;
   std::string m_sid;
   std::string m_host;
 
@@ -100,34 +102,36 @@ class IotivityResourceClient {
   explicit IotivityResourceClient(IotivityDevice *device);
   ~IotivityResourceClient();
 
-  double m_asyncCallId_create;
-  double m_asyncCallId_retrieve;
-  double m_asyncCallId_update;
-  double m_asyncCallId_delete;
-  double m_asyncCallId_observe;
-
-
   void setSharedPtr(std::shared_ptr<OCResource> sharePtr);
   int getResourceHandleToInt();
+  std::string getResourceId();
   void serialize(picojson::object& object);
 
 
   void onPut(const HeaderOptions& headerOptions,
-             const OCRepresentation& rep, const int eCode);
+             const OCRepresentation& rep, const int eCode,
+             double asyncCallId);
   void onGet(const HeaderOptions& headerOptions,
-             const OCRepresentation& rep, const int eCode);
+             const OCRepresentation& rep, const int eCode,
+             double asyncCallId);
   void onPost(const HeaderOptions& headerOptions,
-              const OCRepresentation& rep, const int eCode);
+              const OCRepresentation& rep, const int eCode,
+              double asyncCallId);
   void onObserve(const HeaderOptions headerOptions, const OCRepresentation& rep,
-                 const int& eCode, const int& sequenceNumber);
-  void onDelete(const HeaderOptions& headerOptions, const int eCode);
+                 const int& eCode, const int& sequenceNumber,
+                 double asyncCallId);
+  void onDelete(const HeaderOptions& headerOptions,
+                const int eCode,
+                double asyncCallId);
 
-  OCStackResult createResource(IotivityResourceInit & oicResourceInit);
-  OCStackResult retrieveResource();
-  OCStackResult updateResource(OCRepresentation & representation);
-  OCStackResult deleteResource();
-  OCStackResult startObserving();
-  OCStackResult cancelObserving();
+  OCStackResult createResource(IotivityResourceInit & oicResourceInit,
+                               double asyncCallId);
+  OCStackResult retrieveResource(double asyncCallId);
+  OCStackResult updateResource(OCRepresentation & representation,
+                               double asyncCallId);
+  OCStackResult deleteResource(double asyncCallId);
+  OCStackResult startObserving(double asyncCallId);
+  OCStackResult cancelObserving(double asyncCallId);
 };
 
 
