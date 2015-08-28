@@ -33,6 +33,7 @@
 #include <map>
 #include <string>
 #include "iotivity/iotivity_tools.h"
+#include "iotivity/iotivity_resource.h"
 
 class IotivityDevice;
 
@@ -40,8 +41,8 @@ class IotivityClient {
  private:
   IotivityDevice* m_device;
   // Map resourceId fullpath with pointer
-  std::map<std::string, void *> m_resourcemap;
-  std::map<std::string, void *> m_foundresourcemap;
+  std::map<std::string, IotivityResourceClient *> m_resourcemap;
+  std::map<std::string, IotivityResourceClient *> m_foundresourcemap;
   std::mutex m_callbackLock;
 
   // Map device UUID with pointer
@@ -59,7 +60,7 @@ class IotivityClient {
   double m_asyncCallId_findresources;
   double m_asyncCallId_finddevices;
 
-  void *getResourceById(std::string id);
+  IotivityResourceClient *getResourceById(std::string id);
 
   void foundResourceCallback(std::shared_ptr<OCResource> resource, int waitsec);
   void handleFindResources(const picojson::value& value);

@@ -42,17 +42,12 @@ class IotivityInstance : public common::Instance {
   IotivityInstance();
   ~IotivityInstance();
 
-  /* common::Instance implementation */
-  void HandleMessage(const char* message);
-  /* js::extension.postMessage(msg) */
-  void HandleSyncMessage(const char* message);
-  /* js::extension.internal.sendSyncMessage(msg); */
+  void HandleMessage(const char* msg);
   void handleSendResponse(const picojson::value& value);
   void handleSendError(const picojson::value& value);
 
  private:
   IotivityDevice *m_device;
-  std::string PrepareMessage(const std::string & message);
 };
 
 

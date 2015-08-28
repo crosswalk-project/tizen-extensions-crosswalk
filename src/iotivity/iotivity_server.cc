@@ -1,3 +1,32 @@
+/*
+ * Copyright (c) 2015 Cisco and/or its affiliates. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *
+ *     * Redistributions of source code must retain the above copyright
+ * notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above
+ * copyright notice, this list of conditions and the following disclaimer
+ * in the documentation and/or other materials provided with the
+ * distribution.
+ *     * Neither the name of Cisco nor the names of its
+ * contributors may be used to endorse or promote products derived from
+ * this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 #include <string>
 #include <map>
 #include "iotivity/iotivity_server.h"
@@ -8,16 +37,15 @@ IotivityServer::IotivityServer(IotivityDevice* device) : m_device(device) {}
 
 IotivityServer::~IotivityServer() {}
 
-void *IotivityServer::getResourceById(std::string id) {
+IotivityResourceServer *IotivityServer::getResourceById(std::string id) {
     if (m_resourcemap.size()) {
-        std::map<std::string, void *>::const_iterator it;
+        std::map<std::string, IotivityResourceServer *>::const_iterator it;
         if ((it = m_resourcemap.find(id)) != m_resourcemap.end())
-            return reinterpret_cast<void *>((*it).second);
+            return (*it).second;
     }
 
     return NULL;
 }
-
 
 void IotivityServer::handleRegisterResource(const picojson::value& value) {
     DEBUG_MSG("handleRegisterResource: v=%s\n", value.serialize().c_str());
@@ -35,7 +63,7 @@ void IotivityServer::handleRegisterResource(const picojson::value& value) {
     }
 
     std::string resourceId = resServer->getResourceId();
-    m_resourcemap[resourceId] = reinterpret_cast<void *>(resServer);
+    m_resourcemap[resourceId] = resServer;
     picojson::value::object object;
     object["cmd"] = picojson::value("registerResourceCompleted");
     object["asyncCallId"] = picojson::value(async_call_id);
@@ -51,8 +79,7 @@ void IotivityServer::handleUnregisterResource(const picojson::value& value) {
     std::string resId = value.get("resourceId").to_str();
 
     // Find and delete IotivityResourceServer *oicResourceServer
-    IotivityResourceServer *resServer =
-        reinterpret_cast<IotivityResourceServer *>(getResourceById(resId));
+    IotivityResourceServer *resServer = getResourceById(resId);
 
     if (resServer == NULL) {
         ERROR_MSG("handleUnregisterResource, resource not found\n");
@@ -70,10 +97,8 @@ void IotivityServer::handleUnregisterResource(const picojson::value& value) {
         return;
     }
 
-    if (resServer != NULL) {
-        m_resourcemap.erase(resId);
-        delete resServer;
-    }
+    m_resourcemap.erase(resId);
+    delete resServer;
 
     m_device->postResult("unregisterResourceCompleted", async_call_id);
 }
@@ -117,8 +142,7 @@ void IotivityServer::handleNotify(const picojson::value& value) {
     std::string method = value.get("method").to_str();
     picojson::value updatedPropertyNames = value.get("updatedPropertyNames");
 
-    IotivityResourceServer *resServer =
-    reinterpret_cast<IotivityResourceServer *>(getResourceById(resId));
+    IotivityResourceServer *resServer = getResourceById(resId);
 
     if (resServer == NULL) {
         ERROR_MSG("handleNotify, resource not found was unsuccessful\n");

@@ -33,19 +33,20 @@
 #include <map>
 #include <string>
 #include "iotivity/iotivity_tools.h"
+#include "iotivity/iotivity_resource.h"
 
 class IotivityDevice;
 
 class IotivityServer {
  private:
   IotivityDevice* m_device;
-  std::map<std::string, void *> m_resourcemap;
+  std::map<std::string, IotivityResourceServer *> m_resourcemap;
 
  public:
   explicit IotivityServer(IotivityDevice* device);
   ~IotivityServer();
 
-  void *getResourceById(std::string id);
+  IotivityResourceServer *getResourceById(std::string id);
   void handleRegisterResource(const picojson::value& value);
   void handleUnregisterResource(const picojson::value& value);
   void handleEnablePresence(const picojson::value& value);

@@ -15,6 +15,7 @@ body {
     <div class="buttons-group" id="buttons-group">
     <button class="SimpleServer" onclick="onclickbutton(id)" id="SimpleServer">SimpleServer</button>
     <button class="SimpleClient" onclick="onclickbutton(id)" id="SimpleClient">SimpleClient</button>
+    <button class="Reboot" onclick="onclickbutton(id)" id="Reboot">Reboot</button>
     </div>
     <textarea cols=80 rows=25 id="output">i</textarea>
 
@@ -61,26 +62,16 @@ function startServer() {
   var deviceId = device.settings.info.uuid;
   var connMode = device.settings.connectionMode;
 
-  var oicResourceInit = new iotivity.OicResourceInit({
-    url: "/a/light",
-    deviceId: deviceId,
-    connectionMode: connMode,
-    resourceTypes: [ "core.light", "core.brightlight" ],
-    interfaces: [ "oic.if.baseline", "oic.if.ll"],
-    discoverable: true,
-    observable: true,
-    properties: { name:"OIC Xwalk", power: 5, state: true }
-  });
   // register all resources handled by this device
   device.server.registerResource({
-      url: oicResourceInit.url,
-      deviceId: oicResourceInit.deviceId,
-      connectionMode: oicResourceInit.connectionMode,
-      resourceTypes: oicResourceInit.resourceTypes,
-      interfaces: oicResourceInit.interfaces,
-      discoverable: oicResourceInit.discoverable,
-      observable: oicResourceInit.observable,
-      properties: oicResourceInit.properties
+      url: "/a/light",
+      deviceId: deviceId,
+      connectionMode: connMode,
+      resourceTypes: [ "core.light", "core.brightlight" ],
+      interfaces: [ "oic.if.baseline", "oic.if.ll"],
+      discoverable: true,
+      observable: true,
+      properties: { name:"OIC Xwalk", power: 5, state: true }
     }).then(function(res) {
     LogOutput("Resource " + res.id + " " + res.url + " has been created.");
     lightResource = res;
@@ -240,6 +231,9 @@ function onclickbutton(id) {
     }
     else if (id == "SimpleClient") {
       startClient();
+    }
+    else if (id == "Reboot") {
+      device.reboot();
     }
 }
 

@@ -1,3 +1,32 @@
+/*
+ * Copyright (c) 2015 Cisco and/or its affiliates. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *
+ *     * Redistributions of source code must retain the above copyright
+ * notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above
+ * copyright notice, this list of conditions and the following disclaimer
+ * in the documentation and/or other materials provided with the
+ * distribution.
+ *     * Neither the name of Cisco nor the names of its
+ * contributors may be used to endorse or promote products derived from
+ * this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 #include <string>
 #include <map>
 
@@ -14,19 +43,18 @@ IotivityClient::IotivityClient(IotivityDevice* device) : m_device(device) {
 
 IotivityClient::~IotivityClient() {
     for (auto const &entity : m_resourcemap) {
-        IotivityResourceClient *resClient =
-            reinterpret_cast<IotivityResourceClient *>(entity.second);
+        IotivityResourceClient *resClient = entity.second;
         delete resClient;
     }
     m_resourcemap.clear();
     m_foundresourcemap.clear();
 }
 
-void *IotivityClient::getResourceById(std::string id) {
+IotivityResourceClient *IotivityClient::getResourceById(std::string id) {
     if (m_resourcemap.size()) {
-        std::map<std::string, void *>::const_iterator it;
+        std::map<std::string, IotivityResourceClient *>::const_iterator it;
         if ((it = m_resourcemap.find(id)) != m_resourcemap.end())
-            return reinterpret_cast<void *>((*it).second);
+            return (*it).second;
     }
 
     return NULL;
@@ -48,8 +76,7 @@ void IotivityClient::foundResourceCallback(std::shared_ptr<OCResource> resource,
     }
 
     if (mapFoundResource) {
-    m_foundresourcemap[resClient->getResourceId()] =
-        reinterpret_cast<void *>(resClient);
+        m_foundresourcemap[resClient->getResourceId()] = resClient;
     }
 
     if (waitsec == -1) {
@@ -112,16 +139,14 @@ void IotivityClient::handleFindResources(const picojson::value& value) {
 
         if (resourceId != "") {
             void * rId = getResourceById(resourceId);
-            IotivityResourceClient *resClient =
-                reinterpret_cast<IotivityResourceClient *>(rId);
+            IotivityResourceClient *resClient = getResourceById(resourceId);
             if (resClient == NULL) {
                 ERROR_MSG(
                 "OCPlatform::findResource by resourceId was unsuccessful\n");
                 m_device->postError(async_call_id);
                 return;
             } else {
-                m_foundresourcemap[resourceId] =
-                reinterpret_cast<void *>(resClient);
+                m_foundresourcemap[resourceId] = resClient;
                 findPreparedRequest();
                 return;
             }
@@ -180,8 +205,7 @@ void IotivityClient::findPreparedRequest() {
     picojson::array resourcesArray;
 
     for (auto const &entity : m_foundresourcemap) {
-        IotivityResourceClient *resClient =
-            reinterpret_cast<IotivityResourceClient *>(entity.second);
+        IotivityResourceClient *resClient = entity.second;
         picojson::object resourceobj;
         resClient->serialize(resourceobj);
         resourcesArray.push_back(picojson::value(resourceobj));
@@ -298,14 +322,14 @@ void IotivityClient::findDevicePreparedRequest() {
     m_asyncCallId_finddevices = 0;
     picojson::array devicesArray;
 
+    /* TODO(aphao) incomplete device discovery
     for (auto const &entity : m_founddevicemap) {
-        IotivityResourceClient *resClient =
-            reinterpret_cast<IotivityResourceClient *>(entity.second);
+        IotivityResourceClient *resClient = entity.second;
         picojson::object deviceobj;
         resClient->serialize(deviceobj);
         devicesArray.push_back(picojson::value(deviceobj));
         m_devicemap[entity.first] = entity.second;
-    }
+    }*/
 
     object["devicesArray"] = picojson::value(devicesArray);
     picojson::value value(object);
@@ -319,8 +343,7 @@ void IotivityClient::handleCreateResource(const picojson::value& value) {
     double async_call_id = value.get("asyncCallId").get<double>();
     IotivityResourceInit oicResourceInit(value.get("OicResourceInit"));
     std::string resId = value.get("id").to_str();
-    IotivityResourceClient *resClient =
-        reinterpret_cast<IotivityResourceClient *>(getResourceById(resId));
+    IotivityResourceClient *resClient = getResourceById(resId);
 
     if (resClient != NULL) {
         OCStackResult result = resClient->createResource(oicResourceInit,
@@ -339,8 +362,7 @@ void IotivityClient::handleRetrieveResource(const picojson::value& value) {
 
     double async_call_id = value.get("asyncCallId").get<double>();
     std::string resId = value.get("id").to_str();
-    IotivityResourceClient *resClient =
-        reinterpret_cast<IotivityResourceClient *>(getResourceById(resId));
+    IotivityResourceClient *resClient = getResourceById(resId);
 
     if (resClient != NULL) {
         OCStackResult result = resClient->retrieveResource(async_call_id);
@@ -359,8 +381,7 @@ void IotivityClient::handleUpdateResource(const picojson::value& value) {
     double async_call_id = value.get("asyncCallId").get<double>();
     picojson::value param = value.get("OicResource");
     std::string resId = param.get("id").to_str();
-    IotivityResourceClient *resClient =
-        reinterpret_cast<IotivityResourceClient *>(getResourceById(resId));
+    IotivityResourceClient *resClient = getResourceById(resId);
 
     if (resClient != NULL) {
         IotivityResourceInit oicResourceInit(param);
@@ -382,8 +403,7 @@ void IotivityClient::handleDeleteResource(const picojson::value& value) {
 
     double async_call_id = value.get("asyncCallId").get<double>();
     std::string resId = value.get("id").to_str();
-    IotivityResourceClient *resClient =
-        reinterpret_cast<IotivityResourceClient *>(getResourceById(resId));
+    IotivityResourceClient *resClient = getResourceById(resId);
 
     if (resClient != NULL) {
         OCStackResult result = resClient->deleteResource(async_call_id);
@@ -402,8 +422,7 @@ void IotivityClient::handleStartObserving(const picojson::value& value) {
     OCStackResult result;
     double async_call_id = value.get("asyncCallId").get<double>();
     std::string resId = value.get("id").to_str();
-    IotivityResourceClient *resClient =
-    reinterpret_cast<IotivityResourceClient *>(getResourceById(resId));
+    IotivityResourceClient *resClient = getResourceById(resId);
 
     if (resClient != NULL) {
         result = resClient->startObserving(async_call_id);
@@ -425,8 +444,7 @@ void IotivityClient::handleCancelObserving(const picojson::value& value) {
 
     double async_call_id = value.get("asyncCallId").get<double>();
     std::string resId = value.get("id").to_str();
-    IotivityResourceClient *resClient =
-        reinterpret_cast<IotivityResourceClient *>(getResourceById(resId));
+    IotivityResourceClient *resClient = getResourceById(resId);
 
     if (resClient != NULL) {
         OCStackResult result = resClient->cancelObserving(async_call_id);

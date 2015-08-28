@@ -72,7 +72,6 @@ class IotivityResourceInit {
 // Map on JS OicResource
 class IotivityResourceServer {
  private:
-  // shared_ptr<OCResource> m_ocResourcePtr;
   IotivityDevice *m_device;
   IotivityResourceInit *m_oicResourceInit;
   OCResourceHandle m_resourceHandle;

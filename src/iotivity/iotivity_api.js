@@ -76,30 +76,6 @@ function _addProperty(obj, propertyKey, propertyValue) {
   });
 }
 
-function _addConstructorProperty(obj, constructor) {
-  Object.defineProperty(obj, 'constructor', {
-    enumerable: false,
-    value: constructor
-  });
-}
-
-function _addConstPropertyFromObject(obj, propertyKey, propObject) {
-  if (propObject.hasOwnProperty(propertyKey)) {
-    Object.defineProperty(obj, propertyKey, {
-      configurable: true,
-      writable: false,
-      value: propObject[propertyKey]
-    });
-  }
-}
-
-function derive(child, parent) {
-  child.prototype = Object.create(parent.prototype);
-  child.prototype.constructor = child;
-  _addConstructorProperty(child.prototype, child);
-}
-
-
 ///////////////////////////////////////////////////////////////////////////////
 // EventTarget
 ///////////////////////////////////////////////////////////////////////////////
@@ -159,33 +135,6 @@ EventTarget.prototype.dispatchEvent = function(ev) {
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-// Enum
-///////////////////////////////////////////////////////////////////////////////
-
-/*
-var OicDeviceRole = {
-  "client":1,
-  "server":2,
-  "intermediary":3
-};
-
-var OicConnectionMode {
-  "acked":1,
-  "non-acked":2,
-  “default”:3
-}; // default is either of the former
-
-var OicMethod = {
-  "init":1,
-  "observe”:2,
-  "create”:3,
-  "retrieve”:4,
-  "update”:5,
-  "delete”:6
-};
-*/
-
-///////////////////////////////////////////////////////////////////////////////
 // OicDevice
 ///////////////////////////////////////////////////////////////////////////////
 function OicDevice(settings) {
@@ -238,8 +187,7 @@ OicDevice.prototype.factoryReset = function() {
 // keep configuration and reboot
 OicDevice.prototype.reboot = function() {
   var msg = {
-    'cmd': 'configure',
-    'settings': settings
+    'cmd': 'reboot'
   };
   return createPromise(msg);
 };
@@ -309,9 +257,6 @@ iotivity.OicDeviceInfo = OicDeviceInfo;
 ///////////////////////////////////////////////////////////////////////////////
 
 function OicClient(obj) {
-  //events.push('OicClient');
-  //EventTarget.call(this, events);
-
   this.onresourcechange = null;
 }
 

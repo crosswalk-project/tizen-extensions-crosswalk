@@ -55,7 +55,7 @@ extern "C" {
 
 #define INFO_MSG(msg, ...) { printf(msg, ##__VA_ARGS__);}
 #define DEBUG_MSG(msg, ...) { if (pDebugEnv) printf(msg, ##__VA_ARGS__);}
-#define ERROR_MSG(msg) { std::cerr << msg << std::endl; }  // TODO(aphao) dlog
+#define ERROR_MSG(msg) { std::cerr << msg << std::endl; }
 #define SUCCESS_RESPONSE 0
 
 extern char *pDebugEnv;
