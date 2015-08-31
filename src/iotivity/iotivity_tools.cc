@@ -52,6 +52,9 @@ void PrintfOcResource(const OCResource & oCResource) {
 void PrintfOcRepresentation(const OCRepresentation & oCRepr) {
     DEBUG_MSG("PrintfOcRepresentation\n");
 
+    std::string uri = oCRepr.getUri();
+    DEBUG_MSG("uri=%s\n", uri.c_str());
+
     for (const auto& cur : oCRepr) {
         std::string attrname = cur.attrname();
 
@@ -218,6 +221,7 @@ void UpdateOcRepresentation(const OCRepresentation & oCReprSource,
 // Translate OCRepresentation to picojson
 void TranslateOCRepresentationToPicojson(const OCRepresentation & oCRepr,
     picojson::object & objectRes) {
+    objectRes["uri"] = picojson::value(oCRepr.getUri());
     for (auto& cur : oCRepr) {
         std::string attrname = cur.attrname();
 

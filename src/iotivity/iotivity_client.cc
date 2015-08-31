@@ -128,6 +128,7 @@ void IotivityClient::handleFindResources(const picojson::value& value) {
 
     std::string hostUri = "";
     std: string discoveryUri = OC_MULTICAST_DISCOVERY_URI;  //  /oc/core
+    // std: string discoveryUri = OC_RSRVD_WELL_KNOWN_URI;
     string requestUri = discoveryUri;
 
     if ((deviceId == "") && (resourceId == "") && (resourceType == "")) {
@@ -172,7 +173,7 @@ void IotivityClient::handleFindResources(const picojson::value& value) {
                   waitsec);
     OCStackResult result = OCPlatform::findResource(hostUri,
                            requestUri,
-                           OC_ALL,
+                           OC_ALL,  //  CT_DEFAULT,
                            resourceHandler);
     if (OC_STACK_OK != result) {
         ERROR_MSG("OCPlatform::findResource was unsuccessful\n");
@@ -272,7 +273,7 @@ void IotivityClient::handleFindDevices(const picojson::value& value) {
 
     m_founddevicemap.clear();
 
-    OCConnectivityType connectivityType = OC_IPV4;
+    OCConnectivityType connectivityType = OC_IPV4;  //  CT_ADAPTER_IP;
 
     std::string hostUri = "";  //  multicast
     std::string deviceDiscoveryURI   = "/oci/d";
