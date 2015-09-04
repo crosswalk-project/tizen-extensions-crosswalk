@@ -87,9 +87,9 @@ class IotivityDevice {
   IotivityServer* getServer();
   IotivityClient* getClient();
 
-  void foundPlatformInfoCallback(const OCRepresentation& rep);
   void configure(IotivityDeviceSettings * settings);
   OCStackResult configurePlatformInfo(IotivityDeviceInfo & deviceInfo);
+  OCStackResult configureDeviceInfo(IotivityDeviceInfo & deviceInfo);
 
   void handleConfigure(const picojson::value& value);
   void handleFactoryReset(const picojson::value& value);

@@ -169,7 +169,20 @@ OicDevice.prototype.configure = function(settings) {
       'url': this.settings.url,
       'role': this.settings.role,
       'connectionMode': this.settings.connectionMode,
-      'info': this.settings.info
+      'info': {
+        'uuid': this.settings.info.uuid,
+        'name': this.settings.info.name,
+        'dataModels': this.settings.info.dataModels,
+        'coreSpecVersion': this.settings.info.coreSpecVersion,
+        'osVersion': this.settings.info.osVersion,
+        'model': this.settings.info.model,
+        'manufacturerName': this.settings.info.manufacturerName,
+        'manufacturerUrl': this.settings.info.manufacturerUrl,
+        'manufacturerDate': this.settings.info.manufacturerDate,
+        'platformVersion': this.settings.info.platformVersion,
+        'firmwareVersion': this.settings.info.firmwareVersion,
+        'supportUrl': this.settings.info.supportUrl,
+      }
     }
   };
 
@@ -223,23 +236,25 @@ iotivity.OicDeviceSettings = OicDeviceSettings;
 function OicDeviceInfo(obj) {
   DBG('new OicDeviceInfo: obj=' + JSON.stringify(obj));
   if (obj) {
-    _addConstProperty(this, 'uuid', obj.uuid);
-    _addConstProperty(this, 'name', obj.name);
-    _addConstProperty(this, 'dataModels', obj.dataModels);
-    _addConstProperty(this, 'coreSpecVersion', obj.coreSpecVersion);
-    _addConstProperty(this, 'model', obj.model);
-    _addConstProperty(this, 'manufacturerName', obj.manufacturerName);
-    _addConstProperty(this, 'manufacturerUrl', obj.manufacturerUrl);
-    _addConstProperty(this, 'manufacturerDate', obj.manufacturerDate);
-    _addConstProperty(this, 'platformVersion', obj.platformVersion);
-    _addConstProperty(this, 'firmwareVersion', obj.firmwareVersion);
-    _addConstProperty(this, 'supportUrl', obj.supportUrl);
+    _addConstProperty(this, 'uuid', obj.uuid || 'default');
+    _addConstProperty(this, 'name', obj.name || 'default');
+    _addConstProperty(this, 'dataModels', obj.dataModels || 'default');
+    _addConstProperty(this, 'coreSpecVersion', obj.coreSpecVersion || 'default');
+    _addConstProperty(this, 'osVersion', obj.osVersion || 'default');
+    _addConstProperty(this, 'model', obj.model || 'default');
+    _addConstProperty(this, 'manufacturerName', obj.manufacturerName || 'default');
+    _addConstProperty(this, 'manufacturerUrl', obj.manufacturerUrl || 'default');
+    _addConstProperty(this, 'manufacturerDate', obj.manufacturerDate || 'default');
+    _addConstProperty(this, 'platformVersion', obj.platformVersion || 'default');
+    _addConstProperty(this, 'firmwareVersion', obj.firmwareVersion || 'default');
+    _addConstProperty(this, 'supportUrl', obj.supportUrl || 'default');
   }
   else {
     _addConstProperty(this, 'uuid', 'default');
     _addConstProperty(this, 'name', 'default');
     _addConstProperty(this, 'dataModels', 'default');
     _addConstProperty(this, 'coreSpecVersion', 'default');
+    _addConstProperty(this, 'osVersion', 'default');
     _addConstProperty(this, 'model', 'default');
     _addConstProperty(this, 'manufacturerName', 'default');
     _addConstProperty(this, 'manufacturerUrl', 'default');
@@ -587,6 +602,9 @@ extension.setMessageListener(function(json) {
     case 'entityHandler':
       handleEntityHandler(msg);
       break;
+    case 'foundDeviceCallback':
+      handleFoundDevices(msg);
+      break;
     case 'foundResourceCallback':
       handleFoundResources(msg);
       break;
@@ -599,6 +617,7 @@ extension.setMessageListener(function(json) {
       break;
 
     case 'retrieveResourceCompleted':
+    case 'startObservingCompleted':
       handleRetrieveResourceCompleted(msg);
       break;
 
@@ -617,7 +636,6 @@ extension.setMessageListener(function(json) {
     case 'sendResponseCompleted':
     case 'notifyCompleted':
     case 'cancelObservingCompleted':
-    case '':
       handleAsyncCallSuccess(msg);
       break;
     case 'asyncCallError':
@@ -644,6 +662,26 @@ function handleEntityHandler(msg) {
     var oicRequestEvent = new OicRequestEvent(msg.OicRequestEvent);
     DBG('handleEntityHandler oicRequestEvent=' + JSON.stringify(oicRequestEvent));
     g_iotivity_device.server.onrequest(oicRequestEvent);
+  }
+}
+
+function handleFoundDevices(msg) {
+  DBG('handleFoundDevices msg=' + JSON.stringify(msg));
+
+  var oicDeviceList = [];
+  for (var i = 0; i < msg.devicesArray.length; i++) {
+    var oicDeviceObject = msg.devicesArray[i];
+    var oicDeviceInfo = new OicDeviceInfo(oicDeviceObject.info);
+    oicDeviceList.push(oicDeviceInfo);
+  }
+
+  if (msg.asyncCallId in g_async_calls) {
+    if (oicDeviceList.length) {
+      DBG('g_async_calls[].resolve');
+      g_async_calls[msg.asyncCallId].resolve(oicDeviceList);
+    } else {
+      g_async_calls[msg.asyncCallId].reject(Error('Find devices error'));
+    }
   }
 }
 

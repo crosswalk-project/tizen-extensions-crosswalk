@@ -40,8 +40,10 @@ IotivityDeviceInfo::~IotivityDeviceInfo() {
 
 std::string IotivityDeviceInfo::hasMap(std::string key) {
     std::map<std::string, std::string>::const_iterator it;
-    if ((it = m_deviceinfomap.find(key)) != m_deviceinfomap.end())
-        return (*it).second;
+    if ((it = m_deviceinfomap.find(key)) != m_deviceinfomap.end()) {
+    DEBUG_MSG("Found %s=%s\n", key.c_str(), m_deviceinfomap[key].c_str());
+        return m_deviceinfomap[key];
+    }
     return "";
 }
 
@@ -51,8 +53,7 @@ int IotivityDeviceInfo::mapSize() {
 
 void IotivityDeviceInfo::deserialize(const picojson::value& value) {
     DEBUG_MSG("IotivityDeviceInfo::deserialize\n");
-
-    picojson::value properties = value.get("deviceInfo");
+    picojson::value properties = value.get("info");
     picojson::object & propertiesobject = properties.get<picojson::object>();
     DEBUG_MSG("value: size=%d\n", propertiesobject.size());
 
@@ -87,6 +88,7 @@ IotivityDeviceSettings::~IotivityDeviceSettings() {
 }
 
 void IotivityDeviceSettings::deserialize(const picojson::value& value) {
+    DEBUG_MSG("IotivityDeviceSettings::deserialize\n");
     if (value.contains("url")) {
         m_url = value.get("url").to_str();
     }
@@ -96,9 +98,8 @@ void IotivityDeviceSettings::deserialize(const picojson::value& value) {
     if (value.contains("connectionMode")) {
         m_connectionMode = value.get("connectionMode").to_str();
     }
-    if (value.contains("OicDeviceInfo")) {
-        picojson::value param = value.get("info");
-        m_deviceInfo.deserialize(param);
+    if (value.contains("info")) {
+        m_deviceInfo.deserialize(value);
     }
 }
 
@@ -120,33 +121,13 @@ IotivityDevice::IotivityDevice(common::Instance* instance,
     } else {
         configure(settings);
         configurePlatformInfo(settings->m_deviceInfo);
+        configureDeviceInfo(settings->m_deviceInfo);
     }
 }
 
 IotivityDevice::~IotivityDevice() {
     delete m_server;
     delete m_client;
-}
-
-void IotivityDevice::foundPlatformInfoCallback(const OCRepresentation& rep) {
-    DEBUG_MSG("foundPlatformInfoCallback\n");
-    std::string value;
-    std::string values[22] = { "pi", "Platform ID                    ", "mnmn",
-            "Manufacturer name              ", "mnml",
-            "Manufacturer url               ", "mnmo",
-            "Manufacturer Model No          ", "mndt",
-            "Manufactured Date              ", "mnpv",
-            "Manufacturer Platform Version  ", "mnos",
-            "Manufacturer OS version        ", "mnhw",
-            "Manufacturer hardware version  ", "mnfv",
-            "Manufacturer firmware version  ", "mnsl",
-            "Manufacturer support url       ", "st",
-            "Manufacturer system time       " };
-    for (int i = 0; i < 22; i += 2) {
-        if (rep.getValue(values[i], value)) {
-            std::cout << values[i + 1] << " : " << value << std::endl;
-        }
-    }
 }
 
 common::Instance* IotivityDevice::getInstance() {
@@ -180,6 +161,10 @@ void DeletePlatformInfo(OCPlatformInfo &platformInfo) {
     delete[] platformInfo.systemTime;
 }
 
+void DeleteDeviceInfo(OCDeviceInfo &deviceInfo) {
+    delete[] deviceInfo.deviceName;
+}
+
 static OCStackResult SetPlatformInfo(OCPlatformInfo &platformInfo,
     std::string platformID, std::string manufacturerName,
     std::string manufacturerUrl, std::string modelNumber,
@@ -203,6 +188,10 @@ static OCStackResult SetPlatformInfo(OCPlatformInfo &platformInfo,
     DuplicateString(&platformInfo.supportUrl, supportUrl);
     DuplicateString(&platformInfo.systemTime, systemTime);
     return OC_STACK_OK;
+}
+
+static OCStackResult SetDeviceInfo(OCDeviceInfo &deviceInfo, std::string name) {
+    DuplicateString(&deviceInfo.deviceName, name);
 }
 
 void IotivityDevice::configure(IotivityDeviceSettings *settings) {
@@ -258,6 +247,8 @@ OCStackResult IotivityDevice::configurePlatformInfo(
     OCStackResult result = OC_STACK_ERROR;
     OCPlatformInfo platformInfo = { 0 };
 
+    DEBUG_MSG("configurePlatformInfo %d\n", deviceInfo.mapSize());
+
     if (deviceInfo.mapSize() == 0) {
         // nothing to do
         return OC_STACK_OK;
@@ -270,12 +261,39 @@ OCStackResult IotivityDevice::configurePlatformInfo(
     std::string modelNumber = deviceInfo.hasMap("model");
     std::string manufacturerName = deviceInfo.hasMap("manufacturerName");
     std::string manufacturerUrl = deviceInfo.hasMap("manufacturerUrl");
-    std::string manufactureDate = deviceInfo.hasMap("manufactureDate");
+    std::string manufactureDate = deviceInfo.hasMap("manufacturerDate");
     std::string platformVersion = deviceInfo.hasMap("platformVersion");
     std::string firmwareVersion = deviceInfo.hasMap("firmwareVersion");
     std::string supportUrl = deviceInfo.hasMap("supportUrl");
 
     std::string systemTime = deviceInfo.hasMap("systemTime");
+    if (systemTime == "")
+        systemTime = "default";
+ 
+    DEBUG_MSG("registerPlatformInfo:\n"
+              "\tID:          %s\n"
+              "\tmodelNumber: %s\n"
+              "\tmanufName:   %s\n"
+              "\tmanufUrl:    %s\n"
+              "\tmanufDate:   %s\n",
+              platformID.c_str(),
+              modelNumber.c_str(),
+              manufacturerName.c_str(),
+              manufacturerUrl.c_str(),
+              manufactureDate.c_str());
+
+    DEBUG_MSG("\tplatform:    %s\n"
+              "\tOS:          %s\n"
+              "\thw:          %s\n"
+              "\tfw:          %s\n"
+              "\turl:         %s\n"
+              "\ttime:        %s\n",
+              platformVersion.c_str(),
+              operatingSystemVersion.c_str(),
+              hardwareVersion.c_str(),
+              firmwareVersion.c_str(),
+              supportUrl.c_str(),
+              systemTime.c_str());
 
     result = SetPlatformInfo(platformInfo, platformID, manufacturerName,
             manufacturerUrl, modelNumber, manufactureDate, platformVersion,
@@ -287,13 +305,36 @@ OCStackResult IotivityDevice::configurePlatformInfo(
     }
 
     result = OCPlatform::registerPlatformInfo(platformInfo);
-
     if (OC_STACK_OK != result) {
         ERROR_MSG("OCPlatform::registerPlatformInfo was unsuccessful\n");
         return result;
     }
 
     DeletePlatformInfo(platformInfo);
+
+    return result;
+}
+
+OCStackResult IotivityDevice::configureDeviceInfo(
+        IotivityDeviceInfo & deviceInfo) {
+    OCStackResult result = OC_STACK_ERROR;
+    OCDeviceInfo oCDeviceInfo = { 0 };
+
+    DEBUG_MSG("configureDeviceInfo\n");
+
+    if (deviceInfo.mapSize() == 0) {
+        // nothing to do
+        return OC_STACK_OK;
+    }
+
+    std::string deviceName = deviceInfo.hasMap("name");
+
+    result = SetDeviceInfo(oCDeviceInfo, deviceName);
+    result = OCPlatform::registerDeviceInfo(oCDeviceInfo);
+    if (OC_STACK_OK != result) {
+        ERROR_MSG("OCPlatform::registerDeviceInfo was unsuccessful\n");
+        return result;
+    }
 
     return result;
 }
@@ -309,6 +350,12 @@ void IotivityDevice::handleConfigure(const picojson::value& value) {
     configure(&deviceSettings);
 
     OCStackResult result = configurePlatformInfo(deviceSettings.m_deviceInfo);
+    if (OC_STACK_OK != result) {
+        postError(async_call_id);
+        return;
+    }
+
+    result = configureDeviceInfo(deviceSettings.m_deviceInfo);
     if (OC_STACK_OK != result) {
         postError(async_call_id);
         return;

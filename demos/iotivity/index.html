@@ -15,6 +15,7 @@ body {
     <div class="buttons-group" id="buttons-group">
     <button class="SimpleServer" onclick="onclickbutton(id)" id="SimpleServer">SimpleServer</button>
     <button class="SimpleClient" onclick="onclickbutton(id)" id="SimpleClient">SimpleClient</button>
+    <button class="FindDevices" onclick="onclickbutton(id)" id="FindDevices">FindDevices</button>
     <button class="Reboot" onclick="onclickbutton(id)" id="Reboot">Reboot</button>
     </div>
     <textarea cols=80 rows=25 id="output">i</textarea>
@@ -49,7 +50,19 @@ var device = new iotivity.OicDevice();
 device.configure({
   url: "0.0.0.0:8453",
   role: "intermediate",
-  connectionMode: "non-acked"
+  connectionMode: "non-acked",
+  info: {
+      name: "TEC device",
+      model: "myPlatformID",
+      coreSpecVersion: "platformVersion",
+      osVersion: "myOS",
+      manufacturerName: "myName",
+      manufacturerUrl: "www.myurl.com",
+      manufactureDate: "myManufactureDate",
+      hardwareVersion: "hardwareVersion",
+      firmwareVersion: "my.Firmware.Version",
+      supportUrl: "www.mysupporturl.com",
+    }
   });
 
 var g_intervalId = 0;
@@ -136,15 +149,6 @@ function intervalCallback() {
 
 // e.g. to handle the case when remote resources can influence the states of local resources
 function startClient() {
-  // discover devices
-  device.client.findDevices({ 
-     waitsec: 3, 
-   }).then(function(list) {
-
-      }, function(e) {
-       console.log("Error finding devices: " + e.message);
-    });
-
   // discover resources
   device.client.findResources({
      //deviceId: "bfc88c66-2a4d-41e3-83e2-023864c2d9f3",
@@ -231,6 +235,19 @@ function onclickbutton(id) {
     }
     else if (id == "SimpleClient") {
       startClient();
+    }
+    else if (id == "FindDevices") {
+      // discover devices
+      device.client.findDevices({ 
+      waitsec: 5, 
+       }).then(function(list) {
+          for(var i = 0; i < list.length; i++) {
+            res = list[i];
+            LogOutput("Retrieve device: " + res.name + " " + res.uuid);
+          }
+        }, function(e) {
+          console.log("Error finding devices: " + e.message);
+      });
     }
     else if (id == "Reboot") {
       device.reboot();

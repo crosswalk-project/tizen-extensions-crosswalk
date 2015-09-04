@@ -46,8 +46,8 @@ class IotivityClient {
   std::mutex m_callbackLock;
 
   // Map device UUID with pointer
-  std::map<std::string, void *> m_devicemap;
-  std::map<std::string, void *> m_founddevicemap;
+  std::map<std::string, IotivityDeviceInfo *> m_devicemap;
+  std::map<std::string, IotivityDeviceInfo *> m_founddevicemap;
   std::mutex m_callbackLockDevices;
 
   std::string m_discoveryOptionDeviceId;
@@ -67,6 +67,7 @@ class IotivityClient {
   void findResourceTimerCallback(int waitsec);
   void findPreparedRequest(void);
 
+  void foundPlatformCallback(const OCRepresentation& rep);
   void foundDeviceCallback(const OCRepresentation& rep, int waitsec);
   void handleFindDevices(const picojson::value& value);
   void findDeviceTimerCallback(int waitsec);

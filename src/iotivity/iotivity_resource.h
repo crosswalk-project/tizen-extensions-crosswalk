@@ -125,6 +125,7 @@ class IotivityResourceClient {
   void onPost(const HeaderOptions& headerOptions,
               const OCRepresentation& rep, const int eCode,
               double asyncCallId);
+  void onStartObserving(double asyncCallId);
   void onObserve(const HeaderOptions headerOptions, const OCRepresentation& rep,
                  const int& eCode, const int& sequenceNumber,
                  double asyncCallId);

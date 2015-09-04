@@ -460,6 +460,21 @@ void IotivityResourceClient::onPost(
     m_device->PostMessage(value.serialize().c_str());
 }
 
+void IotivityResourceClient::onStartObserving(double asyncCallId) {
+    DEBUG_MSG("onStartObserving: %f\n", asyncCallId);
+
+    picojson::value::object object;
+    object["cmd"] = picojson::value("startObservingCompleted");
+    object["eCode"] = picojson::value(
+      static_cast<double>(0));
+    object["asyncCallId"] = picojson::value(
+      static_cast<double>(asyncCallId));
+
+    serialize(object);
+    picojson::value value(object);
+    m_device->PostMessage(value.serialize().c_str());
+}
+
 void IotivityResourceClient::onObserve(
   const HeaderOptions headerOptions,
   const OCRepresentation& rep,
@@ -641,6 +656,8 @@ OCStackResult IotivityResourceClient::startObserving(double asyncCallId) {
         ERROR_MSG("observe was unsuccessful\n");
         return result;
     }
+
+    onStartObserving(asyncCallId);
 
     return result;
 }
