@@ -181,7 +181,7 @@ OicDevice.prototype.configure = function(settings) {
         'manufacturerDate': this.settings.info.manufacturerDate,
         'platformVersion': this.settings.info.platformVersion,
         'firmwareVersion': this.settings.info.firmwareVersion,
-        'supportUrl': this.settings.info.supportUrl,
+        'supportUrl': this.settings.info.supportUrl
       }
     }
   };

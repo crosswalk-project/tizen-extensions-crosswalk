@@ -63,19 +63,13 @@ IotivityResourceClient *IotivityClient::getResourceById(std::string id) {
 void IotivityClient::foundResourceCallback(std::shared_ptr<OCResource> resource,
         int waitsec) {
     DEBUG_MSG("foundResourceCallback:\n");
-    bool mapFoundResource = true;
 
     IotivityResourceClient *resClient = new IotivityResourceClient(m_device);
     resClient->setSharedPtr(resource);
     PrintfOcResource((const OCResource &)*resource);
 
-    if (m_discoveryOptionDeviceId != "") {
-        if (resource->sid() != m_discoveryOptionDeviceId) {
-            mapFoundResource = false;
-        }
-    }
-
-    if (mapFoundResource) {
+    if (m_discoveryOptionDeviceId == "" ||
+        resource->sid() == m_discoveryOptionDeviceId) {
         m_foundresourcemap[resClient->getResourceId()] = resClient;
     }
 
@@ -121,7 +115,7 @@ void IotivityClient::handleFindResources(const picojson::value& value) {
               "\tresource = %s\n"
               "\tresourceType = %s\n"
               "\ttimeout = %d\n",
-              deviceId.c_str(),resourceId.c_str(),
+              deviceId.c_str(), resourceId.c_str(),
               resourceType.c_str(), waitsec);
 
     m_foundresourcemap.clear();
@@ -242,9 +236,8 @@ void IotivityClient::foundPlatformCallback(const OCRepresentation& rep) {
         }
     }
 
-    //IotivityDeviceInfo *deviceInfo = new IotivityDeviceInfo();
-    //m_founddevicemap[] = deviceInfo;
-
+    // IotivityDeviceInfo *deviceInfo = new IotivityDeviceInfo();
+    // m_founddevicemap[] = deviceInfo;
 }
 
 void IotivityClient::foundDeviceCallback(const OCRepresentation& rep,
@@ -272,7 +265,9 @@ void IotivityClient::foundDeviceCallback(const OCRepresentation& rep,
 
         IotivityDeviceInfo *deviceInfo = NULL;
         std::map<std::string, IotivityDeviceInfo *>::const_iterator it;
-        if ((it = m_founddevicemap.find(deviceUUID)) != m_founddevicemap.end()) {
+        it = m_founddevicemap.find(deviceUUID);
+
+        if (it != m_founddevicemap.end()) {
             deviceInfo = m_founddevicemap[deviceUUID];
         } else {
             deviceInfo = new IotivityDeviceInfo();
@@ -288,7 +283,7 @@ void IotivityClient::foundDeviceCallback(const OCRepresentation& rep,
             m_founddevicemap[deviceUUID] = deviceInfo;
         }
     }
-    
+
     if (waitsec == -1) {
         findDevicePreparedRequest();
     }
@@ -405,7 +400,6 @@ void IotivityClient::findDeviceTimerCallback(int waitsec) {
 }
 
 void IotivityClient::findDevicePreparedRequest() {
-
     DEBUG_MSG("findDevicePreparedRequest\n");
 
     std::lock_guard<std::mutex> lock(m_callbackLockDevices);

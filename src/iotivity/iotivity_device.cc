@@ -269,7 +269,7 @@ OCStackResult IotivityDevice::configurePlatformInfo(
     std::string systemTime = deviceInfo.hasMap("systemTime");
     if (systemTime == "")
         systemTime = "default";
- 
+
     DEBUG_MSG("registerPlatformInfo:\n"
               "\tID:          %s\n"
               "\tmodelNumber: %s\n"

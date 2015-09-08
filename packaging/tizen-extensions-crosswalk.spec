@@ -27,7 +27,7 @@ Source1001: %{name}.manifest
 BuildRequires: ninja
 BuildRequires: pkgconfig(appcore-common)
 BuildRequires: pkgconfig(bluez)
-BuildRequires: iotivity-devel >= 0.9.1
+BuildRequires: iotivity-devel >= 0.9.2
 BuildRequires: boost-devel
 BuildRequires: pkgconfig(capi-appfw-application)
 BuildRequires: pkgconfig(capi-appfw-app-manager)
