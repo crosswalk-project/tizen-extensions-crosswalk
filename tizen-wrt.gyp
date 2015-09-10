@@ -9,6 +9,7 @@
       'type': 'none',
       'dependencies': [
         'src/bluetooth/bluetooth.gyp:*',
+        'src/iotivity/iotivity.gyp:*',
         'src/media_renderer/media_renderer.gyp:*',
         'src/mediaserver/mediaserver.gyp:*',
         'src/network_bearer_selection/network_bearer_selection.gyp:*',
@@ -151,6 +152,31 @@
               ],
               'outputs': [
                 'tizen-extensions-crosswalk-audiosystem-demo.xml',
+              ],
+              'action': [
+                'python',
+                '<@(_inputs)',
+                '<@(generate_args)',
+                '<@(_outputs)',
+              ],
+            },
+            {
+              'variables': {
+                'generate_args': [
+                  '_iotivity_demo_package',
+                  'crosswalk-iotivity-demo',
+                  '/usr/bin/tizen-extensions-crosswalk-iotivity-demo',
+                  'Crosswalk Tizen Iotivity API Demo',
+                ],
+              },
+              'action_name': 'iotivity_demo',
+              'inputs': [
+                'tools/generate_manifest.py',
+                'packaging/tizen-extensions-crosswalk.spec',
+                'tizen-extensions-crosswalk.xml.in',
+              ],
+              'outputs': [
+                'tizen-extensions-crosswalk-iotivity-demo.xml',
               ],
               'action': [
                 'python',

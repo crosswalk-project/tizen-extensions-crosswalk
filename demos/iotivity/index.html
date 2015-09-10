@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>OIC Tizen Crosswalk Extension demo</title>
+<link rel="stylesheet" type="text/css" href="css/iotivity.css"/>
+<meta name="viewport" content="width=device-width">
+<style>
+body {
+  font-size: 2em;
+}
+</style>
+</head>
+<body>
+
+    <div class="buttons-group" id="buttons-group">
+    <button class="SimpleServer" onclick="onclickbutton(id)" id="SimpleServer">SimpleServer</button>
+    <button class="SimpleClient" onclick="onclickbutton(id)" id="SimpleClient">SimpleClient</button>
+    <button class="FindDevices" onclick="onclickbutton(id)" id="FindDevices">FindDevices</button>
+    <button class="Reboot" onclick="onclickbutton(id)" id="Reboot">Reboot</button>
+    </div>
+    <textarea cols=80 rows=25 id="output">i</textarea>
+
+</body>
+</html>
+
+
+<script>
+
+
+var outputtext = document.getElementById("output");
+outputtext.value = "";
+
+
+var log_outputtext = 1;
+
+
+function LogOutput(msg) {
+
+  if (log_outputtext)
+      outputtext.value += msg + "\n";
+  else
+    console.log(msg + "\n");
+}
+
+
+
+var lightResource = null;
+var device = new iotivity.OicDevice();
+
+device.configure({
+  url: "0.0.0.0:8453",
+  role: "intermediate",
+  connectionMode: "non-acked",
+  info: {
+      name: "TEC device",
+      model: "myPlatformID",
+      coreSpecVersion: "platformVersion",
+      osVersion: "myOS",
+      manufacturerName: "myName",
+      manufacturerUrl: "www.myurl.com",
+      manufactureDate: "myManufactureDate",
+      hardwareVersion: "hardwareVersion",
+      firmwareVersion: "my.Firmware.Version",
+      supportUrl: "www.mysupporturl.com",
+    }
+  });
+
+var g_intervalId = 0;
+var g_intervalCount = 5;
+var g_observingCount = 5;
+var g_observedResource = null;
+
+
+function startServer() {
+  var deviceId = device.settings.info.uuid;
+  var connMode = device.settings.connectionMode;
+
+  // register all resources handled by this device
+  device.server.registerResource({
+      url: "/a/light",
+      deviceId: deviceId,
+      connectionMode: connMode,
+      resourceTypes: [ "core.light", "core.brightlight" ],
+      interfaces: [ "oic.if.baseline", "oic.if.ll"],
+      discoverable: true,
+      observable: true,
+      properties: { name:"OIC Xwalk", power: 5, state: true }
+    }).then(function(res) {
+    LogOutput("Resource " + res.id + " " + res.url + " has been created.");
+    lightResource = res;
+    device.server.onrequest = requestHandler;
+    device.server.enablePresence();
+  }, function(error) {
+    LogOutput("Error creating resource " + res.url + " : " + error.message);
+  });
+};
+
+function requestHandler(request) {
+  LogOutput("[Remote Client==>] requestHandler: type=" + request.type + " id=" + request.requestId);
+  if (request.type == "update" && lightResource && request.target == lightResource.id) {
+    var updates = [];
+    for(var i = 0; i < request.updatedPropertyNames.length; i++) {
+      name = request.updatedPropertyNames[i];
+      if (request.properties[name] != lightResource.properties[name]) {
+        lightResource.properties[name] = request.properties[name]; // save the change
+        updates.push(name); // collect all the updates
+      }
+    }
+    
+    if (updates.length) {
+      var error = 'Failed to handle update request'; // new Error("")
+      request.sendResponse(); // sends back OK
+    }
+    else {
+      var error = 'Failed to handle update request'; // new Error("")
+      request.sendError(error);
+    }
+  }
+
+  if (request.type == "retrieve" && lightResource && request.target == lightResource.id) {
+     request.sendResponse(); // sends back OK
+  }
+
+  if (request.type == "observe" && lightResource && request.target == lightResource.id) {
+     request.sendResponse(); // sends back OK
+
+     device.server.notify(lightResource.id, "update", updates); // tell observers
+     // Start timer interval
+     //g_intervalId = setInterval(intervalCallback, 1000);
+  }
+
+  if (request.type == "delete") {
+     var error = 'Failed to handle delete request';
+     request.sendError();
+  }
+
+
+  // handle the other types of requests as well...
+};
+
+function intervalCallback() {
+    LogOutput("Notify client");
+    lightResource.properties.power = lightResource.properties.power + 10;
+    var updates = [];
+    updates.push("power");
+    // TODO(aphao) propagate changes to natif OCRepresentation
+    device.server.notify(lightResource.id, "update", updates); // tell observers
+}
+
+// e.g. to handle the case when remote resources can influence the states of local resources
+function startClient() {
+  // discover resources
+  device.client.findResources({
+     //deviceId: "bfc88c66-2a4d-41e3-83e2-023864c2d9f3",
+     //resourceType: "", // all
+     resourceType: "core.light",
+     waitsec: 3,
+   }).then(function(list) {
+        device.client.onresourcechange = eventHandler;
+
+        for(var i = 0; i < list.length; i++) {
+          res = list[i];
+          if(res.url == "/a/light") {
+            device.client.retrieveResource(res.id)
+             .then(function(retrievedres) {
+                LogOutput("Retrieve " + retrievedres.url);
+                 device.client.startObserving(retrievedres.id)
+                   .then(function(observedres) {
+                     LogOutput("Observing " + observedres.url);
+                     g_observedResource = retrievedres;
+                     observedres.properties.power = 10;
+                     device.client.updateResource(observedres)
+                       .then(function() { 
+                          LogOutput("Changed resource power to 10");
+                       },function() { 
+                          LogOutput("Error resource power"); 
+                       });        
+                     }, function(error) { 
+                       LogOutput("Cannot observe " + retrievedres.url); 
+                  });
+                }, function(error) { 
+                  LogOutput("Cannot retrieve " + res.url); 
+              });
+          } // if
+        }
+      }, function(e) {
+       console.log("Error finding resources: " + e.message);
+    });
+};
+
+function eventHandler(event) {
+  LogOutput("Client eventHandler: type=" + event.type + " id=" + event.resource.id  + " url=" + event.resource.url);
+  if (event.type == "update") {
+    if (event.updatedPropertyNames.length) {
+      device.client.retrieveResource(event.resource.id)
+        .then(function(retrievedres) {
+          for(var i = 0; i < event.updatedPropertyNames.length; i++) {
+            name = event.updatedPropertyNames[i];
+            LogOutput("retrieved " + name + "=" + retrievedres.properties[name]);
+          }
+        }, function(error) { 
+          LogOutput("Cannot retrieve " + res.url); 
+      });
+    }
+    g_observingCount--;
+    if (g_observingCount == 0) {
+      LogOutput("cancelObserving " + g_observedResource.id); 
+      device.client.cancelObserving(g_observedResource.id);
+    }
+  }
+  if (request.type == "add") {
+    LogOutput("Added " + request.res.url);
+  }
+
+  if (request.type == "remove") {
+    LogOutput("Deleted resource");
+  }
+}
+
+function testOicServerClient(){
+ 
+  // implementation will try to get default configuration from the HW/platform
+  // but if we cannot get it, could do a hard-coded configuration (not recommended)
+  if (device.settings.info.uuid) { // configuration is valid
+    startServer();
+    startClient();
+  }
+}
+
+
+function onclickbutton(id) {
+
+    if (id == "SimpleServer") {
+      startServer();
+    }
+    else if (id == "SimpleClient") {
+      startClient();
+    }
+    else if (id == "FindDevices") {
+      // discover devices
+      device.client.findDevices({ 
+      waitsec: 5, 
+       }).then(function(list) {
+          for(var i = 0; i < list.length; i++) {
+            res = list[i];
+            LogOutput("Retrieve device: " + res.name + " " + res.uuid);
+          }
+        }, function(e) {
+          console.log("Error finding devices: " + e.message);
+      });
+    }
+    else if (id == "Reboot") {
+      device.reboot();
+    }
+}
+
+
+</script>
+
+
