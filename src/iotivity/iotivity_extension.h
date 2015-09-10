@@ -34,12 +34,12 @@
 
 class IotivityExtension : public common::Extension {
  public:
-    IotivityExtension();
-    virtual ~IotivityExtension();
+  IotivityExtension();
+  virtual ~IotivityExtension();
 
  private:
-    // common::Extension implementation.
-    virtual common::Instance* CreateInstance();
+  // common::Extension implementation.
+  virtual common::Instance* CreateInstance();
 };
 
 #endif  // IOTIVITY_IOTIVITY_EXTENSION_H_

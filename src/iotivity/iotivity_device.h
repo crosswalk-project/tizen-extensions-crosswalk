@@ -35,7 +35,6 @@
 #include "iotivity/iotivity_tools.h"
 #include "common/extension.h"
 
-
 namespace common {
 class Instance;
 }
@@ -45,30 +44,30 @@ class IotivityClient;
 
 class IotivityDeviceInfo {
  public:
-    std::map<std::string, std::string> m_deviceinfomap;
+  std::map<std::string, std::string> m_deviceinfomap;
 
  public:
-    IotivityDeviceInfo();
-    ~IotivityDeviceInfo();
+  IotivityDeviceInfo();
+  ~IotivityDeviceInfo();
 
-    int mapSize();
-    std::string hasMap(std::string key);
-    void deserialize(const picojson::value& value);
-    void serialize(picojson::object& object);
+  int mapSize();
+  std::string hasMap(std::string key);
+  void deserialize(const picojson::value& value);
+  void serialize(picojson::object& object);
 };
 
 class IotivityDeviceSettings {
  public:
-    std::string m_url;
-    IotivityDeviceInfo m_deviceInfo;
-    std::string m_role;
-    std::string m_connectionMode;
+  std::string m_url;
+  IotivityDeviceInfo m_deviceInfo;
+  std::string m_role;
+  std::string m_connectionMode;
 
  public:
-    IotivityDeviceSettings();
-    ~IotivityDeviceSettings();
+  IotivityDeviceSettings();
+  ~IotivityDeviceSettings();
 
-    void deserialize(const picojson::value& value);
+  void deserialize(const picojson::value& value);
 };
 
 class IotivityDevice {
@@ -80,21 +79,21 @@ class IotivityDevice {
  public:
   explicit IotivityDevice(common::Instance* instance);
   explicit IotivityDevice(common::Instance* instance,
-                          IotivityDeviceSettings * settings);
+                          IotivityDeviceSettings* settings);
   ~IotivityDevice();
 
   common::Instance* getInstance();
   IotivityServer* getServer();
   IotivityClient* getClient();
 
-  void configure(IotivityDeviceSettings * settings);
-  OCStackResult configurePlatformInfo(IotivityDeviceInfo & deviceInfo);
-  OCStackResult configureDeviceInfo(IotivityDeviceInfo & deviceInfo);
+  void configure(IotivityDeviceSettings* settings);
+  OCStackResult configurePlatformInfo(IotivityDeviceInfo& deviceInfo);
+  OCStackResult configureDeviceInfo(IotivityDeviceInfo& deviceInfo);
 
   void handleConfigure(const picojson::value& value);
   void handleFactoryReset(const picojson::value& value);
   void handleReboot(const picojson::value& value);
-  void PostMessage(const char *msg);
+  void PostMessage(const char* msg);
   void postResult(const char* completed_operation, double async_operation_id);
   void postError(double async_operation_id);
 };

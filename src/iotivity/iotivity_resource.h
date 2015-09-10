@@ -68,38 +68,38 @@ class IotivityResourceInit {
   void serialize(picojson::object& object);
 };
 
-
 // Map on JS OicResource
 class IotivityResourceServer {
  private:
-  IotivityDevice *m_device;
-  IotivityResourceInit *m_oicResourceInit;
+  IotivityDevice* m_device;
+  IotivityResourceInit* m_oicResourceInit;
   OCResourceHandle m_resourceHandle;
   ObservationIds m_interestedObservers;
   std::string m_idfull;
+
  public:
-  IotivityResourceServer(IotivityDevice *device,
-                         IotivityResourceInit *oicResource);
+  IotivityResourceServer(IotivityDevice* device,
+                         IotivityResourceInit* oicResource);
   ~IotivityResourceServer();
 
   OCEntityHandlerResult entityHandlerCallback(
-    std::shared_ptr<OCResourceRequest> request);
+      std::shared_ptr<OCResourceRequest> request);
   OCStackResult registerResource();
 
   int getResourceHandleToInt();
   std::string getResourceId();
   OCRepresentation getRepresentation();
-  ObservationIds & getObserversList();
+  ObservationIds& getObserversList();
   void serialize(picojson::object& object);
 };
 
 // Map on JS OicResource
 class IotivityResourceClient {
  private:
-  IotivityDevice *m_device;
+  IotivityDevice* m_device;
 
   shared_ptr<OCResource> m_ocResourcePtr;
-  IotivityResourceInit *m_oicResourceInit;
+  IotivityResourceInit* m_oicResourceInit;
 
   int m_id;
   std::string m_idfull;
@@ -107,7 +107,7 @@ class IotivityResourceClient {
   std::string m_host;
 
  public:
-  explicit IotivityResourceClient(IotivityDevice *device);
+  explicit IotivityResourceClient(IotivityDevice* device);
   ~IotivityResourceClient();
 
   void setSharedPtr(std::shared_ptr<OCResource> sharePtr);
@@ -115,39 +115,33 @@ class IotivityResourceClient {
   std::string getResourceId();
   void serialize(picojson::object& object);
 
-
-  void onPut(const HeaderOptions& headerOptions,
-             const OCRepresentation& rep, const int eCode,
-             double asyncCallId);
-  void onGet(const HeaderOptions& headerOptions,
-             const OCRepresentation& rep, const int eCode,
-             double asyncCallId);
-  void onPost(const HeaderOptions& headerOptions,
-              const OCRepresentation& rep, const int eCode,
-              double asyncCallId);
+  void onPut(const HeaderOptions& headerOptions, const OCRepresentation& rep,
+             const int eCode, double asyncCallId);
+  void onGet(const HeaderOptions& headerOptions, const OCRepresentation& rep,
+             const int eCode, double asyncCallId);
+  void onPost(const HeaderOptions& headerOptions, const OCRepresentation& rep,
+              const int eCode, double asyncCallId);
   void onStartObserving(double asyncCallId);
   void onObserve(const HeaderOptions headerOptions, const OCRepresentation& rep,
                  const int& eCode, const int& sequenceNumber,
                  double asyncCallId);
-  void onDelete(const HeaderOptions& headerOptions,
-                const int eCode,
+  void onDelete(const HeaderOptions& headerOptions, const int eCode,
                 double asyncCallId);
 
-  OCStackResult createResource(IotivityResourceInit & oicResourceInit,
+  OCStackResult createResource(IotivityResourceInit& oicResourceInit,
                                double asyncCallId);
   OCStackResult retrieveResource(double asyncCallId);
-  OCStackResult updateResource(OCRepresentation & representation,
+  OCStackResult updateResource(OCRepresentation& representation,
                                double asyncCallId);
   OCStackResult deleteResource(double asyncCallId);
   OCStackResult startObserving(double asyncCallId);
   OCStackResult cancelObserving(double asyncCallId);
 };
 
-
 // Map on JS OicRequestEvent
 class IotivityRequestEvent {
  public:
-  IotivityDevice *m_device;
+  IotivityDevice* m_device;
 
   std::string m_type;
   int m_requestId;
@@ -159,7 +153,6 @@ class IotivityRequestEvent {
 
   QueryParamsMap m_queries;
   HeaderOptions m_headerOptions;
-
 
   OCRepresentation m_resourceRepTarget;
 
@@ -174,6 +167,5 @@ class IotivityRequestEvent {
   OCStackResult sendResponse();
   OCStackResult sendError();
 };
-
 
 #endif  // IOTIVITY_IOTIVITY_RESOURCE_H_

@@ -43,9 +43,7 @@ IotivityInstance::IotivityInstance() {
   m_device = new IotivityDevice(this, NULL);
 }
 
-IotivityInstance::~IotivityInstance() {
-  delete m_device;
-}
+IotivityInstance::~IotivityInstance() { delete m_device; }
 
 void IotivityInstance::HandleMessage(const char* msg) {
   if (pDebugEnv != NULL)
@@ -106,7 +104,6 @@ void IotivityInstance::HandleMessage(const char* msg) {
 
   return;
 }
-
 
 void IotivityInstance::handleSendResponse(const picojson::value& value) {
   DEBUG_MSG("handleSendResponse: v=%s\n", value.serialize().c_str());

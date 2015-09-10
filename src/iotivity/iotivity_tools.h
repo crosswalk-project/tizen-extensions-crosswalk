@@ -38,36 +38,40 @@
 #include <map>
 #include <vector>
 #include <functional>
-#include <mutex> // NOLINT
-#include <condition_variable> //NOLINT
+#include <mutex>               // NOLINT
+#include <condition_variable>  //NOLINT
 
 #include "common/picojson.h"
 
 #include "OCPlatform.h"
 #include "OCApi.h"
 
-using namespace OC; // NOLINT
-using namespace std; // NOLINT
+using namespace OC;   // NOLINT
+using namespace std;  // NOLINT
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define INFO_MSG(msg, ...) { printf(msg, ##__VA_ARGS__);}
-#define DEBUG_MSG(msg, ...) { if (pDebugEnv) printf(msg, ##__VA_ARGS__);}
-#define ERROR_MSG(msg) { std::cerr << msg << std::endl; }
+#define INFO_MSG(msg, ...) \
+  { printf(msg, ##__VA_ARGS__); }
+#define DEBUG_MSG(msg, ...)                    \
+  {                                            \
+    if (pDebugEnv) printf(msg, ##__VA_ARGS__); \
+  }
+#define ERROR_MSG(msg) \
+  { std::cerr << msg << std::endl; }
 #define SUCCESS_RESPONSE 0
 
 extern char *pDebugEnv;
 
-void PrintfOcResource(const OCResource & oCResource);
-void PrintfOcRepresentation(const OCRepresentation & oCRepresentation);
-void UpdateOcRepresentation(const OCRepresentation & oCReprSource,
-                            OCRepresentation & oCReprDest,
-                            std::vector<std::string> & updatedPropertyNames);
+void PrintfOcResource(const OCResource &oCResource);
+void PrintfOcRepresentation(const OCRepresentation &oCRepresentation);
+void UpdateOcRepresentation(const OCRepresentation &oCReprSource,
+                            OCRepresentation &oCReprDest,
+                            std::vector<std::string> &updatedPropertyNames);
 void TranslateOCRepresentationToPicojson(
-    const OCRepresentation & oCRepresentation,
-    picojson::object & objectRes);
+    const OCRepresentation &oCRepresentation, picojson::object &objectRes);
 void CopyInto(std::vector<std::string> &src, picojson::array &dest);
 
 #ifdef __cplusplus

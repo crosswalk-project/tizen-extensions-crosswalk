@@ -47,11 +47,7 @@ class IotivityInstance : public common::Instance {
   void handleSendError(const picojson::value& value);
 
  private:
-  IotivityDevice *m_device;
+  IotivityDevice* m_device;
 };
 
-
 #endif  // IOTIVITY_IOTIVITY_INSTANCE_H_
-
-
-

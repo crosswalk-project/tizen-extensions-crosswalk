@@ -60,11 +60,9 @@ function createPromise(msg) {
 }
 
 function _addConstProperty(obj, propertyKey, propertyValue) {
-  Object.defineProperty(obj, propertyKey, {
-    configurable: true,
-    writable: false,
-    value: propertyValue
-  });
+  Object.defineProperty(
+      obj, propertyKey,
+      {configurable: true, writable: false, value: propertyValue});
 }
 
 function _addProperty(obj, propertyKey, propertyValue) {
@@ -101,22 +99,21 @@ EventTarget.prototype.isValidEventType = function(type) {
 };
 
 EventTarget.prototype.addEventListener = function(type, listener) {
-  if (this.isValidEventType(type) && listener != null && typeof listener === 'function' &&
+  if (this.isValidEventType(type) && listener != null &&
+      typeof listener === 'function' &&
       this._event_listeners[type].indexOf(listener) == -1) {
     this._event_listeners[type].push(listener);
     return;
   }
-  ERR('Invalid event type \'' + type + '\', ignoring. Avaliable event types : ' +
-      this._event_listeners);
+  ERR('Invalid event type \'' + type +
+      '\', ignoring. Avaliable event types : ' + this._event_listeners);
 };
 
 EventTarget.prototype.removeEventListener = function(type, listener) {
-  if (!type || !listener)
-    return;
+  if (!type || !listener) return;
 
   var index = this._event_listeners[type].indexOf(listener);
-  if (index == -1)
-    return;
+  if (index == -1) return;
 
   this._event_listeners[type].splice(index, 1);
 };
@@ -127,8 +124,7 @@ EventTarget.prototype.dispatchEvent = function(ev) {
   if (typeof ev === 'object' && this.isValidEventType(ev.type) &&
       (listeners = this._event_listeners[ev.type]) != null) {
     listeners.forEach(function(listener) {
-      if (!listener(ev) && handled)
-        handled = false;
+      if (!listener(ev) && handled) handled = false;
     });
   }
   return handled;
@@ -151,7 +147,7 @@ function OicDevice(settings) {
 
   g_iotivity_device = this;
 
-  //if (g_iotivity_device)
+  // if (g_iotivity_device)
   //  g_iotivity_device.configure(this.settings);
 }
 
@@ -218,8 +214,7 @@ function OicDeviceSettings(obj) {
     _addConstProperty(this, 'info', new OicDeviceInfo(obj.info));
     _addConstProperty(this, 'role', obj.role);
     _addConstProperty(this, 'connectionMode', obj.connectionMode);
-  }
-  else {
+  } else {
     _addConstProperty(this, 'url', '0.0.0.0:0');
     _addConstProperty(this, 'info', new OicDeviceInfo(null));
     _addConstProperty(this, 'role', 'intermediate');
@@ -239,17 +234,22 @@ function OicDeviceInfo(obj) {
     _addConstProperty(this, 'uuid', obj.uuid || 'default');
     _addConstProperty(this, 'name', obj.name || 'default');
     _addConstProperty(this, 'dataModels', obj.dataModels || 'default');
-    _addConstProperty(this, 'coreSpecVersion', obj.coreSpecVersion || 'default');
+    _addConstProperty(this, 'coreSpecVersion',
+                      obj.coreSpecVersion || 'default');
     _addConstProperty(this, 'osVersion', obj.osVersion || 'default');
     _addConstProperty(this, 'model', obj.model || 'default');
-    _addConstProperty(this, 'manufacturerName', obj.manufacturerName || 'default');
-    _addConstProperty(this, 'manufacturerUrl', obj.manufacturerUrl || 'default');
-    _addConstProperty(this, 'manufacturerDate', obj.manufacturerDate || 'default');
-    _addConstProperty(this, 'platformVersion', obj.platformVersion || 'default');
-    _addConstProperty(this, 'firmwareVersion', obj.firmwareVersion || 'default');
+    _addConstProperty(this, 'manufacturerName',
+                      obj.manufacturerName || 'default');
+    _addConstProperty(this, 'manufacturerUrl',
+                      obj.manufacturerUrl || 'default');
+    _addConstProperty(this, 'manufacturerDate',
+                      obj.manufacturerDate || 'default');
+    _addConstProperty(this, 'platformVersion',
+                      obj.platformVersion || 'default');
+    _addConstProperty(this, 'firmwareVersion',
+                      obj.firmwareVersion || 'default');
     _addConstProperty(this, 'supportUrl', obj.supportUrl || 'default');
-  }
-  else {
+  } else {
     _addConstProperty(this, 'uuid', 'default');
     _addConstProperty(this, 'name', 'default');
     _addConstProperty(this, 'dataModels', 'default');
@@ -294,7 +294,7 @@ OicClient.prototype.findDevices = function(options) {
 
 // client API: CRUDN
 OicClient.prototype.createResource = function(resourceinit) {
-  var resourceId = 0; // todo(aphao) Missing id from spec ??
+  var resourceId = 0;  // todo(aphao) Missing id from spec ??
   var msg = {
     'cmd': 'createResource',
     'id': resourceId,
@@ -385,7 +385,8 @@ OicServer.prototype.unregisterResource = function(resourceId) {
   return createPromise(msg);
 };
 
-// enable/disable presence (discovery, state changes) for this device and its resources
+// enable/disable presence (discovery, state changes) for this device and its
+// resources
 OicServer.prototype.enablePresence = function() {
   var msg = {
     'cmd': 'enablePresence'
@@ -400,7 +401,8 @@ OicServer.prototype.disablePresence = function() {
   return createPromise(msg);
 };
 
-OicServer.prototype.notify = function(resourceId, method, updatedPropertyNames) {
+OicServer.prototype.notify = function(resourceId, method,
+                                      updatedPropertyNames) {
   var msg = {
     'cmd': 'notify',
     'resourceId': resourceId,
@@ -498,7 +500,8 @@ iotivity.OicResourceChangedEvent = OicResourceChangedEvent;
 // all properties are null by default, meaning “find all
 // if resourceId is specified in full form, a direct retrieve is made
 // if resourceType is specified, a retrieve on /oic/res is made
-// if resourceId is null, and deviceId not, then only resources from that device are returned
+// if resourceId is null, and deviceId not, then only resources from that device
+// are returned
 function OicDiscoveryOptions(obj) {
   _addConstProperty(this, 'deviceId', obj.deviceId);
   _addConstProperty(this, 'resourceId', obj.resourceId);
@@ -508,7 +511,8 @@ function OicDiscoveryOptions(obj) {
 iotivity.OicDiscoveryOptions = OicDiscoveryOptions;
 
 function OicResourceRepresentation(obj) {
-  // any non-function properties that are JSON-serializable, e.g. string, number, boolean, URI
+  // any non-function properties that are JSON-serializable, e.g. string,
+  // number, boolean, URI
 }
 
 iotivity.OicResourceRepresentation = OicResourceRepresentation;
@@ -539,7 +543,6 @@ iotivity.OicResourceInit = OicResourceInit;
 // OicResource
 ///////////////////////////////////////////////////////////////////////////////
 function OicResource(obj) {
-
   // id: obtained when registered, empty at construction
   DBG('new OicResource: obj=' + JSON.stringify(obj));
   // properties of OicResourceInit are exposed as readonly attributes
@@ -583,7 +586,6 @@ iotivity.QueryOption = QueryOption;
 ///////////////////////////////////////////////////////////////////////////////
 // Exports and main entry point for the Iotivity API
 ///////////////////////////////////////////////////////////////////////////////
-
 
 
 
@@ -658,9 +660,11 @@ function handleRegisterResourceCompleted(msg) {
 function handleEntityHandler(msg) {
   DBG('handleEntityHandler msg=' + JSON.stringify(msg));
 
-  if (g_iotivity_device && g_iotivity_device.server && g_iotivity_device.server.onrequest) {
+  if (g_iotivity_device && g_iotivity_device.server &&
+      g_iotivity_device.server.onrequest) {
     var oicRequestEvent = new OicRequestEvent(msg.OicRequestEvent);
-    DBG('handleEntityHandler oicRequestEvent=' + JSON.stringify(oicRequestEvent));
+    DBG('handleEntityHandler oicRequestEvent=' +
+        JSON.stringify(oicRequestEvent));
     g_iotivity_device.server.onrequest(oicRequestEvent);
   }
 }
@@ -709,7 +713,8 @@ function handleFoundResources(msg) {
 function handleOnObserve(msg) {
   DBG('handleOnObserve msg=' + JSON.stringify(msg));
 
-  if (g_iotivity_device && g_iotivity_device.client && g_iotivity_device.client.onresourcechange) {
+  if (g_iotivity_device && g_iotivity_device.client &&
+      g_iotivity_device.client.onresourcechange) {
     var oicResource = new OicResource(msg.OicResourceInit);
     _addConstProperty(oicResource, 'id', msg.id);
 
@@ -727,7 +732,6 @@ function handleCreateResourceCompleted(msg) {
   DBG('handleCreateResourceCompleted msg=' + JSON.stringify(msg));
 
   if (msg.asyncCallId in g_async_calls) {
-
     if (msg.eCode == 0) {
       DBG('g_async_calls[].resolve');
 
@@ -735,8 +739,7 @@ function handleCreateResourceCompleted(msg) {
       _addConstProperty(oicResource, 'id', msg.id);
 
       g_async_calls[msg.asyncCallId].resolve(oicResource);
-    }
-    else {
+    } else {
       g_async_calls[msg.asyncCallId].reject(Error('Command error'));
     }
 
@@ -753,8 +756,7 @@ function handleRetrieveResourceCompleted(msg) {
       var oicResource = new OicResource(msg.OicResourceInit);
       _addConstProperty(oicResource, 'id', msg.id);
       g_async_calls[msg.asyncCallId].resolve(oicResource);
-    }
-    else {
+    } else {
       g_async_calls[msg.asyncCallId].reject(Error('Command error'));
     }
 
@@ -769,8 +771,7 @@ function handleUpdateResourceCompleted(msg) {
     if (msg.eCode == 0) {
       DBG('g_async_calls[].resolve');
       g_async_calls[msg.asyncCallId].resolve();
-    }
-    else {
+    } else {
       g_async_calls[msg.asyncCallId].reject(Error('Command error'));
     }
 
@@ -785,8 +786,7 @@ function handleDeleteResourceCompleted(msg) {
     if (msg.eCode == 0) {
       DBG('g_async_calls[].resolve');
       g_async_calls[msg.asyncCallIde].resolve();
-    }
-    else {
+    } else {
       g_async_calls[msg.asyncCallId].reject(Error('Command error'));
     }
 
@@ -817,8 +817,3 @@ exports.handleMessageAsync = function(msg, callback) {
 exports.handleMessageSync = function(msg) {
   return extension.internal.sendSyncMessage(msg);
 };
-
-
-
-
-
